@@ -13,7 +13,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -73,6 +73,9 @@ export default defineEvent({
   related: [
     { ref: 'event:siege-of-khartoum', rel: 'related' }
   ],
+  polities: [
+    { ref: 'polity:khedivate-of-egypt' }
+  ],
   sides: [
     {
       key: 'urabists',
@@ -87,6 +90,7 @@ export default defineEvent({
     {
       key: 'britain',
       name: 'British',
+      polity: 'polity:united-kingdom',
       cites: [
         {
           source: 'loc-egypt-country-study-1990',
@@ -223,17 +227,6 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/egypt/25.htm' }
         },
         {
-          id: 'q6',
-          text: 'Bei antieuropäischen Ausschreitungen in der ägyptischen Stadt Alexandria werden 200 Menschen getötet.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1882', loc: { section: 'Chronik 1882', para: '37' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1882.html'
-          }
-        },
-        {
           id: 'q7',
           text: 'Thus, as the British army was about to land in August, Egypt had two leaders: the khedive, whose authority was confined to British-controlled Alexandria, and Urabi, who was in full control of Cairo and the provinces.',
           lang: 'en',
@@ -257,17 +250,6 @@ export default defineEvent({
             loc: { section: 'From Intervention to Occupation, 1876-82', para: '19' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/egypt/25.htm' }
-        },
-        {
-          id: 'q9',
-          text: 'Mit der Landung britischer Truppen in Port Said beginnt die britische Besetzung Ägyptens.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1882', loc: { section: 'Chronik 1882', para: '43' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1882.html'
-          }
         },
         {
           id: 'q10',
@@ -472,5 +454,9 @@ export default defineEvent({
       creator: 'Antonio de Simone the Elder'
     },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'rafii-1937-al-thawrah-al-urabiyah', perspective: 'arab' },
+    { source: 'urabi-1983-mudhakkirat', perspective: 'arab' }
+  ]
 })

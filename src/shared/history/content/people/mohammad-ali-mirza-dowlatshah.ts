@@ -7,7 +7,7 @@ export default definePerson({
     { text: 'محمدعلی میرزا دولتشاه', lang: 'fa', role: 'native' },
     { text: 'Moḥammad-ʿAlī Mīrzā Dawlatšāh', lang: 'fa-Latn', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -52,6 +52,7 @@ export default definePerson({
   offices: [
     {
       title: 'governor-general (wālī) of the western frontier provinces',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {

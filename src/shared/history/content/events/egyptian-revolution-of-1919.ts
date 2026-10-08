@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'revolution',
   start: {
     alts: [
@@ -87,6 +87,7 @@ export default defineEvent({
     {
       key: 'british',
       name: 'British soldiers',
+      polity: 'polity:united-kingdom',
       cites: [
         {
           source: 'loc-egypt-country-study-1990',
@@ -430,5 +431,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Zaghlul_Pacha_-_btv1b53119930j.jpg',
     credit: { institution: 'Bibliothèque nationale de France', creator: 'Agence Rol' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'rafii-1946-thawrat-sanat-1919', perspective: 'arab' }
+  ]
 })

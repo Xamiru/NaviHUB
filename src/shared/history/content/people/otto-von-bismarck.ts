@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Otto von Bismarck', lang: 'en', role: 'primary' },
     { text: 'Otto Eduard Leopold von Bismarck', lang: 'de', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -37,6 +37,21 @@ export default definePerson({
             source: 'lemo-biografie-otto-von-bismarck',
             loc: { section: 'Otto von Bismarck 1815-1898', para: '125' }
           }
+        ],
+        heldBy: [
+          { kind: 'organization', name: 'Deutsches Historisches Museum' }
+        ]
+      },
+      {
+        value: { d: '1898-07-31' },
+        cites: [
+          {
+            source: 'britannica-1911-bismarck',
+            loc: { section: 'BISMARCK, OTTO EDUARD LEOPOLD VON', para: '16' }
+          }
+        ],
+        heldBy: [
+          { kind: 'organization', name: 'Encyclopædia Britannica' }
         ]
       }
     ]
@@ -45,8 +60,72 @@ export default definePerson({
   roles: ['politician'],
   offices: [
     {
-      title: 'preußischer Ministerpräsident',
-      lang: 'de',
+      title: 'Prussian representative at the restored diet of Frankfort',
+      polity: 'polity:kingdom-of-prussia',
+      lang: 'en',
+      start: {
+        alts: [
+          {
+            value: { d: '1851-07-15' },
+            cites: [
+              {
+                source: 'lemo-biografie-otto-von-bismarck',
+                loc: { section: 'Otto von Bismarck 1815-1898', para: '47' }
+              }
+            ]
+          }
+        ]
+      },
+      cites: [
+        {
+          source: 'britannica-1911-bismarck',
+          loc: { section: 'BISMARCK, OTTO EDUARD LEOPOLD VON', para: '3' }
+        }
+      ]
+    },
+    {
+      title: 'ambassador at St Petersburg',
+      polity: 'polity:kingdom-of-prussia',
+      lang: 'en',
+      start: {
+        alts: [
+          {
+            value: { d: '1858' },
+            cites: [
+              {
+                source: 'britannica-1911-bismarck',
+                loc: { section: 'BISMARCK, OTTO EDUARD LEOPOLD VON', para: '4' }
+              }
+            ],
+            heldBy: [
+              { kind: 'organization', name: 'Encyclopædia Britannica' }
+            ]
+          },
+          {
+            value: { d: '1859' },
+            cites: [
+              {
+                source: 'lemo-biografie-otto-von-bismarck',
+                loc: { section: 'Otto von Bismarck 1815-1898', para: '54' }
+              }
+            ],
+            heldBy: [
+              { kind: 'organization', name: 'Deutsches Historisches Museum' }
+            ]
+          }
+        ]
+      },
+      cites: [
+        {
+          source: 'britannica-1911-bismarck',
+          loc: { section: 'BISMARCK, OTTO EDUARD LEOPOLD VON', para: '4' }
+        }
+      ]
+    },
+    {
+      title: 'minister-president and foreign minister',
+      polity: 'polity:kingdom-of-prussia',
+      lang: 'en',
       start: {
         alts: [
           {
@@ -83,6 +162,10 @@ export default definePerson({
       },
       cites: [
         {
+          source: 'britannica-1911-bismarck',
+          loc: { section: 'BISMARCK, OTTO EDUARD LEOPOLD VON', para: '4' }
+        },
+        {
           source: 'lemo-biografie-otto-von-bismarck',
           loc: { section: 'Otto von Bismarck 1815-1898', para: '60' }
         },
@@ -93,27 +176,92 @@ export default definePerson({
       ]
     },
     {
-      title: 'Bundeskanzler des Norddeutschen Bundes',
+      title: 'Kanzler des Norddeutschen Bundes',
       lang: 'de',
       start: {
         alts: [
           {
             value: { d: '1867-07-14' },
             cites: [
-              { source: 'lemo-chronik-1867', loc: { section: 'Chronik 1867', para: '45' } },
-              { source: 'lemo-chronik-1867', loc: { section: 'Chronik 1867', para: '46' } }
+              {
+                source: 'lemo-biografie-otto-von-bismarck',
+                loc: { section: 'Otto von Bismarck 1815-1898', para: '77' }
+              }
             ]
           }
         ]
       },
       cites: [
-        { source: 'lemo-chronik-1867', loc: { section: 'Chronik 1867', para: '46' } }
+        {
+          source: 'lemo-biografie-otto-von-bismarck',
+          loc: { section: 'Otto von Bismarck 1815-1898', para: '77' }
+        }
+      ]
+    },
+    {
+      title: 'chancellor',
+      polity: 'polity:german-empire',
+      lang: 'en',
+      start: {
+        alts: [
+          {
+            value: { d: '1871-03-21' },
+            cites: [
+              {
+                source: 'lemo-biografie-otto-von-bismarck',
+                loc: { section: 'Otto von Bismarck 1815-1898', para: '81' }
+              }
+            ]
+          }
+        ]
+      },
+      end: {
+        alts: [
+          {
+            value: { d: '1890-03-20' },
+            cites: [
+              {
+                source: 'lemo-biografie-otto-von-bismarck',
+                loc: { section: 'Otto von Bismarck 1815-1898', para: '111' }
+              }
+            ]
+          }
+        ]
+      },
+      cites: [
+        {
+          source: 'britannica-1911-bismarck',
+          loc: { section: 'BISMARCK, OTTO EDUARD LEOPOLD VON', para: '15' }
+        },
+        {
+          source: 'lemo-biografie-otto-von-bismarck',
+          loc: { section: 'Otto von Bismarck 1815-1898', para: '81' }
+        }
       ]
     }
   ],
   sections: [
     {
       kind: 'overview',
+      quotes: [
+        {
+          id: 'q10',
+          text: 'BISMARCK, OTTO EDUARD LEOPOLD VON, Prince, duke of Lauenburg (1815–1898), German statesman, was born on the 1st of April 1815, at the manor-house of Schönhausen, his father’s seat in the mark of Brandenburg.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-bismarck',
+            loc: { section: 'BISMARCK, OTTO EDUARD LEOPOLD VON', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Bismarck,_Otto_Eduard_Leopold_von'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'career',
       quotes: [
         {
           id: 'q1',
@@ -134,40 +282,34 @@ export default definePerson({
             loc: { section: 'Bismarck and Unification', para: '1' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/27.htm' }
-        }
-      ]
-    },
-    {
-      kind: 'early-life',
-      quotes: [
+        },
         {
-          id: 'q3',
-          text: '1. April: Otto Eduard Leopold von Bismarck wird als viertes von sechs Kindern des Gutsbesitzers Ferdinand von Bismarck und dessen Frau Wilhelmine Luise (geb. Mencken) in Schönhausen (Altmark) geboren.',
-          lang: 'de',
+          id: 'q13',
+          text: 'It was probably his speeches on German policy which induced the king to appoint him Prussian representative at the restored diet of Frankfort in 1851.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-otto-von-bismarck',
-            loc: { section: 'Otto von Bismarck 1815-1898', para: '2' }
+            source: 'britannica-1911-bismarck',
+            loc: { section: 'BISMARCK, OTTO EDUARD LEOPOLD VON', para: '3' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/otto-von-bismarck'
+            at: '2026-10-08',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Bismarck,_Otto_Eduard_Leopold_von'
           }
-        }
-      ]
-    },
-    {
-      kind: 'career',
-      quotes: [
+        },
         {
-          id: 'q4',
-          text: 'In 1862 King Wilhelm I of Prussia (r. 1858-88) chose Bismarck to serve as his minister president.',
+          id: 'q14',
+          text: 'In September the parliament, by a large majority, threw out the budget, and the king, having nowhere else to turn for help, at Roon’s advice summoned Bismarck to Berlin and appointed him minister-president and foreign minister.',
           lang: 'en',
           cite: {
-            source: 'loc-germany-country-study-1995',
-            loc: { section: 'Bismarck and Unification', para: '2' }
+            source: 'britannica-1911-bismarck',
+            loc: { section: 'BISMARCK, OTTO EDUARD LEOPOLD VON', para: '4' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/27.htm' }
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Bismarck,_Otto_Eduard_Leopold_von'
+          }
         },
         {
           id: 'q5',
@@ -180,28 +322,32 @@ export default definePerson({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/27.htm' }
         },
         {
-          id: 'q6',
-          text: 'Mit den Worten "Nicht durch Reden und Majoritätsbeschlüsse werden die großen Fragen der Zeit entschiedenen - das ist der große Fehler von 1848 und 1849 gewesen - sondern durch Eisen und Blut" nährt er jedoch das Misstrauen der Abgeordneten gegen ihn.',
-          lang: 'de',
+          id: 'q11',
+          text: 'The indignation which his appointment caused was intense; he was known only by the reputation which in his early years he had won as a violent ultra-Conservative, and the apprehensions were increased by his first speech, in which he said that the German question could not be settled by speeches and parliamentary decrees, but only by blood and iron.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-otto-von-bismarck',
-            loc: { section: 'Otto von Bismarck 1815-1898', para: '59' }
+            source: 'britannica-1911-bismarck',
+            loc: { section: 'BISMARCK, OTTO EDUARD LEOPOLD VON', para: '5' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/otto-von-bismarck'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Bismarck,_Otto_Eduard_Leopold_von'
           }
         },
         {
-          id: 'q7',
-          text: 'Although he could not secure parliament\'s consent to the government\'s budget, Bismarck was a tactician skilled and ruthless enough to govern without parlia-ment\'s consent from 1862 to 1866.',
+          id: 'q15',
+          text: 'In 1878 he presided over the congress of Berlin.',
           lang: 'en',
           cite: {
-            source: 'loc-germany-country-study-1995',
-            loc: { section: 'Bismarck and Unification', para: '2' }
+            source: 'britannica-1911-bismarck',
+            loc: { section: 'BISMARCK, OTTO EDUARD LEOPOLD VON', para: '15' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/27.htm' }
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Bismarck,_Otto_Eduard_Leopold_von'
+          }
         },
         {
           id: 'q9',
@@ -219,17 +365,17 @@ export default definePerson({
       kind: 'death',
       quotes: [
         {
-          id: 'q8',
-          text: '30. Juli: Otto von Bismarck stirbt in Friedrichsruh bei Hamburg.',
-          lang: 'de',
+          id: 'q12',
+          text: 'He died at Friedrichsruh on the 31st of July 1898.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-otto-von-bismarck',
-            loc: { section: 'Otto von Bismarck 1815-1898', para: '125' }
+            source: 'britannica-1911-bismarck',
+            loc: { section: 'BISMARCK, OTTO EDUARD LEOPOLD VON', para: '16' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/otto-von-bismarck'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Bismarck,_Otto_Eduard_Leopold_von'
           }
         }
       ]
@@ -240,5 +386,31 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:BASA-600K-1-1866-9-Otto_von_Bismarck,_Versailles.jpeg',
     credit: { institution: 'Bulgarian Archives State Agency', creator: 'Anton von Werner' },
     license: { id: 'public-domain' }
+  },
+  bornIn: {
+    ref: 'place:schonhausen',
+    cites: [
+      {
+        source: 'britannica-1911-bismarck',
+        loc: { section: 'BISMARCK, OTTO EDUARD LEOPOLD VON', para: '1' }
+      },
+      {
+        source: 'lemo-biografie-otto-von-bismarck',
+        loc: { section: 'Otto von Bismarck 1815-1898', para: '1' }
+      }
+    ]
+  },
+  diedIn: {
+    ref: 'place:friedrichsruh',
+    cites: [
+      {
+        source: 'britannica-1911-bismarck',
+        loc: { section: 'BISMARCK, OTTO EDUARD LEOPOLD VON', para: '16' }
+      },
+      {
+        source: 'lemo-biografie-otto-von-bismarck',
+        loc: { section: 'Otto von Bismarck 1815-1898', para: '124' }
+      }
+    ]
   }
 })

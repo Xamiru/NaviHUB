@@ -28,7 +28,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -78,6 +78,7 @@ export default definePerson({
   offices: [
     {
       title: 'de facto grand vizier',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {
@@ -100,6 +101,7 @@ export default definePerson({
     },
     {
       title: 'ṣadr-e aʿẓam',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {
@@ -277,5 +279,9 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Mirza_%27Ali_Asghar_Khan_(Amin_al-Mulk,_Amin_al-Sultan,_Atabeg-i_Azam).jpg',
     credit: { institution: 'Metropolitan Museum of Art', creator: 'Isma\'il Jalayir' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'sheikholeslami-1988-qatl-e-atabak', perspective: 'iranian' },
+    { source: 'bamdad-1968-sharh-e-hal-e-rejal-e-iran', perspective: 'iranian' }
+  ]
 })

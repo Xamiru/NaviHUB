@@ -7,7 +7,7 @@ export default definePerson({
     { text: 'مظفرالدین شاه', lang: 'fa', role: 'native' },
     { text: 'Muzaffar ad Din', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   died: {
     alts: [
       {
@@ -72,5 +72,9 @@ export default definePerson({
       creator: 'Antoin Sevruguin'
     },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'nazem-al-eslam-1983-tarikh-e-bidari-ye-iranian', perspective: 'iranian' },
+    { source: 'bamdad-1968-sharh-e-hal-e-rejal-e-iran', perspective: 'iranian' }
+  ]
 })

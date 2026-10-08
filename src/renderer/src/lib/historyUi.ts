@@ -6,7 +6,7 @@ import type { HistoryImage, MediaType } from '@shared/types'
 import { api } from './api'
 import { qk } from './queryKeys'
 
-const ARTICLE_KINDS = new Set(['event', 'person', 'period', 'place', 'source'])
+const ARTICLE_KINDS = new Set(['event', 'person', 'period', 'place', 'source', 'polity', 'theme'])
 
 /** In-app route of a History ref, or null for kinds without a page. */
 export function historyPath(ref: string): string | null {

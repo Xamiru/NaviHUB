@@ -6,7 +6,7 @@ export default definePeriod({
     { text: 'Fascist Italy', lang: 'en', role: 'primary' },
     { text: 'Italia fascista', lang: 'it', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   periodType: 'regime',
   start: {
     alts: [
@@ -33,6 +33,7 @@ export default definePeriod({
   },
   regions: ['europe'],
   prominence: 2,
+  parent: 'polity:kingdom-of-italy',
   sections: [
     {
       kind: 'overview',

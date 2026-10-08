@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Mexican Revolution', lang: 'en', role: 'primary' },
     { text: 'Revolución mexicana', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'revolution',
   start: {
     alts: [
@@ -58,6 +58,10 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:mexico' },
+    { ref: 'polity:united-states' }
   ],
   participants: [
     {
@@ -455,5 +459,16 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Ni%C3%B1o_Soldado.jpg',
     credit: { institution: 'Archivo General de la Nación', creator: 'Agustín Víctor Casasola' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'silva-herzog-1960-breve-historia-de-la-revolucion-mexicana',
+      perspective: 'latin-american'
+    },
+    { source: 'gilly-1981-la-revolucion-interrumpida', perspective: 'latin-american' },
+    {
+      source: 'cordova-1973-la-ideologia-de-la-revolucion-mexicana',
+      perspective: 'latin-american'
+    }
+  ]
 })

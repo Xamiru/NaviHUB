@@ -1,9 +1,11 @@
 import { createContext, useContext, useId, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import {
+  PERSPECTIVES,
   PROVENANCE_VIA,
   SOURCE_TYPES,
   type Cite,
+  type FurtherReading,
   type HistorySource,
   type Locator,
   type Provenance,
@@ -69,6 +71,12 @@ export function contributorsText(s: HistorySource): string {
     .join(', ')
 }
 
+/** "2" or "2nd" reads "2nd ed."; a catalogue's own wording ("Chāp-i 3", "2nd ed.") is kept as given. */
+function editionText(edition: string): string {
+  const e = edition.trim().replace(/[.,;\s]+$/, '')
+  return /^\d+(st|nd|rd|th)?$/.test(e) ? `${e} ed` : e
+}
+
 export function SourceReference({ source, className = '' }: { source: HistorySource; className?: string }) {
   const who = contributorsText(source)
   const translators = source.contributors.filter((c) => c.role === 'translator').map((c) => c.name)
@@ -87,7 +95,7 @@ export function SourceReference({ source, className = '' }: { source: HistorySou
         </>
       )}
       {translators.length > 0 && <>, translated by {translators.join(', ')}</>}
-      {source.edition && <>, {source.edition} ed.</>}
+      {source.edition && <>, {editionText(source.edition)}</>}
       {'. '}
       {[source.place, source.publisher].filter(Boolean).join(': ')}
       {(source.place || source.publisher) && ', '}
@@ -268,4 +276,50 @@ export function Bibliography({ order }: { order: string[] }) {
       })}
     </ol>
   )
+}
+
+/**
+ * Further reading: works from other traditions, grouped by perspective. They are
+ * bibliography only (never quoted on the page), so they carry no footnote number.
+ */
+export function FurtherReadingList({ items }: { items: FurtherReading[] }) {
+  const { sources } = useCitations()
+  const groups = new Map<string, FurtherReading[]>()
+  for (const r of items) groups.set(r.perspective, [...(groups.get(r.perspective) ?? []), r])
+  return (
+    <div className="space-y-5">
+      {[...groups.entries()].map(([perspective, list]) => (
+        <div key={perspective}>
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-signal-link">
+            {PERSPECTIVES[perspective as keyof typeof PERSPECTIVES] ?? perspective}
+          </p>
+          <ul className="space-y-2 text-sm">
+            {list.map((r) => {
+              const s = sources[r.source]
+              return (
+                <li key={r.source}>
+                  {s ? (
+                    <Link to={`/history/source/${r.source}`} className="text-ink-secondary hover:text-ink">
+                      <SourceReference source={s} />
+                    </Link>
+                  ) : (
+                    <span className="text-ink-muted">{r.source}</span>
+                  )}
+                  {s && s.lang !== 'en' && <span className="ml-2 chip">{languageName(s.lang)}</span>}
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function languageName(code: string): string {
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'language' }).of(code) ?? code
+  } catch {
+    return code
+  }
 }

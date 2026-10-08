@@ -106,10 +106,13 @@ describe('main-process loading boundaries', () => {
     }
     expect(read('src/main/ipc.ts')).toContain("import('./history/historyService')")
     expect(read('src/main/repos/searchRepo.ts')).toContain("import('../history/historyService')")
-    // The map's 1.6 MB of borders load only when the map opens, as raw text.
+    // The map's 4 MB of borders load only when the map or a state page with map links opens, as raw text.
     expect(read('src/main/ipc.ts')).toContain("import('./history/historyMap')")
     expect(read('src/main/history/historyMap.ts')).toContain("import('./data/borders.json?raw')")
-    expect(read('src/main/history/historyService.ts')).not.toMatch(/borders\.json|historyMap/)
+    // A state page draws its territory from the same borders, through the same
+    // dynamic import: never a static import, and never the JSON directly.
+    expect(read('src/main/history/historyService.ts')).not.toMatch(/^import [^\n]*historyMap|borders\.json/m)
+    expect(read('src/main/history/historyService.ts')).toContain("import('./historyMap')")
     // Media detail pages ask for backlinks on every visit; a cheap gate decides first.
     expect(read('src/main/ipc.ts')).toContain("import('./history/historyBacklinkGate')")
     expect(read('src/main/history/historyBacklinkGate.ts')).not.toMatch(/history\/(catalog|historyService)/)
@@ -131,14 +134,19 @@ describe('main-process loading boundaries', () => {
   })
 
   it('streams large catalog and media downloads instead of buffering response bodies', () => {
-    const catalog = read('src/main/gamesCatalog.ts')
+    // Both games catalogs install through the one streaming installer.
+    const installer = read('src/main/catalogRelease.ts')
     const files = read('src/main/files.ts')
-    for (const source of [catalog, files]) {
+    for (const source of [installer, files]) {
       expect(source).not.toContain('.arrayBuffer()')
       expect(source).toContain('streamResponseToFile')
     }
-    expect(catalog).toContain('createGunzip()')
-    expect(catalog).not.toContain('gunzipSync')
+    expect(installer).toContain('createGunzip()')
+    for (const catalog of [read('src/main/gamesCatalog.ts'), read('src/main/launchboxCatalog.ts')]) {
+      expect(catalog).toContain('installCatalogRelease(')
+      expect(catalog).not.toContain('.arrayBuffer()')
+      expect(catalog).not.toContain('gunzipSync')
+    }
   })
 
   it('caps structured API bodies and dictionary archives before buffering them', () => {

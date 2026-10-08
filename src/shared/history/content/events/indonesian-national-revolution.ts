@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'revolution',
   start: {
     alts: [
@@ -84,6 +84,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:dutch-east-indies' }
   ],
   sides: [
     {
@@ -362,5 +365,11 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Indonesia_declaration_of_independence_17_August_1945.jpg',
     credit: { institution: 'Indonesian Department of Information', creator: 'Frans Mendur' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'nasution-1978-sekitar-perang-kemerdekaan-indonesia',
+      perspective: 'southeast-asian'
+    }
+  ]
 })

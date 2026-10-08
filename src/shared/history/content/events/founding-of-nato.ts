@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'founding',
   start: {
     alts: [
@@ -48,6 +48,11 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:cold-war' }
+  ],
+  polities: [
+    { ref: 'polity:united-states' },
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:french-fourth-republic' }
   ],
   participants: [
     {

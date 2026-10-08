@@ -177,25 +177,6 @@ export default definePerson({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/spain/22.htm' }
         }
       ]
-    },
-    {
-      kind: 'death',
-      quotes: [
-        {
-          id: 'q6',
-          text: '20. November: Francisco Franco stirbt in Madrid.',
-          lang: 'de',
-          cite: {
-            source: 'lemo-biografie-francisco-franco',
-            loc: { section: 'Francisco Franco 1892-1975', para: '118' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/francisco-franco'
-          }
-        }
-      ]
     }
   ],
   portrait: {

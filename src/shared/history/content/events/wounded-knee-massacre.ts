@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'massacre',
   start: {
     alts: [
@@ -47,6 +47,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
   ],
   participants: [
     {
@@ -391,5 +394,8 @@ export default defineEvent({
         }
       }
     }
+  ],
+  furtherReading: [
+    { source: 'mattioli-2017-verlorene-welten', perspective: 'european' }
   ]
 })

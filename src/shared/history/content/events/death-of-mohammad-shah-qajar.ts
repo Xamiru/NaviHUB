@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'death-of-mohammad-shah-qajar',
   names: [
-    { text: 'Death of Mohammad Shah Qajar', lang: 'en', role: 'primary' }
+    { text: 'Death of Mohammad Shah Qajar', lang: 'en', role: 'primary' },
+    { text: 'درگذشت محمد شاه قاجار', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -259,5 +260,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Muhammad_Shah_Qadjar_-_MV_6700_-_v1.JPG',
     credit: { creator: 'Muhammad Hasan Afshar' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'nateq-1988-iran-dar-rahyabi-ye-farhangi', perspective: 'iranian' }
+  ]
 })

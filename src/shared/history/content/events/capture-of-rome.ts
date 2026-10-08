@@ -14,7 +14,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'occupation',
   start: {
     alts: [
@@ -36,6 +36,9 @@ export default defineEvent({
         { source: 'lemo-chronik-1870', loc: { section: 'Chronik 1870', para: '42' } }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:kingdom-of-italy' }
   ],
   participants: [
     {
@@ -67,14 +70,14 @@ export default defineEvent({
       kind: 'background',
       quotes: [
         {
-          id: 'q1',
-          text: 'Die seit 1849 zum Schutz des Kirchenstaates in Rom stationierten französischen Truppen werden abgezogen, um die Armee im Krieg gegen Deutschland zu verstärken.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1870', loc: { section: 'Chronik 1870', para: '33' } },
+          id: 'q8',
+          text: 'In December 1869 the XXI. oecumenical council began its sittings in Rome, and on the 18th of July 1870 proclaimed the infallibility of the pope (see Vatican Council). Two days previously Napoleon had declared war on Prussia, and immediately afterwards he withdrew his troops from Civitavecchia;',
+          lang: 'en',
+          cite: { source: 'britannica-1911-italy', loc: { section: 'ITALY', para: '1583' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1870.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Italy'
           }
         }
       ]
@@ -95,14 +98,14 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-07', url: 'https://history.state.gov/countries/italy' }
         },
         {
-          id: 'q2',
-          text: 'Besetzung Roms durch italienische Truppen. Die weltliche Herrschaft des Papstes in Rom ist damit beendet.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1870', loc: { section: 'Chronik 1870', para: '42' } },
+          id: 'q9',
+          text: 'On the 20th the Italians began the attack, and General Mazé de la Roche’s division having effected a breach in the Porta Pia, the pope ordered the garrison to cease fire and the Italians poured into the Eternal City followed by thousands of Roman exiles.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-italy', loc: { section: 'ITALY', para: '1583' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1870.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Italy'
           }
         }
       ]
@@ -111,14 +114,14 @@ export default defineEvent({
       kind: 'aftermath',
       quotes: [
         {
-          id: 'q3',
-          text: 'Die Garantiegesetze des neuen italienischen Staates sichern dem Papst Souveränität und eine Jahresrente sowie die uneingeschränkte Herrschaft über die apostolischen Paläste Vatikan, Lateran und Castel Gandolfo zu. Papst Pius IX. (1792-1878) akzeptiert dies jedoch nicht - wie alle seine Nachfolger bis zu den Lateranverträgen von 1929.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1871', loc: { section: 'Chronik 1871', para: '38' } },
+          id: 'q10',
+          text: 'An encyclical of Pius IX. to the bishops of the Catholic Church on the 15th of May 1871 repudiated the Law of Guarantees, and summoned Catholic princes to co-operate in restoring the temporal power.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-italy', loc: { section: 'ITALY', para: '1591' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1871.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Italy'
           }
         }
       ]
@@ -137,14 +140,14 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q4',
-        text: 'Bei einer Volksabstimmung im Kirchenstaat sprechen sich 167.000 Stimmberechtigte für die Eingliederung des Kirchenstaats in das Königreich Italien aus; nur 1.507 stimmen dagegen.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1870', loc: { section: 'Chronik 1870', para: '47' } },
+        id: 'q11',
+        text: 'At the plebiscite there were 133,681 votes for union and 1507 against it.',
+        lang: 'en',
+        cite: { source: 'britannica-1911-italy', loc: { section: 'ITALY', para: '1583' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1870.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Italy'
         }
       }
     },
@@ -160,14 +163,14 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q5',
-        text: 'Das italienische Parlament beschließt nach der Eroberung des Kirchenstaates durch italienische Truppen am 20. September 1870 die Verlegung der Hauptstadt und des Regierungssitzes von Florenz nach Rom.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1871', loc: { section: 'Chronik 1871', para: '7' } },
+        id: 'q12',
+        text: 'In spite of pressure from the French government, which desired Italy to maintain Florence as the political and to regard Rome merely as the moral capital of the realm, the government offices and both legislative chambers were transferred in 1871 to the Eternal City.',
+        lang: 'en',
+        cite: { source: 'britannica-1911-italy', loc: { section: 'ITALY', para: '1592' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1871.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Italy'
         }
       }
     },

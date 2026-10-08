@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'womens-suffrage-in-iran',
   names: [
-    { text: 'Women’s suffrage in Iran', lang: 'en', role: 'primary' }
+    { text: 'Women’s suffrage in Iran', lang: 'en', role: 'primary' },
+    { text: 'حق رأی زنان در ایران', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -37,6 +38,17 @@ export default defineEvent({
   },
   regions: ['iran'],
   prominence: 3,
+  places: [
+    {
+      ref: 'place:tehran',
+      cites: [
+        {
+          source: 'iranica-sedghi-feminist-movements-pahlavi',
+          loc: { section: 'FEMINIST MOVEMENTS iii. IN THE PAHLAVI PERIOD', para: '16' }
+        }
+      ]
+    }
+  ],
   partOf: [
     { ref: 'period:reign-of-mohammad-reza-shah' }
   ],
@@ -51,6 +63,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:pahlavi-iran' }
   ],
   hero: {
     url: 'https://upload.wikimedia.org/wikipedia/commons/4/45/Iranian_women_voting_during_White_Revolution.jpg',

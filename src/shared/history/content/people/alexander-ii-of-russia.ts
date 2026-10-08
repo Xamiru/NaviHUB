@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Alexander II of Russia', lang: 'en', role: 'primary' },
     { text: 'Александр II', lang: 'ru', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   died: {
     alts: [
       {
@@ -25,6 +25,7 @@ export default definePerson({
   offices: [
     {
       title: 'Tsar',
+      polity: 'polity:russian-empire',
       start: {
         alts: [
           {

@@ -5,9 +5,82 @@ export default definePerson({
   names: [
     { text: 'Leopold II of Belgium', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1835-04-09' },
+        cites: [
+          {
+            source: 'britannica-1911-leopold-ii-king-of-the-belgians',
+            loc: { section: 'LEOPOLD II.', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1909-12-17' },
+        cites: [
+          {
+            source: 'britannica-1911-leopold-ii-king-of-the-belgians',
+            loc: { section: 'LEOPOLD II.', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  bornIn: {
+    ref: 'place:brussels',
+    cites: [
+      {
+        source: 'britannica-1911-leopold-ii-king-of-the-belgians',
+        loc: { section: 'LEOPOLD II.', para: '1' }
+      }
+    ]
+  },
   regions: ['europe', 'subsaharan-africa'],
   roles: ['monarch'],
+  offices: [
+    {
+      title: 'sovereign of the Congo Free State',
+      polity: 'polity:congo-free-state',
+      start: {
+        alts: [
+          {
+            value: { d: '1885' },
+            cites: [
+              {
+                source: 'britannica-1911-congo-free-state',
+                loc: { section: 'CONGO FREE STATE', para: '3' }
+              }
+            ]
+          }
+        ]
+      },
+      end: {
+        alts: [
+          {
+            value: { d: '1908-11-14' },
+            cites: [
+              {
+                source: 'britannica-1911-congo-free-state',
+                loc: { section: 'CONGO FREE STATE', para: '38' }
+              }
+            ]
+          }
+        ]
+      },
+      cites: [
+        {
+          source: 'britannica-1911-congo-free-state',
+          loc: { section: 'CONGO FREE STATE', para: '3' }
+        }
+      ]
+    }
+  ],
   sections: [
     {
       kind: 'overview',

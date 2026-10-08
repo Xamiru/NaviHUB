@@ -3,6 +3,8 @@ import type { RefreshAspect } from '@shared/refresh'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
 import { IMPORTED_TAG_SCOPES_SQL } from './repos/tagRepo'
+import { adoptForAniList } from './repos/personMatch'
+import { logInfo } from './logBus'
 import { createThrottle } from './requestThrottle'
 import { ANILIST_COUNTRIES } from '@shared/bulkImport'
 import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
@@ -90,14 +92,56 @@ function mapStaffRole(role: string | null): string {
   return 'staff'
 }
 
-// Manga staff are almost all the author/artist ("Story & Art", "Story", "Art",
-// "Original Creator") — surface those as the work's mangaka; anything else (e.g.
-// an assistant or editor credit) falls back to generic staff.
-function mapMangaStaffRole(role: string | null): string {
+// Manga staff are mostly the work's author/artist ("Story & Art", "Story",
+// "Art") — those are its mangaka. "Original Creator"/"Original Story" names the
+// author of the source work (a light novel, a VN), credited as a writer so the
+// Mangaka list stays the people who made the manga. Edition credits that merely
+// contain "art" ("Touch-up Art & Lettering", translators, assistants, editors)
+// are checked first and stay generic staff.
+export function mapMangaStaffRole(role: string | null): string {
   const r = (role ?? '').toLowerCase()
+  if (/touch-up|letter|translat|assistant|edit|design|cover|colou?r/.test(r)) return 'staff'
+  if (r.includes('original')) return 'writer'
   if (r.includes('story') || r.includes('art') || r.includes('creator') || r.includes('mangaka'))
     return 'mangaka'
   return 'staff'
+}
+
+// One crew credit per (person, role). AniList sometimes lists the same person
+// twice for one role ("Story" and "Art" as separate edges), so a repeat merges
+// its text into the existing row's note instead of being dropped.
+function addStaffCredit(
+  db: any,
+  mediaId: number,
+  personId: number,
+  role: string,
+  note: string | null
+): void {
+  const text = note?.trim() || null
+  const dup = db
+    .prepare(
+      'SELECT id, role_note FROM credit WHERE media_id=? AND person_id=? AND role=? AND character_id IS NULL'
+    )
+    .get(mediaId, personId, role) as { id: number; role_note: string | null } | undefined
+  if (!dup) {
+    db.prepare('INSERT INTO credit (media_id, person_id, role, role_note) VALUES (?, ?, ?, ?)').run(
+      mediaId,
+      personId,
+      role,
+      text
+    )
+    return
+  }
+  if (!text) return
+  if (noteHas(dup.role_note, text)) return
+  db.prepare('UPDATE credit SET role_note=? WHERE id=?').run(dup.role_note ? `${dup.role_note}, ${text}` : text, dup.id)
+}
+
+// Whether a ", "-joined note already holds `text` as a whole entry. Role texts
+// can contain ", " themselves ("Art (eps 1-3, 5)"), so this compares delimited
+// substrings rather than splitting.
+export function noteHas(note: string | null, text: string): boolean {
+  return !!note && `, ${note}, `.includes(`, ${text}, `)
 }
 
 /* ---------------- shared upsert helpers (dedup by external id) ----------------
@@ -144,6 +188,18 @@ function upsertPerson(db: any, node: any, photo: string | null): number {
        WHERE id=?`
     ).run(name, nativeName, photo, bio, birthday, row.id)
     return row.id
+  }
+  // A VN or game import may have met this seiyuu first: take that row over so
+  // anime, VN and game credits share one person (repos/personMatch.ts).
+  const adopted = adoptForAniList(db, ext, name, nativeName)
+  if (adopted != null) {
+    logInfo('db', `AniList person "${name}" adopted an existing VN/game person row ${adopted}`)
+    db.prepare(
+      `UPDATE person SET name=?, name_native=?, photo_path=COALESCE(photo_path, ?),
+         bio=COALESCE(bio, ?), birthday=COALESCE(?, birthday)
+       WHERE id=?`
+    ).run(name, nativeName, photo, bio, birthday, adopted)
+    return adopted
   }
   const info = db
     .prepare(
@@ -316,13 +372,27 @@ function replaceAniListStudios(db: any, mediaId: number, edges: unknown): number
 
 const ANIME_STAFF_ROLES = ['director', 'writer', 'composer', 'staff']
 const MANGA_STAFF_ROLES = ['mangaka', 'staff']
+// Manga writer credits are newer than hand-made ones, so a re-import prunes
+// only the ones on AniList people and leaves hand-made writers alone.
+const MANGA_SOURCE_ONLY_ROLES = ['writer']
 
-function clearAniListStaff(db: any, mediaId: number, roles: readonly string[]): void {
+function clearAniListStaff(
+  db: any,
+  mediaId: number,
+  roles: readonly string[],
+  sourceOnlyRoles: readonly string[] = []
+): void {
   const placeholders = roles.map(() => '?').join(',')
   db.prepare(
     `DELETE FROM credit
      WHERE media_id=? AND character_id IS NULL AND role IN (${placeholders})`
   ).run(mediaId, ...roles)
+  if (sourceOnlyRoles.length === 0) return
+  db.prepare(
+    `DELETE FROM credit
+     WHERE media_id=? AND character_id IS NULL AND role IN (${sourceOnlyRoles.map(() => '?').join(',')})
+       AND person_id IN (SELECT id FROM person WHERE external_source=?)`
+  ).run(mediaId, ...sourceOnlyRoles, SOURCE)
 }
 
 function clearAniListVoiceActors(db: any, mediaId: number): void {
@@ -910,17 +980,7 @@ export async function importAnime(
     let staff = 0
     for (const edge of m.staff?.edges ?? []) {
       const personId = upsertPerson(db, edge.node, img(edge.node?.image?.large))
-      const role = mapStaffRole(edge.role)
-      const dup = db
-        .prepare('SELECT id FROM credit WHERE media_id=? AND person_id=? AND role=? AND character_id IS NULL')
-        .get(mediaId, personId, role)
-      if (!dup) {
-        db.prepare('INSERT INTO credit (media_id, person_id, role) VALUES (?, ?, ?)').run(
-          mediaId,
-          personId,
-          role
-        )
-      }
+      addStaffCredit(db, mediaId, personId, mapStaffRole(edge.role), edge.role ?? null)
       staff++
     }
 
@@ -1088,21 +1148,11 @@ export async function importManga(
     pruneCharacters(db, mediaId, MANGA_CHAR_SOURCE, keptCharacterIds)
 
     // ---- mangaka / staff (authoritative role set) ----
-    clearAniListStaff(db, mediaId, MANGA_STAFF_ROLES)
+    clearAniListStaff(db, mediaId, MANGA_STAFF_ROLES, MANGA_SOURCE_ONLY_ROLES)
     let staff = 0
     for (const edge of m.staff?.edges ?? []) {
       const personId = upsertPerson(db, edge.node, img(edge.node?.image?.large))
-      const role = mapMangaStaffRole(edge.role)
-      const dup = db
-        .prepare('SELECT id FROM credit WHERE media_id=? AND person_id=? AND role=? AND character_id IS NULL')
-        .get(mediaId, personId, role)
-      if (!dup) {
-        db.prepare('INSERT INTO credit (media_id, person_id, role) VALUES (?, ?, ?)').run(
-          mediaId,
-          personId,
-          role
-        )
-      }
+      addStaffCredit(db, mediaId, personId, mapMangaStaffRole(edge.role), edge.role ?? null)
       staff++
     }
 

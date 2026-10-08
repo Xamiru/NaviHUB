@@ -4,46 +4,8 @@ export default defineInterpretation({
   id: 'slavery-abolition-act-1833-compensation',
   about: ['event:slavery-abolition-act-1833'],
   topic: 'legacy',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
-    {
-      id: 'slave-owners',
-      category: 'contemporary',
-      holders: [
-        { kind: 'participant', name: 'John Peterson' },
-        { kind: 'public', name: 'Slave owners' }
-      ],
-      statements: [
-        {
-          id: 'q1',
-          text: 'A month before the Act had even passed, John Peterson, President of the governing council of St Vincent, complained about the compensation offered to slave owners. He wrote that it would be inadequate to cover estates held under mortgage, or for the future costs of owners as employers of labourers.',
-          lang: 'en',
-          cite: {
-            source: 'tna-1833-abolition-of-slavery-act',
-            loc: { section: 'Slave owners’ complaints about the compensation process' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.nationalarchives.gov.uk/explore-the-collection/explore-by-time-period/georgians/1833-abolition-of-slavery-act-and-compensation-claims/'
-          }
-        },
-        {
-          id: 'q2',
-          text: 'One complaint asked, ’is it just that the unfortunate proprietor should be the only sufferer’ in the compensation process.',
-          lang: 'en',
-          cite: {
-            source: 'tna-1833-abolition-of-slavery-act',
-            loc: { section: 'Slave owners’ complaints about the compensation process' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.nationalarchives.gov.uk/explore-the-collection/explore-by-time-period/georgians/1833-abolition-of-slavery-act-and-compensation-claims/'
-          }
-        }
-      ]
-    },
     {
       id: 'cruel-irony',
       category: 'scholarly',
@@ -74,6 +36,34 @@ export default defineInterpretation({
         { kind: 'organization', name: 'The National Archives' }
       ],
       statements: [
+        {
+          id: 'q1',
+          text: 'A month before the Act had even passed, John Peterson, President of the governing council of St Vincent, complained about the compensation offered to slave owners. He wrote that it would be inadequate to cover estates held under mortgage, or for the future costs of owners as employers of labourers.',
+          lang: 'en',
+          cite: {
+            source: 'tna-1833-abolition-of-slavery-act',
+            loc: { section: 'Slave owners’ complaints about the compensation process' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.nationalarchives.gov.uk/explore-the-collection/explore-by-time-period/georgians/1833-abolition-of-slavery-act-and-compensation-claims/'
+          }
+        },
+        {
+          id: 'q2',
+          text: 'One complaint asked, ’is it just that the unfortunate proprietor should be the only sufferer’ in the compensation process.',
+          lang: 'en',
+          cite: {
+            source: 'tna-1833-abolition-of-slavery-act',
+            loc: { section: 'Slave owners’ complaints about the compensation process' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.nationalarchives.gov.uk/explore-the-collection/explore-by-time-period/georgians/1833-abolition-of-slavery-act-and-compensation-claims/'
+          }
+        },
         {
           id: 'q4',
           text: 'This was a process to secure money from the government, so the difference between what was stated in claims and the reality on estates may have been huge.',

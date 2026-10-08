@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Hundred Days\' Reform', lang: 'en', role: 'primary' },
     { text: '戊戌變法', lang: 'zh', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'reform',
   start: {
     alts: [
@@ -40,6 +40,9 @@ export default defineEvent({
   },
   regions: ['east-asia'],
   prominence: 2,
+  polities: [
+    { ref: 'polity:qing-empire' }
+  ],
   participants: [
     {
       ref: 'person:guangxu-emperor',
@@ -82,7 +85,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Yuan Shikai',
+      ref: 'person:yuan-shikai',
       role: 'participant',
       cites: [
         {
@@ -193,5 +196,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Kang_Youwei.jpg',
     credit: { creator: 'Elmer Chickering' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'mao-2005-wuxu-bianfa-shishi-kao', perspective: 'chinese' },
+    { source: 'tang-1984-wuxu-bianfa-shi', perspective: 'chinese' }
+  ]
 })

@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Haitian occupation of Santo Domingo', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'occupation',
   start: {
     alts: [
@@ -22,6 +22,17 @@ export default defineEvent({
   },
   regions: ['latin-america'],
   prominence: 3,
+  places: [
+    {
+      ref: 'place:santo-domingo',
+      cites: [
+        {
+          source: 'loc-haiti-country-study-1989',
+          loc: { section: 'Boyer: Expansion and Decline', para: '1' }
+        }
+      ]
+    }
+  ],
   participants: [
     {
       name: 'Jean-Pierre Boyer',

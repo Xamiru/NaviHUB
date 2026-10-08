@@ -6,12 +6,13 @@ export default definePerson({
     { text: 'Ali Amini', lang: 'en', role: 'primary' },
     { text: 'علی امینی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   regions: ['iran'],
   roles: ['politician'],
   offices: [
     {
       title: 'prime minister',
+      polity: 'polity:pahlavi-iran',
       start: {
         alts: [
           {

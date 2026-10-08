@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Treaty of Paris (1857)', lang: 'en', role: 'primary' },
     { text: 'عهدنامه پاریس', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -53,6 +53,10 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-naser-al-din-shah-qajar' },
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -114,6 +118,39 @@ export default defineEvent({
   ],
   sections: [
     {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q3',
+          text: 'Through the mediation of Napoleon III and his foreign minister, Count Walewski, Farroḵ Khan managed to start negotiations with Lord Cowley, British minister in Paris. This led to the signature of the Treaty of Paris on 4 March 1857, with ratifications exchanged at Baghdad on 2 May 1857.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-calmard-anglo-persian-war',
+            loc: { section: 'ANGLO-PERSIAN WAR (1856-57)', para: '8' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/anglo-persian-war-1856-57'
+          }
+        },
+        {
+          id: 'q4',
+          text: 'Persia was obliged to relinquish all claims over Herat and Afghanistan, while Britain was to serve as arbiter in any disputes between Persia and the Afghan states (article 6). British consular authorities, subjects, commerce, and trade were to be treated on a “most favored nation” basis (article 9).',
+          lang: 'en',
+          cite: {
+            source: 'iranica-calmard-anglo-persian-war',
+            loc: { section: 'ANGLO-PERSIAN WAR (1856-57)', para: '8' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/anglo-persian-war-1856-57'
+          }
+        }
+      ]
+    },
+    {
       kind: 'background',
       quotes: [
         {
@@ -147,49 +184,6 @@ export default defineEvent({
       ]
     },
     {
-      kind: 'overview',
-      quotes: [
-        {
-          id: 'q3',
-          text: 'Through the mediation of Napoleon III and his foreign minister, Count Walewski, Farroḵ Khan managed to start negotiations with Lord Cowley, British minister in Paris. This led to the signature of the Treaty of Paris on 4 March 1857, with ratifications exchanged at Baghdad on 2 May 1857.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-calmard-anglo-persian-war',
-            loc: { section: 'ANGLO-PERSIAN WAR (1856-57)', para: '8' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/anglo-persian-war-1856-57'
-          }
-        },
-        {
-          id: 'q4',
-          text: 'Persia was obliged to relinquish all claims over Herat and Afghanistan, while Britain was to serve as arbiter in any disputes between Persia and the Afghan states (article 6). British consular authorities, subjects, commerce, and trade were to be treated on a “most favored nation” basis (article 9).',
-          lang: 'en',
-          cite: {
-            source: 'iranica-calmard-anglo-persian-war',
-            loc: { section: 'ANGLO-PERSIAN WAR (1856-57)', para: '8' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/anglo-persian-war-1856-57'
-          }
-        },
-        {
-          id: 'q5',
-          text: 'Under the Treaty of Paris in 1857, Iran surrendered to Britain all claims to Herat and territories in present-day Afghanistan.',
-          lang: 'en',
-          cite: {
-            source: 'loc-iran-country-study-1987',
-            loc: { section: 'THE QAJARS, 1795-1925', para: '2' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/iran/12.htm' }
-        }
-      ]
-    },
-    {
       kind: 'consequences',
       quotes: [
         {
@@ -218,23 +212,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/anglo-persian-war-1856-57'
-          }
-        },
-        {
-          id: 'q8',
-          text: 'The 1857 Paris Peace Treaty officially and terminally deprived Persia of any territorial claim over Afghanistan.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-amanat-great-britain-ii',
-            loc: {
-              section: 'GREAT BRITAIN ii. British influence in Persia in the 19th century',
-              para: '18'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
           }
         },
         {
@@ -295,5 +272,11 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Brooklyn_Museum_-_Members_of_the_Special_Mission_of_Persia_to_the_Courts_of_Europe_-_Gustave_le_Grand.jpg',
     credit: { institution: 'Brooklyn Museum' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'mahmud-1949-tarikh-e-ravabet-e-siyasi-ye-iran-va-engelis',
+      perspective: 'iranian'
+    }
+  ]
 })

@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   regions: ['iran'],
   roles: ['revolutionary'],
   sections: [
@@ -92,5 +92,8 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Mirza_Reza_Kermani_(2).jpg',
     credit: { creator: 'A. Henry Savage Landor' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'nateq-1984-karnameh-va-zamaneh-ye-mirza-reza-kermani', perspective: 'iranian' }
+  ]
 })

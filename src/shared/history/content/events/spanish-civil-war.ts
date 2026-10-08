@@ -14,7 +14,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -212,15 +212,14 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/germany/40.htm' }
         },
         {
-          id: 'q2',
-          text: 'Mit einem Aufstand in Spanisch-Marokko beginnt der Putsch faschistischer Militärs unter General Francisco Franco. In den folgenden Tagen brechen überall in Spanien rechte Aufstände aus.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1936', loc: { section: 'Chronik 1936', para: '103' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1936.html'
-          }
+          id: 'q16',
+          text: 'In Morocco, elite units seized control under Franco, Spain\'s youngest general and hero. Transport supplied by Germany and Italy ferried Franco\'s African army, including Moorish auxiliaries, to Andalusia.',
+          lang: 'en',
+          cite: {
+            source: 'loc-spain-country-study-1988',
+            loc: { section: 'THE SPANISH CIVIL WAR', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/spain/21.htm' }
         },
         {
           id: 'q3',
@@ -304,21 +303,24 @@ export default defineEvent({
           {
             value: { d: '1936-10-01' },
             cites: [
-              { source: 'lemo-chronik-1936', loc: { section: 'Chronik 1936', para: '146' } }
+              { source: 'lemo-chronik-1936', loc: { section: 'Chronik 1936', para: '146' } },
+              {
+                source: 'loc-spain-country-study-1988',
+                loc: { section: 'THE SPANISH CIVIL WAR', para: '3' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q9',
-        text: 'General Franco wird zum Machthaber der faschistischen Gegenregierung ausgerufen.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1936', loc: { section: 'Chronik 1936', para: '147' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1936.html'
-        }
+        id: 'q17',
+        text: 'In October 1936, Franco was named head of state, with the rank of generalissimo and the title el caudillo (the leader).',
+        lang: 'en',
+        cite: {
+          source: 'loc-spain-country-study-1988',
+          loc: { section: 'THE SPANISH CIVIL WAR', para: '3' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/spain/21.htm' }
       }
     },
     {
@@ -373,21 +375,24 @@ export default defineEvent({
           {
             value: { d: '1939-01-26' },
             cites: [
-              { source: 'lemo-chronik-1939', loc: { section: 'Chronik 1939', para: '13' } }
+              { source: 'lemo-chronik-1939', loc: { section: 'Chronik 1939', para: '13' } },
+              {
+                source: 'loc-spain-country-study-1988',
+                loc: { section: 'THE SPANISH CIVIL WAR', para: '15' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q12',
-        text: 'Mit der kampflosen Einnahme von Barcelona durch die faschistischen Truppen unter General Francisco Franco ist der Spanische Bürgerkrieg praktisch entschieden.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1939', loc: { section: 'Chronik 1939', para: '14' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1939.html'
-        }
+        id: 'q18',
+        text: 'Barcelona fell to the Nationalists in January 1939, and Valencia, the temporary capital, fell in March.',
+        lang: 'en',
+        cite: {
+          source: 'loc-spain-country-study-1988',
+          loc: { section: 'THE SPANISH CIVIL WAR', para: '15' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/spain/21.htm' }
       }
     },
     {
@@ -463,5 +468,9 @@ export default defineEvent({
       date: { d: '1936-09-09' },
       durationSec: 85
     }
+  ],
+  furtherReading: [
+    { source: 'salas-larrazabal-1973-historia-del-ejercito-popular', perspective: 'european' },
+    { source: 'arraras-1984-historia-de-la-cruzada-espanola', perspective: 'european' }
   ]
 })

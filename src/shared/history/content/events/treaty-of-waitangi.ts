@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Treaty of Waitangi', lang: 'en', role: 'primary' },
     { text: 'Te Tiriti o Waitangi', lang: 'mi', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -38,6 +38,10 @@ export default defineEvent({
       ]
     }
   ],
+  polities: [
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:british-empire' }
+  ],
   participants: [
     {
       name: 'Captain William Hobson',
@@ -54,7 +58,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Queen Victoria',
+      ref: 'person:queen-victoria',
       role: 'head-of-state',
       cites: [
         {
@@ -235,5 +239,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Te_Tiriti_o_Waitangi_-_The_Treaty_of_Waitangi_(1840)_-_Waitangi_Sheet_.jpg',
     credit: { institution: 'Archives New Zealand' },
     license: { id: 'cc-by', version: '2.0' }
-  }
+  },
+  furtherReading: [
+    { source: 'walker-1990-ka-whawhai-tonu-matou', perspective: 'pacific' }
+  ]
 })

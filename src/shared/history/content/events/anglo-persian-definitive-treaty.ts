@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'anglo-persian-definitive-treaty',
   names: [
     { text: 'Anglo-Persian Definitive Treaty', lang: 'en', role: 'primary' },
+    { text: 'عهدنامه مفصل ایران و انگلیس', lang: 'fa', role: 'native' },
     {
       text: 'Definitive Treaty of Friendship and Alliance',
       lang: 'en',
@@ -16,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -54,6 +55,10 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -299,5 +304,12 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 55646379
     }
+  ],
+  furtherReading: [
+    {
+      source: 'mahmud-1949-tarikh-e-ravabet-e-siyasi-ye-iran-va-engelis',
+      perspective: 'iranian'
+    },
+    { source: 'nafisi-1965-tarikh-e-ejtemai-va-siyasi-ye-iran', perspective: 'iranian' }
   ]
 })

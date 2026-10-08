@@ -5,9 +5,10 @@ export interface CareerTimelineEntry {
   roleLabels: string[]
 }
 
+// A crew credit reads as the source's own text ("Story & Art") when it was kept.
 export function creditRoleLabel(credit: PersonCredit): string {
   const role = credit.role.replace(/_/g, ' ')
-  return credit.character ? `${credit.character.name} (${role})` : role
+  return credit.character ? `${credit.character.name} (${role})` : (credit.roleNote ?? role)
 }
 
 export function buildCareerTimeline(credits: PersonCredit[]): CareerTimelineEntry[] {

@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -57,6 +57,11 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:first-french-empire' },
+    { ref: 'polity:kingdom-of-prussia' },
+    { ref: 'polity:austrian-empire' }
   ],
   participants: [
     {
@@ -143,5 +148,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Karl_von_Blaas_-_Die_Schlacht_bei_Leipzig_1813_-_2747_-_Kunsthistorisches_Museum.jpg',
     credit: { creator: 'Karl von Blaas' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'thamer-2013-die-volkerschlacht-bei-leipzig', perspective: 'european' }
+  ]
 })

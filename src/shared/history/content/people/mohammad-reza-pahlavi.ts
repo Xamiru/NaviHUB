@@ -6,12 +6,39 @@ export default definePerson({
     { text: 'Mohammad Reza Shah Pahlavi', lang: 'en', role: 'primary' },
     { text: 'محمدرضا شاه پهلوی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1919' },
+        cites: [
+          {
+            source: 'iranica-yarshater-chronology-part-4',
+            loc: { section: 'Chronology of Iranian History Part 4, 1980' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1980' },
+        cites: [
+          {
+            source: 'iranica-yarshater-chronology-part-4',
+            loc: { section: 'Chronology of Iranian History Part 4, 1980' }
+          }
+        ]
+      }
+    ]
+  },
   regions: ['iran'],
   roles: ['monarch'],
   offices: [
     {
       title: 'shah of Iran',
+      polity: 'polity:pahlavi-iran',
       start: {
         alts: [
           {
@@ -143,5 +170,12 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Photograph_of_President_Truman_and_the_Shah_of_Iran_in_the_Oval_Office._-_NARA_-_200149.jpg',
     credit: { institution: 'US National Archives and Records Administration', creator: 'Abbie Rowe' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'pahlavi-1967-enqelab-e-sefid', perspective: 'iranian' },
+    {
+      source: 'ruhani-1977-barresi-va-tahlili-az-nehzat-e-imam-khomeini',
+      perspective: 'iranian'
+    }
+  ]
 })

@@ -28,7 +28,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -69,6 +69,7 @@ export default definePerson({
   offices: [
     {
       title: 'Président de la République',
+      polity: 'polity:french-second-republic',
       lang: 'fr',
       start: {
         alts: [
@@ -92,6 +93,7 @@ export default definePerson({
     },
     {
       title: 'Empereur des Français',
+      polity: 'polity:second-french-empire',
       lang: 'fr',
       start: {
         alts: [
@@ -136,17 +138,17 @@ export default definePerson({
       kind: 'early-life',
       quotes: [
         {
-          id: 'q1',
-          text: 'Naissance à Paris de Charles-Louis-Napoléon Bonaparte, troisième fils de Louis Bonaparte, frère de l\'Empereur et roi de Hollande, et d\'Hortense de Beauharnais, née d\'un premier mariage de l\'impératrice Joséphine.',
-          lang: 'fr',
+          id: 'q7',
+          text: 'NAPOLEON III. [Charles Louis Napoleon Bonaparte] (1808–1873), emperor of the French, was born on the 20th of April 1808 in Paris at 8 rue Cerutti (now rue Laffitte), and not at the Tuileries, as the official historians state. He was the third son of Louis Bonaparte (see Bonaparte), brother of Napoleon I., and from 1806 to 1810 king of Holland, and of Hortense de Beauharnais, daughter of General (de) Beauharnais and Josephine Tascher de la Pagerie, afterwards the empress Josephine;',
+          lang: 'en',
           cite: {
-            source: 'elysee-louis-napoleon-bonaparte',
-            loc: { section: 'Louis-Napoléon Bonaparte' }
+            source: 'britannica-1911-napoleon-iii',
+            loc: { section: 'NAPOLEON III.', para: '1' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.elysee.fr/la-presidence/louis-napoleon-bonaparte'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Napoleon_III.'
           }
         }
       ]
@@ -155,31 +157,31 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
-          id: 'q2',
-          text: 'Après la promulgation, le 4 novembre 1848, de la constitution de la IIe République, il se présente à l\'élection présidentielle, et est élu pour quatre ans au suffrage universel, le 10 décembre 1848, avec près de 75% des voix.',
-          lang: 'fr',
+          id: 'q8',
+          text: 'On the 10th of December he was elected president of the Republic by 5,434,226 votes against 1,448,107 given to Cavaignac.',
+          lang: 'en',
           cite: {
-            source: 'elysee-louis-napoleon-bonaparte',
-            loc: { section: 'Louis-Napoléon Bonaparte' }
+            source: 'britannica-1911-napoleon-iii',
+            loc: { section: 'NAPOLEON III.', para: '13' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.elysee.fr/la-presidence/louis-napoleon-bonaparte'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Napoleon_III.'
           }
         },
         {
-          id: 'q3',
-          text: 'La politique italienne de l\'Empereur - en faveur de l\'unification et au détriment de l\'Autriche - permet à la France d\'annexer, après plébiscite, Nice et la Savoie.',
-          lang: 'fr',
+          id: 'q9',
+          text: 'His consent to the annexation of the Central Italian states, in exchange for Savoy and Nice (Treaty of Turin, March 24, 1860) exposed him to violent attacks on the part of the ultramontanes, whose slave he had practically been since 1848.',
+          lang: 'en',
           cite: {
-            source: 'elysee-louis-napoleon-bonaparte',
-            loc: { section: 'Louis-Napoléon Bonaparte' }
+            source: 'britannica-1911-napoleon-iii',
+            loc: { section: 'NAPOLEON III.', para: '23' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.elysee.fr/la-presidence/louis-napoleon-bonaparte'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Napoleon_III.'
           }
         }
       ]
@@ -188,31 +190,31 @@ export default definePerson({
       kind: 'later-life',
       quotes: [
         {
-          id: 'q4',
-          text: 'Lors de la capitulation de Sedan, l\'Empereur est fait prisonnier.',
-          lang: 'fr',
+          id: 'q10',
+          text: 'On the 2nd of September, Napoleon III. surrendered with 80,000 men, and on the 4th of September the Empire fell. He was taken as a prisoner to the castle of Wilhelmshöhe, near Cassel, where he stayed till the end of the war.',
+          lang: 'en',
           cite: {
-            source: 'elysee-louis-napoleon-bonaparte',
-            loc: { section: 'Louis-Napoléon Bonaparte' }
+            source: 'britannica-1911-napoleon-iii',
+            loc: { section: 'NAPOLEON III.', para: '30' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.elysee.fr/la-presidence/louis-napoleon-bonaparte'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Napoleon_III.'
           }
         },
         {
-          id: 'q5',
-          text: 'Il meurt à l\'âge de 64 ans, dans sa résidence de Camden Place.',
-          lang: 'fr',
+          id: 'q11',
+          text: 'Restored to liberty, he retired with his wife and son to Chislehurst in England. […] At the end of 1872 his disease became more acute, and a surgical operation became necessary. He died on the 9th of January 1873, leaving his son in the charge of the empress and of Rouher.',
+          lang: 'en',
           cite: {
-            source: 'elysee-louis-napoleon-bonaparte',
-            loc: { section: 'Louis-Napoléon Bonaparte' }
+            source: 'britannica-1911-napoleon-iii',
+            loc: { section: 'NAPOLEON III.', para: '31' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.elysee.fr/la-presidence/louis-napoleon-bonaparte'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Napoleon_III.'
           }
         },
         {

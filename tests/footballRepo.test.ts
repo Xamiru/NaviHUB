@@ -22,6 +22,7 @@ import {
   saveEntityEnrichment
 } from '../src/main/football/enrichment'
 import {
+  artworkPeople,
   footballSeasonStatus,
   saveApiFixtureDetails,
   saveOverlayFixtureDetails,
@@ -347,6 +348,81 @@ describe('Football repository', () => {
         VALUES (1,1,1,1,0,0,2,1,1,3),(1,2,1,0,0,1,1,2,-1,0);
     `)
     expect(football.getSeason(1)!.standings.map((row) => row.fate)).toEqual([null, null])
+  })
+
+  it('gives team season records the same fates as the season tables', () => {
+    const pl = db.prepare(`SELECT id FROM football_competition WHERE key='premier-league'`).get() as { id: number }
+    const ucl = db.prepare(`SELECT id FROM football_competition WHERE key='champions-league'`).get() as { id: number }
+    const uel = db.prepare(`SELECT id FROM football_competition WHERE key='europa-league'`).get() as { id: number }
+    db.exec(`
+      INSERT INTO football_team (id,name) VALUES (3,'Promoted'),(4,'Stayer');
+      INSERT INTO football_season (id,competition_id,key,label,status) VALUES
+        (2,${pl.id},'2024/25','2024/25','complete'),(3,${ucl.id},'2024/25','2024/25','complete'),
+        (4,${uel.id},'2024/25','2024/25','complete'),(5,${pl.id},'2026/27','2026/27','complete');
+      INSERT INTO football_match (id,title,season_id,home_team_id,away_team_id,match_date,status,home_score,away_score,event_coverage)
+        VALUES (2,'Stayer vs Arsenal',1,4,1,'2023-10-02','finished',0,0,'complete'),
+               (3,'Arsenal vs Promoted',2,1,3,'2024-08-17','finished',3,1,'complete'),
+               (4,'Stayer vs Promoted',2,4,3,'2024-08-18','finished',1,1,'complete'),
+               (5,'Arsenal vs Stayer',3,1,4,'2024-10-02','finished',1,0,'complete'),
+               (6,'Arsenal vs Chelsea',4,1,2,'2024-10-03','finished',1,0,'complete'),
+               (7,'Promoted vs Stayer',5,3,4,'2026-08-17','finished',1,0,'complete');
+      INSERT INTO football_standing (season_id,team_id,played,won,drawn,lost,goals_for,goals_against,goal_difference,points)
+        VALUES (1,1,2,1,1,0,2,1,1,4),(1,2,1,0,0,1,1,2,-1,0),(1,4,1,0,1,0,0,0,0,1),
+               (2,1,1,1,0,0,3,1,2,3),(2,3,2,0,1,1,2,4,-2,1),(2,4,1,0,1,0,1,1,0,1);
+    `)
+    const tableFates = new Map([1, 2].flatMap((seasonId) =>
+      football.getSeason(seasonId)!.standings.map((row) => [`${seasonId}:${row.team.id}`, row.fate] as const)
+    ))
+    expect([...tableFates.values()].sort()).toEqual(['champions-league', 'champions-league', 'relegated', null, null, null].sort())
+    for (const teamId of [1, 2, 3, 4]) {
+      for (const record of football.getTeam(teamId)!.seasonRecords) {
+        expect([record.seasonId, teamId, record.fate]).toEqual([
+          record.seasonId, teamId, tableFates.get(`${record.seasonId}:${teamId}`)
+        ])
+      }
+    }
+  })
+
+  it('picks pictures-step people by favourite, quiz pack or a footprint in scope', async () => {
+    const wc = db.prepare(`SELECT id FROM football_competition WHERE key='world-cup'`).get() as { id: number }
+    db.exec(`
+      INSERT INTO football_season (id,competition_id,key,label,status) VALUES (9,${wc.id},'2022','2022','complete');
+      INSERT INTO football_match (id,title,season_id,home_team_id,away_team_id,match_date,status,home_score,away_score,event_coverage)
+        VALUES (2,'A',1,1,2,'2024-03-02','finished',0,0,'complete'),(3,'B',1,1,2,'2024-03-03','finished',0,0,'complete'),
+               (4,'C',1,1,2,'2024-03-04','finished',0,0,'complete'),(5,'D',1,1,2,'2024-03-05','finished',0,0,'complete'),
+               (6,'E',9,1,2,'2022-12-01','finished',3,0,'complete');
+      INSERT INTO football_person (id,name,role,image_path,enrichment_state,quiz_pack) VALUES
+        (1,'Three Goals','player',NULL,'not_requested',0),(2,'Two Goals','player',NULL,'not_requested',0),
+        (3,'Five Caps','player',NULL,'not_requested',0),(4,'Four Caps','player',NULL,'not_requested',0),
+        (5,'Favourite','player',NULL,'not_requested',0),(6,'Quiz','player',NULL,'not_requested',1),
+        (7,'Done','player','media/p.png','ready',0),(8,'Conflicted','player',NULL,'not_requested',0),
+        (9,'Elsewhere','player',NULL,'not_requested',0);
+      INSERT INTO football_event (match_id,team_id,person_id,type,sort_order) VALUES
+        (1,1,1,'goal',0),(2,1,1,'goal',0),(3,1,1,'goal',0),(1,1,2,'goal',1),(2,1,2,'goal',1),
+        (1,1,7,'goal',2),(2,1,7,'goal',2),(3,1,7,'goal',2),(1,1,8,'goal',3),(2,1,8,'goal',3),(3,1,8,'goal',3),
+        (6,1,9,'goal',0),(6,1,9,'goal',1),(6,1,9,'goal',2),(4,1,NULL,'goal',0),(5,1,NULL,'goal',0),(1,1,NULL,'goal',9);
+      INSERT INTO football_lineup (match_id,team_id,person_id) VALUES
+        (1,1,3),(2,1,3),(3,1,3),(4,1,3),(5,1,3),(1,1,4),(2,1,4),(3,1,4),(4,1,4);
+      INSERT INTO football_favorite (entity_kind,entity_id) VALUES ('person',5);
+      INSERT INTO football_conflict (entity_kind,entity_id,facet,source_a,source_b,status)
+        VALUES ('person',8,'identity','transfermarkt','openfootball','open');
+    `)
+    let yields = 0
+    const ids = async (keys: Parameters<typeof artworkPeople>[0]) =>
+      (await artworkPeople(keys, async () => { yields++ })).map((row) => row.id)
+    expect(await ids(['premier-league'])).toEqual([1, 3, 5, 6])
+    expect(await ids(['premier-league', 'world-cup'])).toEqual([1, 9, 3, 5, 6])
+    expect(yields).toBe(6)
+  })
+
+  it('refreshes cached competition totals after a write', () => {
+    const before = football.listCompetitions().find((item) => item.key === 'premier-league')!
+    expect([before.matchCount, before.goalCount]).toEqual([1, 3])
+    db.exec(`INSERT INTO football_match (id,title,season_id,home_team_id,away_team_id,match_date,status,home_score,away_score,event_coverage)
+      VALUES (2,'Chelsea vs Arsenal',1,2,1,'2024-04-01','finished',4,0,'not_supplied')`)
+    expect(football.getCompetition('premier-league')).toMatchObject({ matchCount: 2, goalCount: 7 })
+    db.exec(`UPDATE football_match SET home_score=0 WHERE id=2`)
+    expect(football.listCompetitions('premier-league')[0]).toMatchObject({ matchCount: 2, goalCount: 3 })
   })
 
   it('derives archive insights for seasons, teams, people and the home page', () => {

@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Mohammad Ali Shah Qajar', lang: 'en', role: 'primary' },
     { text: 'محمدعلی شاه قاجار', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   died: {
     alts: [
       {
@@ -96,5 +96,9 @@ export default definePerson({
     title: 'Shah of Persia, Mohammed Ali Mirzi, Dec. 19, 1907',
     credit: { institution: 'Library of Congress', creator: 'Bain News Service' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'malekzadeh-1949-tarikh-e-enqelab-e-mashrutiyat', perspective: 'iranian' },
+    { source: 'bamdad-1968-sharh-e-hal-e-rejal-e-iran', perspective: 'iranian' }
+  ]
 })

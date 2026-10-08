@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'First Barbary War', lang: 'en', role: 'primary' },
     { text: 'Tripolitan War', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -36,6 +36,20 @@ export default defineEvent({
   },
   regions: ['mena', 'north-america'],
   prominence: 3,
+  places: [
+    {
+      ref: 'place:tripoli',
+      cites: [
+        {
+          source: 'state-dept-milestones-barbary-wars',
+          loc: { section: 'Barbary Wars, 1801–1805 and 1815–1816', para: '8' }
+        }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
+  ],
   participants: [
     {
       name: 'Yusuf Qaramanli',

@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { memo, useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import CoverImage from '../CoverImage'
@@ -64,6 +64,8 @@ function StoredMark({
       alt=""
       aria-hidden="true"
       className={`${className} shrink-0 object-contain`}
+      loading="lazy"
+      decoding="async"
       draggable={false}
       onError={() => setStage(src === thumb ? 'full' : 'failed')}
     />
@@ -161,15 +163,18 @@ export function FootballPortrait({
   name,
   imagePath,
   className = 'h-9 w-9',
-  rounded = 'rounded-full'
+  rounded = 'rounded-full',
+  thumbWidth = 160
 }: {
   name: string
   imagePath: string | null | undefined
   className?: string
   rounded?: string
+  /** The smallest cached width covers the 24-36 px list slots; larger slots pass more. */
+  thumbWidth?: number
 }) {
   if (imagePath) {
-    return <CoverImage path={imagePath} alt={name} className={`${className} object-cover`} rounded={rounded} thumbWidth={192} />
+    return <CoverImage path={imagePath} alt={name} className={`${className} object-cover`} rounded={rounded} thumbWidth={thumbWidth} />
   }
   const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
   return (
@@ -286,7 +291,8 @@ export function FootballRatingInput({ value, onChange }: { value: number | null;
   )
 }
 
-export function FootballMatchRow({ match }: { match: FootballMatchSummary }) {
+// Memoized: long match lists re-render on every tab or filter change of their page.
+export const FootballMatchRow = memo(function FootballMatchRow({ match }: { match: FootballMatchSummary }) {
   const score = formatFootballScore(match)
   return (
     <Link
@@ -310,7 +316,7 @@ export function FootballMatchRow({ match }: { match: FootballMatchSummary }) {
       </span>
     </Link>
   )
-}
+})
 
 export function FootballCoverageStrip({ coverage }: { coverage: FootballCoverage[] }) {
   if (!coverage.length) {

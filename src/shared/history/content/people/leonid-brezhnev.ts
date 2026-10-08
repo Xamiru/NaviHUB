@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Leonid Brezhnev', lang: 'en', role: 'primary' },
     { text: 'Леонид Брежнев', lang: 'ru', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -38,6 +38,7 @@ export default definePerson({
   offices: [
     {
       title: 'first secretary',
+      polity: 'polity:soviet-union',
       start: {
         alts: [
           {
@@ -60,6 +61,7 @@ export default definePerson({
     },
     {
       title: 'chairman of the Presidium of the Supreme Soviet',
+      polity: 'polity:soviet-union',
       start: {
         alts: [
           {

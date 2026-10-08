@@ -7,7 +7,7 @@ export default defineEvent({
     { text: 'Çanakkale Savaşı', lang: 'tr', role: 'native' },
     { text: 'Dardanelles campaign', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -49,6 +49,11 @@ export default defineEvent({
       ]
     }
   ],
+  polities: [
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:french-third-republic' },
+    { ref: 'polity:british-empire' }
+  ],
   sides: [
     {
       key: 'allies',
@@ -63,6 +68,7 @@ export default defineEvent({
     {
       key: 'ottoman',
       name: 'the German-advised Ottoman army',
+      polity: 'polity:ottoman-empire',
       cites: [
         {
           source: 'eo1418-skinner-gallipoli',
@@ -111,7 +117,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Winston Churchill',
+      ref: 'person:winston-churchill',
       role: 'organizer',
       side: 'allies',
       cites: [
@@ -431,5 +437,11 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:THE_GALLIPOLI_CAMPAIGN,_APRIL_1915-JANUARY_1916_Q13431.jpg',
     credit: { institution: 'Imperial War Museums', creator: 'Ernest Brooks' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'harp-tarihi-baskanligi-1970-birinci-dunya-harbinde-turk-harbi',
+      perspective: 'turkish'
+    }
+  ]
 })

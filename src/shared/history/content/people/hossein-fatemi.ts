@@ -7,7 +7,7 @@ export default definePerson({
     { text: 'حسین فاطمی', lang: 'fa', role: 'native' },
     { text: 'Ḥosayn Fāṭemī', lang: 'fa-Latn', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -45,6 +45,7 @@ export default definePerson({
   offices: [
     {
       title: 'minister of foreign affairs',
+      polity: 'polity:pahlavi-iran',
       start: {
         alts: [
           {

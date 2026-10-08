@@ -24,7 +24,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -65,6 +65,7 @@ export default defineEvent({
     {
       key: 'prussia',
       name: 'Prussia',
+      polity: 'polity:kingdom-of-prussia',
       cites: [
         {
           source: 'loc-austria-country-study-1994',
@@ -75,6 +76,7 @@ export default defineEvent({
     {
       key: 'austria',
       name: 'Austria',
+      polity: 'polity:austrian-empire',
       cites: [
         {
           source: 'loc-austria-country-study-1994',
@@ -85,6 +87,7 @@ export default defineEvent({
     {
       key: 'italy',
       name: 'Italy',
+      polity: 'polity:kingdom-of-italy',
       cites: [
         {
           source: 'loc-austria-country-study-1994',
@@ -114,7 +117,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Franz Joseph',
+      ref: 'person:franz-joseph-i',
       role: 'head-of-state',
       side: 'austria',
       cites: [
@@ -218,17 +221,6 @@ export default defineEvent({
             loc: { section: 'Bismarck and Unification', para: '3' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/27.htm' }
-        },
-        {
-          id: 'q9',
-          text: 'Im Frieden von Prag zwischen Preußen und Österreich wird der Deutsche Bund aufgelöst.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1866', loc: { section: 'Chronik 1866', para: '51' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1866.html'
-          }
         }
       ]
     }
@@ -240,21 +232,20 @@ export default defineEvent({
           {
             value: { d: '1866-06-20' },
             cites: [
-              { source: 'lemo-chronik-1866', loc: { section: 'Chronik 1866', para: '25' } },
-              { source: 'lemo-chronik-1866', loc: { section: 'Chronik 1866', para: '26' } }
+              { source: 'britannica-1911-italy', loc: { section: 'ITALY', para: '1574' } }
             ]
           }
         ]
       },
       quote: {
-        id: 'q10',
-        text: 'Italien erklärt Österreich den Krieg.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1866', loc: { section: 'Chronik 1866', para: '26' } },
+        id: 'q14',
+        text: 'The outbreak of war was postponed by further diplomatic complications. On the 12th of June Napoleon, whose policy throughout had been obscure and contradictory, signed a secret treaty with Austria, under which Venice was to be handed over to him, to be given to Italy in the event of her making a separate peace. La Marmora, however, who believed himself bound in honour to Prussia, refused to enter into a separate arrangement. On the 16th the Prussians began hostilities, and on the 20th Italy declared war.',
+        lang: 'en',
+        cite: { source: 'britannica-1911-italy', loc: { section: 'ITALY', para: '1574' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1866.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Italy'
         }
       }
     },
@@ -271,14 +262,17 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q11',
-        text: 'Mit der Bekanntmachung der preußischen Kriegserklärung an Österreich beginnt der Deutsche Krieg.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1866', loc: { section: 'Chronik 1866', para: '28' } },
+        id: 'q15',
+        text: 'The Prussian delegate at once withdrew from the diet, and on the following day (June 15) the Prussian troops advanced over the Saxon frontier.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-germany-history',
+          loc: { section: 'GERMANY: History', para: '260' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1866.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
         }
       }
     },
@@ -288,21 +282,26 @@ export default defineEvent({
           {
             value: { d: '1866-07-03' },
             cites: [
-              { source: 'lemo-chronik-1866', loc: { section: 'Chronik 1866', para: '36' } },
-              { source: 'lemo-chronik-1866', loc: { section: 'Chronik 1866', para: '37' } }
+              {
+                source: 'britannica-1911-germany-history',
+                loc: { section: 'GERMANY: History', para: '261' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q12',
-        text: 'Mit der Schlacht bei Königgrätz gelingt Preußen der kriegsentscheidende Sieg über die österreichisch-sächsische Armee.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1866', loc: { section: 'Chronik 1866', para: '37' } },
+        id: 'q16',
+        text: 'The war that followed, conveniently called the Seven Weeks\' War (q.v.), culminated before a month had passed, on the 3rd […] of July, in the crushing Prussian victory of Königgrätz.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-germany-history',
+          loc: { section: 'GERMANY: History', para: '261' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1866.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
         }
       }
     },
@@ -312,21 +311,26 @@ export default defineEvent({
           {
             value: { d: '1866-08-23' },
             cites: [
-              { source: 'lemo-chronik-1866', loc: { section: 'Chronik 1866', para: '50' } },
-              { source: 'lemo-chronik-1866', loc: { section: 'Chronik 1866', para: '51' } }
+              {
+                source: 'britannica-1911-germany-history',
+                loc: { section: 'GERMANY: History', para: '261' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q13',
-        text: 'Damit ist der Weg frei für die von Preußen angestrebte Neuordnung Deutschlands ohne Österreich.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1866', loc: { section: 'Chronik 1866', para: '51' } },
+        id: 'q17',
+        text: 'by Article II. Austria consented to “a new organization of Germany without the participation of the empire of Austria,” […] These Articles, enmbodying the more important terms, were included with slight verbal alterations in the treaty of peace signed at Prague on the 23rd of August.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-germany-history',
+          loc: { section: 'GERMANY: History', para: '261' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1866.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
         }
       }
     }
@@ -336,5 +340,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Georg_Bleibtreu_-_Die_Schlacht_von_K%C3%B6niggr%C3%A4tz_am_3._Juli_1866.jpg',
     credit: { creator: 'Georg Bleibtreu' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'friedjung-1916-der-kampf-um-die-vorherrschaft', perspective: 'european' }
+  ]
 })

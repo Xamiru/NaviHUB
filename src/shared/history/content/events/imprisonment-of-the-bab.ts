@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'imprisonment-of-the-bab',
   names: [
-    { text: 'Imprisonment of the Báb', lang: 'en', role: 'primary' }
+    { text: 'Imprisonment of the Báb', lang: 'en', role: 'primary' },
+    { text: 'زندانی شدن باب', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'religious',
   start: {
     alts: [
@@ -90,6 +91,9 @@ export default defineEvent({
     { ref: 'period:qajar-dynasty' },
     { ref: 'period:reign-of-mohammad-shah-qajar' },
     { ref: 'period:babi-movement' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -481,5 +485,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Panorama_upon_Maku.jpg',
     credit: { creator: 'Fabien Dany' },
     license: { id: 'cc-by-sa', version: '2.0' }
-  }
+  },
+  furtherReading: [
+    { source: 'ivanov-1939-babidskie-vosstaniia-v-irane', perspective: 'russian-soviet' }
+  ]
 })

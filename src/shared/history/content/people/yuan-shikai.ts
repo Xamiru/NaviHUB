@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Yuan Shikai', lang: 'en', role: 'primary' },
     { text: '袁世凱', lang: 'zh', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   died: {
     alts: [
       {
@@ -25,6 +25,7 @@ export default definePerson({
   offices: [
     {
       title: 'provisional president of the Republic of China',
+      polity: 'polity:republic-of-china',
       start: {
         alts: [
           {

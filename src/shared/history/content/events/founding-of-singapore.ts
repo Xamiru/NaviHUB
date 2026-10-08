@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Founding of modern Singapore', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'founding',
   start: {
     alts: [
@@ -209,5 +209,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:John_Michael_Houghton,_Drawing_from_the_Houghton_Album_titled_%27Singapore_from_the_Rocky_Point,_1819%27,_13_x_18_cm,_Collection_of_National_Museum_of_Singapore.jpg',
     credit: { institution: 'National Museum of Singapore', creator: 'John Michael Houghton' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'kwa-2009-singapore-a-700-year-history', perspective: 'southeast-asian' }
+  ]
 })

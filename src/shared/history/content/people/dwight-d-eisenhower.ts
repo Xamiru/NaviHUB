@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Dwight D. Eisenhower', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   died: {
     alts: [
       {
@@ -24,6 +24,7 @@ export default definePerson({
   offices: [
     {
       title: 'President of the United States',
+      polity: 'polity:united-states',
       end: {
         alts: [
           {

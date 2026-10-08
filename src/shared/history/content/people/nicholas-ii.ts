@@ -6,9 +6,54 @@ export default definePerson({
     { text: 'Nicholas II', lang: 'en', role: 'primary' },
     { text: 'Николай II', lang: 'ru', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1868' },
+        cites: [
+          { source: 'eo1418-mombauer-july-crisis-1914', loc: { section: 'July Crisis 1914' } }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1918' },
+        cites: [
+          { source: 'eo1418-mombauer-july-crisis-1914', loc: { section: 'July Crisis 1914' } }
+        ]
+      }
+    ]
+  },
   regions: ['russia-central-asia'],
   roles: ['monarch'],
+  offices: [
+    {
+      title: 'Emperor of Russia',
+      polity: 'polity:russian-empire',
+      end: {
+        alts: [
+          {
+            value: { d: '1917-03-15' },
+            cites: [
+              {
+                source: 'loc-russia-country-study-1996',
+                loc: { section: 'Revolutions and Civil War', para: '5' }
+              }
+            ]
+          }
+        ]
+      },
+      cites: [
+        {
+          source: 'loc-russia-country-study-1996',
+          loc: { section: 'Revolutions and Civil War', para: '5' }
+        }
+      ]
+    }
+  ],
   sections: [
     {
       kind: 'overview',

@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'sheikh-ubaydullahs-revolt',
   names: [
-    { text: 'Sheikh Ubaydullah’s revolt', lang: 'en', role: 'primary' }
+    { text: 'Sheikh Ubaydullah’s revolt', lang: 'en', role: 'primary' },
+    { text: 'شورش شیخ عبیدالله', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -36,6 +37,10 @@ export default defineEvent({
   partOf: [
     { ref: 'period:qajar-dynasty' },
     { ref: 'period:reign-of-naser-al-din-shah-qajar' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' },
+    { ref: 'polity:ottoman-empire' }
   ],
   participants: [
     {

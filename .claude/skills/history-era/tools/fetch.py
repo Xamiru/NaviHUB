@@ -101,10 +101,21 @@ def get(url):
     return data
 
 def decode(raw):
+    # UTF-8 first (every page that decoded before still decodes the same), then the
+    # page's own declared charset (Arabic and Persian pages are often windows-1256),
+    # then cp1252 for old Western pages.
     try:
         return raw.decode('utf-8')
     except UnicodeDecodeError:
-        return raw.decode('cp1252', errors='replace')
+        pass
+    import re as _re
+    m = _re.search(rb'charset=["\']?([A-Za-z0-9_-]+)', raw[:4096])
+    if m:
+        try:
+            return raw.decode(m.group(1).decode('ascii'))
+        except (LookupError, UnicodeDecodeError):
+            pass
+    return raw.decode('cp1252', errors='replace')
 
 def paragraphs(url):
     raw = get(url)

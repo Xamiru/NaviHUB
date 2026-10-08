@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'War of 1812', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -41,10 +41,40 @@ export default defineEvent({
   },
   regions: ['north-america', 'europe'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:washington-dc',
+      cites: [
+        {
+          source: 'nara-milestone-treaty-of-ghent',
+          loc: { section: 'Treaty of Ghent (1814)', para: '3' }
+        }
+      ]
+    },
+    {
+      ref: 'place:baltimore',
+      cites: [
+        {
+          source: 'state-dept-milestones-war-of-1812',
+          loc: { section: 'War of 1812–1815', para: '4' }
+        }
+      ]
+    },
+    {
+      ref: 'place:new-orleans',
+      cites: [
+        {
+          source: 'nara-milestone-treaty-of-ghent',
+          loc: { section: 'Treaty of Ghent (1814)', para: '4' }
+        }
+      ]
+    }
+  ],
   sides: [
     {
       key: 'us',
       name: 'United States',
+      polity: 'polity:united-states',
       cites: [
         {
           source: 'state-dept-milestones-war-of-1812',
@@ -55,6 +85,7 @@ export default defineEvent({
     {
       key: 'uk',
       name: 'Great Britain',
+      polity: 'polity:united-kingdom',
       cites: [
         {
           source: 'state-dept-milestones-war-of-1812',
@@ -76,7 +107,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Andrew Jackson',
+      ref: 'person:andrew-jackson',
       role: 'commander',
       side: 'us',
       cites: [

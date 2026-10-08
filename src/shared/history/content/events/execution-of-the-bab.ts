@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'execution-of-the-bab',
   names: [
-    { text: 'Execution of the Bab', lang: 'en', role: 'primary' }
+    { text: 'Execution of the Bab', lang: 'en', role: 'primary' },
+    { text: 'اعدام باب', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'religious',
   start: {
     alts: [
@@ -53,6 +54,9 @@ export default defineEvent({
     { ref: 'period:babi-movement' },
     { ref: 'period:reign-of-naser-al-din-shah-qajar' },
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -249,5 +253,12 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Where_Bab_executed.jpg',
     credit: { institution: 'The Dawn-Breakers (bahai-library.com)' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'ivanov-1939-babidskie-vosstaniia-v-irane', perspective: 'russian-soviet' },
+    {
+      source: 'vahman-2010-yeksad-o-shast-sal-mobarezeh-ba-diyanat-e-bahai',
+      perspective: 'iranian'
+    }
+  ]
 })

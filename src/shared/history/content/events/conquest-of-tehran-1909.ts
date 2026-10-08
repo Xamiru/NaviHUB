@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Conquest of Tehran (1909)', lang: 'en', role: 'primary' },
     { text: 'فتح تهران', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -41,6 +41,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'event:persian-constitutional-revolution' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -182,5 +185,9 @@ export default defineEvent({
     title: 'Shah of Persia, Mohammed Ali Mirzi, Dec. 19, 1907',
     credit: { institution: 'Library of Congress', creator: 'Bain News Service' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'kasravi-1939-tarikh-e-hejdah-saleh-ye-azarbayjan', perspective: 'iranian' },
+    { source: 'malekzadeh-1949-tarikh-e-enqelab-e-mashrutiyat', perspective: 'iranian' }
+  ]
 })

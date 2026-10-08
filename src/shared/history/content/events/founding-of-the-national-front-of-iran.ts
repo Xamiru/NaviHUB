@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'founding',
   start: {
     alts: [
@@ -53,7 +53,7 @@ export default defineEvent({
   ],
   participants: [
     {
-      name: 'Moḥammad Moṣaddeq',
+      ref: 'person:mohammad-mosaddegh',
       role: 'leader',
       cites: [
         {
@@ -248,5 +248,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Some_members_of_firts_national_front_of_Iran,_Mohammad_Mosaddegh_and_Hossein_Fatemi_-_Early_1950s.jpg',
     credit: { institution: 'Institute for Iranian Contemporary Historical Studies' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'movahhed-1999-khvab-e-ashofteh-ye-naft', perspective: 'iranian' }
+  ]
 })

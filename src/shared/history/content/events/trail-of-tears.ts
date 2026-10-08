@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'migration',
   start: {
     alts: [
@@ -46,6 +46,20 @@ export default defineEvent({
   },
   regions: ['north-america'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:indian-territory',
+      cites: [
+        {
+          source: 'nps-trail-of-tears-brief-history',
+          loc: { section: 'History & Culture: A Brief History', para: '1' }
+        }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
+  ],
   participants: [
     {
       name: 'John Ross',
@@ -355,5 +369,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Cherokee_Nation_Territory_Map_1884_Royce.jpg',
     credit: { institution: 'Library of Congress', creator: 'Charles C. Royce' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'mattioli-2017-verlorene-welten', perspective: 'european' }
+  ]
 })

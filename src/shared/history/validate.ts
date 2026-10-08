@@ -26,6 +26,8 @@ import {
   OFFICIAL_HOLDERS,
   PARTICIPANT_ROLES,
   PERIOD_TYPES,
+  PERSPECTIVES,
+  POLITY_TYPES,
   PERSON_ROLES,
   PLACE_TYPES,
   POSITION_CATEGORIES,
@@ -45,7 +47,9 @@ import {
   type ArchiveSuggestion,
   type Cite,
   type Claim,
+  type DatedLink,
   type EntityKind,
+  type Figure,
   type HistDate,
   type HistoryEntity,
   type Holder,
@@ -337,6 +341,7 @@ class Checker {
     this.slug(e.id, e.kind)
     if ('researched' in e) this.day(e.researched, 'researched')
     const quotes = new Set<string>()
+    if ('furtherReading' in e) this.furtherReading(e.furtherReading)
     switch (e.kind) {
       case 'event': {
         this.names(e.names, 'names')
@@ -352,15 +357,20 @@ class Checker {
           this.cites(p.cites, `places[${i}]`, false)
         })
         e.partOf?.forEach((p, i) => {
-          this.target(p.ref, ['event', 'period'], `partOf[${i}]`)
+          this.target(p.ref, ['event', 'period', 'polity'], `partOf[${i}]`)
           this.cites(p.cites, `partOf[${i}]`, false)
         })
         this.relations(e.related)
+        e.polities?.forEach((p, i) => {
+          this.target(p.ref, ['polity'], `polities[${i}]`)
+          this.cites(p.cites, `polities[${i}]`, false)
+        })
         const sides = new Set<string>()
         e.sides?.forEach((s, i) => {
           if (sides.has(s.key)) this.err('duplicate-side', `sides[${i}]: key "${s.key}" is used twice`)
           sides.add(s.key)
           if (!s.name?.trim()) this.err('empty', `sides[${i}]: side needs a name`)
+          this.target(s.polity, ['polity'], `sides[${i}].polity`)
           this.cites(s.cites, `sides[${i}]`, true)
         })
         e.participants?.forEach((p, i) => {
@@ -371,18 +381,7 @@ class Checker {
           if (p.side !== undefined && !sides.has(p.side)) this.err('dangling-side', `${w}: side "${p.side}" is not defined`)
           this.cites(p.cites, w, true)
         })
-        e.figures?.forEach((f, i) => {
-          const w = `figures[${i}]`
-          if (!has(FIGURE_KEYS, f.key)) this.err('bad-enum', `${w}: unknown figure "${f.key}"`)
-          if (f.side !== undefined && !sides.has(f.side)) this.err('dangling-side', `${w}: side "${f.side}" is not defined`)
-          this.claim(f.value, w, (v, vw) => {
-            if (!Number.isFinite(v.min) || v.min < 0) this.err('bad-figure', `${vw}: min must be a non-negative number`)
-            if (v.max !== undefined && !(v.max >= v.min)) this.err('bad-figure', `${vw}: max must be at least min`)
-            if (v.qualifier !== undefined && !has(RANGE_QUALIFIERS, v.qualifier)) {
-              this.err('bad-enum', `${vw}: unknown qualifier "${v.qualifier}"`)
-            }
-          })
-        })
+        this.figures(e.figures, sides)
         this.image(e.hero, 'hero')
         let n = this.sections(e.sections, 'sections', quotes)
         e.course?.forEach((c, i) => {
@@ -408,6 +407,7 @@ class Checker {
         if (e.diedIn) this.target(e.diedIn.ref, ['place'], 'diedIn')
         e.offices?.forEach((o, i) => {
           if (!o.title?.trim()) this.err('empty', `offices[${i}]: office needs a title`)
+          this.target(o.polity, ['polity'], `offices[${i}].polity`)
           this.dateClaim(o.start, `offices[${i}].start`)
           this.dateClaim(o.end, `offices[${i}].end`)
           this.cites(o.cites, `offices[${i}]`, true)
@@ -426,7 +426,7 @@ class Checker {
         this.dateClaim(e.start, 'start')
         this.dateClaim(e.end, 'end')
         this.span(e.start, e.end, 'end')
-        this.target(e.parent, ['period'], 'parent')
+        this.target(e.parent, ['period', 'polity'], 'parent')
         this.image(e.hero, 'hero')
         this.sections(e.sections, 'sections', quotes)
         break
@@ -483,10 +483,69 @@ class Checker {
         if (e.license) this.license(e.license, 'license')
         break
       }
+      case 'polity': {
+        this.names(e.names, 'names')
+        this.regions(e.regions, 'regions')
+        if (!has(POLITY_TYPES, e.polityType)) this.err('bad-enum', `unknown state type "${e.polityType}"`)
+        if (![1, 2, 3].includes(e.prominence)) this.err('bad-enum', 'prominence must be 1, 2 or 3')
+        if (!e.start) this.err('no-date', 'a state needs a start date')
+        this.dateClaim(e.start, 'start')
+        this.dateClaim(e.end, 'end')
+        this.span(e.start, e.end, 'end')
+        const dated = (list: DatedLink[] | undefined, kinds: EntityKind[], name: string): void =>
+          list?.forEach((l, i) => {
+            const w = `${name}[${i}]`
+            this.target(l.ref, kinds, w)
+            this.dateClaim(l.start, `${w}.start`)
+            this.dateClaim(l.end, `${w}.end`)
+            this.span(l.start, l.end, `${w}.end`)
+            this.cites(l.cites, w, true)
+          })
+        dated(e.capitals, ['place'], 'capitals')
+        dated(e.partOf, ['polity'], 'partOf')
+        e.predecessors?.forEach((p, i) => {
+          this.target(p.ref, ['polity'], `predecessors[${i}]`)
+          this.cites(p.cites, `predecessors[${i}]`, false)
+          if (p.ref === refOf('polity', e.id)) this.err('self-ref', `predecessors[${i}]: a state cannot precede itself`)
+        })
+        e.dynasties?.forEach((d, i) => this.target(d, ['period'], `dynasties[${i}]`))
+        e.cshapes?.forEach((c, i) => {
+          const w = `cshapes[${i}]`
+          if (c.set !== 'world' && c.set !== 'europe' && c.set !== 'early') this.err('bad-enum', `${w}: set must be world, europe or early`)
+          if (!Number.isInteger(c.code) || c.code < 0) this.err('bad-cshapes', `${w}: code must be a non-negative integer`)
+          if (c.from !== undefined && c.to !== undefined && !(c.to > c.from)) this.err('bad-cshapes', `${w}: to must be after from`)
+        })
+        this.figures(e.figures, new Set())
+        this.image(e.hero, 'hero')
+        this.sections(e.sections, 'sections', quotes)
+        this.archive(e.archive, 'archive')
+        break
+      }
+      case 'theme': {
+        this.names(e.names, 'names')
+        this.regions(e.regions, 'regions')
+        if (!e.thread?.length) this.err('empty', 'a theme needs a thread of at least one entry')
+        const seen = new Set<string>()
+        e.thread?.forEach((t, i) => {
+          const w = `thread[${i}]`
+          this.target(t.ref, ['event', 'person', 'period', 'polity'], w)
+          if (seen.has(t.ref)) this.err('duplicate-thread', `${w}: "${t.ref}" is already in the thread`)
+          seen.add(t.ref)
+          if (t.quote) this.quote(t.quote, `${w}.quote`, quotes)
+          this.dateClaim(t.date, `${w}.date`)
+        })
+        e.related?.forEach((r, i) => {
+          this.target(r.ref, ['theme'], `related[${i}]`)
+          this.cites(r.cites, `related[${i}]`, false)
+        })
+        this.image(e.hero, 'hero')
+        this.sections(e.sections, 'sections', quotes)
+        break
+      }
       case 'interpretation': {
         if (!has(INTERPRETATION_TOPICS, e.topic)) this.err('bad-enum', `unknown topic "${e.topic}"`)
         if (!e.about?.length) this.err('empty', 'an interpretation must be about at least one entity')
-        e.about?.forEach((r, i) => this.target(r, ['event', 'person', 'period', 'place'], `about[${i}]`))
+        e.about?.forEach((r, i) => this.target(r, ['event', 'person', 'period', 'place', 'polity', 'theme'], `about[${i}]`))
         if (e.framing) this.quote(e.framing, 'framing', quotes)
         if (!e.positions?.length) this.err('empty', 'an interpretation needs at least one position')
         else if (e.positions.length < 2) this.warn('single-position', 'only one position recorded')
@@ -529,7 +588,7 @@ class Checker {
         e.links?.forEach((l, i) => {
           const w = `links[${i}]`
           if (!has(MEDIA_LINK_KINDS, l.kind)) this.err('bad-enum', `${w}: unknown link kind "${l.kind}"`)
-          this.target(l.target, l.kind === 'features-person' ? ['person'] : ['event', 'period', 'person'], w)
+          this.target(l.target, l.kind === 'features-person' ? ['person'] : ['event', 'period', 'person', 'polity'], w)
           l.portrayals?.forEach((p, j) => this.target(p.person, ['person'], `${w}.portrayals[${j}]`))
           l.accuracy?.forEach((q, j) => this.quote(q, `${w}.accuracy[${j}]`, quotes))
           this.cites(l.cites, w, false)
@@ -539,11 +598,38 @@ class Checker {
     }
   }
 
+  furtherReading(list: Array<{ source: string; perspective: string }> | undefined): void {
+    const seen = new Set<string>()
+    list?.forEach((r, i) => {
+      const w = `furtherReading[${i}]`
+      if (!this.catalog.sources.has(r.source)) this.err('dangling-source', `${w}: source "${r.source}" does not exist`)
+      this.cited.add(r.source)
+      if (!has(PERSPECTIVES, r.perspective)) this.err('bad-enum', `${w}: unknown perspective "${r.perspective}"`)
+      if (seen.has(r.source)) this.err('duplicate-reading', `${w}: "${r.source}" is listed twice`)
+      seen.add(r.source)
+    })
+  }
+
+  figures(list: Figure[] | undefined, sides: Set<string>): void {
+    list?.forEach((f, i) => {
+      const w = `figures[${i}]`
+      if (!has(FIGURE_KEYS, f.key)) this.err('bad-enum', `${w}: unknown figure "${f.key}"`)
+      if (f.side !== undefined && !sides.has(f.side)) this.err('dangling-side', `${w}: side "${f.side}" is not defined`)
+      this.claim(f.value, w, (v, vw) => {
+        if (!Number.isFinite(v.min) || v.min < 0) this.err('bad-figure', `${vw}: min must be a non-negative number`)
+        if (v.max !== undefined && !(v.max >= v.min)) this.err('bad-figure', `${vw}: max must be at least min`)
+        if (v.qualifier !== undefined && !has(RANGE_QUALIFIERS, v.qualifier)) {
+          this.err('bad-enum', `${vw}: unknown qualifier "${v.qualifier}"`)
+        }
+      })
+    })
+  }
+
   relations(rels: { ref: string; rel: string; cites?: Cite[]; disputedIn?: string }[] | undefined): void {
     rels?.forEach((r, i) => {
       const w = `related[${i}]`
       if (!has(RELATION_KINDS, r.rel)) this.err('bad-enum', `${w}: unknown relation "${r.rel}"`)
-      this.target(r.ref, ['event', 'period', 'person'], w)
+      this.target(r.ref, ['event', 'period', 'person', 'polity'], w)
       this.cites(r.cites, w, CAUSAL_RELATIONS.has(r.rel as never))
       if (r.disputedIn !== undefined && !this.catalog.interpretations.has(r.disputedIn)) {
         this.err('dangling-ref', `${w}: interpretation "${r.disputedIn}" does not exist`)

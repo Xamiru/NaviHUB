@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Proclamation of the German Empire', lang: 'en', role: 'primary' },
     { text: 'Kaiserproklamation', lang: 'de', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'founding',
   start: {
     alts: [
@@ -28,6 +28,10 @@ export default defineEvent({
         { source: 'lemo-chronik-1871', loc: { section: 'Chronik 1871', para: '5' } }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:german-empire' },
+    { ref: 'polity:kingdom-of-prussia' }
   ],
   participants: [
     {
@@ -64,7 +68,7 @@ export default defineEvent({
       ]
     },
     {
-      ref: 'period:german-empire',
+      ref: 'polity:german-empire',
       rel: 'led-to',
       cites: [
         { source: 'lemo-chronik-1871', loc: { section: 'Chronik 1871', para: '5' } }
@@ -86,14 +90,17 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/27.htm' }
         },
         {
-          id: 'q1',
-          text: 'Im Spiegelsaal des Schlosses von Versailles wird König Wilhelm I. von Preußen zum Deutschen Kaiser ausgerufen.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1871', loc: { section: 'Chronik 1871', para: '5' } },
+          id: 'q10',
+          text: 'On the 18th of January 1871, ten days before the capitulation of Paris, William I., king of Prussia, was proclaimed German emperor in the great hall of the palace of Versailles, on the initiative of the king of Bavaria, the most powerful of the South German sovereigns, the traditional ally of France.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-germany-history',
+            loc: { section: 'GERMANY: History', para: '266' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1871.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
           }
         }
       ]
@@ -139,14 +146,17 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q5',
-        text: 'Der Norddeutsche Bund und die süddeutschen Staaten Baden, Hessen, Württemberg und Bayern einigen sich in den "Novemberverträgen" über die Gründung eines deutschen Bundesstaates.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1870', loc: { section: 'Chronik 1870', para: '56' } },
+        id: 'q11',
+        text: 'By the treaties of Versailles the kingdoms of Bavaria and Württemberg, and the […] grand-duchy of Baden, as well as the southern provinces of the grand-duchy of Hesse, were added to the North German Confederation.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-germany-history',
+          loc: { section: 'GERMANY: History', para: '267' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1870.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
         }
       }
     },
@@ -179,20 +189,27 @@ export default defineEvent({
           {
             value: { d: '1871-01-18' },
             cites: [
-              { source: 'lemo-chronik-1871', loc: { section: 'Chronik 1871', para: '4' } }
+              { source: 'lemo-chronik-1871', loc: { section: 'Chronik 1871', para: '4' } },
+              {
+                source: 'britannica-1911-germany-history',
+                loc: { section: 'GERMANY: History', para: '266' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q7',
-        text: 'Damit entsteht aus dem Norddeutschen Bund und den vier süddeutschen Staaten Bayern, Württemberg, Baden und Hessen-Darmstadt unter preußischer Führung der erste deutsche Nationalstaat.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1871', loc: { section: 'Chronik 1871', para: '5' } },
+        id: 'q12',
+        text: 'Henceforward all the German states that had survived the struggle of 1866, with the exception of the empire of Austria, the grand-duchy of Luxemburg, and the principality of Liechtenstein, were incorporated in a permanent federal state under the leadership of Prussia.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-germany-history',
+          loc: { section: 'GERMANY: History', para: '267' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1871.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
         }
       }
     },
@@ -202,20 +219,26 @@ export default defineEvent({
           {
             value: { d: '1871-03-21' },
             cites: [
-              { source: 'lemo-chronik-1871', loc: { section: 'Chronik 1871', para: '26' } }
+              {
+                source: 'britannica-1911-william-i-of-germany',
+                loc: { section: 'WILLIAM I. OF GERMANY', para: '4' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q8',
-        text: 'Eröffnung des 1. Deutschen Reichstags: Der preußische Ministerpräsident Otto von Bismarck wird zum Reichskanzler des Deutschen Reichs ernannt.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1871', loc: { section: 'Chronik 1871', para: '27' } },
+        id: 'q13',
+        text: 'On the 3rd of March 1871 he signed the preliminaries of peace which had been accepted by the French Assembly; and on the 21st of March he opened the first imperial parliament of Germany.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-william-i-of-germany',
+          loc: { section: 'WILLIAM I. OF GERMANY', para: '4' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1871.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/William_I._of_Germany'
         }
       }
     },
@@ -231,14 +254,17 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q9',
-        text: 'Der Reichstag verabschiedet die Verfassung des Deutschen Reichs mit nur sieben Gegenstimmen.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1871', loc: { section: 'Chronik 1871', para: '32' } },
+        id: 'q14',
+        text: 'The revision in 1871 made no important alterations in the constitution of 1867.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-germany-history',
+          loc: { section: 'GERMANY: History', para: '267' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1871.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
         }
       }
     }
@@ -248,5 +274,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:A_v_Werner_-_Kaiserproklamation_am_18_Januar_1871_(3._Fassung_1885).jpg',
     credit: { institution: 'Bismarck Museum', creator: 'Anton von Werner' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'wehler-1975-das-deutsche-kaiserreich', perspective: 'european' },
+    { source: 'nipperdey-1990-deutsche-geschichte-1866-1918', perspective: 'european' }
+  ]
 })

@@ -35,7 +35,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -77,6 +77,7 @@ export default defineEvent({
     {
       key: 'pla',
       name: 'PLA',
+      polity: 'polity:peoples-republic-of-china',
       cites: [
         {
           source: 'prc-white-paper-2009-fifty-years-of-democratic-reform-in-tibet',
@@ -186,5 +187,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:The_Potala_Palace_2007.JPG',
     credit: { creator: 'Aneta Ribarska' },
     license: { id: 'cc-by-sa', version: '3.0', url: 'https://creativecommons.org/licenses/by-sa/3.0' }
-  }
+  },
+  furtherReading: [
+    { source: 'shakya-2000-the-dragon-in-the-land-of-snows', perspective: 'other' }
+  ]
 })

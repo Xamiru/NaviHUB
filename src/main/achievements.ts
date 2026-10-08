@@ -6,6 +6,7 @@ import { absoluteMediaPath, downloadImages, importImageFile } from './files'
 import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import { updateActivity } from './progress'
 import * as settingsRepo from './repos/settingsRepo'
+import * as links from './repos/externalLinkRepo'
 import * as achievementRepo from './repos/achievementRepo'
 import { search as steamSearch } from './steam'
 import { exeDirOf, findLocalSteamSchema, scanUnlocks, steamSettingsDir } from './emuScan'
@@ -59,9 +60,10 @@ async function webApiGet(path: string, params: Record<string, string>): Promise<
 }
 
 // ---------------- Appid resolution ----------------
-// A Steam-imported row already knows its appid. Everything else (RAWG/IGDB
-// catalog rows, hand-added titles) gets storefront search results to pick from
-// — the same keyless endpoint the games importer uses.
+// A Steam-imported row already knows its appid, and so does a catalog-linked
+// game (media_external_link). Everything else (RAWG/IGDB rows, hand-added
+// titles) gets storefront search results to pick from — the same keyless
+// endpoint the games importer uses.
 export async function resolveSteamCandidates(mediaId: number): Promise<SteamAppCandidate[]> {
   const row = getSqlite()
     .prepare('SELECT title, external_source, external_id FROM media_item WHERE id = ?')
@@ -71,9 +73,9 @@ export async function resolveSteamCandidates(mediaId: number): Promise<SteamAppC
   if (!row) throw new Error('Media item not found')
 
   const out: SteamAppCandidate[] = []
-  if (row.external_source === 'steam' && row.external_id) {
-    out.push({ appid: row.external_id, name: row.title, coverUrl: null, exact: true })
-  }
+  // A RAWG-era or catalog game may know its Steam app through its links.
+  const appid = row.external_source === 'steam' && row.external_id ? row.external_id : links.linkedId(mediaId, 'steam')
+  if (appid) out.push({ appid, name: row.title, coverUrl: null, exact: true })
   let found
   try {
     found = await steamSearch(row.title)

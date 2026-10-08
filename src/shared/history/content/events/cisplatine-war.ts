@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Cisplatine War', lang: 'en', role: 'primary' },
     { text: 'Guerra da Cisplatina', lang: 'pt', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -36,10 +36,19 @@ export default defineEvent({
   },
   regions: ['latin-america'],
   prominence: 3,
+  places: [
+    {
+      ref: 'place:ituzaingo',
+      cites: [
+        { source: 'britannica-1911-argentina', loc: { section: 'ARGENTINA', para: '222' } }
+      ]
+    }
+  ],
   sides: [
     {
       key: 'brazil',
       name: 'Brazil',
+      polity: 'polity:empire-of-brazil',
       cites: [
         {
           source: 'loc-uruguay-country-study-1990',
@@ -50,6 +59,7 @@ export default defineEvent({
     {
       key: 'river-plate',
       name: 'United Provinces of Río de la Plata',
+      polity: 'polity:argentina',
       cites: [
         {
           source: 'loc-uruguay-country-study-1990',

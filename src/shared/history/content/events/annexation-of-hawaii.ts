@@ -19,7 +19,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -63,6 +63,23 @@ export default defineEvent({
   },
   regions: ['oceania', 'north-america'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:hawaiian-islands',
+      cites: [
+        {
+          source: 'nara-milestone-joint-resolution-annexing-hawaii',
+          loc: {
+            section: 'Joint Resolution to Provide for Annexing the Hawaiian Islands to the United States (1898)',
+            para: '2'
+          }
+        }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
+  ],
   participants: [
     {
       ref: 'person:liliuokalani',
@@ -98,7 +115,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'William McKinley',
+      ref: 'person:william-mckinley',
       role: 'head-of-state',
       cites: [
         {
@@ -423,5 +440,9 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 35327203
     }
+  ],
+  furtherReading: [
+    { source: 'silva-2004-aloha-betrayed', perspective: 'pacific' },
+    { source: 'liliuokalani-1898-hawaiis-story', perspective: 'pacific' }
   ]
 })

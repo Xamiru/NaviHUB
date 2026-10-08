@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Reuter concession', lang: 'en', role: 'primary' },
     { text: 'امتیاز رویتر', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'economic',
   start: {
     alts: [
@@ -72,6 +72,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-naser-al-din-shah-qajar' },
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -150,25 +153,6 @@ export default defineEvent({
   ],
   sections: [
     {
-      kind: 'background',
-      quotes: [
-        {
-          id: 'q1',
-          text: 'The increasing rivalry of the two great powers during the last quarter of the 19th century brought scores of British and Russian concession hunters to Persia in search of quick profits.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-ettehadiyeh-concessions-qajar',
-            loc: { section: 'CONCESSIONS ii. In the Qajar period', para: '3' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/concessions/concessions-ii-in-the-qajar-period'
-          }
-        }
-      ]
-    },
-    {
       kind: 'overview',
       quotes: [
         {
@@ -214,6 +198,42 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'background',
+      quotes: [
+        {
+          id: 'q1',
+          text: 'The increasing rivalry of the two great powers during the last quarter of the 19th century brought scores of British and Russian concession hunters to Persia in search of quick profits.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-ettehadiyeh-concessions-qajar',
+            loc: { section: 'CONCESSIONS ii. In the Qajar period', para: '3' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/concessions/concessions-ii-in-the-qajar-period'
+          }
+        },
+        {
+          id: 'q8',
+          text: 'The all-embracing concessions which included a monopoly over construction of railroad, mining and exploitation of natural resources, finance, and banking, was largely the brainchild of the reform-minded premier, Mirzā Ḥosayn Khan Mošir-al-Dawla, and his Persian minister plenipotentiary in London, Mirzā Moḥsen Khan Moʿin-al-Molk.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-amanat-great-britain-ii',
+            loc: {
+              section: 'GREAT BRITAIN ii. British influence in Persia in the 19th century',
+              para: '25'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
           }
         }
       ]
@@ -270,6 +290,40 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/concessions/concessions-ii-in-the-qajar-period'
           }
+        },
+        {
+          id: 'q11',
+          text: 'By supporting the renewed claims of George Reuter, Julius Reuter’s son, Wolff hoped to salvage new concessions out of the overgenerous terms of an annulled concession.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-amanat-great-britain-ii',
+            loc: {
+              section: 'GREAT BRITAIN ii. British influence in Persia in the 19th century',
+              para: '31'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
+          }
+        },
+        {
+          id: 'q12',
+          text: 'Moreover, the Imperial Bank reserved the monopolies of the original Reuter concession dealing with mining in Persia (including petroleum).',
+          lang: 'en',
+          cite: {
+            source: 'iranica-amanat-great-britain-ii',
+            loc: {
+              section: 'GREAT BRITAIN ii. British influence in Persia in the 19th century',
+              para: '33'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
+          }
         }
       ]
     }
@@ -279,5 +333,46 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Reuter,_Paul_Julius_von,_Nadar,_Gallica.jpg',
     credit: { institution: 'Bibliothèque nationale de France', creator: 'Nadar' },
     license: { id: 'public-domain' }
-  }
+  },
+  course: [
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1873' },
+            cites: [
+              {
+                source: 'iranica-ettehadiyeh-concessions-qajar',
+                loc: { section: 'CONCESSIONS ii. In the Qajar period', para: '4' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q9',
+        text: 'The combination of a palace coup, conservative princes and mojtaheds opposed to Westernizing reforms, and possible Russian intrigue brought down Mošir-al-Dawla’s government and put a halt to his program of reforms. In due course, the Foreign Office’s lukewarm attitude towards Reuter encouraged the humiliated shah to cancel the embarrassing concession.',
+        lang: 'en',
+        cite: {
+          source: 'iranica-amanat-great-britain-ii',
+          loc: {
+            section: 'GREAT BRITAIN ii. British influence in Persia in the 19th century',
+            para: '26'
+          }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
+        }
+      }
+    }
+  ],
+  furtherReading: [
+    { source: 'adamiyat-1973-andisheh-ye-taraqqi', perspective: 'iranian' },
+    {
+      source: 'mahmud-1949-tarikh-e-ravabet-e-siyasi-ye-iran-va-engelis',
+      perspective: 'iranian'
+    }
+  ]
 })

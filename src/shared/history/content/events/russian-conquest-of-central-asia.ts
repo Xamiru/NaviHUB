@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Russian conquest of Central Asia', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'invasion',
   start: {
     alts: [
@@ -88,6 +88,11 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:reign-of-alexander-ii' }
+  ],
+  polities: [
+    { ref: 'polity:russian-empire' },
+    { ref: 'polity:emirate-of-bukhara' },
+    { ref: 'polity:khanate-of-khiva' }
   ],
   sections: [
     {
@@ -368,5 +373,11 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:%D0%93%D0%BB%D0%B0%D0%B2%D0%BD%D0%B0%D1%8F_%D1%83%D0%BB%D0%B8%D1%86%D0%B0_%D0%B2_%D0%A1%D0%B0%D0%BC%D0%B0%D1%80%D0%BA%D0%B0%D0%BD%D0%B4%D0%B5_%D1%81_%D0%B2%D1%8B%D1%81%D0%BE%D1%82%D1%8B_%D1%86%D0%B8%D1%82%D0%B0%D0%B4%D0%B5%D0%BB%D0%B8_%D1%80%D0%B0%D0%BD%D0%BD%D0%B8%D0%BC_%D1%83%D1%82%D1%80%D0%BE%D0%BC.jpg',
     credit: { creator: 'Vasily Vereshchagin' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'khalfin-1965-prisoedinenie-srednei-azii-k-rossii',
+      perspective: 'russian-soviet'
+    }
+  ]
 })

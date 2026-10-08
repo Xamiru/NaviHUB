@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -37,6 +37,9 @@ export default defineEvent({
   },
   regions: ['europe', 'subsaharan-africa', 'latin-america'],
   prominence: 2,
+  polities: [
+    { ref: 'polity:united-kingdom' }
+  ],
   participants: [
     {
       name: 'Lord Howick',
@@ -173,6 +176,12 @@ export default defineEvent({
       },
       license: { id: 'public-domain' },
       bytes: 21020507
+    }
+  ],
+  furtherReading: [
+    {
+      source: 'inikori-2002-africans-and-the-industrial-revolution-in-england',
+      perspective: 'african'
     }
   ]
 })

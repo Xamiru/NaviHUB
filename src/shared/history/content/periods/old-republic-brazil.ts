@@ -16,7 +16,7 @@ export default definePeriod({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   periodType: 'regime',
   start: {
     alts: [
@@ -46,6 +46,7 @@ export default definePeriod({
   },
   regions: ['latin-america'],
   prominence: 2,
+  parent: 'polity:republic-of-brazil',
   sections: [
     {
       kind: 'overview',

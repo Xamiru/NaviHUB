@@ -19,6 +19,8 @@ interface Props {
   // Offers this media item's Art-tab images as sources.
   artMediaId?: number
   allowRemove?: boolean
+  // Ready-made candidates from a source (a game's box art per region).
+  suggestions?: { url: string; label: string }[]
   rounded?: string
   previewClassName?: string
   // Receives a stored media/ path (null = remove). The caller saves it, either
@@ -29,7 +31,8 @@ interface Props {
 }
 
 // The one way to replace an imported cover, person photo or character image:
-// a local file, a pasted URL, or an image already in the title's Art tab.
+// a local file, a pasted URL, a source's suggestion, or an image already in
+// the title's Art tab.
 export default function ImagePickerDialog({
   title,
   subject,
@@ -37,6 +40,7 @@ export default function ImagePickerDialog({
   override,
   artMediaId,
   allowRemove = false,
+  suggestions = [],
   rounded = 'rounded-lg',
   previewClassName = 'h-28 w-20',
   onPick,
@@ -166,6 +170,30 @@ export default function ImagePickerDialog({
             Use URL
           </button>
         </form>
+
+        {suggestions.length > 0 && (
+          <section aria-labelledby="image-picker-suggested">
+            <h3 id="image-picker-suggested" className="label">
+              Box art
+            </h3>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2">
+              {suggestions.map((sug) => (
+                <button
+                  key={sug.url}
+                  type="button"
+                  className="overflow-hidden rounded-md text-left disabled:opacity-50"
+                  aria-label={`Use box art: ${sug.label}`}
+                  title={sug.label}
+                  disabled={busy}
+                  onClick={() => choose(() => api.images.fromUrl(sug.url))}
+                >
+                  <img src={sug.url} alt="" loading="lazy" className="aspect-[2/3] w-full rounded-md bg-base-700 object-cover" />
+                  <span className="mt-1 block truncate text-xs text-gray-400">{sug.label}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
         {art.length > 0 && (
           <section aria-labelledby="image-picker-art">

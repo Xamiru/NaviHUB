@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'famine',
   start: {
     alts: [
@@ -54,6 +54,20 @@ export default defineEvent({
   },
   regions: ['europe', 'north-america'],
   prominence: 1,
+  places: [
+    {
+      ref: 'place:ireland',
+      cites: [
+        {
+          source: 'nai-famine-records-and-distress-papers',
+          loc: { section: 'Famine Records and Distress Papers', para: '1' }
+        }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:united-kingdom' }
+  ],
   figures: [
     {
       key: 'displaced',
@@ -66,6 +80,22 @@ export default defineEvent({
                 source: 'loc-exhibit-john-bull-and-uncle-sam-exploration-and-settlement',
                 loc: { section: 'Irish Immigration' }
               }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      key: 'deaths',
+      value: {
+        alts: [
+          {
+            value: { min: 200000, max: 300000 },
+            cites: [
+              { source: 'britannica-1911-ireland', loc: { section: 'IRELAND' } }
+            ],
+            heldBy: [
+              { kind: 'organization', name: 'Encyclopædia Britannica' }
             ]
           }
         ]
@@ -154,6 +184,17 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://api.parliament.uk/historic-hansard/commons/1846/feb/17/famine-and-disease-in-ireland'
           }
+        },
+        {
+          id: 'q12',
+          text: 'In 1845 the population had swelled to 8,295,061, the greater part of whom depended on the potato only. There was no margin, and when the “precarious exotic” failed an awful famine was the result.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-ireland', loc: { section: 'IRELAND' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Ireland'
+          }
         }
       ]
     },
@@ -201,6 +242,33 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://nationalarchives.ie/help-with-research/research-guides/famine-records-distress-papers-and-the-relief-commission/'
           }
+        },
+        {
+          id: 'q14',
+          text: 'The policy of the government was accordingly changed, and the task of feeding a whole people was undertaken. More than 3,000,000 rations, generally cooked, were at one time distributed',
+          lang: 'en',
+          cite: { source: 'britannica-1911-ireland', loc: { section: 'IRELAND' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Ireland'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'casualties',
+      quotes: [
+        {
+          id: 'q15',
+          text: 'From 200,000 to 300,000 perished of starvation or of fever caused by insufficient food.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-ireland', loc: { section: 'IRELAND' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Ireland'
+          }
         }
       ]
     },
@@ -219,6 +287,17 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.loc.gov/exhibits/british/brit-1.html'
+          }
+        },
+        {
+          id: 'q16',
+          text: 'This movement of population took its first great impulse from the famine of 1846 and has continued ever since. When that disaster fell upon the country it found a teeming population fiercely competing for a very narrow margin of subsistence; and so widespread and devastating were its effects that between 1847 and 1852 over 1,200,000 of the Irish people emigrated to other lands.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-ireland', loc: { section: 'IRELAND' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Ireland'
           }
         }
       ]
@@ -286,6 +365,29 @@ export default defineEvent({
           url: 'https://nationalarchives.ie/help-with-research/research-guides/famine-records-distress-papers-and-the-relief-commission/'
         }
       }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1847-03' },
+            cites: [
+              { source: 'britannica-1911-ireland', loc: { section: 'IRELAND' } }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q13',
+        text: 'Great public and private efforts were made to meet the case, and relief works were undertaken, on which, in March 1847, 734,000 persons, representing a family aggregate of not less than 3,000,000, were employed.',
+        lang: 'en',
+        cite: { source: 'britannica-1911-ireland', loc: { section: 'IRELAND' } },
+        provenance: {
+          via: 'web',
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Ireland'
+        }
+      }
     }
   ],
   hero: {
@@ -309,5 +411,10 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 6928844
     }
+  ],
+  furtherReading: [
+    { source: 'o-grada-1999-black-47-and-beyond', perspective: 'european' },
+    { source: 'crowley-2012-atlas-of-the-great-irish-famine', perspective: 'european' },
+    { source: 'poirteir-1996-glortha-on-ghorta', perspective: 'european' }
   ]
 })

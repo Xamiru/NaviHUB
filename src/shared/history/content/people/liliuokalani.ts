@@ -4,6 +4,7 @@ export default definePerson({
   id: 'liliuokalani',
   names: [
     { text: 'Lili\'uokalani', lang: 'en', role: 'primary' },
+    { text: 'Liliʻuokalani', lang: 'haw', role: 'native' },
     {
       text: 'Liliuokalani',
       lang: 'en',
@@ -16,9 +17,56 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   regions: ['oceania'],
   roles: ['monarch'],
+  offices: [
+    {
+      title: 'Queen of Hawaii',
+      polity: 'polity:kingdom-of-hawaii',
+      start: {
+        alts: [
+          {
+            value: { d: '1891' },
+            cites: [
+              {
+                source: 'nara-milestone-joint-resolution-annexing-hawaii',
+                loc: {
+                  section: 'Joint Resolution to Provide for Annexing the Hawaiian Islands to the United States (1898)',
+                  para: '7'
+                }
+              }
+            ]
+          }
+        ]
+      },
+      end: {
+        alts: [
+          {
+            value: { d: '1893-01-17' },
+            cites: [
+              {
+                source: 'nara-milestone-joint-resolution-annexing-hawaii',
+                loc: {
+                  section: 'Joint Resolution to Provide for Annexing the Hawaiian Islands to the United States (1898)',
+                  para: '8'
+                }
+              }
+            ]
+          }
+        ]
+      },
+      cites: [
+        {
+          source: 'nara-milestone-joint-resolution-annexing-hawaii',
+          loc: {
+            section: 'Joint Resolution to Provide for Annexing the Hawaiian Islands to the United States (1898)',
+            para: '7'
+          }
+        }
+      ]
+    }
+  ],
   sections: [
     {
       kind: 'career',

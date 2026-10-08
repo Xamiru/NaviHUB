@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Gamal Abdel Nasser', lang: 'en', role: 'primary' },
     { text: 'جمال عبد الناصر', lang: 'ar', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -50,6 +50,31 @@ export default definePerson({
   },
   regions: ['mena'],
   roles: ['head-of-state', 'military'],
+  offices: [
+    {
+      title: 'president of the United Arab Republic',
+      polity: 'polity:republic-of-egypt',
+      start: {
+        alts: [
+          {
+            value: { d: '1958' },
+            cites: [
+              {
+                source: 'loc-egypt-country-study-1990',
+                loc: { section: 'Egypt and the Arab World', para: '1' }
+              }
+            ]
+          }
+        ]
+      },
+      cites: [
+        {
+          source: 'loc-egypt-country-study-1990',
+          loc: { section: 'Egypt and the Arab World', para: '1' }
+        }
+      ]
+    }
+  ],
   portrait: {
     url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/82/Stevan_Kragujevic%2C_Gamal_Abdel_Naser_u_Beogradu%2C_1962.jpg/1280px-Stevan_Kragujevic%2C_Gamal_Abdel_Naser_u_Beogradu%2C_1962.jpg',
     page: 'https://commons.wikimedia.org/wiki/File:Stevan_Kragujevic,_Gamal_Abdel_Naser_u_Beogradu,_1962.jpg',

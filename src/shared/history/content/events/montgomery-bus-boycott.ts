@@ -66,7 +66,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Martin Luther King, Jr.',
+      ref: 'person:martin-luther-king-jr',
       role: 'leader',
       cites: [
         {

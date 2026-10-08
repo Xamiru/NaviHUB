@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'conference',
   start: {
     alts: [
@@ -198,5 +198,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Delegations_held_a_Plenary_Meeting_of_the_Economic_Section_during_the_A-A_Conference_in_Merdeka_Building,_Bandung,_on_April_20th_1955.jpg',
     credit: { institution: 'Government of Indonesia' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'abdulgani-1981-the-bandung-connection', perspective: 'southeast-asian' }
+  ]
 })

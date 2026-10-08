@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Harry S. Truman', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -37,6 +37,7 @@ export default definePerson({
   offices: [
     {
       title: 'President of the United States',
+      polity: 'polity:united-states',
       lang: 'en',
       start: {
         alts: [
@@ -81,18 +82,11 @@ export default definePerson({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'Harry S. Truman ist ein US-amerikanischer Politiker der Demokratischen Partei und von 1945 bis 1953 der 33. Präsident der Vereinigten Staaten von Amerika. In seine Amtszeit fallen die Atombombenabwürfe auf Japan und der Beginn des Kalten Krieges mit der Sowjetunion.',
-          lang: 'de',
-          cite: {
-            source: 'lemo-biografie-harry-s-truman',
-            loc: { section: 'Harry S. Truman 1884 - 1972', para: '1' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/harry-s-truman'
-          }
+          id: 'q5',
+          text: 'Harry S. Truman became President of the United States with the death of Franklin D. Roosevelt on April 12, 1945. During his nearly eight years in office, Truman confronted enormous challenges in both foreign and domestic affairs.',
+          lang: 'en',
+          cite: { source: 'millercenter-hamby-harry-s-truman', loc: { section: 'Harry S. Truman' } },
+          provenance: { via: 'web', at: '2026-10-07', url: 'https://millercenter.org/president/truman' }
         }
       ]
     },
@@ -100,45 +94,25 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
-          id: 'q2',
-          text: 'Nach dem plötzlichen Tod Präsident Roosevelts wird Truman verfassungsgemäß dessen Nachfolger.',
-          lang: 'de',
-          cite: {
-            source: 'lemo-biografie-harry-s-truman',
-            loc: { section: 'Harry S. Truman 1884 - 1972', para: '20' }
-          },
+          id: 'q6',
+          text: 'On the morning of August 6, 1945, the United States dropped the first atomic bomb on the Japanese city of Hiroshima. A second atomic bomb was dropped on the city of Nagasaki three days later.',
+          lang: 'en',
+          cite: { source: 'millercenter-truman-key-events', loc: { section: 'Key Events' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/harry-s-truman'
+            at: '2026-10-07',
+            url: 'https://millercenter.org/president/truman/key-events'
           }
         },
         {
-          id: 'q3',
-          text: 'August: Truman gibt den Befehl zum Abwurf der Atombomben über Hiroshima und Nagasaki in Japan.',
-          lang: 'de',
-          cite: {
-            source: 'lemo-biografie-harry-s-truman',
-            loc: { section: 'Harry S. Truman 1884 - 1972', para: '22' }
-          },
+          id: 'q7',
+          text: 'On June 24, 1948, the Soviet Union halted all transportation by road and rail into the areas of Berlin controlled by the United States, Britain, and France. The American and British forces immediately initiated an airlift of supplies to relieve the western-controlled portions of the city.',
+          lang: 'en',
+          cite: { source: 'millercenter-truman-key-events', loc: { section: 'Key Events' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/harry-s-truman'
-          }
-        },
-        {
-          id: 'q4',
-          text: '26. Juni: Zwei Tage nach Beginn der sowjetischen Berlin-Blockade erteilt Truman den Befehl zur Errichtung einer Luftbrücke, die der Versorgung der Berliner Bevölkerung dient und 1949 die Sowjetunion zur Aufgabe der Blockade zwingt.',
-          lang: 'de',
-          cite: {
-            source: 'lemo-biografie-harry-s-truman',
-            loc: { section: 'Harry S. Truman 1884 - 1972', para: '26' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/harry-s-truman'
+            at: '2026-10-07',
+            url: 'https://millercenter.org/president/truman/key-events'
           }
         }
       ]

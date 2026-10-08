@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -84,6 +84,7 @@ export default defineEvent({
     {
       key: 'persia',
       name: 'Persia',
+      polity: 'polity:qajar-iran',
       cites: [
         {
           source: 'iranica-daniel-golestan-treaty',
@@ -94,6 +95,7 @@ export default defineEvent({
     {
       key: 'russia',
       name: 'Russia',
+      polity: 'polity:russian-empire',
       cites: [
         {
           source: 'iranica-daniel-golestan-treaty',
@@ -449,5 +451,16 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Treaty_of_Gulistan_p01.jpg',
     credit: { institution: 'Archive of the Ministry of Foreign Affairs of the Russian Federation' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'nafisi-1965-tarikh-e-ejtemai-va-siyasi-ye-iran', perspective: 'iranian' },
+    {
+      source: 'dubrovin-2019-istoriia-voiny-i-vladychestva-russkikh-na-kavkaze',
+      perspective: 'russian-soviet'
+    },
+    {
+      source: 'kuznetsova-1983-iran-v-pervoi-polovine-xix-veka',
+      perspective: 'russian-soviet'
+    }
+  ]
 })

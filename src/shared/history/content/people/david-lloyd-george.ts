@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'David Lloyd George', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -37,6 +37,7 @@ export default definePerson({
   offices: [
     {
       title: 'Prime Minister',
+      polity: 'polity:united-kingdom',
       start: {
         alts: [
           {

@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Amir-Abbas Hoveyda', lang: 'en', role: 'primary' },
     { text: 'امیرعباس هویدا', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -44,6 +44,7 @@ export default definePerson({
   offices: [
     {
       title: 'minister of finance',
+      polity: 'polity:pahlavi-iran',
       start: {
         alts: [
           {
@@ -66,6 +67,7 @@ export default definePerson({
     },
     {
       title: 'prime minister',
+      polity: 'polity:pahlavi-iran',
       start: {
         alts: [
           {

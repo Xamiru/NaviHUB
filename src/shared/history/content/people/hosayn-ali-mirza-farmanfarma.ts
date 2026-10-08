@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Hosayn-Ali Mirza Farmanfarma', lang: 'en', role: 'primary' },
     { text: 'حسینعلی میرزا فرمانفرما', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -55,6 +55,7 @@ export default definePerson({
   offices: [
     {
       title: 'governor of Fārs',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {

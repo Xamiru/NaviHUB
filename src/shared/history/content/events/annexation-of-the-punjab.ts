@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Annexation of the Punjab', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'occupation',
   start: {
     alts: [
@@ -155,5 +155,12 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Battle_of_Chillianwala_oil_painting.jpg',
     credit: { institution: 'National Army Museum', creator: 'Charles Becher Young' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'khushwant-singh-2004-a-history-of-the-sikhs', perspective: 'south-asian' },
+    {
+      source: 'ganda-singh-1955-private-correspondence-anglo-sikh-wars',
+      perspective: 'south-asian'
+    }
+  ]
 })

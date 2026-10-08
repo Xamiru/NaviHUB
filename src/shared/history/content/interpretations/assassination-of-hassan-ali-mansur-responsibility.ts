@@ -6,12 +6,29 @@ export default defineInterpretation({
   topic: 'responsibility',
   positions: [
     {
-      id: 'khomeini-refused-fatwa',
+      id: 'religious-sanction-disputed',
       category: 'scholarly',
       holders: [
         { kind: 'scholar', name: 'Ali Rahnema' }
       ],
       statements: [
+        {
+          id: 'q6',
+          text: 'Through official statements, the Coalition has tried to convince the public that its decision to embark on the path of “armed jihad” was legitimized by a “religious permit” (ʿAṣr-e āzādagān, 9 Esfand 1378 Š./28 February 1999).',
+          lang: 'en',
+          cite: {
+            source: 'iranica-rahnema-jamiyat-e-motalefa-ye-eslami',
+            loc: {
+              section: 'JAMʿIYAT-E MOʾTALEFA-YE ESLĀMI i. Hayʾathā-ye Moʾtalefa-ye Eslāmi 1963-79',
+              para: '28'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://web.archive.org/web/20260407183707/https://www.iranicaonline.org/articles/jamiyat-e-motalefa-i/'
+          }
+        },
         {
           id: 'q1',
           text: 'Khomeini, the spiritual and temporal father of the Coalition had been approached and asked for his approval, yet he had refused to issue a fatwa or condone the assassination (ʿErāqi, pp. 228-29; Aḥmadi, p. 336; Ḵal-ḵāli, p. 163; SAVAK sources as reported by Moqaddam, pp. 366, 373).',
@@ -100,32 +117,6 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-07',
             url: 'https://web.archive.org/web/20261002185029/https://www.iranicaonline.org/articles/hoveyda-amir-abbas/'
-          }
-        }
-      ]
-    },
-    {
-      id: 'coalition-religious-permit',
-      category: 'official',
-      holders: [
-        { kind: 'party', name: 'Islamic Coalition Party' }
-      ],
-      statements: [
-        {
-          id: 'q6',
-          text: 'Through official statements, the Coalition has tried to convince the public that its decision to embark on the path of “armed jihad” was legitimized by a “religious permit” (ʿAṣr-e āzādagān, 9 Esfand 1378 Š./28 February 1999).',
-          lang: 'en',
-          cite: {
-            source: 'iranica-rahnema-jamiyat-e-motalefa-ye-eslami',
-            loc: {
-              section: 'JAMʿIYAT-E MOʾTALEFA-YE ESLĀMI i. Hayʾathā-ye Moʾtalefa-ye Eslāmi 1963-79',
-              para: '28'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-07',
-            url: 'https://web.archive.org/web/20260407183707/https://www.iranicaonline.org/articles/jamiyat-e-motalefa-i/'
           }
         }
       ]

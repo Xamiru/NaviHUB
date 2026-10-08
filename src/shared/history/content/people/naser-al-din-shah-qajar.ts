@@ -7,7 +7,7 @@ export default definePerson({
     { text: 'ناصرالدین شاه قاجار', lang: 'fa', role: 'native' },
     { text: 'Naser ad Din Shah', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   died: {
     alts: [
       {
@@ -23,21 +23,15 @@ export default definePerson({
   offices: [
     {
       title: 'Shah of Iran',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {
-            value: { d: '1848' },
+            value: { d: '1848-10-13' },
             cites: [
               {
-                source: 'loc-iran-country-study-1987',
-                loc: { section: 'THE QAJARS, 1795-1925', para: '1' }
-              },
-              {
-                source: 'iranica-andreeva-russia-relations',
-                loc: {
-                  section: 'RUSSIA i. Russo-Iranian Relations up to the Bolshevik Revolution',
-                  para: '35'
-                }
+                source: 'britannica-1911-nasr-ed-din',
+                loc: { section: 'NASR-ED-DIN', para: '1' }
               }
             ]
           }
@@ -46,18 +40,11 @@ export default definePerson({
       end: {
         alts: [
           {
-            value: { d: '1896' },
+            value: { d: '1896-05-01' },
             cites: [
               {
-                source: 'loc-iran-country-study-1987',
-                loc: { section: 'THE QAJARS, 1795-1925', para: '1' }
-              },
-              {
-                source: 'iranica-andreeva-russia-relations',
-                loc: {
-                  section: 'RUSSIA i. Russo-Iranian Relations up to the Bolshevik Revolution',
-                  para: '35'
-                }
+                source: 'britannica-1911-nasr-ed-din',
+                loc: { section: 'NASR-ED-DIN', para: '1' }
               }
             ]
           }
@@ -73,6 +60,27 @@ export default definePerson({
   ],
   sections: [
     {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q8',
+          text: 'Naser-al-Din Shah reigned for a little under fifty years. During his reign contacts with the West intensified, the intervention of the Russian and British governments in Persian affairs continued; and, even though under the premiership of Mirzā Ḥosayn Khan Sepahsālār (1871-73) some of the reforms of Amir Kabir were pursued, the country suffered from backwardness, poor economy, the corruption of the ruling class, and the exploitation of the peasantry by greedy governors and tax-collectors.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-yarshater-iranian-history-islamic-period-5',
+            loc: {
+              section: 'IRAN ii. IRANIAN HISTORY (2) Islamic period, Reza Shah Pahlavi (1925-41)'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.iranicaonline.org/articles/iran-ii2-islamic-period-page-5/'
+          }
+        }
+      ]
+    },
+    {
       kind: 'early-life',
       quotes: [
         {
@@ -87,6 +95,17 @@ export default definePerson({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
+          }
+        },
+        {
+          id: 'q9',
+          text: 'His mother, a capable princess of the Kajar family, persuaded Shah Mahommed, his father, to appoint him heir apparent, in preference to his elder brothers; and he was accordingly made governor of Azerbaijan.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-nasr-ed-din', loc: { section: 'NASR-ED-DIN', para: '1' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Nasr-ed-Din'
           }
         }
       ]
@@ -106,6 +125,17 @@ export default definePerson({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/amir-e-kabir-mirza-taqi-khan'
+          }
+        },
+        {
+          id: 'q10',
+          text: 'His succession to the throne, 13th October 1848, was vigorously disputed, especially by the followers of the reformer El Bab, upon whom he wreaked terrible vengeance.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-nasr-ed-din', loc: { section: 'NASR-ED-DIN', para: '1' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Nasr-ed-Din'
           }
         },
         {
@@ -166,6 +196,17 @@ export default definePerson({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/germany-i'
           }
+        },
+        {
+          id: 'q11',
+          text: 'In 1873, and again in 1889, he visited England in the course of his three sumptuous journeys to Europe, 1873, 1878, 1889.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-nasr-ed-din', loc: { section: 'NASR-ED-DIN', para: '1' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Nasr-ed-Din'
+          }
         }
       ]
     },
@@ -181,6 +222,27 @@ export default definePerson({
             loc: { section: 'THE QAJARS, 1795-1925', para: '6' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/iran/12.htm' }
+        }
+      ]
+    },
+    {
+      kind: 'legacy',
+      quotes: [
+        {
+          id: 'q12',
+          text: 'Naser-al-Din Shah was a well-meaning king as long as his purse and pleasure were not involved. He attempted some reforms with limited success, including at one point establishment of a court of justice (ʿedālat-ḵāna), and supported the sending of the graduates of Dār-al-Fonun to study abroad.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-yarshater-iranian-history-islamic-period-5',
+            loc: {
+              section: 'IRAN ii. IRANIAN HISTORY (2) Islamic period, Reza Shah Pahlavi (1925-41)'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.iranicaonline.org/articles/iran-ii2-islamic-period-page-5/'
+          }
         }
       ]
     }
@@ -206,5 +268,10 @@ export default definePerson({
     cites: [
       { source: 'britannica-1911-nasr-ed-din', loc: { section: 'NASR-ED-DIN', para: '1' } }
     ]
-  }
+  },
+  furtherReading: [
+    { source: 'shamim-2004-iran-dar-dowreh-ye-saltanat-e-qajar', perspective: 'iranian' },
+    { source: 'bamdad-1968-sharh-e-hal-e-rejal-e-iran', perspective: 'iranian' },
+    { source: 'nateq-1984-karnameh-va-zamaneh-ye-mirza-reza-kermani', perspective: 'iranian' }
+  ]
 })

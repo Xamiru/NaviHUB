@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -67,6 +67,7 @@ export default defineEvent({
     {
       key: 'iran',
       name: 'Iran',
+      polity: 'polity:qajar-iran',
       cites: [
         {
           source: 'iranica-andreeva-russia-relations',
@@ -80,6 +81,7 @@ export default defineEvent({
     {
       key: 'russia',
       name: 'Russia',
+      polity: 'polity:russian-empire',
       cites: [
         {
           source: 'iranica-andreeva-russia-relations',
@@ -339,5 +341,110 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Treaty_of_Turkmenchay_by_Moshkov.jpg',
     credit: { creator: 'Vladimir Moshkov' },
     license: { id: 'public-domain' }
-  }
+  },
+  course: [
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1827' },
+            cites: [
+              {
+                source: 'iranica-andreeva-russia-relations',
+                loc: {
+                  section: 'RUSSIA i. Russo-Iranian Relations up to the Bolshevik Revolution',
+                  para: '23'
+                }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q11',
+        text: 'In the fall 1827, the Russian troops advanced and captured Erevan, Naḵjavān and ʿAbbāsābād; the road to Tabriz was open and peace negotiations started soon after.',
+        lang: 'en',
+        cite: {
+          source: 'iranica-andreeva-russia-relations',
+          loc: {
+            section: 'RUSSIA i. Russo-Iranian Relations up to the Bolshevik Revolution',
+            para: '23'
+          }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://www.iranicaonline.org/articles/russia-i-relations/'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1827-11' },
+            cites: [
+              {
+                source: 'iranica-cronin-army-qajar',
+                loc: { section: 'ARMY v. Qajar Period', para: '18' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q12',
+        text: 'However a second war with Russia in 1826 ended in another disastrous defeat, with the Russians actually entering Tabriz in November 1827',
+        lang: 'en',
+        cite: {
+          source: 'iranica-cronin-army-qajar',
+          loc: { section: 'ARMY v. Qajar Period', para: '18' }
+        },
+        provenance: { via: 'web', at: '2026-10-08', url: 'https://www.iranicaonline.org/articles/army-v/' }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1827-12' },
+            cites: [
+              {
+                source: 'iranica-andreeva-russia-relations',
+                loc: {
+                  section: 'RUSSIA i. Russo-Iranian Relations up to the Bolshevik Revolution',
+                  para: '23'
+                }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q13',
+        text: 'During the negotiations, in December of 1827, a war between Russia and the Ottoman empire broke out. The Ottomans offered Iran military help against Russia. Fatḥ-ʿAli Shah tried to use the situation to his advantage in the negotiations, but the Russians resumed military actions, captured Urmia, Ardabil, and Miāna and advanced towards Tehran. Iran had to accept all conditions put forward by Pashkevich',
+        lang: 'en',
+        cite: {
+          source: 'iranica-andreeva-russia-relations',
+          loc: {
+            section: 'RUSSIA i. Russo-Iranian Relations up to the Bolshevik Revolution',
+            para: '23'
+          }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://www.iranicaonline.org/articles/russia-i-relations/'
+        }
+      }
+    }
+  ],
+  furtherReading: [
+    { source: 'nafisi-1965-tarikh-e-ejtemai-va-siyasi-ye-iran', perspective: 'iranian' },
+    { source: 'potto-1885-kavkazskaia-voina', perspective: 'russian-soviet' },
+    {
+      source: 'kuznetsova-1983-iran-v-pervoi-polovine-xix-veka',
+      perspective: 'russian-soviet'
+    }
+  ]
 })

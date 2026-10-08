@@ -549,6 +549,67 @@ describe('importManga', () => {
       { role: 'staff' }
     ])
   })
+
+  it('keeps the credit text and separates edition staff and source authors from mangaka', async () => {
+    const person = (id: number, name: string) => ({ id, name: { full: name }, image: {} })
+    fixture = mangaFixture({
+      staff: {
+        edges: [
+          { role: 'Original Creator', node: person(701, 'Novel Author') },
+          { role: 'Story', node: person(702, 'Manga Artist') },
+          { role: 'Art', node: person(702, 'Manga Artist') },
+          { role: 'Touch-up Art & Lettering', node: person(703, 'Letterer') },
+          { role: 'Translator (English)', node: person(704, 'Translator') }
+        ]
+      }
+    })
+    const { mediaId } = await importManga(201)
+
+    expect(
+      db
+        .prepare(
+          `SELECT p.name, c.role, c.role_note FROM credit c JOIN person p ON p.id=c.person_id
+           WHERE c.media_id=? AND c.character_id IS NULL ORDER BY c.id`
+        )
+        .all(mediaId)
+    ).toEqual([
+      { name: 'Novel Author', role: 'writer', role_note: 'Original Creator' },
+      { name: 'Manga Artist', role: 'mangaka', role_note: 'Story, Art' },
+      { name: 'Letterer', role: 'staff', role_note: 'Touch-up Art & Lettering' },
+      { name: 'Translator', role: 'staff', role_note: 'Translator (English)' }
+    ])
+
+    // Re-import owns the writer credit too, so an unchanged payload is idempotent.
+    await importManga(201)
+    expect(
+      db.prepare(`SELECT COUNT(*) AS n FROM credit WHERE media_id=? AND character_id IS NULL`).get(mediaId)
+    ).toEqual({ n: 4 })
+  })
+
+  it('keeps a hand-made writer and does not repeat a role text that contains a comma', async () => {
+    const person = (id: number, name: string) => ({ id, name: { full: name }, image: {} })
+    fixture = mangaFixture({
+      staff: {
+        edges: [
+          { role: 'Art (ch 1-3, 5)', node: person(702, 'Manga Artist') },
+          { role: 'Art (ch 1-3, 5)', node: person(702, 'Manga Artist') }
+        ]
+      }
+    })
+    const { mediaId } = await importManga(201)
+    const own = Number(db.prepare(`INSERT INTO person (name) VALUES ('My Writer')`).run().lastInsertRowid)
+    db.prepare(`INSERT INTO credit (media_id, person_id, role) VALUES (?, ?, 'writer')`).run(mediaId, own)
+
+    await importManga(201)
+    expect(
+      db
+        .prepare(`SELECT person_id, role, role_note FROM credit WHERE media_id=? AND character_id IS NULL ORDER BY role`)
+        .all(mediaId)
+    ).toEqual([
+      { person_id: expect.any(Number), role: 'mangaka', role_note: 'Art (ch 1-3, 5)' },
+      { person_id: own, role: 'writer', role_note: null }
+    ])
+  })
 })
 
 describe('partial refresh (Library Refresh)', () => {
@@ -631,5 +692,54 @@ describe('partial refresh (Library Refresh)', () => {
 
   it('refuses a title that is not in the library', async () => {
     await expect(importAnime(101, { only: ['cover'] })).rejects.toThrow(/not in the library/)
+  })
+})
+
+describe('voice actors met first through a VN or game', () => {
+  function withSeiyuu(native: string, full: string) {
+    return animeFixture({
+      characters: {
+        pageInfo: { hasNextPage: false },
+        edges: [
+          {
+            role: 'MAIN',
+            node: { id: 201, name: { full: 'Ren', native: null }, gender: 'Male', image: {} },
+            voiceActors: [{ id: 95, name: { full, native }, image: {} }]
+          }
+        ]
+      }
+    })
+  }
+
+  it('adopts the existing person instead of creating a second one', async () => {
+    const gameVa = db
+      .prepare(
+        `INSERT INTO person (name, name_native, external_source, external_id)
+         VALUES ('Fukuyama Jun', '福山潤', 'bangumi', '4925')`
+      )
+      .run().lastInsertRowid
+    fixture = withSeiyuu('福山 潤', 'Jun Fukuyama')
+    await importAnime(101)
+
+    const people = db.prepare(`SELECT id, name, external_source, external_id FROM person`).all()
+    expect(people).toEqual([
+      { id: Number(gameVa), name: 'Jun Fukuyama', external_source: 'anilist', external_id: '95' },
+      expect.objectContaining({ name: 'Director D' })
+    ])
+    const credit = db.prepare(`SELECT person_id FROM credit WHERE role='voice_actor'`).get()
+    expect(credit).toEqual({ person_id: Number(gameVa) })
+  })
+
+  it('leaves a same-kanji person alone when the romaji names disagree', async () => {
+    db.prepare(
+      `INSERT INTO person (name, name_native, external_source, external_id)
+       VALUES ('Fukuyama Kei', '福山潤', 'vndb', 's9')`
+    ).run()
+    fixture = withSeiyuu('福山潤', 'Jun Fukuyama')
+    await importAnime(101)
+    const sources = db
+      .prepare(`SELECT external_source FROM person WHERE name_native LIKE '福山%' ORDER BY id`)
+      .all()
+    expect(sources).toEqual([{ external_source: 'vndb' }, { external_source: 'anilist' }])
   })
 })

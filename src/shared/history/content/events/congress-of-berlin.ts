@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Congress of Berlin', lang: 'en', role: 'primary' },
     { text: 'Berliner Kongress', lang: 'de', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'conference',
   start: {
     alts: [
@@ -37,6 +37,15 @@ export default defineEvent({
         { source: 'lemo-chronik-1878', loc: { section: 'Chronik 1878', para: '43' } }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:german-empire' },
+    { ref: 'polity:austria-hungary' },
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:french-third-republic' },
+    { ref: 'polity:kingdom-of-italy' },
+    { ref: 'polity:ottoman-empire' },
+    { ref: 'polity:russian-empire' }
   ],
   participants: [
     {
@@ -94,21 +103,6 @@ export default defineEvent({
   ],
   sections: [
     {
-      kind: 'background',
-      quotes: [
-        {
-          id: 'q1',
-          text: 'But Britain and Austria-Hungary, believing that the new state would extend Russian influence too far into the Balkans, exerted strong diplomatic pressure that reshaped the Treaty of San Stefano four months later into the Treaty of Berlin.',
-          lang: 'en',
-          cite: {
-            source: 'loc-bulgaria-country-study-1992',
-            loc: { section: 'BULGARIAN INDEPENDENCE', para: '23' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/bulgaria/10.htm' }
-        }
-      ]
-    },
-    {
       kind: 'overview',
       quotes: [
         {
@@ -132,15 +126,39 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/turkey/10.htm' }
         },
         {
-          id: 'q4',
-          text: 'Auf dem Berliner Kongress werden die Friedensregelungen von San Stefano, die den achten Russisch-türkischen Krieg (1877/78) beendet hatten, revidiert.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1878', loc: { section: 'Chronik 1878', para: '43' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1878.html'
-          }
+          id: 'q9',
+          text: 'When Britain threatened to declare war over the terms of the Treaty of San Stefano, an exhausted Russia backed down. At the Congress of Berlin in July 1878, Russia agreed to the creation of a smaller Bulgaria.',
+          lang: 'en',
+          cite: {
+            source: 'loc-russia-country-study-1996',
+            loc: { section: 'Transformation of Russia in the Nineteenth Century', para: '19' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/russia/6.htm' }
+        }
+      ]
+    },
+    {
+      kind: 'background',
+      quotes: [
+        {
+          id: 'q1',
+          text: 'But Britain and Austria-Hungary, believing that the new state would extend Russian influence too far into the Balkans, exerted strong diplomatic pressure that reshaped the Treaty of San Stefano four months later into the Treaty of Berlin.',
+          lang: 'en',
+          cite: {
+            source: 'loc-bulgaria-country-study-1992',
+            loc: { section: 'BULGARIAN INDEPENDENCE', para: '23' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/bulgaria/10.htm' }
+        },
+        {
+          id: 'q11',
+          text: 'At this high point of its influence on Balkan affairs, Russia dictated the Treaty of San Stefano in March 1878.',
+          lang: 'en',
+          cite: {
+            source: 'loc-bulgaria-country-study-1992',
+            loc: { section: 'BULGARIAN INDEPENDENCE', para: '23' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/bulgaria/10.htm' }
         }
       ]
     },
@@ -168,15 +186,14 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/afghanistan/14.htm' }
         },
         {
-          id: 'q7',
-          text: 'In Reaktion auf die russische Verstimmung bezüglich der Ergebnisse des Berliner Kongresses schließen sich Österreich-Ungarn und Deutschland in Wien zum Zweibund zusammen, einem geheimen Verteidigungsbündnis gegen Russland, das bis 1918 bestand hat.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1879', loc: { section: 'Chronik 1879', para: '51' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1879.html'
-          }
+          id: 'q10',
+          text: 'With relations strained between Russia and Germany, Austria-Hungary exploited Germany\'s need to strengthen its position against France and obtained an anti-Russian alliance. Under the resulting Dual Alliance, Austria-Hungary and Germany pledged to help defend the other against an attack by Russia.',
+          lang: 'en',
+          cite: {
+            source: 'loc-austria-country-study-1994',
+            loc: { section: 'The Eastern Question', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/austria/28.htm' }
         }
       ]
     },
@@ -201,5 +218,36 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:BASA-600K-1-1866-10-Der_Berliner_Congress,_1878.jpeg',
     credit: { institution: 'Bulgarian Archives State Agency', creator: 'Anton von Werner' },
     license: { id: 'public-domain' }
-  }
+  },
+  course: [
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1878-07' },
+            cites: [
+              {
+                source: 'loc-russia-country-study-1996',
+                loc: { section: 'Transformation of Russia in the Nineteenth Century', para: '19' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q12',
+        text: 'Whereas the Treaty of San Stefano called for two years of Russian occupation of Bulgaria, the Treaty of Berlin reduced the time to nine months.',
+        lang: 'en',
+        cite: {
+          source: 'loc-bulgaria-country-study-1992',
+          loc: { section: 'BULGARIAN INDEPENDENCE', para: '24' }
+        },
+        provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/bulgaria/10.htm' }
+      }
+    }
+  ],
+  furtherReading: [
+    { source: 'kurat-1970-turkiye-ve-rusya', perspective: 'turkish' },
+    { source: 'uzuncarsili-1947-osmanli-tarihi', perspective: 'turkish' }
+  ]
 })

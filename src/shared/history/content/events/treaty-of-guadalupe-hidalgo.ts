@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Treaty of Guadalupe Hidalgo', lang: 'en', role: 'primary' },
     { text: 'Tratado de Guadalupe Hidalgo', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -56,6 +56,10 @@ export default defineEvent({
   partOf: [
     { ref: 'event:mexican-american-war' }
   ],
+  polities: [
+    { ref: 'polity:united-states' },
+    { ref: 'polity:mexico' }
+  ],
   participants: [
     {
       name: 'Nicholas Trist',
@@ -85,7 +89,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'James K. Polk',
+      ref: 'person:james-k-polk',
       role: 'head-of-state',
       cites: [
         {
@@ -287,5 +291,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Treaty_of_Guadalupe_Hidalgo,_last_page.jpg',
     credit: { institution: 'Library of Congress' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'vazquez-1997-la-intervencion-norteamericana', perspective: 'latin-american' },
+    { source: 'vazquez-1997-mexico-al-tiempo-de-su-guerra', perspective: 'latin-american' }
+  ]
 })

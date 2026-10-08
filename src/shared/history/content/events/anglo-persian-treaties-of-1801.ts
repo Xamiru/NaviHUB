@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'anglo-persian-treaties-of-1801',
   names: [
-    { text: 'Anglo-Persian treaties of 1801', lang: 'en', role: 'primary' }
+    { text: 'Anglo-Persian treaties of 1801', lang: 'en', role: 'primary' },
+    { text: 'عهدنامه‌های ملکم', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -55,6 +56,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:reign-of-fath-ali-shah' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {

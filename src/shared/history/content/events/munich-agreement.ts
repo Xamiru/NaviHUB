@@ -23,7 +23,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -68,6 +68,11 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:french-third-republic' },
+    { ref: 'polity:kingdom-of-italy' }
   ],
   participants: [
     {
@@ -225,7 +230,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q7',
-          text: 'After Munich, Bohemia and Moravia lost about 38 percent of their combined area, as well as about 2.8 million Germans and approximately 750,000 Czechs to Germany.',
+          text: 'After Munich, Bohemia and Moravia lost about 38 percent of their combined area, as well as about 2.8 million Germans and approximately 750,000 Czechs to Germany. Hungary received 11,882 square kilometers in southern Slovakia and southern Ruthenia; only 53 percent of the population in this territory was Hungarian. Poland acquired Tesin and two minor border areas in northern Slovakia.',
           lang: 'en',
           cite: {
             source: 'loc-czechoslovakia-country-study-1987',
@@ -233,19 +238,8 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'http://countrystudies.us/czech-republic/28.htm'
-          }
-        },
-        {
-          id: 'q8',
-          text: 'Die Wehrmacht marschiert in das Sudetengebiet ein. Damit setzt die Auflösung der Tschechoslowakei ein: Einen Tag später wird einem polnischen Ultimatum entsprechend das Olsagebiet an Polen abgetreten.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1938', loc: { section: 'Chronik 1938', para: '171' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1938.html'
           }
         },
         {
@@ -271,5 +265,8 @@ export default defineEvent({
       url: 'https://creativecommons.org/licenses/by-sa/3.0/de/deed.en'
     },
     title: 'Münchener Abkommen, Hitler und Daladier'
-  }
+  },
+  furtherReading: [
+    { source: 'lacaze-1992-la-france-et-munich', perspective: 'european' }
+  ]
 })

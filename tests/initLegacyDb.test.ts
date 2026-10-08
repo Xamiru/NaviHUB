@@ -21,6 +21,35 @@ const read = (rel: string): string =>
 const initSql = read('../src/main/db/init.sql')
 
 describe('a live DB that predates newer columns', () => {
+  it('gives existing credits an origin and links games without touching their rows', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    // Today's schema minus what the games revamp added: every library before
+    // it had no credit.origin, no native-name key and no link table.
+    db.exec(initSql)
+    db.exec(`
+      DROP TABLE media_external_link;
+      DROP INDEX idx_person_native_key;
+      ALTER TABLE credit DROP COLUMN origin;
+      INSERT INTO media_item (id, media_type, title, external_source, external_id) VALUES (1, 'game', 'Zelda', 'rawg', '25');
+      INSERT INTO person (id, name, name_native) VALUES (1, 'Hand Credit', '手入力');
+      INSERT INTO credit (media_id, person_id, role) VALUES (1, 1, 'writer');`)
+    expect(db.prepare(`SELECT COUNT(*) AS n FROM pragma_table_info('credit') WHERE name = 'origin'`).get()).toEqual({ n: 0 })
+    db.exec(initSql)
+    runMigrations(db)
+    expect(db.prepare('SELECT role, origin FROM credit').all()).toEqual([{ role: 'writer', origin: null }])
+    db.prepare(`INSERT INTO media_external_link (media_id, source, external_id, method) VALUES (1, 'launchbox', '161', 'exact')`).run()
+    expect(db.prepare(`SELECT external_source, external_id FROM media_item`).all()).toEqual([
+      { external_source: 'rawg', external_id: '25' }
+    ])
+    const plan = db
+      .prepare(`EXPLAIN QUERY PLAN SELECT id FROM person WHERE REPLACE(REPLACE(name_native, ' ', ''), char(12288), '') = ?`)
+      .all('手入力') as { detail: string }[]
+    expect(plan.map((p) => p.detail).join(' ')).toContain('idx_person_native_key')
+    expect(db.pragma('integrity_check', { simple: true })).toBe('ok')
+    db.close()
+  })
+
   it('adds game runs and track tags without replacing legacy sessions, albums or playlists', () => {
     const db = new Database(':memory:')
     db.pragma('foreign_keys = ON')
@@ -318,6 +347,29 @@ describe('a live DB that predates newer columns', () => {
     db.prepare('DELETE FROM music_track WHERE id=1').run()
     expect(db.prepare('SELECT COUNT(*) AS n FROM music_track_genre').get()).toEqual({ n: 0 })
     db.close()
+  })
+
+  it('adds the nullable credit role note without losing imported credits', () => {
+    const db = new Database(':memory:')
+    db.exec(`CREATE TABLE credit (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      media_id      INTEGER NOT NULL,
+      person_id     INTEGER NOT NULL,
+      character_id  INTEGER,
+      role          TEXT NOT NULL DEFAULT 'voice_actor',
+      language      TEXT
+    );`)
+    db.prepare(`INSERT INTO credit (media_id, person_id, role) VALUES (1, 2, 'mangaka')`).run()
+
+    expect(() => db.exec(initSql)).not.toThrow()
+    expect(() => runMigrations(db)).not.toThrow()
+    expect(() => runMigrations(db)).not.toThrow()
+
+    expect(db.prepare('SELECT role, role_note, importance FROM credit').get()).toEqual({
+      role: 'mangaka',
+      role_note: null,
+      importance: null
+    })
   })
 
   it('adds nullable character gender without losing imported cast', () => {

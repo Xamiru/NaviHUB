@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Founding of the Indian National Congress', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'founding',
   start: {
     alts: [
@@ -38,7 +38,7 @@ export default defineEvent({
     }
   ],
   partOf: [
-    { ref: 'period:british-raj' }
+    { ref: 'polity:british-raj' }
   ],
   participants: [
     {
@@ -152,5 +152,12 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:1st_INC1885.jpg',
     credit: { institution: 'Moving Here' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'sitaramayya-1946-history-of-the-indian-national-congress',
+      perspective: 'south-asian'
+    },
+    { source: 'chandra-1989-indias-struggle-for-independence', perspective: 'south-asian' }
+  ]
 })

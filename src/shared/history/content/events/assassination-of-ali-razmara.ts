@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Assassination of Ali Razmara', lang: 'en', role: 'primary' },
     { text: 'ترور حاجعلی رزم‌آرا', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'assassination',
   start: {
     alts: [
@@ -247,5 +247,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Iran_Over_Volcano_-_Razmara,_the_Prime_Minister.png',
     credit: { institution: 'Akhbar al-Yawm' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'makki-1983-ketab-e-siyah', perspective: 'iranian' },
+    { source: 'rouhani-1973-tarikh-e-melli-shodan-e-sanat-e-naft', perspective: 'iranian' }
+  ]
 })

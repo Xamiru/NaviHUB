@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'naser-al-din-shahs-first-european-journey',
   names: [
-    { text: 'Naser al-Din Shah’s first European journey', lang: 'en', role: 'primary' }
+    { text: 'Naser al-Din Shah’s first European journey', lang: 'en', role: 'primary' },
+    { text: 'سفر اول ناصرالدین شاه به فرنگ', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -63,6 +64,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-naser-al-din-shah-qajar' },
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {

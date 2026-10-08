@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'siege-of-tabriz',
   names: [
-    { text: 'Siege of Tabriz', lang: 'en', role: 'primary' }
+    { text: 'Siege of Tabriz', lang: 'en', role: 'primary' },
+    { text: 'محاصره تبریز', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -41,6 +42,9 @@ export default defineEvent({
   partOf: [
     { ref: 'event:persian-constitutional-revolution' },
     { ref: 'period:lesser-autocracy' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -228,5 +232,9 @@ export default defineEvent({
       institution: 'Azərbaycan Respublikası Prezidentinin İşlər İdarəsinin Siyasi Sənədlər Arxivi'
     },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'kasravi-1939-tarikh-e-hejdah-saleh-ye-azarbayjan', perspective: 'iranian' },
+    { source: 'ivanov-1957-iranskaia-revoliutsiia-1905-1911', perspective: 'russian-soviet' }
+  ]
 })

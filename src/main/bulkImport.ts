@@ -2,7 +2,8 @@ import { getSqlite } from './db/connection'
 import * as anilist from './anilist'
 import * as tmdb from './tmdb'
 import * as vndb from './vndb'
-import * as gamesCatalog from './gamesCatalog'
+import * as launchboxCatalog from './launchboxCatalog'
+import * as gameLinks from './gameLinks'
 import { normTitle } from './steam'
 import { sleep } from './http'
 import { beginActivity, endActivity, TaskCancelledError } from './progress'
@@ -42,7 +43,7 @@ import type {
 const SOURCE_IDENT: Record<BulkSourceKey, { externalSource: string; mediaType: string }> = {
   anime: { externalSource: 'anilist', mediaType: 'anime' },
   manga: { externalSource: 'anilist', mediaType: 'manga' },
-  game: { externalSource: 'rawg', mediaType: 'game' },
+  game: { externalSource: 'launchbox', mediaType: 'game' },
   visual_novel: { externalSource: 'vndb', mediaType: 'visual_novel' },
   movie: { externalSource: 'tmdb', mediaType: 'movie' },
   tv: { externalSource: 'tmdb', mediaType: 'tv' }
@@ -65,15 +66,22 @@ const SOURCE_DELAY_MS: Record<BulkSourceKey, number> = {
 // unlucky titles — bail with a resume hint (the steam backfill posture).
 const MAX_CONSECUTIVE_FAILURES = 10
 
+// Games also count works a RAWG-era or Steam row is linked to: the upgrade
+// ties them to their catalog work without re-keying them.
+const LINKED_WORKS_SQL = `SELECT external_id FROM media_external_link WHERE source = 'launchbox' AND external_id <> ''`
+
 function existingIds(source: BulkSourceKey): Set<string> {
   const ident = SOURCE_IDENT[source]
-  return new Set(
-    (
-      getSqlite()
-        .prepare('SELECT external_id FROM media_item WHERE external_source = ? AND media_type = ?')
-        .all(ident.externalSource, ident.mediaType) as { external_id: string }[]
-    ).map((r) => String(r.external_id))
-  )
+  const db = getSqlite()
+  const ids = (
+    db
+      .prepare('SELECT external_id FROM media_item WHERE external_source = ? AND media_type = ?')
+      .all(ident.externalSource, ident.mediaType) as { external_id: string }[]
+  ).map((r) => String(r.external_id))
+  if (source === 'game') {
+    for (const r of db.prepare(LINKED_WORKS_SQL).all() as { external_id: string }[]) ids.push(r.external_id)
+  }
+  return new Set(ids)
 }
 
 // Games are the one type imported from SEVERAL sources with disjoint id spaces
@@ -92,11 +100,20 @@ function existingGameTitles(source: BulkSourceKey): Set<string> | null {
 // import during the run must be skipped without rebuilding the whole Set).
 function importedById(source: BulkSourceKey, sourceId: number): boolean {
   const ident = SOURCE_IDENT[source]
-  return !!getSqlite()
-    .prepare(
-      'SELECT 1 FROM media_item WHERE external_source = ? AND media_type = ? AND external_id = ? LIMIT 1'
-    )
-    .get(ident.externalSource, ident.mediaType, String(sourceId))
+  const db = getSqlite()
+  if (
+    db
+      .prepare('SELECT 1 FROM media_item WHERE external_source = ? AND media_type = ? AND external_id = ? LIMIT 1')
+      .get(ident.externalSource, ident.mediaType, String(sourceId))
+  ) {
+    return true
+  }
+  return (
+    source === 'game' &&
+    !!db
+      .prepare(`SELECT 1 FROM media_external_link WHERE source = 'launchbox' AND external_id = ? LIMIT 1`)
+      .get(String(sourceId))
+  )
 }
 
 // The predicate the source crawls run every fetched row through. Three rejections:
@@ -136,7 +153,7 @@ export async function preview(params: BulkListParams): Promise<BulkPreviewItem[]
         ? anilist.userList(clamped, keep)
         : anilist.topList(clamped, keep)
     case 'game':
-      return gamesCatalog.listTop(clamped, keep)
+      return launchboxCatalog.listTop(clamped, keep)
     case 'visual_novel':
       return vndb.topList(clamped, undefined, keep)
     case 'movie':
@@ -192,8 +209,11 @@ async function importOne(source: BulkSourceKey, sourceId: number): Promise<Impor
       return anilist.importAnime(sourceId, { liteCharacters: true })
     case 'manga':
       return anilist.importManga(sourceId, { liteCharacters: true })
-    case 'game':
-      return gamesCatalog.importGame(sourceId, { skipHltb: true })
+    case 'game': {
+      // No HowLongToBeat here (2000 back-to-back lookups get an IP limited);
+      // the cast comes along, paced by Bangumi's own throttle.
+      return gameLinks.importWithCast(sourceId, { skipHltb: true })
+    }
     case 'visual_novel':
       return vndb.importVisualNovel(sourceId)
     case 'movie':

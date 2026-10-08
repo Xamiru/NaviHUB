@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Chilean War of Independence', lang: 'en', role: 'primary' },
     { text: 'Guerra de la Independencia de Chile', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -213,5 +213,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Abrazo_de_Maip%C3%BA_Pedro_Subercaseaux.jpg',
     credit: { creator: 'Pedro Subercaseaux' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'villalobos-1961-tradicion-y-reforma-en-1810', perspective: 'latin-american' },
+    { source: 'jocelyn-holt-1999-la-independencia-de-chile', perspective: 'latin-american' }
+  ]
 })

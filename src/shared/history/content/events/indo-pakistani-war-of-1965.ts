@@ -27,7 +27,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -61,10 +61,22 @@ export default defineEvent({
   },
   regions: ['south-asia'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:kashmir',
+      cites: [
+        {
+          source: 'state-dept-milestones-india-pakistan-war-1965',
+          loc: { section: 'The India-Pakistan War of 1965', para: '4' }
+        }
+      ]
+    }
+  ],
   sides: [
     {
       key: 'india',
       name: 'India',
+      polity: 'polity:india',
       cites: [
         {
           source: 'state-dept-milestones-india-pakistan-war-1965',
@@ -75,6 +87,7 @@ export default defineEvent({
     {
       key: 'pakistan',
       name: 'Pakistan',
+      polity: 'polity:pakistan',
       cites: [
         {
           source: 'state-dept-milestones-india-pakistan-war-1965',
@@ -161,5 +174,8 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  furtherReading: [
+    { source: 'gauhar-1996-ayub-khan', perspective: 'south-asian' }
   ]
 })

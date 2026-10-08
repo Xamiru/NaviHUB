@@ -27,7 +27,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -59,6 +59,9 @@ export default defineEvent({
       ]
     }
   ],
+  polities: [
+    { ref: 'polity:british-empire' }
+  ],
   related: [
     { ref: 'event:south-african-war', rel: 'related' }
   ],
@@ -73,6 +76,7 @@ export default defineEvent({
     {
       key: 'britain',
       name: 'British',
+      polity: 'polity:united-kingdom',
       cites: [
         { source: 'nam-transvaal-war', loc: { section: 'Transvaal War', para: '14' } }
       ]
@@ -311,15 +315,11 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q15',
-        text: 'Die Buren unter Paulus "Ohm" Krüger (1825-1904) schlagen die britischen Kolonialtruppen bei Majuba Hill in Transvaal (Südafrika).',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1881', loc: { section: 'Chronik 1881', para: '16' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1881.html'
-        }
+        id: 'q18',
+        text: 'On the night of 26 February 1881, he led a force to occupy the heights of Majuba Hill, which overlooked the nearby Boer positions around Laing’s Nek. His force did not bring any artillery, so could only observe the Boer positions as they were out of rifle range.',
+        lang: 'en',
+        cite: { source: 'nam-transvaal-war', loc: { section: 'Transvaal War', para: '34' } },
+        provenance: { via: 'web', at: '2026-10-07', url: 'https://www.nam.ac.uk/explore/transvaal-war' }
       }
     },
     {
@@ -371,5 +371,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Melton_Prior_-_Illustrated_London_News_-_The_Transvaal_War_-_General_Sir_George_Colley_at_the_Battle_of_Majuba_Mountain_Just_Before_He_Was_Killed.jpg',
     credit: { institution: 'Library of Congress', creator: 'Melton Prior' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'laband-2005-the-transvaal-rebellion', perspective: 'african' }
+  ]
 })

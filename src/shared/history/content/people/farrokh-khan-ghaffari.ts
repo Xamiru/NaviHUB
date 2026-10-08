@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -49,6 +49,7 @@ export default definePerson({
   offices: [
     {
       title: 'ambassador (īḷčī-e kabīr) to the court of Napoleon III',
+      polity: 'polity:qajar-iran',
       cites: [
         {
           source: 'iranica-gaffary-amin-al-dawla-farrok-khan',
@@ -58,6 +59,7 @@ export default definePerson({
     },
     {
       title: 'minister of the interior',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {

@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'abolition-of-capitulations-in-iran',
   names: [
-    { text: 'Abolition of capitulations in Iran', lang: 'en', role: 'primary' }
+    { text: 'Abolition of capitulations in Iran', lang: 'en', role: 'primary' },
+    { text: 'لغو کاپیتولاسیون', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'reform',
   start: {
     alts: [
@@ -40,6 +41,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:pahlavi-dynasty' },
     { ref: 'period:reign-of-reza-shah' }
+  ],
+  polities: [
+    { ref: 'polity:pahlavi-iran' }
   ],
   participants: [
     {

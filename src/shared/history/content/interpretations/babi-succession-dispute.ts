@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'babi-succession-dispute',
   about: ['event:babi-bahai-schism', 'person:sobh-e-azal', 'person:bahaullah'],
   topic: 'legitimacy',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'azal-designated-successor',
@@ -20,6 +20,20 @@ export default defineInterpretation({
           cite: {
             source: 'iranica-maceoin-azali-babism',
             loc: { section: 'AZALI BABISM', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/azali-babism'
+          }
+        },
+        {
+          id: 'q7',
+          text: 'Ṣobḥ-e Azal responded by asserting his own claims and resisting the wholesale changes in doctrine and practice introduced by his brother.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-maceoin-azali-babism',
+            loc: { section: 'AZALI BABISM', para: '4' }
           },
           provenance: {
             via: 'web',
@@ -71,16 +85,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/bahaism-index/bahaism-i'
           }
-        }
-      ]
-    },
-    {
-      id: 'appointment-a-ruse',
-      category: 'contemporary',
-      holders: [
-        { kind: 'participant', name: 'Baháʼu\'lláh', ref: 'person:bahaullah' }
-      ],
-      statements: [
+        },
         {
           id: 'q5',
           text: 'Bahāʾ-Allāh and his supporters in any case held that the Bāb’s appointment of Azal had been a ruse to draw the fire of Iranian officials from Bahāʾ-Allāh.',
@@ -101,29 +106,6 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/baha-allah'
-          }
-        }
-      ]
-    },
-    {
-      id: 'azal-legitimate-successor',
-      category: 'contemporary',
-      holders: [
-        { kind: 'organization', name: 'Azalis' }
-      ],
-      statements: [
-        {
-          id: 'q7',
-          text: 'Ṣobḥ-e Azal responded by asserting his own claims and resisting the wholesale changes in doctrine and practice introduced by his brother.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-maceoin-azali-babism',
-            loc: { section: 'AZALI BABISM', para: '4' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/azali-babism'
           }
         }
       ]

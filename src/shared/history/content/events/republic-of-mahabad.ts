@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'republic-of-mahabad',
   names: [
     { text: 'Republic of Mahabad', lang: 'en', role: 'primary' },
+    { text: 'کۆماری کوردستان', lang: 'ckb', role: 'native' },
     { text: 'جمهوری مهاباد', lang: 'fa', role: 'native' },
     {
       text: 'Kurdish Republic',
@@ -28,7 +29,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'movement',
   start: {
     alts: [
@@ -80,6 +81,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:reign-of-mohammad-reza-shah' }
+  ],
+  polities: [
+    { ref: 'polity:pahlavi-iran' }
   ],
   participants: [
     {
@@ -263,5 +267,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Republic_of_Mahabad_-_Tehran_Mosavar_1947_April_-_2.jpg',
     credit: { institution: 'Tehran Mosavvar (April 1947)' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'hasanli-2006-at-the-dawn-of-the-cold-war', perspective: 'central-asian' }
+  ]
 })

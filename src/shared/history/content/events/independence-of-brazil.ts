@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Independence of Brazil', lang: 'en', role: 'primary' },
     { text: 'Independência do Brasil', lang: 'pt', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'independence',
   start: {
     alts: [
@@ -25,6 +25,9 @@ export default defineEvent({
   prominence: 2,
   places: [
     { ref: 'place:rio-de-janeiro' }
+  ],
+  polities: [
+    { ref: 'polity:empire-of-brazil' }
   ],
   sides: [
     {
@@ -323,5 +326,11 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Pedro_Am%C3%A9rico_-_Independ%C3%AAncia_ou_Morte_-_Google_Art_Project.jpg',
     credit: { institution: 'Museu Paulista', creator: 'Pedro Américo' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'rodrigues-1975-independencia-revolucao-e-contrarevolucao',
+      perspective: 'latin-american'
+    }
+  ]
 })

@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Transfer of the Portuguese court to Brazil', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'migration',
   start: {
     alts: [
@@ -31,6 +31,10 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:napoleonic-wars' }
+  ],
+  polities: [
+    { ref: 'polity:first-french-empire' },
+    { ref: 'polity:united-kingdom' }
   ],
   participants: [
     {

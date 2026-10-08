@@ -16,7 +16,33 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1778-08-20' },
+        cites: [
+          {
+            source: 'britannica-1911-ohiggins-bernardo',
+            loc: { section: 'O’HIGGINS, BERNARDO', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1842-10-24' },
+        cites: [
+          {
+            source: 'britannica-1911-ohiggins-bernardo',
+            loc: { section: 'O’HIGGINS, BERNARDO', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
   regions: ['latin-america'],
   roles: ['revolutionary', 'military', 'head-of-state'],
   sections: [

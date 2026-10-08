@@ -43,7 +43,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -95,6 +95,7 @@ export default defineEvent({
     {
       key: 'israel',
       name: 'Israel',
+      polity: 'polity:state-of-israel',
       cites: [
         {
           source: 'state-dept-milestones-arab-israeli-war-1967',
@@ -105,6 +106,7 @@ export default defineEvent({
     {
       key: 'egypt',
       name: 'Egypt',
+      polity: 'polity:republic-of-egypt',
       cites: [
         {
           source: 'state-dept-milestones-arab-israeli-war-1967',

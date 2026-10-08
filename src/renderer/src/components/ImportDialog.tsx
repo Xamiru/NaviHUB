@@ -35,10 +35,10 @@ export default function ImportDialog({ cfg, onClose, onImported, initialQuery }:
 
   // The offline catalog is a one-time download — until it's installed, its
   // pill shows an install panel instead of a search that can only error.
-  const isCatalog = source.key === 'rawgCatalog'
+  const isCatalog = source.key === 'gameCatalog'
   const { data: catalogStatus } = useQuery({
     queryKey: qk.gamesCatalog.status,
-    queryFn: () => api.rawgCatalog.status(),
+    queryFn: () => api.gameCatalog.status(),
     enabled: isCatalog
   })
   const [installing, setInstalling] = useState(false)
@@ -48,7 +48,7 @@ export default function ImportDialog({ cfg, onClose, onImported, initialQuery }:
     setInstalling(true)
     setError(null)
     try {
-      await api.rawgCatalog.install()
+      await api.gameCatalog.install()
       await qc.invalidateQueries({ queryKey: qk.gamesCatalog.status })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Catalog install failed')
@@ -167,8 +167,9 @@ export default function ImportDialog({ cfg, onClose, onImported, initialQuery }:
         {catalogMissing && (
           <div className="mb-4 rounded-md bg-base-700/60 p-4">
             <p className="text-sm text-gray-300">
-              The offline catalog is a one-time ~55 MB download (RAWG&apos;s final dataset,
-              ~120k games incl. consoles). Search is instant and local afterwards.
+              The games catalog is a one-time ~60 MB download: about 148,000 games on every
+              platform, with real box art and links to their cast. Search is instant and local
+              afterwards.
             </p>
             <button
               className="btn-primary mt-3"

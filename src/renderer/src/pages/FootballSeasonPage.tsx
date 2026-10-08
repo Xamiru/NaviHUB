@@ -6,9 +6,10 @@ import Tabs, { TabPanel } from '../components/Tabs'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
-import { formatFootballScore } from '@shared/football'
+import { useIncrementalList } from '../lib/hooks'
+import { footballPointsForWin, formatFootballScore } from '@shared/football'
 import { footballEraName } from '@shared/footballIdentity'
-import { footballForm, footballSeasonRecords } from '@shared/footballInsights'
+import { footballForm, footballKnockoutBracket, footballSeasonRecords, footballTitleRace } from '@shared/footballInsights'
 import type { FootballMatchSummary, FootballSeasonFate } from '@shared/types'
 import {
   FootballCoverageStrip,
@@ -25,8 +26,10 @@ import {
   FootballZoneLegend,
   footballCompetitionStyle
 } from '../components/football/FootballCommon'
+import FootballBracket from '../components/football/FootballBracket'
+import FootballTitleRace from '../components/football/FootballTitleRace'
 
-type SeasonTab = 'table' | 'results'
+type SeasonTab = 'table' | 'race' | 'bracket' | 'results'
 
 function matchLine(match: FootballMatchSummary): string {
   return `${match.home.name} ${formatFootballScore(match)} ${match.away.name}`
@@ -46,6 +49,18 @@ export default function FootballSeasonPage() {
     enabled: !!data
   })
   const records = useMemo(() => footballSeasonRecords(data?.matches ?? []), [data])
+  // Each club's last five once per load, not a scan of every match per table row per render.
+  const form = useMemo(
+    () => new Map((data?.standings ?? []).map((row) => [row.team.id, footballForm(data!.matches, row.team.id)])),
+    [data]
+  )
+  const matchList = useIncrementalList(data?.matches ?? [], 60, id)
+  const race = useMemo(() => data?.standings.length
+    ? footballTitleRace(data.matches, data.standings, footballPointsForWin(data.competitionKey, data.key))
+    : [], [data])
+  const bracket = useMemo(() => data
+    ? footballKnockoutBracket(data.matches, data.competitionKey, data.key, data.champion?.id ?? null)
+    : null, [data])
   if (isLoading) return <PageStatus>Opening season chapter...</PageStatus>
   if (isError) return <PageStatus>Could not load this season chapter.</PageStatus>
   if (!data) return <PageStatus>Season not found.</PageStatus>
@@ -54,7 +69,14 @@ export default function FootballSeasonPage() {
   const index = ordered.findIndex((season) => season.id === data.id)
   const previous = index > 0 ? ordered[index - 1] : null
   const next = index >= 0 && index < ordered.length - 1 ? ordered[index + 1] : null
-  const active: SeasonTab = tab ?? (data.standings.length ? 'table' : 'results')
+  const tabs = [
+    ...(data.standings.length ? [{ key: 'table' as const, label: 'Table' }] : []),
+    ...(race.length ? [{ key: 'race' as const, label: 'Title race' }] : []),
+    ...(bracket ? [{ key: 'bracket' as const, label: 'Bracket' }] : []),
+    { key: 'results' as const, label: 'Results', count: data.matches.length }
+  ]
+  // The remembered tab may belong to another kind of season (a bracket after a league).
+  const active: SeasonTab = tabs.some((item) => item.key === tab) ? tab! : tabs[0].key
   const eraName = footballEraName(data.competitionKey, data.key, data.competitionName)
   const champion = data.champion
   const watched = data.matches.filter((match) => match.watchedAt)
@@ -104,10 +126,7 @@ export default function FootballSeasonPage() {
             className="mb-4"
             value={active}
             onChange={setTab}
-            tabs={[
-              ...(data.standings.length ? [{ key: 'table' as const, label: 'Table' }] : []),
-              { key: 'results' as const, label: 'Results', count: data.matches.length }
-            ]}
+            tabs={tabs}
           />
           <TabPanel tabsId="football-season" value={active}>
             {active === 'table' && (
@@ -135,7 +154,7 @@ export default function FootballSeasonPage() {
                           <td className="text-right tabular-nums text-ink-secondary">{row.goalsAgainst}</td>
                           <td className={`text-right tabular-nums ${row.goalDifference > 0 ? 'text-signal-affirmative' : row.goalDifference < 0 ? 'text-signal-anomaly' : 'text-ink-muted'}`}>{row.goalDifference > 0 ? '+' : ''}{row.goalDifference}</td>
                           <td className="text-right text-base font-semibold tabular-nums text-ink">{row.points}{row.deduction ? <span className="ml-1 text-[10px] text-signal-anomaly" title={row.note ?? 'Points deducted'}>-{row.deduction}</span> : null}</td>
-                          <td className="hidden pl-5 lg:table-cell"><FootballFormGuide results={footballForm(data.matches, row.team.id)} /></td>
+                          <td className="hidden pl-5 lg:table-cell"><FootballFormGuide results={form.get(row.team.id) ?? []} /></td>
                         </tr>
                       ))}
                     </tbody>
@@ -147,9 +166,12 @@ export default function FootballSeasonPage() {
                 </div>
               </>
             )}
+            {active === 'race' && <FootballTitleRace lines={race} />}
+            {active === 'bracket' && bracket && <FootballBracket rounds={bracket} />}
             {active === 'results' && (
               <div>
-                {data.matches.map((match) => <FootballMatchRow key={match.id} match={match} />)}
+                {matchList.visible.map((match) => <FootballMatchRow key={match.id} match={match} />)}
+                <div ref={matchList.sentinelRef} />
                 {!data.matches.length && <p className="border-y border-line-subtle py-5 text-sm text-ink-muted">No match results are stored for this edition.</p>}
               </div>
             )}

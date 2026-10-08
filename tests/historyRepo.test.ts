@@ -107,3 +107,66 @@ describe('History personal entities', () => {
     expect(repo.nextUserId('event', 'انقلاب')).toBe('my-event')
   })
 })
+
+describe('History renamed content', () => {
+  it('moves marks, notes, links, archive rows and personal mentions to the replacement ref', () => {
+    const from = 'period:german-empire'
+    const to = 'polity:german-empire'
+    repo.setMark(from, 'read', true)
+    repo.setMark(from, 'favorite', true)
+    repo.saveNote(from, 'old note', 'note')
+    repo.saveNote(to, 'new note', 'correction')
+    db.prepare("INSERT INTO media_item (id, media_type, title) VALUES (1, 'movie', 'X')").run()
+    repo.addPersonalLink(from, 1, 'set-during')
+    db.prepare(
+      "INSERT INTO history_archive (ref, kind, rel_path, title, suggestion_key) VALUES (?, 'image', 'history/x.jpg', 'X', ?)"
+    ).run(from, `${from}#a1`)
+    repo.saveUserEntity({
+      v: 1,
+      kind: 'event',
+      id: 'my-thing',
+      names: [{ text: 'Mine', lang: 'en', role: 'primary' }],
+      researched: '2026-10-12',
+      type: 'war',
+      start: { alts: [{ value: { d: '1900' }, cites: [{ source: 'book-a', loc: { page: '1' } }] }] },
+      regions: ['europe'],
+      prominence: 3,
+      partOf: [{ ref: from }],
+      sections: []
+    } as HistoryUserEntity)
+
+    expect(repo.followRedirects({ [from]: to })).toBeGreaterThan(0)
+    expect(repo.mark(from)).toEqual({ read: null, favorite: false })
+    expect(repo.mark(to)).toMatchObject({ favorite: true })
+    expect(repo.mark(to).read).toMatch(/^\d{4}/)
+    expect(repo.note(from)).toBeNull()
+    expect(repo.note(to)).toMatchObject({ body: 'new note\n\nold note', kind: 'correction' })
+    expect(repo.personalLinks().map((l) => l.ref)).toEqual([to])
+    expect(db.prepare('SELECT ref, suggestion_key AS k FROM history_archive').get()).toEqual({ ref: to, k: `${to}#a1` })
+    expect(JSON.stringify(repo.userEntity('my-thing'))).toContain(to)
+    // A second launch has nothing left to move.
+    expect(repo.followRedirects({ [from]: to })).toBe(0)
+  })
+
+  it('merges a link and an archive key that both refs already carry', () => {
+    const from = 'period:prussia'
+    const to = 'polity:prussia'
+    db.prepare("INSERT INTO media_item (id, media_type, title) VALUES (2, 'movie', 'Y')").run()
+    repo.addPersonalLink(from, 2, 'set-during')
+    repo.addPersonalLink(to, 2, 'set-during')
+    const add = db.prepare(
+      "INSERT INTO history_archive (ref, kind, rel_path, title, suggestion_key) VALUES (?, 'image', ?, 'X', ?)"
+    )
+    add.run(from, 'history/a.jpg', `${from}#s1`)
+    add.run(to, 'history/b.jpg', `${to}#s1`)
+
+    expect(() => repo.followRedirects({ [from]: to })).not.toThrow()
+    expect(repo.personalLinks().filter((l) => l.mediaId === 2).map((l) => l.ref)).toEqual([to])
+    const rows = db.prepare('SELECT ref, suggestion_key AS k FROM history_archive ORDER BY id').all()
+    expect(rows).toEqual([
+      { ref: to, k: `${from}#s1` },
+      { ref: to, k: `${to}#s1` }
+    ])
+    expect(repo.followRedirects({ [from]: to })).toBe(0)
+  })
+})

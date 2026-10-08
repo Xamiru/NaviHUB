@@ -16,7 +16,33 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1781-07-05' },
+        cites: [
+          {
+            source: 'britannica-1911-raffles-sir-thomas-stamford',
+            loc: { section: 'RAFFLES, SIR THOMAS STAMFORD', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1826' },
+        cites: [
+          {
+            source: 'britannica-1911-raffles-sir-thomas-stamford',
+            loc: { section: 'RAFFLES, SIR THOMAS STAMFORD', para: '4' }
+          }
+        ]
+      }
+    ]
+  },
   regions: ['southeast-asia'],
   roles: ['politician'],
   offices: [

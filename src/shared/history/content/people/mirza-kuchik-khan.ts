@@ -28,7 +28,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -37,6 +37,10 @@ export default definePerson({
           {
             source: 'eo1418-atabaki-persia-iran',
             loc: { section: 'Iranian Politics and Society in Wartime', para: '8' }
+          },
+          {
+            source: 'iranica-dailami-gilan-constitutional-revolution',
+            loc: { section: 'GILĀN viiia. In the Constitutional Revolution of 1905-11', para: '26' }
           }
         ]
       }
@@ -50,6 +54,10 @@ export default definePerson({
           {
             source: 'eo1418-atabaki-persia-iran',
             loc: { section: 'Iranian Politics and Society in Wartime', para: '8' }
+          },
+          {
+            source: 'iranica-dailami-gilan-constitutional-revolution',
+            loc: { section: 'GILĀN viiia. In the Constitutional Revolution of 1905-11', para: '26' }
           }
         ]
       }
@@ -58,6 +66,25 @@ export default definePerson({
   regions: ['iran'],
   roles: ['revolutionary'],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q7',
+          text: 'Mirzā Kuček Khan (1880-1921), who was later to lead the Jangali movement in Gilān',
+          lang: 'en',
+          cite: {
+            source: 'iranica-dailami-gilan-constitutional-revolution',
+            loc: { section: 'GILĀN viiia. In the Constitutional Revolution of 1905-11', para: '26' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.iranicaonline.org/articles/gilan-viii/'
+          }
+        }
+      ]
+    },
     {
       kind: 'early-life',
       quotes: [
@@ -168,5 +195,8 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:%D8%B9%DA%A9%D8%B3_%DB%B3%DB%B1%D8%8C_%D8%AA%D8%A7%D8%B1%DB%8C%D8%AE_%D9%85%D8%AE%D8%AA%D8%B5%D8%B1_%D8%A7%D8%AD%D8%B2%D8%A7%D8%A8_%D8%B3%DB%8C%D8%A7%D8%B3%DB%8C_%D8%A7%DB%8C%D8%B1%D8%A7%D9%86%D8%8C_%D8%AC%D9%84%D8%AF_%D8%A7%D9%88%D9%84.jpg',
     credit: { institution: 'Mohammad-Taqi Bahar, Tarikh-e mokhtasar-e ahzab-e siyasi-ye Iran, vol. 1' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'fakhrai-1978-sardar-e-jangal', perspective: 'iranian' }
+  ]
 })

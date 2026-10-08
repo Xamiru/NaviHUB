@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -54,6 +54,10 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'event:war-of-1812' }
+  ],
+  polities: [
+    { ref: 'polity:united-states' },
+    { ref: 'polity:united-kingdom' }
   ],
   sections: [
     {

@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'qajar-succession-crisis-of-1834',
   names: [
-    { text: 'Qajar succession crisis of 1834', lang: 'en', role: 'primary' }
+    { text: 'Qajar succession crisis of 1834', lang: 'en', role: 'primary' },
+    { text: 'بحران جانشینی ۱۲۵۰', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'crisis',
   start: {
     alts: [
@@ -91,6 +92,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   sides: [
     {
@@ -626,5 +630,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Muhammad_Shah_Qadjar_-_MV_6700_-_v1.JPG',
     credit: { institution: 'Musée du Louvre', creator: 'Muhammad Hasan Afshar' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'nateq-1988-iran-dar-rahyabi-ye-farhangi', perspective: 'iranian' }
+  ]
 })

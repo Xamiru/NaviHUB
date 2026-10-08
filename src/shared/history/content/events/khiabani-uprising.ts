@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -60,6 +60,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -320,5 +323,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:MohammadKhiabaniAndOthers.jpg',
     credit: { institution: 'Digital Library of India (Internet Archive)' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'azari-1951-qiyam-e-sheikh-mohammad-khiabani', perspective: 'iranian' }
+  ]
 })

@@ -14,7 +14,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -52,6 +52,7 @@ export default definePerson({
   offices: [
     {
       title: 'König von Preußen',
+      polity: 'polity:kingdom-of-prussia',
       lang: 'de',
       start: {
         alts: [
@@ -98,6 +99,7 @@ export default definePerson({
     },
     {
       title: 'Deutscher Kaiser',
+      polity: 'polity:german-empire',
       lang: 'de',
       start: {
         alts: [
@@ -139,18 +141,32 @@ export default definePerson({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/27.htm' }
         },
         {
-          id: 'q2',
-          text: 'Im Deutsch-Französischen Krieg hat Wilhelm I. das Kommando über die deutschen Truppen in der entscheidenden Schlacht von Sedan.',
-          lang: 'de',
-          cite: { source: 'lemo-biografie-wilhelm-i', loc: { section: 'Wilhelm I.' } },
-          provenance: { via: 'web', at: '2026-10-06', url: 'https://www.dhm.de/lemo/biografie/wilhelm-i' }
+          id: 'q5',
+          text: 'He crossed the French frontier on the 11th of August, and personally commanded at the battles of Gravelotte and Sedan.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-william-i-of-germany',
+            loc: { section: 'WILLIAM I. OF GERMANY', para: '4' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/William_I._of_Germany'
+          }
         },
         {
-          id: 'q3',
-          text: 'Die Regierungsgeschäfte überlässt Wilhelm I. weitgehend seinem Reichskanzler und preußischen Ministerpräsidenten Bismarck.',
-          lang: 'de',
-          cite: { source: 'lemo-biografie-wilhelm-i', loc: { section: 'Wilhelm I.' } },
-          provenance: { via: 'web', at: '2026-10-06', url: 'https://www.dhm.de/lemo/biografie/wilhelm-i' }
+          id: 'q6',
+          text: 'After that period the emperor left the destinies of Germany almost entirely in the hands of Bismarck, who held the office of imperial chancellor.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-william-i-of-germany',
+            loc: { section: 'WILLIAM I. OF GERMANY', para: '5' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/William_I._of_Germany'
+          }
         }
       ]
     },
@@ -158,11 +174,18 @@ export default definePerson({
       kind: 'later-life',
       quotes: [
         {
-          id: 'q4',
-          text: 'Als Integrationsfigur des Reiches und mit seinem an Sparsamkeit und Einfachheit orientierten Lebensstil gewinnt der Kaiser zunehmend an Popularität in der Bevölkerung.',
-          lang: 'de',
-          cite: { source: 'lemo-biografie-wilhelm-i', loc: { section: 'Wilhelm I.' } },
-          provenance: { via: 'web', at: '2026-10-06', url: 'https://www.dhm.de/lemo/biografie/wilhelm-i' }
+          id: 'q7',
+          text: 'Personally William maintained the best traditions of the Hohenzollerns, not only by the splendour of the achievements with which his name will always be intimately associated, but by the simplicity, manliness and uprightness of his daily life.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-william-i-of-germany',
+            loc: { section: 'WILLIAM I. OF GERMANY', para: '6' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/William_I._of_Germany'
+          }
         }
       ]
     }

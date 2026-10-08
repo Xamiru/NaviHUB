@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Persian Constitutional Revolution', lang: 'en', role: 'primary' },
     { text: 'انقلاب مشروطه', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'revolution',
   start: {
     alts: [
@@ -42,6 +42,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -599,5 +602,12 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 27235838
     }
+  ],
+  furtherReading: [
+    { source: 'malekzadeh-1949-tarikh-e-enqelab-e-mashrutiyat', perspective: 'iranian' },
+    { source: 'nazem-al-eslam-1983-tarikh-e-bidari-ye-iranian', perspective: 'iranian' },
+    { source: 'adamiyat-1976-ideolozhi-ye-nehzat-e-mashrutiyat', perspective: 'iranian' },
+    { source: 'ettehadieh-1982-peydayesh-va-tahavvol-e-ahzab', perspective: 'iranian' },
+    { source: 'ivanov-1957-iranskaia-revoliutsiia-1905-1911', perspective: 'russian-soviet' }
   ]
 })

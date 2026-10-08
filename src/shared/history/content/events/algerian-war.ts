@@ -25,7 +25,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -73,6 +73,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:cold-war' }
   ],
+  polities: [
+    { ref: 'polity:french-fifth-republic' }
+  ],
   sides: [
     {
       key: 'fln',
@@ -87,6 +90,7 @@ export default defineEvent({
     {
       key: 'france',
       name: 'French army',
+      polity: 'polity:french-fourth-republic',
       cites: [
         {
           source: 'loc-algeria-country-study-1994',
@@ -437,5 +441,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Women_in_Algerian_War.jpg',
     credit: { institution: 'Ech Chaâb' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'harbi-1985-le-fln-mirage-et-realite', perspective: 'arab' }
+  ]
 })

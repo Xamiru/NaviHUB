@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Congo Crisis', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'crisis',
   start: {
     alts: [
@@ -315,5 +315,13 @@ export default defineEvent({
       bytes: 9100545,
       durationSec: 94
     }
+  ],
+  furtherReading: [
+    { source: 'ndaywel-1998-histoire-generale-du-congo', perspective: 'african' },
+    {
+      source: 'nzongola-ntalaja-2002-the-congo-from-leopold-to-kabila',
+      perspective: 'african'
+    },
+    { source: 'de-witte-2001-de-moord-op-lumumba', perspective: 'european' }
   ]
 })

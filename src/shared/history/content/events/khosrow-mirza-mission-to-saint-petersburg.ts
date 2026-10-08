@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'khosrow-mirza-mission-to-saint-petersburg',
   names: [
-    { text: 'Khosrow Mirza’s mission to Saint Petersburg', lang: 'en', role: 'primary' }
+    { text: 'Khosrow Mirza’s mission to Saint Petersburg', lang: 'en', role: 'primary' },
+    { text: 'سفارت خسرو میرزا به سن‌پترزبورگ', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -58,6 +59,10 @@ export default defineEvent({
   partOf: [
     { ref: 'period:qajar-dynasty' }
   ],
+  polities: [
+    { ref: 'polity:qajar-iran' },
+    { ref: 'polity:russian-empire' }
+  ],
   participants: [
     {
       ref: 'person:khosrow-mirza-qajar',
@@ -90,7 +95,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Mirzā Taqi Khan Farāhāni',
+      ref: 'person:amir-kabir',
       role: 'participant',
       cites: [
         {

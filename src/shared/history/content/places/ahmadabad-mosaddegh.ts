@@ -6,7 +6,7 @@ export default definePlace({
     { text: 'Ahmadabad', lang: 'en', role: 'primary' },
     { text: 'احمدآباد مصدق', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   placeType: 'site',
   regions: ['iran'],
   modernCountry: 'IR'

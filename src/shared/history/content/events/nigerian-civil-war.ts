@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -49,6 +49,26 @@ export default defineEvent({
   },
   regions: ['subsaharan-africa'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:enugu',
+      cites: [
+        {
+          source: 'ssrc-amadi-2007-story-of-biafra',
+          loc: {
+            section: 'Colonial Legacy, Elite Dissension and the Making of Genocide: The Story of Biafra',
+            para: '41'
+          }
+        }
+      ]
+    },
+    {
+      ref: 'place:owerri',
+      cites: [
+        { source: 'loc-nigeria-country-study-1991', loc: { section: 'Civil War', para: '14' } }
+      ]
+    }
+  ],
   sides: [
     {
       key: 'federal',
@@ -248,6 +268,14 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/nigeria/70.htm' }
         }
       ]
+    }
+  ],
+  furtherReading: [
+    { source: 'achebe-2012-there-was-a-country', perspective: 'african' },
+    { source: 'obasanjo-1980-my-command', perspective: 'african' },
+    {
+      source: 'madiebo-1980-the-nigerian-revolution-and-the-biafran-war',
+      perspective: 'african'
     }
   ]
 })

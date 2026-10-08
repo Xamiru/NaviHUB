@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'founding',
   start: {
     alts: [
@@ -57,9 +57,13 @@ export default defineEvent({
       ]
     }
   ],
+  polities: [
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:british-empire' }
+  ],
   participants: [
     {
-      name: 'Queen Victoria',
+      ref: 'person:queen-victoria',
       role: 'head-of-state',
       cites: [
         {
@@ -328,5 +332,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Peres_de_la_Confederation_No_62_(HS85-10-16085).jpg',
     credit: { institution: 'British Library', creator: 'Joseph L. Pinsonneault' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'groulx-1918-la-confederation-canadienne', perspective: 'other' }
+  ]
 })

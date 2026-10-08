@@ -81,15 +81,16 @@ export default function FootballPersonPage() {
     queryFn: () => api.football.person(id),
     enabled: Number.isInteger(id) && id > 0
   })
+  // Only the run state is needed here; the full sync overview is the Sync page's payload.
   const { data: sync } = useQuery({
-    queryKey: qk.football.sync,
-    queryFn: () => api.football.syncOverview(),
+    queryKey: qk.football.syncStatus,
+    queryFn: () => api.football.syncStatus(),
     refetchInterval: (query) => {
-      const state = query.state.data?.status.state
+      const state = query.state.data?.state
       return state && ['running', 'pausing', 'paused'].includes(state) ? 700 : false
     }
   })
-  const syncActive = !!sync && ['running', 'pausing', 'paused'].includes(sync.status.state)
+  const syncActive = !!sync && ['running', 'pausing', 'paused'].includes(sync.state)
   const appearanceList = useIncrementalList(data?.appearances ?? [], 48, id)
   const buckets = useMemo(() => footballGoalBuckets(data?.goalsBySeason ?? []), [data])
   useEffect(() => {
@@ -108,14 +109,14 @@ export default function FootballPersonPage() {
     await api.football.setFavorite('person', id, !data!.favorite)
     if (!data!.favorite && data!.enrichmentState !== 'ready' && !syncActive) {
       await api.football.startSync({ kind: 'enrich', entityKind: 'person', entityId: id })
-      await qc.invalidateQueries({ queryKey: qk.football.sync })
+      await qc.invalidateQueries({ queryKey: qk.football.syncStatus })
     }
     qc.invalidateQueries({ queryKey: qk.football.all })
   }
   async function enrich() {
     if (syncActive) return
     await api.football.startSync({ kind: 'enrich', entityKind: 'person', entityId: id })
-    await qc.invalidateQueries({ queryKey: qk.football.sync })
+    await qc.invalidateQueries({ queryKey: qk.football.syncStatus })
   }
 
   const clubs = new Set(data.tenures.filter((tenure) => tenure.role === 'player').map((tenure) => tenure.team.id))
@@ -140,7 +141,7 @@ export default function FootballPersonPage() {
         back={{ to: '/football/people', label: 'Players and managers' }}
       >
         <div className="mt-4 flex flex-wrap items-end gap-6">
-          <FootballPortrait name={data.name} imagePath={data.imagePath} className="h-40 w-32" rounded="rounded-lg" />
+          <FootballPortrait name={data.name} imagePath={data.imagePath} className="h-40 w-32" rounded="rounded-lg" thumbWidth={320} />
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-ink-secondary">
               {[data.position ?? (data.role === 'both' ? 'Player and manager' : data.role), data.nationality, data.birthDate ? `born ${data.birthDate}${data.birthPlace ? `, ${data.birthPlace}` : ''}` : data.birthPlace ? `born in ${data.birthPlace}` : null, data.heightCm ? `${data.heightCm} cm` : null, data.foot ? `${data.foot} foot` : null, data.deathDate ? `died ${data.deathDate}` : null].filter(Boolean).join(' / ')}

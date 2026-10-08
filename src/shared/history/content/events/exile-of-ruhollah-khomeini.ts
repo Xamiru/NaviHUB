@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'exile-of-ruhollah-khomeini',
   names: [
-    { text: 'Exile of Ruhollah Khomeini', lang: 'en', role: 'primary' }
+    { text: 'Exile of Ruhollah Khomeini', lang: 'en', role: 'primary' },
+    { text: 'تبعید روح‌الله خمینی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -65,6 +66,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:reign-of-mohammad-reza-shah' }
+  ],
+  polities: [
+    { ref: 'polity:pahlavi-iran' }
   ],
   participants: [
     {
@@ -230,6 +234,12 @@ export default defineEvent({
           url: 'https://web.archive.org/web/20260610181904/https://english.khamenei.ir/news/2116/Imam-Khomeini-s-Biography'
         }
       }
+    }
+  ],
+  furtherReading: [
+    {
+      source: 'ruhani-1977-barresi-va-tahlili-az-nehzat-e-imam-khomeini',
+      perspective: 'iranian'
     }
   ]
 })

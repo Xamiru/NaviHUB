@@ -16,7 +16,42 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1794-04-10' },
+        cites: [
+          {
+            source: 'britannica-1911-perry-matthew-calbraith',
+            loc: { section: 'PERRY, MATTHEW CALBRAITH', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1858-03-04' },
+        cites: [
+          {
+            source: 'britannica-1911-perry-matthew-calbraith',
+            loc: { section: 'PERRY, MATTHEW CALBRAITH', para: '2' }
+          }
+        ]
+      }
+    ]
+  },
+  diedIn: {
+    ref: 'place:new-york-city',
+    cites: [
+      {
+        source: 'britannica-1911-perry-matthew-calbraith',
+        loc: { section: 'PERRY, MATTHEW CALBRAITH', para: '2' }
+      }
+    ]
+  },
   regions: ['north-america', 'east-asia'],
   roles: ['military', 'diplomat'],
   sections: [

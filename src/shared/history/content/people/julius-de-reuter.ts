@@ -19,7 +19,29 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  died: {
+    alts: [
+      {
+        value: { d: '1899-02-25' },
+        cites: [
+          {
+            source: 'britannica-1911-reuter-paul-julius-baron-de',
+            loc: { section: 'REUTER, PAUL JULIUS, Baron de', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  diedIn: {
+    ref: 'place:nice',
+    cites: [
+      {
+        source: 'britannica-1911-reuter-paul-julius-baron-de',
+        loc: { section: 'REUTER, PAUL JULIUS, Baron de', para: '1' }
+      }
+    ]
+  },
   regions: ['europe', 'iran'],
   roles: ['businessperson'],
   sections: [

@@ -7,7 +7,7 @@ export default definePerson({
     { text: 'Александр Сергеевич Грибоедов', lang: 'ru', role: 'native' },
     { text: 'Griboyedov', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -80,6 +80,7 @@ export default definePerson({
   offices: [
     {
       title: 'ambassador plenipotentiary (wazir-e moḵtār) to Persia',
+      polity: 'polity:russian-empire',
       start: {
         alts: [
           {

@@ -73,9 +73,10 @@ export const REFRESH_ASPECTS: RefreshAspectDef[] = [
 // because the row is what decides: a game may be a live 'steam' row or a legacy
 // 'rawg'/'igdb' one. RAWG's API is dead, but 'rawg' rows (API era and offline
 // catalog alike) share the catalog's RAWG ids, so they refresh from the local
-// catalog while it is installed. 'igdb' rows are not refreshable, except for
-// the source-free 'length' aspect.
-export const REFRESHABLE_SOURCES = ['anilist', 'tmdb', 'vndb', 'steam', 'openlibrary', 'rawg'] as const
+// catalog while it is installed. 'launchbox' rows come from the games catalog
+// v2, which also serves the cover and cast of any game linked to it. 'igdb'
+// rows are not refreshable, except for the source-free 'length' aspect.
+export const REFRESHABLE_SOURCES = ['anilist', 'tmdb', 'vndb', 'steam', 'openlibrary', 'rawg', 'launchbox'] as const
 export type RefreshableSource = (typeof REFRESHABLE_SOURCES)[number]
 
 export function isRefreshableSource(source: string | null | undefined): source is RefreshableSource {

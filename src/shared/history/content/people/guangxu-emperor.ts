@@ -6,12 +6,13 @@ export default definePerson({
     { text: 'Guangxu Emperor', lang: 'en', role: 'primary' },
     { text: '光緒帝', lang: 'zh', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   regions: ['east-asia'],
   roles: ['monarch'],
   offices: [
     {
       title: 'Qing emperor',
+      polity: 'polity:qing-empire',
       start: {
         alts: [
           {

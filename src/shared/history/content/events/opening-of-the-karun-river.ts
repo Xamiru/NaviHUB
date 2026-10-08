@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'opening-of-the-karun-river',
   names: [
     { text: 'Opening of the Karun River', lang: 'en', role: 'primary' },
+    { text: 'آزادی کشتیرانی در رود کارون', lang: 'fa', role: 'native' },
     {
       text: 'Karun proclamation',
       lang: 'en',
@@ -16,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'economic',
   start: {
     alts: [
@@ -74,6 +75,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:qajar-dynasty' },
     { ref: 'period:reign-of-naser-al-din-shah-qajar' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {

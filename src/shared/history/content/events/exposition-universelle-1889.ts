@@ -13,7 +13,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'cultural',
   start: {
     alts: [
@@ -44,6 +44,9 @@ export default defineEvent({
         { source: 'britannica-1911-eiffel-tower', loc: { section: 'EIFFEL TOWER', para: '1' } }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:french-third-republic' }
   ],
   participants: [
     {
@@ -211,14 +214,14 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q8',
-        text: 'Auf der Pariser Weltausstellung wird der von Gustave Eiffel (1832-1923) konstruierte und nach ihm benannte Eiffelturm eingeweiht.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1889', loc: { section: 'Chronik 1889', para: '30' } },
+        id: 'q9',
+        text: 'Sadi Carnot, who had succeeded M. Jules Grévy as President of the Republic on the 3rd of December 1887, officially opened the exhibition on the 6th of May 1889. Numerous fêtes were held in the grounds while the exhibition lasted. The Eiffel Tower and the illuminated fountains enraptured the crowd of visitors,',
+        lang: 'en',
+        cite: { source: 'britannica-1911-paris', loc: { section: 'PARIS', para: '373' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1889.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Paris'
         }
       }
     }
@@ -228,5 +231,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Eiffel_tower_at_Exposition_Universelle,_Paris,_1889.jpg',
     credit: { institution: 'Library of Congress', creator: 'Neurdein' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'ory-1989-lexpo-universelle-1889', perspective: 'european' }
+  ]
 })

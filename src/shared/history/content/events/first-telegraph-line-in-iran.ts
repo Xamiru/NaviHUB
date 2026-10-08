@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'first-telegraph-line-in-iran',
   names: [
-    { text: 'First telegraph line in Iran', lang: 'en', role: 'primary' }
+    { text: 'First telegraph line in Iran', lang: 'en', role: 'primary' },
+    { text: 'نخستین خط تلگراف ایران', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -52,6 +53,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-naser-al-din-shah-qajar' },
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {

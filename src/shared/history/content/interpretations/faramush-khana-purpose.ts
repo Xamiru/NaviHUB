@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'faramush-khana-purpose',
   about: ['event:faramush-khana', 'person:malkom-khan'],
   topic: 'motives',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   framing: {
     id: 'q1',
     text: 'Malkom’s purpose in assembling these dignitaries was varyingly presented by himself and interpreted by others.',
@@ -21,10 +21,10 @@ export default defineInterpretation({
   },
   positions: [
     {
-      id: 'malkom-islamic-fraternity',
-      category: 'contemporary',
+      id: 'malkom-self-presentations',
+      category: 'scholarly',
       holders: [
-        { kind: 'participant', name: 'Mīrzā Malkom Khan', ref: 'person:malkom-khan' }
+        { kind: 'scholar', name: 'Hamid Algar' }
       ],
       statements: [
         {
@@ -40,16 +40,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/freemasonry-ii-in-the-qajar-period'
           }
-        }
-      ]
-    },
-    {
-      id: 'malkom-worldly-aims',
-      category: 'contemporary',
-      holders: [
-        { kind: 'participant', name: 'Mīrzā Malkom Khan', ref: 'person:malkom-khan' }
-      ],
-      statements: [
+        },
         {
           id: 'q3',
           text: 'Instead, he ascribed to Freemasonry straightforward worldly purposes such as the fostering of modern learning, civic virtue, and social solidarity (Āḵūndzāda, pp. 294-95).',
@@ -91,9 +82,10 @@ export default defineInterpretation({
     },
     {
       id: 'subversion-and-babis',
-      category: 'contemporary',
+      category: 'scholarly',
       holders: [
-        { kind: 'participant', name: 'Courtiers hostile to Malkom Khan' }
+        { kind: 'scholar', name: 'Hamid Algar' },
+        { kind: 'scholar', name: 'Denis M. MacEoin' }
       ],
       statements: [
         {

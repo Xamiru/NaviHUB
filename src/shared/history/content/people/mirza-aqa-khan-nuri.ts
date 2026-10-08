@@ -17,12 +17,13 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   regions: ['iran'],
   roles: ['politician'],
   offices: [
     {
       title: 'prime minister (ṣadr-e aʿẓam)',
+      polity: 'polity:qajar-iran',
       end: {
         alts: [
           {

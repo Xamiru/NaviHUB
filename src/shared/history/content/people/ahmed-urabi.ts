@@ -22,7 +22,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -85,6 +85,39 @@ export default definePerson({
             loc: { section: 'From Intervention to Occupation, 1876-82', para: '13' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/egypt/25.htm' }
+        },
+        {
+          id: 'q6',
+          text: 'A military demonstration on the 8th of September 1881, led by Arabi, forced the khedive to increase the numbers and pay of the army, to substitute Sherif Pasha for Riaz Pasha as prime minister, and to convene an assembly of notables.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-arabi-pasha', loc: { section: 'ARABI PASHA', para: '1' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Arabi_Pasha'
+          }
+        },
+        {
+          id: 'q7',
+          text: 'Sherif fell in February, Mahmud Sami became prime minister, and Arabi (created a pasha) minister of war.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-arabi-pasha', loc: { section: 'ARABI PASHA', para: '1' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Arabi_Pasha'
+          }
+        },
+        {
+          id: 'q8',
+          text: 'On the refusal of France to co-operate, the British fleet bombarded the forts (11th July), and a British force, under Sir Garnet Wolseley, defeated Arabi on the 13th of September at Tel-el-Kebir.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-arabi-pasha', loc: { section: 'ARABI PASHA', para: '1' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Arabi_Pasha'
+          }
         }
       ]
     },
@@ -103,6 +136,22 @@ export default definePerson({
           }
         }
       ]
+    },
+    {
+      kind: 'legacy',
+      quotes: [
+        {
+          id: 'q10',
+          text: 'Arabi, as has been said, was rather the figurehead than the inspirer of the movement of 1881–1882; and was probably more honest, as he was certainly less intelligent, than those whose tool, in a large measure, he was.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-arabi-pasha', loc: { section: 'ARABI PASHA', para: '1' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Arabi_Pasha'
+          }
+        }
+      ]
     }
   ],
   portrait: {
@@ -110,5 +159,49 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Ahmed_Orabi_1882.png',
     credit: { institution: 'Czech Academy of Sciences' },
     license: { id: 'public-domain' }
-  }
+  },
+  offices: [
+    {
+      title: 'under-secretary for war',
+      polity: 'polity:khedivate-of-egypt',
+      lang: 'en',
+      start: {
+        alts: [
+          {
+            value: { d: '1882' },
+            cites: [
+              {
+                source: 'britannica-1911-arabi-pasha',
+                loc: { section: 'ARABI PASHA', para: '1' }
+              }
+            ]
+          }
+        ]
+      },
+      cites: [
+        { source: 'britannica-1911-arabi-pasha', loc: { section: 'ARABI PASHA', para: '1' } }
+      ]
+    },
+    {
+      title: 'minister of war',
+      polity: 'polity:khedivate-of-egypt',
+      lang: 'en',
+      start: {
+        alts: [
+          {
+            value: { d: '1882-02' },
+            cites: [
+              {
+                source: 'britannica-1911-arabi-pasha',
+                loc: { section: 'ARABI PASHA', para: '1' }
+              }
+            ]
+          }
+        ]
+      },
+      cites: [
+        { source: 'britannica-1911-arabi-pasha', loc: { section: 'ARABI PASHA', para: '1' } }
+      ]
+    }
+  ]
 })

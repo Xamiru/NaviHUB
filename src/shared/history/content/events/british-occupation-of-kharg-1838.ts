@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'british-occupation-of-kharg-1838',
   names: [
-    { text: 'British occupation of Kharg Island (1838)', lang: 'en', role: 'primary' }
+    { text: 'British occupation of Kharg Island (1838)', lang: 'en', role: 'primary' },
+    { text: 'اشغال جزیره خارک', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'occupation',
   start: {
     alts: [
@@ -48,6 +49,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:reign-of-mohammad-shah-qajar' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   sides: [
     {

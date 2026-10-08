@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -35,6 +35,9 @@ export default defineEvent({
   prominence: 3,
   places: [
     { ref: 'place:london' }
+  ],
+  polities: [
+    { ref: 'polity:united-kingdom' }
   ],
   related: [
     { ref: 'event:founding-of-singapore', rel: 'related' }

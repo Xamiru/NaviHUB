@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Opening of the Suez Canal', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'economic',
   start: {
     alts: [
@@ -29,6 +29,9 @@ export default defineEvent({
   ],
   related: [
     { ref: 'event:suez-canal-concession', rel: 'preceded-by' }
+  ],
+  polities: [
+    { ref: 'polity:khedivate-of-egypt' }
   ],
   participants: [
     {

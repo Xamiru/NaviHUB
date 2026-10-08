@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'reform',
   start: {
     alts: [
@@ -60,6 +60,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:reign-of-reza-shah' }
+  ],
+  polities: [
+    { ref: 'polity:pahlavi-iran' }
   ],
   participants: [
     {
@@ -385,5 +388,10 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:%D8%AD%D8%B6%D9%88%D8%B1_%D8%AE%D8%A7%D9%86%D9%88%D8%A7%D8%AF%D9%87_%D8%B3%D9%84%D8%B7%D9%86%D8%AA%DB%8C_%D8%AF%D8%B1_%D8%AF%D8%A7%D9%86%D8%B4%D8%B3%D8%B1%D8%A7%DB%8C_%D9%85%D9%82%D8%AF%D9%85%D8%A7%D8%AA%DB%8C_%D8%AA%D9%87%D8%B1%D8%A7%D9%86%D8%8C_%DB%B1%DB%B7_%D8%AF%DB%8C_%DB%B1%DB%B3%DB%B1%DB%B4.jpg',
     credit: { institution: 'Ettelaat' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'bamdad-1968-zan-e-irani', perspective: 'iranian' },
+    { source: 'bamdad-1977-from-darkness-into-light', perspective: 'iranian' },
+    { source: 'makki-1983-tarikh-e-bist-saleh-ye-iran', perspective: 'iranian' }
+  ]
 })

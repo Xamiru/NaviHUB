@@ -6,7 +6,39 @@ export default definePerson({
     { text: 'Midhat Pasha', lang: 'en', role: 'primary' },
     { text: 'Mithat Paşa', lang: 'tr', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1822' },
+        cites: [
+          {
+            source: 'britannica-1911-midhat-pasha',
+            loc: { section: 'MIDHAT PASHA', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1884-05-08' },
+        cites: [
+          {
+            source: 'britannica-1911-midhat-pasha',
+            loc: { section: 'MIDHAT PASHA', para: '2' }
+          }
+        ]
+      }
+    ]
+  },
+  bornIn: {
+    ref: 'place:istanbul',
+    cites: [
+      { source: 'britannica-1911-midhat-pasha', loc: { section: 'MIDHAT PASHA', para: '1' } }
+    ]
+  },
   regions: ['mena', 'europe'],
   roles: ['politician'],
   sections: [

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'chinese-exclusion-act-justification',
   about: ['event:chinese-exclusion-act'],
   topic: 'legitimacy',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'good-order-of-localities',
@@ -70,7 +70,7 @@ export default defineInterpretation({
       id: 'condemned',
       category: 'official',
       holders: [
-        { kind: 'state', name: 'United States Congress (2011–2012)' }
+        { kind: 'organization', name: 'National Archives and Records Administration' }
       ],
       statements: [
         {

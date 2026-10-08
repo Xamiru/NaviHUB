@@ -24,7 +24,9 @@ export const ENTITY_KINDS = {
   place: 'Place',
   source: 'Source',
   interpretation: 'Interpretation',
-  media: 'Media link'
+  media: 'Media link',
+  polity: 'State',
+  theme: 'Theme'
 } as const
 export type EntityKind = keyof typeof ENTITY_KINDS
 
@@ -78,6 +80,27 @@ export const PERIOD_TYPES = {
   cultural: 'Cultural period'
 } as const
 export type PeriodType = keyof typeof PERIOD_TYPES
+
+export const POLITY_TYPES = {
+  empire: 'Empire',
+  kingdom: 'Kingdom',
+  republic: 'Republic',
+  emirate: 'Emirate',
+  khanate: 'Khanate',
+  sultanate: 'Sultanate',
+  caliphate: 'Caliphate',
+  'grand-duchy': 'Grand duchy',
+  confederation: 'Confederation',
+  union: 'Union',
+  colony: 'Colony',
+  protectorate: 'Protectorate',
+  mandate: 'Mandate',
+  dominion: 'Dominion',
+  condominium: 'Condominium',
+  occupation: 'Occupation',
+  'provisional-government': 'Provisional government'
+} as const
+export type PolityType = keyof typeof POLITY_TYPES
 
 export const PLACE_TYPES = {
   city: 'City',
@@ -177,7 +200,9 @@ export const FIGURE_KEYS = {
   prisoners: 'Prisoners',
   executed: 'Executed',
   combatants: 'Combatants',
-  participants: 'Participants'
+  participants: 'Participants',
+  area: 'Area (km²)',
+  population: 'Population'
 } as const
 export type FigureKey = keyof typeof FIGURE_KEYS
 
@@ -262,6 +287,39 @@ export const NAME_ROLES = {
 export type NameRole = keyof typeof NAME_ROLES
 /** Names that make a claim about who uses them must be cited. */
 export const CITED_NAME_ROLES: ReadonlySet<NameRole> = new Set(['official', 'contested'])
+
+/**
+ * Where a further-reading work comes from: the tradition of scholarship or the
+ * side it speaks for, so a page can point past its main (largely US and UK)
+ * sources. Frozen keys; relabel, never rename.
+ */
+export const PERSPECTIVES = {
+  iranian: 'Iranian',
+  arab: 'Arab',
+  turkish: 'Turkish and Ottoman',
+  'russian-soviet': 'Russian and Soviet',
+  chinese: 'Chinese',
+  japanese: 'Japanese',
+  'south-asian': 'South Asian',
+  'southeast-asian': 'Southeast Asian',
+  african: 'African',
+  'latin-american': 'Latin American',
+  caribbean: 'Caribbean',
+  pacific: 'Pacific and Māori',
+  'central-asian': 'Central Asian and Caucasian',
+  israeli: 'Israeli and Jewish',
+  palestinian: 'Palestinian',
+  european: 'European',
+  american: 'American',
+  other: 'Other'
+} as const
+export type PerspectiveKey = keyof typeof PERSPECTIVES
+
+/** A work worth reading beyond the page's quoted sources: bibliography only, never quoted. */
+export interface FurtherReading {
+  source: string
+  perspective: PerspectiveKey
+}
 
 export const SOURCE_TYPES = {
   book: 'Book',
@@ -496,6 +554,8 @@ export interface Side {
   key: string
   /** The side's name as the cited source gives it. */
   name: string
+  /** The state this side was, when it has a page. */
+  polity?: Ref
   cites: Cite[]
 }
 
@@ -563,6 +623,8 @@ export interface HistoryEvent extends Named {
   places?: PlaceLink[]
   partOf?: PlaceLink[]
   related?: Relation[]
+  /** States involved (beyond those that are sides). */
+  polities?: PlaceLink[]
   sides?: Side[]
   participants?: Participant[]
   figures?: Figure[]
@@ -570,10 +632,14 @@ export interface HistoryEvent extends Named {
   sections: Section[]
   course?: CourseItem[]
   archive?: ArchiveSuggestion[]
+  /** Further reading: works from other traditions, listed, not quoted. */
+  furtherReading?: FurtherReading[]
 }
 
 export interface Office {
   title: string
+  /** The state this office belonged to; its page lists the holders. */
+  polity?: Ref
   lang?: string
   start?: Claim<HistDate>
   end?: Claim<HistDate>
@@ -592,6 +658,8 @@ export interface HistoryPerson extends Named {
   portrait?: ImageRef
   sections: Section[]
   archive?: ArchiveSuggestion[]
+  /** Further reading: works from other traditions, listed, not quoted. */
+  furtherReading?: FurtherReading[]
 }
 
 export interface HistoryPeriod extends Named {
@@ -604,6 +672,8 @@ export interface HistoryPeriod extends Named {
   parent?: Ref
   hero?: ImageRef
   sections: Section[]
+  /** Further reading: works from other traditions, listed, not quoted. */
+  furtherReading?: FurtherReading[]
 }
 
 export interface HistoryPlace extends Named {
@@ -614,6 +684,62 @@ export interface HistoryPlace extends Named {
   /** ISO 3166-1 alpha-2 of the present-day country. */
   modernCountry?: string
   sections?: Section[]
+}
+
+/** A dated link: a capital, or the empire a colony belonged to. */
+export interface DatedLink {
+  ref: Ref
+  start?: Claim<HistDate>
+  end?: Claim<HistDate>
+  cites: Cite[]
+}
+
+/** A CShapes border unit on the History map (`set` + `code`, optionally a year span). */
+export interface CShapesLink {
+  set: 'world' | 'europe' | 'early'
+  code: number
+  from?: number
+  to?: number
+}
+
+export interface HistoryPolity extends Named {
+  kind: 'polity'
+  polityType: PolityType
+  start: Claim<HistDate>
+  end?: Claim<HistDate>
+  regions: RegionKey[]
+  prominence: 1 | 2 | 3
+  capitals?: DatedLink[]
+  predecessors?: PlaceLink[]
+  partOf?: DatedLink[]
+  /** Ruling houses, as periods. */
+  dynasties?: Ref[]
+  cshapes?: CShapesLink[]
+  figures?: Figure[]
+  hero?: ImageRef
+  sections: Section[]
+  archive?: ArchiveSuggestion[]
+  /** Further reading: works from other traditions, listed, not quoted. */
+  furtherReading?: FurtherReading[]
+}
+
+export interface ThreadItem {
+  ref: Ref
+  /** Why this belongs to the theme, in a source's words. */
+  quote?: Quote
+  date?: Claim<HistDate>
+}
+
+export interface HistoryTheme extends Named {
+  kind: 'theme'
+  regions: RegionKey[]
+  /** In reading order. */
+  thread: ThreadItem[]
+  related?: PlaceLink[]
+  hero?: ImageRef
+  sections: Section[]
+  /** Further reading: works from other traditions, listed, not quoted. */
+  furtherReading?: FurtherReading[]
 }
 
 export interface Contributor {
@@ -716,9 +842,11 @@ export type HistoryEntity =
   | HistorySource
   | HistoryInterpretation
   | HistoryMedia
+  | HistoryPolity
+  | HistoryTheme
 
 /** Entities that carry names and render as an article page. */
-export type HistoryArticle = HistoryEvent | HistoryPerson | HistoryPeriod | HistoryPlace
+export type HistoryArticle = HistoryEvent | HistoryPerson | HistoryPeriod | HistoryPlace | HistoryPolity | HistoryTheme
 
 export function mediaFileId(t: Pick<HistoryMediaTitle, 'source' | 'mediaType' | 'externalId'>): string {
   return `${t.source}-${t.mediaType}-${t.externalId}`
@@ -766,6 +894,8 @@ export const defineEvent = (e: Input<HistoryEvent>): HistoryEvent => ({ v: 1, ki
 export const definePerson = (e: Input<HistoryPerson>): HistoryPerson => ({ v: 1, kind: 'person', ...e })
 export const definePeriod = (e: Input<HistoryPeriod>): HistoryPeriod => ({ v: 1, kind: 'period', ...e })
 export const definePlace = (e: Input<HistoryPlace>): HistoryPlace => ({ v: 1, kind: 'place', ...e })
+export const definePolity = (e: Input<HistoryPolity>): HistoryPolity => ({ v: 1, kind: 'polity', ...e })
+export const defineTheme = (e: Input<HistoryTheme>): HistoryTheme => ({ v: 1, kind: 'theme', ...e })
 export const defineSource = (e: Input<HistorySource>): HistorySource => ({ v: 1, kind: 'source', ...e })
 export const defineInterpretation = (e: Input<HistoryInterpretation>): HistoryInterpretation => ({
   v: 1,

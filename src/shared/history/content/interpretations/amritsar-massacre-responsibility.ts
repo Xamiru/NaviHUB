@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'amritsar-massacre-responsibility',
   about: ['event:amritsar-massacre', 'person:reginald-dyer'],
   topic: 'responsibility',
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   positions: [
     {
       id: 'duty-in-a-rebellion',
@@ -40,6 +40,28 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://api.parliament.uk/historic-hansard/commons/1920/jul/08/army-council-and-general-dyer'
+          }
+        },
+        {
+          id: 'q7',
+          text: 'It is conceded that I was faced not with unlawful assembly or riot, but with insurrection (open rebellion the Committee call it).',
+          lang: 'en',
+          cite: { source: 'dyer-1920-statement-to-the-army-council', loc: { page: '12' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://archive.org/download/disturbancespunjabdyer/DisturbancesPunjabDyer_djvu.txt'
+          }
+        },
+        {
+          id: 'q8',
+          text: 'But if any one dominant motive can be extracted it was the determination to avert from the European women and children and those of the law-abiding Indian community the fate which I was convinced would be theirs, if I did not meet the challenge and produce the required effect to restore order and security.',
+          lang: 'en',
+          cite: { source: 'dyer-1920-statement-to-the-army-council', loc: { page: '13' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://archive.org/download/disturbancespunjabdyer/DisturbancesPunjabDyer_djvu.txt'
           }
         }
       ]
@@ -102,17 +124,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://encyclopedia.1914-1918-online.net/article/amritsar-massacre-of/'
           }
-        }
-      ]
-    },
-    {
-      id: 'punjab-wrong',
-      category: 'contemporary',
-      holders: [
-        { kind: 'party', name: 'Indian National Congress' },
-        { kind: 'participant', name: 'Mahatma Gandhi' }
-      ],
-      statements: [
+        },
         {
           id: 'q6',
           text: 'Even for the Indian National Congress, it was not merely the massacre that constituted the “Punjab Wrong” but the failure to prosecute or condemn Dyer even though the evidence of wrong-doing was overwhelming (Dyer was retired on half-pay and a retirement fund was raised to celebrate his actions by the British press13).',
@@ -125,6 +137,30 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://encyclopedia.1914-1918-online.net/article/amritsar-massacre-of/'
+          }
+        }
+      ]
+    },
+    {
+      id: 'punjab-wrong',
+      category: 'contemporary',
+      holders: [
+        { kind: 'party', name: 'Indian National Congress (Punjab Sub-Committee)' },
+        { kind: 'participant', name: 'Mahatma Gandhi' }
+      ],
+      statements: [
+        {
+          id: 'q9',
+          text: 'The measures taken under it were such as to disgrace any government, calling itself civilized. Its inauguration was heralded by the massacre of the innocents of Jalleanwala Bagh.',
+          lang: 'en',
+          cite: {
+            source: 'inc-1920-punjab-inquiry-report-vol-1',
+            loc: { section: 'Chapter V. Martial Law', page: '155' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://archive.org/download/in.ernet.dli.2015.99200/2015.99200.Punjab-Disturbances-1919-20-Vol-1_djvu.txt'
           }
         }
       ]

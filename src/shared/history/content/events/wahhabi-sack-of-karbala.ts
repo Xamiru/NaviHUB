@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Wahhabi sack of Karbala', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'massacre',
   start: {
     alts: [
@@ -124,5 +124,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Karbala_City_1890_-_1899.jpg',
     credit: { institution: 'Architectural Survey of Karbala' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'ibn-bishr-1965-unwan-al-majd', perspective: 'arab' }
+  ]
 })

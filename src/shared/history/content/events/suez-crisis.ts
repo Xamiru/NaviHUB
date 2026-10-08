@@ -42,7 +42,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'crisis',
   start: {
     alts: [
@@ -109,10 +109,16 @@ export default defineEvent({
   partOf: [
     { ref: 'period:cold-war' }
   ],
+  polities: [
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:french-fourth-republic' },
+    { ref: 'polity:united-states' }
+  ],
   sides: [
     {
       key: 'egypt',
       name: 'Egypt',
+      polity: 'polity:republic-of-egypt',
       cites: [
         {
           source: 'loc-egypt-country-study-1990',
@@ -532,5 +538,10 @@ export default defineEvent({
       bytes: 3946877,
       durationSec: 41
     }
+  ],
+  furtherReading: [
+    { source: 'heikal-1986-milaffat-al-suways', perspective: 'arab' },
+    { source: 'heikal-1986-cutting-the-lions-tail', perspective: 'arab' },
+    { source: 'dayan-1966-diary-of-the-sinai-campaign', perspective: 'israeli' }
   ]
 })

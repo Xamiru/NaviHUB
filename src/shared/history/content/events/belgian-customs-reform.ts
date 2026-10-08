@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'belgian-customs-reform',
   names: [
-    { text: 'Belgian reform of the Persian customs', lang: 'en', role: 'primary' }
+    { text: 'Belgian reform of the Persian customs', lang: 'en', role: 'primary' },
+    { text: 'اصلاح گمرکات به دست بلژیکی‌ها', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'reform',
   start: {
     alts: [
@@ -63,6 +64,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-mozaffar-al-din-shah' },
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {

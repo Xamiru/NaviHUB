@@ -5,12 +5,45 @@ export default definePerson({
   names: [
     { text: 'James Monroe', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1758-04-28' },
+        cites: [
+          {
+            source: 'britannica-1911-monroe-james',
+            loc: { section: 'MONROE, JAMES', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1831-07-04' },
+        cites: [
+          {
+            source: 'britannica-1911-monroe-james',
+            loc: { section: 'MONROE, JAMES', para: '4' }
+          }
+        ]
+      }
+    ]
+  },
+  diedIn: {
+    ref: 'place:new-york-city',
+    cites: [
+      { source: 'britannica-1911-monroe-james', loc: { section: 'MONROE, JAMES', para: '4' } }
+    ]
+  },
   regions: ['north-america'],
   roles: ['head-of-state', 'politician'],
   offices: [
     {
       title: 'President of the United States',
+      polity: 'polity:united-states',
       cites: [
         {
           source: 'state-dept-milestones-monroe-doctrine',

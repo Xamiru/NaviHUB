@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Battle of Ayacucho', lang: 'en', role: 'primary' },
     { text: 'Batalla de Ayacucho', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -33,6 +33,10 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:gran-colombia' },
+    { ref: 'polity:kingdom-of-spain' }
   ],
   participants: [
     {
@@ -260,5 +264,12 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Batalla_de_Ayacucho_by_Mart%C3%ADn_Tovar_y_Tovar_(1827_-_1902).jpg',
     credit: { creator: 'Martín Tovar y Tovar' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'bonilla-1972-la-independencia-en-el-peru', perspective: 'latin-american' },
+    {
+      source: 'montoya-2002-la-independencia-del-peru-y-el-fantasma-de-la-revolucion',
+      perspective: 'latin-american'
+    }
+  ]
 })

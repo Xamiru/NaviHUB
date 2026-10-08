@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -96,6 +96,7 @@ export default defineEvent({
     {
       key: 'ottoman',
       name: 'Ottoman troops',
+      polity: 'polity:ottoman-empire',
       cites: [
         {
           source: 'eo1418-el-bakri-arab-revolt',

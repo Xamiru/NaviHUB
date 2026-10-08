@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Cuban War of Independence', lang: 'en', role: 'primary' },
     { text: 'Guerra de Independencia cubana', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -34,6 +34,20 @@ export default defineEvent({
   },
   regions: ['latin-america'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:cuba',
+      cites: [
+        {
+          source: 'state-dept-milestones-spanish-american-war',
+          loc: { section: 'The Spanish-American War, 1898', para: '3' }
+        }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:kingdom-of-spain' }
+  ],
   related: [
     {
       ref: 'event:spanish-american-war',
@@ -66,17 +80,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1866-1898/spanish-american-war'
-          }
-        },
-        {
-          id: 'q1',
-          text: 'Auf Kuba beginnt der bis 1898 andauernde Unabhängigkeitskampf gegen die spanische Kolonialmacht.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1895', loc: { section: 'Chronik 1895', para: '8' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1895.html'
           }
         }
       ]
@@ -153,5 +156,12 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:CubanMambisesSixthCorps.jpg',
     credit: { creator: 'José Gómez de la Carrera' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'miro-argenter-1981-cronicas-de-la-guerra', perspective: 'latin-american' },
+    {
+      source: 'roig-de-leuchsenring-1952-la-guerra-libertadora-cubana',
+      perspective: 'latin-american'
+    }
+  ]
 })

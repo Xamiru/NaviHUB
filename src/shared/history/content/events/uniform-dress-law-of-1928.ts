@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Uniform dress law of 1928', lang: 'en', role: 'primary' },
     { text: 'قانون متحدالشکل شدن البسه', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -26,6 +26,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:pahlavi-dynasty' },
     { ref: 'period:reign-of-reza-shah' }
+  ],
+  polities: [
+    { ref: 'polity:pahlavi-iran' }
   ],
   participants: [
     {

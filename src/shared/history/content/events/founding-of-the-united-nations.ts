@@ -240,20 +240,27 @@ export default defineEvent({
               {
                 source: 'lemo-chronik-1946',
                 loc: { section: 'Jahreschronik 1946', para: '4' }
+              },
+              {
+                source: 'nps-elro-eleanor-roosevelt-and-the-udhr',
+                loc: { section: 'Eleanor Roosevelt and the Universal Declaration of Human Rights' }
               }
             ]
           }
         ]
       },
       quote: {
-        id: 'q8',
-        text: 'Die erste Vollversammlung der Vereinten Nationen (UNO) wird in London eröffnet.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1946', loc: { section: 'Jahreschronik 1946', para: '5' } },
+        id: 'q9',
+        text: 'President Harry Truman had appointed Eleanor Roosevelt to the United States delegation to the United Nations in December 1945. Soon after her return the following February from London, where the General Assembly first convened, she received a call from UN Secretary-General Trygve Lie, telling her that he had appointed her to the nuclear commission charged with creating the formal human rights commission.',
+        lang: 'en',
+        cite: {
+          source: 'nps-elro-eleanor-roosevelt-and-the-udhr',
+          loc: { section: 'Eleanor Roosevelt and the Universal Declaration of Human Rights' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.hdg.de/lemo/jahreschronik/1946.html'
+          at: '2026-10-07',
+          url: 'https://www.nps.gov/elro/learn/historyculture/udhr.htm'
         }
       }
     }

@@ -11,6 +11,8 @@ import {
   primaryName,
   refOf,
   type ArchiveKind,
+  type Claim,
+  type HistDate,
   type HistoryArticle,
   type HistoryEntity,
   type HistoryInterpretation,
@@ -31,6 +33,10 @@ import type {
   HistoryMapPin,
   HistoryOverview,
   HistoryRefInfo,
+  HistoryRuler,
+  HistoryOnThisDay,
+  HistoryThemeRow,
+  HistoryMapPolity,
   HistorySearchHit,
   HistorySourceRow,
   HistorySourceView,
@@ -294,6 +300,8 @@ export function decade(index: HistoryIndex, start: number, ctx: ViewContext): Hi
 
 // ---- article ----
 
+const ARTICLE_KINDS: ReadonlySet<string> = new Set(['event', 'person', 'period', 'place', 'polity', 'theme'])
+
 /** Every `ref`/`target`/`about`/`person`/`parent` string the entity mentions. */
 function collectRefs(node: unknown, out: Set<string>): void {
   if (!node || typeof node !== 'object') return
@@ -407,7 +415,7 @@ export function article(
   ctx: ViewContext & { note: HistoryNote | null }
 ): HistoryArticleView | null {
   const entity = lookup(index.catalog, ref)
-  if (!entity || !(['event', 'person', 'period', 'place'] as const).includes(entity.kind as never)) return null
+  if (!entity || !ARTICLE_KINDS.has(entity.kind)) return null
   const e = entity as HistoryArticle
 
   const interpretations = (index.interpretationsAbout.get(ref) ?? [])
@@ -425,6 +433,17 @@ export function article(
   const children = (index.childrenOf.get(ref) ?? []).slice()
   const inbound = index.inbound.get(ref) ?? []
   const appearsIn = e.kind === 'person' ? index.personEvents.get(ref) ?? [] : []
+  const rulers: HistoryRuler[] = (index.rulersOf.get(ref) ?? [])
+    .flatMap(({ ref: person, office }) => {
+      const p = lookup(index.catalog, person)
+      const o = p?.kind === 'person' ? p.offices?.[office] : undefined
+      return o ? [{ person, title: o.title, start: o.start ?? null, end: o.end ?? null }] : []
+    })
+    .sort((a, b) => (firstValue(a.start ?? undefined)?.d ?? '9999').localeCompare(firstValue(b.start ?? undefined)?.d ?? '9999'))
+  const successors = index.successors.get(ref) ?? []
+  const dependencies = index.dependencies.get(ref) ?? []
+  const stateEvents = index.polityEvents.get(ref) ?? []
+  const themes = index.themesOf.get(ref) ?? []
 
   const span = lifespan(e)
   let meanwhile: string[] = []
@@ -460,6 +479,7 @@ export function article(
   appearsIn.forEach((r) => refs.add(r.ref))
   meanwhile.forEach((r) => refs.add(r))
   contemporaries.forEach((r) => refs.add(r))
+  for (const r of [...rulers.map((x) => x.person), ...successors, ...dependencies, ...stateEvents, ...themes]) refs.add(r)
   refs.delete(ref)
 
   const sourceOrder: string[] = []
@@ -483,10 +503,18 @@ export function article(
     }
   }
 
+  // Further reading is bibliography, not citation: resolved for the page but
+  // never numbered as a footnote.
+  const furtherReading = 'furtherReading' in e ? e.furtherReading ?? [] : []
+  for (const r of furtherReading) {
+    const s = index.catalog.sources.get(r.source)
+    if (s) sources[r.source] = s
+  }
+
   const refInfos: Record<string, HistoryRefInfo> = {}
   for (const r of refs) refInfos[r] = refInfo(index, r, ctx.cached)
 
-  const hero = e.kind === 'event' || e.kind === 'period' ? e.hero : e.kind === 'person' ? e.portrait : undefined
+  const hero = e.kind === 'person' ? e.portrait : e.kind === 'place' ? undefined : e.hero
 
   return {
     ref,
@@ -507,12 +535,28 @@ export function article(
     mark: ctx.marks.get(ref) ?? { read: null, favorite: false },
     note: ctx.note,
     solarHijri: 'regions' in e && (e.regions as string[]).includes('iran'),
-    mapYear: mapYearOf(index, e)
+    mapYear: mapYearOf(index, e),
+    rulers,
+    successors,
+    dependencies,
+    events: stateEvents,
+    themes,
+    furtherReading,
+    // Filled by the service, which owns the lazily loaded borders.
+    territory: []
   }
 }
 
-/** An event's start year when one of its places carries coordinates. */
+/**
+ * The year to open the map at: an event's start when one of its places carries
+ * coordinates; a state's first year whose borders the map draws.
+ */
 function mapYearOf(index: HistoryIndex, e: HistoryArticle): number | null {
+  if (e.kind === 'polity') {
+    const start = lifespan(e)?.s ?? null
+    const years = (e.cshapes ?? []).map((c) => Math.max(c.from ?? (c.set === 'world' ? 1886 : c.set === 'europe' ? 1816 : 1800), start ?? -Infinity))
+    return years.length ? Math.ceil(Math.min(...years)) : null
+  }
   if (e.kind !== 'event') return null
   const located = (e.places ?? []).some((l) => {
     const p = parseRef(l.ref)
@@ -663,4 +707,61 @@ export function mapPins(index: HistoryIndex, ctx: TimelineCtx): HistoryMapPin[] 
     }
   }
   return pins
+}
+
+/** Every map border unit linked to a state page, for the map's click-through. */
+export function mapPolities(index: HistoryIndex): HistoryMapPolity[] {
+  const out: HistoryMapPolity[] = []
+  for (const p of index.catalog.polities.values()) {
+    for (const c of p.cshapes ?? []) {
+      out.push({ set: c.set, code: c.code, from: c.from ?? null, to: c.to ?? null, ref: refOf('polity', p.id), title: primaryName(p) })
+    }
+  }
+  return out
+}
+
+/** Every theme, with the span and size of its thread, for the themes index. */
+export function themeRows(index: HistoryIndex, cached: CachedLookup): HistoryThemeRow[] {
+  return [...index.catalog.themes.values()]
+    .map((t) => {
+      const ref = refOf('theme', t.id)
+      const years = t.thread
+        .map((x) => lifespan(lookup(index.catalog, x.ref) ?? t)?.s)
+        .filter((y): y is number => typeof y === 'number')
+      return {
+        info: refInfo(index, ref, cached),
+        entries: t.thread.length,
+        from: years.length ? Math.floor(Math.min(...years)) : null,
+        to: years.length ? Math.floor(Math.max(...years)) : null
+      }
+    })
+    .sort((a, b) => a.info.title.localeCompare(b.info.title))
+}
+
+/**
+ * Events with a day-precise date on this month and day: a start, an end or a
+ * dated stage of their course (any sourced alternative; Old Style dates match
+ * on their Gregorian day). Lead events first, then by year.
+ */
+export function onThisDay(index: HistoryIndex, month: number, day: number, cached: CachedLookup, limit = 6): HistoryOnThisDay[] {
+  const md = `-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  const hits: Array<HistoryOnThisDay & { prominence: number }> = []
+  for (const e of index.catalog.events.values()) {
+    const candidates: Array<{ d: string; what: HistoryOnThisDay['what'] }> = []
+    const scan = (c: Claim<HistDate> | undefined, what: HistoryOnThisDay['what']): void => {
+      c?.alts.forEach((a) => {
+        if (a.value.d.length === 10 && a.value.d.endsWith(md) && !a.value.notAfter) candidates.push({ d: a.value.d, what })
+      })
+    }
+    scan(e.start, 'began')
+    scan(e.end, 'ended')
+    e.course?.forEach((c) => scan(c.date, 'stage'))
+    if (!candidates.length) continue
+    const best = candidates.sort((a, b) => ['began', 'ended', 'stage'].indexOf(a.what) - ['began', 'ended', 'stage'].indexOf(b.what))[0]
+    hits.push({ info: refInfo(index, refOf('event', e.id), cached), year: Number(best.d.slice(0, 4)), what: best.what, prominence: e.prominence })
+  }
+  return hits
+    .sort((a, b) => a.prominence - b.prominence || a.year - b.year)
+    .slice(0, limit)
+    .map(({ prominence: _p, ...h }) => h)
 }

@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Saudi-Wahhabi conquest of the Hijaz', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'invasion',
   start: {
     alts: [
@@ -22,6 +22,17 @@ export default defineEvent({
   },
   regions: ['mena'],
   prominence: 3,
+  places: [
+    {
+      ref: 'place:mecca',
+      cites: [
+        {
+          source: 'loc-saudi-arabia-country-study-1992',
+          loc: { section: 'The Saud Family and Wahhabi Islam', para: '11' }
+        }
+      ]
+    }
+  ],
   related: [
     { ref: 'event:wahhabi-sack-of-karbala', rel: 'preceded-by' }
   ],

@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'massacre',
   start: {
     alts: [
@@ -72,6 +72,9 @@ export default defineEvent({
         { source: 'lemo-chronik-1896', loc: { section: 'Chronik 1896', para: '47' } }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:ottoman-empire' }
   ],
   participants: [
     {
@@ -206,14 +209,14 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q5',
-        text: 'Armenische Revolutionäre überfallen die Ottomanische Bank in Konstantinopel. Die osmanische Regierung reagiert am 29. August mit einem drei Tage andauernden Massaker an der armenischen Bevölkerung Konstantinopels.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1896', loc: { section: 'Chronik 1896', para: '47' } },
+        id: 'q7',
+        text: 'Shortly before, a revolutionary attack by an Armenian band on the Ottoman bank at Constantinople brought about a general massacre of Armenians in the capital (where a widespread revolutionary organization undoubtedly existed), in which at least 3000 victims fell, and the persecution of Armenians became the order of the day.',
+        lang: 'en',
+        cite: { source: 'britannica-1911-turkey', loc: { section: 'TURKEY', para: '1448' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1896.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Turkey'
         }
       }
     }
@@ -223,5 +226,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Armenian_house_after_the_October_30th_massacre,_Erzurum,_Turkey,_1895.jpg',
     credit: { institution: 'UCLA Library', creator: 'William Sachtleben' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'akcam-1999-insan-haklari-ve-ermeni-sorunu', perspective: 'turkish' }
+  ]
 })

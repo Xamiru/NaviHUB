@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Iran in the First World War', lang: 'en', role: 'primary' },
     { text: 'ایران در جنگ جهانی اول', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'occupation',
   start: {
     alts: [
@@ -147,6 +147,11 @@ export default defineEvent({
     { ref: 'period:reign-of-ahmad-shah-qajar' },
     { ref: 'period:qajar-dynasty' }
   ],
+  polities: [
+    { ref: 'polity:qajar-iran' },
+    { ref: 'polity:ottoman-empire' },
+    { ref: 'polity:russian-empire' }
+  ],
   participants: [
     {
       ref: 'person:ahmad-shah-qajar',
@@ -206,7 +211,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Ismail Enver Pasha',
+      ref: 'person:enver-pasha',
       role: 'leader',
       cites: [
         {
@@ -1224,6 +1229,13 @@ export default defineEvent({
       },
       license: { id: 'public-domain' },
       bytes: 27628488
+    }
+  ],
+  furtherReading: [
+    { source: 'sepehr-1957-iran-dar-jang-e-bozorg', perspective: 'iranian' },
+    {
+      source: 'harp-tarihi-baskanligi-1970-birinci-dunya-harbinde-turk-harbi',
+      perspective: 'turkish'
     }
   ]
 })

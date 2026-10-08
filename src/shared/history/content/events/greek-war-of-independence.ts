@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -63,9 +63,24 @@ export default defineEvent({
   },
   regions: ['europe', 'mena'],
   prominence: 1,
+  places: [
+    {
+      ref: 'place:navarino-bay',
+      cites: [
+        {
+          source: 'sowards-msu-balkan-lectures-greek-revolution',
+          loc: { section: 'Lecture 6: The Greek Revolution and the Greek State', para: '42' }
+        }
+      ]
+    }
+  ],
   related: [
     { ref: 'event:battle-of-navarino', rel: 'related' },
     { ref: 'event:russo-turkish-war-1828-1829', rel: 'related' }
+  ],
+  polities: [
+    { ref: 'polity:ottoman-empire' },
+    { ref: 'polity:russian-empire' }
   ],
   participants: [
     {
@@ -435,5 +450,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Eug%C3%A8ne_Delacroix_-_La_Gr%C3%A8ce_sur_les_ruines_de_Missolonghi_(1826).jpg',
     credit: { creator: 'Eugène Delacroix' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'trikoupis-1860-historia-tes-hellenikes-epanastaseos', perspective: 'european' },
+    { source: 'uzuncarsili-1947-osmanli-tarihi', perspective: 'turkish' }
+  ]
 })

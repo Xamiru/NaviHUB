@@ -16,7 +16,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -57,6 +57,7 @@ export default definePerson({
   offices: [
     {
       title: 'Prime Minister of the United Kingdom',
+      polity: 'polity:united-kingdom',
       lang: 'en',
       start: {
         alts: [
@@ -97,6 +98,7 @@ export default definePerson({
     },
     {
       title: 'Prime Minister of the United Kingdom',
+      polity: 'polity:united-kingdom',
       lang: 'en',
       start: {
         alts: [
@@ -134,48 +136,67 @@ export default definePerson({
   ],
   sections: [
     {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q8',
+          text: 'Winston Churchill was an inspirational statesman, writer, orator and leader who led Britain to victory in the Second World War.',
+          lang: 'en',
+          cite: {
+            source: 'gov-uk-past-prime-ministers-churchill',
+            loc: { section: 'Sir Winston Churchill' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.gov.uk/government/history/past-prime-ministers/winston-churchill'
+          }
+        }
+      ]
+    },
+    {
       kind: 'career',
       quotes: [
         {
-          id: 'q1',
-          text: 'Seine Stellungnahme gegen Arthur Neville Chamberlains Politik der Beschwichtigung (Appeasement-Politik) und seine Warnung vor den Gefahren des nationalsozialistischen Regimes stoßen in der Öffentlichkeit auf wachsende Resonanz.',
-          lang: 'de',
+          id: 'q9',
+          text: 'Following the Tory electoral defeat in 1929, Churchill lost his seat and spent much of the next 11 years out of office, mainly writing and making speeches. Although he was alone in his firm opposition to Indian Independence, his warnings against the Appeasement of Nazi Germany were proven correct when the Second World War broke out in 1939.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-winston-churchill',
-            loc: { section: 'Winston Churchill 1874-1965', para: '39' }
+            source: 'gov-uk-past-prime-ministers-churchill',
+            loc: { section: 'Sir Winston Churchill' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/winston-churchill'
+            at: '2026-10-07',
+            url: 'https://www.gov.uk/government/history/past-prime-ministers/winston-churchill'
           }
         },
         {
-          id: 'q2',
-          text: '10. Mai: Nach dem Beginn des deutschen "Westfeldzugs" gegen Frankreich wird Churchill unter dem Druck der öffentlichen Meinung Premier- und Verteidigungsminister einer neu gebildeten Koalitionsregierung und Parteiführer der Konservativen.',
-          lang: 'de',
+          id: 'q10',
+          text: 'Following Neville Chamberlain’s resignation in 1940, Churchill was chosen to succeed him as Prime Minister of an all-party coalition government.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-winston-churchill',
-            loc: { section: 'Winston Churchill 1874-1965', para: '43' }
+            source: 'gov-uk-past-prime-ministers-churchill',
+            loc: { section: 'Sir Winston Churchill' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/winston-churchill'
+            at: '2026-10-07',
+            url: 'https://www.gov.uk/government/history/past-prime-ministers/winston-churchill'
           }
         },
         {
-          id: 'q3',
-          text: '5. März: In der Rolle des britischen Oppositionsführers hält Churchill in Fulton, Missouri (USA), eine Rede, in der er vom "Eisernen Vorhang" inmitten Europas spricht und ein Bild der UdSSR zeichnet, das in der westlichen Welt im "Kalten Krieg" bestimmend wird.',
-          lang: 'de',
+          id: 'q11',
+          text: 'In his 1946 speech in the USA, the instinctive pro-American famously declared that “an iron curtain has descended across the Continent”, and warned of the continued danger from a powerful Soviet Russia.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-winston-churchill',
-            loc: { section: 'Winston Churchill 1874-1965', para: '50' }
+            source: 'gov-uk-past-prime-ministers-churchill',
+            loc: { section: 'Sir Winston Churchill' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/winston-churchill'
+            at: '2026-10-07',
+            url: 'https://www.gov.uk/government/history/past-prime-ministers/winston-churchill'
           }
         }
       ]
@@ -231,17 +252,17 @@ export default definePerson({
       kind: 'works',
       quotes: [
         {
-          id: 'q7',
-          text: 'Churchill macht sich als Maler und Schriftsteller einen Namen. Für seine vielfältigen Schriften, besonders für das sechsbändige Werk "The Second World War" (1948-1953), erhält er den Nobelpreis für Literatur.',
-          lang: 'de',
+          id: 'q12',
+          text: 'Churchill was awarded the Nobel Prize in Literature in 1953 for his many published works.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-winston-churchill',
-            loc: { section: 'Winston Churchill 1874-1965', para: '55' }
+            source: 'gov-uk-past-prime-ministers-churchill',
+            loc: { section: 'Sir Winston Churchill' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/winston-churchill'
+            at: '2026-10-07',
+            url: 'https://www.gov.uk/government/history/past-prime-ministers/winston-churchill'
           }
         }
       ]

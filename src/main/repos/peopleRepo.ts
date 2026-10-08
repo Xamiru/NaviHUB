@@ -2,7 +2,15 @@ import { getSqlite } from '../db/connection'
 import { mapPerson, mapMedia, mapCharacter } from './mappers'
 import * as listRepo from './listRepo'
 import * as tierListRepo from './tierListRepo'
-import type { Person, PersonCredit, CreditRole, MediaType } from '@shared/types'
+import type {
+  Person,
+  PersonCredit,
+  CreditRole,
+  MediaType,
+  PersonDirectoryEntry,
+  PersonDirectoryQuery,
+  PersonDirectoryWork
+} from '@shared/types'
 
 // Sorted by how many works they're credited in (most prolific first).
 // `role` (e.g. 'voice_actor', 'actor', 'director') limits the list to people
@@ -63,6 +71,74 @@ export function list(
     .map(mapPerson)
 }
 
+// A role-scoped creator directory (the Mangaka page). One indexed pass from
+// the type's titles to their crew credits; grouping, counts and the cover pick
+// happen in JS so no per-person subquery runs. Sorted by works by default;
+// the renderer re-sorts and filters the returned list.
+export function directory(query: PersonDirectoryQuery): PersonDirectoryEntry[] {
+  const statuses = query.readStatuses.length ? query.readStatuses : ['']
+  const placeholders = statuses.map(() => '?').join(', ')
+  const rows = getSqlite()
+    .prepare(
+      `SELECT DISTINCT cr.person_id AS person_id, m.id AS media_id, m.title AS media_title,
+              m.cover_path AS media_cover, m.score AS media_score,
+              (m.status IN (${placeholders}) OR m.progress > 0 OR m.rewatch_count > 0) AS media_read,
+              p.*
+       FROM media_item m
+       -- CROSS JOIN pins the order: seek the type's titles, then their credits
+       -- by idx_credit_media. Left free, SQLite walks every crew credit in the
+       -- library through idx_credit_character instead.
+       CROSS JOIN credit cr ON cr.media_id = m.id AND cr.role = ? AND cr.character_id IS NULL
+       JOIN person p ON p.id = cr.person_id
+       WHERE m.media_type = ?`
+    )
+    .all(...statuses, query.role, query.mediaType) as Record<string, unknown>[]
+
+  const byPerson = new Map<
+    number,
+    { person: Person; works: (PersonDirectoryWork & { score: number | null })[] }
+  >()
+  for (const r of rows) {
+    const id = r.person_id as number
+    let entry = byPerson.get(id)
+    if (!entry) {
+      entry = { person: mapPerson(r), works: [] }
+      byPerson.set(id, entry)
+    }
+    entry.works.push({
+      id: r.media_id as number,
+      title: r.media_title as string,
+      coverPath: (r.media_cover as string | null) ?? null,
+      read: !!r.media_read,
+      score: (r.media_score as number | null) ?? null
+    })
+  }
+
+  return [...byPerson.values()]
+    .map(({ person, works }) => {
+      const scored = works.filter((w) => w.score != null)
+      const covers = [...works]
+        .sort(
+          (a, b) =>
+            Number(b.read) - Number(a.read) ||
+            (b.score ?? -1) - (a.score ?? -1) ||
+            a.title.localeCompare(b.title)
+        )
+        .slice(0, 3)
+        .map(({ id, title, coverPath, read }) => ({ id, title, coverPath, read }))
+      return {
+        person,
+        works: works.length,
+        readWorks: works.filter((w) => w.read).length,
+        meanScore: scored.length
+          ? scored.reduce((sum, w) => sum + (w.score as number), 0) / scored.length
+          : null,
+        covers
+      }
+    })
+    .sort((a, b) => b.works - a.works || a.person.name.localeCompare(b.person.name))
+}
+
 export function get(id: number): Person | null {
   const row = getSqlite().prepare('SELECT * FROM person WHERE id = ?').get(id)
   return row ? mapPerson(row) : null
@@ -74,12 +150,20 @@ export function credits(id: number): PersonCredit[] {
   const rows = db
     .prepare(
       `SELECT cr.id AS credit_id, cr.role AS credit_role, cr.language AS credit_language,
+              cr.role_note AS credit_role_note,
               m.*,
               ch.id AS ch_id, ch.name AS ch_name, ch.name_native AS ch_name_native,
               ch.gender AS ch_gender, ch.image_path AS ch_image_path,
-              ch.description AS ch_description
+              ch.description AS ch_description,
+              mc.sort_order AS cast_position,
+              COALESCE(cs.n, 0) AS cast_size
        FROM credit cr
        JOIN media_item m ON m.id = cr.media_id
+       LEFT JOIN (
+         SELECT x.media_id, COUNT(*) AS n FROM media_character x
+         WHERE x.media_id IN (SELECT media_id FROM credit WHERE person_id = ?)
+         GROUP BY x.media_id
+       ) cs ON cs.media_id = cr.media_id
        LEFT JOIN character ch ON ch.id = cr.character_id
        LEFT JOIN media_character mc
          ON mc.media_id = cr.media_id AND mc.character_id = cr.character_id
@@ -88,12 +172,15 @@ export function credits(id: number): PersonCredit[] {
                 COALESCE(mc.sort_order, 1000000) ASC,
                 m.title ASC`
     )
-    .all(id) as Record<string, unknown>[]
+    .all(id, id) as Record<string, unknown>[]
 
   return rows.map((r) => ({
     creditId: r.credit_id as number,
     role: r.credit_role as CreditRole,
     language: (r.credit_language as string) ?? null,
+    roleNote: (r.credit_role_note as string | null) ?? null,
+    castPosition: (r.cast_position as number | null) ?? null,
+    castSize: (r.cast_size as number) ?? 0,
     media: mapMedia(r),
     character:
       r.ch_id == null

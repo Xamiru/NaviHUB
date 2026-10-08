@@ -18,7 +18,7 @@ export default defineEvent({
     },
     { text: '満州事変', lang: 'ja', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'invasion',
   start: {
     alts: [
@@ -75,6 +75,10 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:empire-of-japan' },
+    { ref: 'polity:republic-of-china' }
   ],
   participants: [
     {
@@ -293,5 +297,10 @@ export default defineEvent({
       creator: 'Agence de presse Meurisse'
     },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'ogata-1966-manshu-jihen-to-seisaku-no-keisei-katei', perspective: 'japanese' },
+    { source: 'usui-2020-manshu-jihen', perspective: 'japanese' },
+    { source: 'yi-1981-jiuyiba-shibian-shi', perspective: 'chinese' }
+  ]
 })

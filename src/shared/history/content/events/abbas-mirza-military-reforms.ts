@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'abbas-mirza-military-reforms',
   names: [
     { text: 'Abbas Mirza’s military reforms', lang: 'en', role: 'primary' },
+    { text: 'نظام جدید عباس میرزا', lang: 'fa', role: 'native' },
     {
       text: 'neẓām-e jadid',
       lang: 'fa-Latn',
@@ -16,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'reform',
   start: {
     alts: [
@@ -38,6 +39,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:reign-of-fath-ali-shah' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {

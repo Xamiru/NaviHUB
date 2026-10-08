@@ -4,18 +4,18 @@ export default defineInterpretation({
   id: 'british-influence-in-iran-1941-1953',
   about: ['period:reign-of-mohammad-reza-shah', 'event:anglo-soviet-invasion-of-iran'],
   topic: 'foreign-role',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'foreign-domination-corrupts',
       category: 'contemporary',
       holders: [
-        { kind: 'participant', name: 'Sayyed Ḥasan Taqizāda' }
+        { kind: 'participant', name: 'Sayyed Ḥasan Taqizāda', ref: 'person:hasan-taqizadeh' }
       ],
       statements: [
         {
           id: 'q1',
-          text: 'Writing in 1942, Sayyed Ḥasan Taqizāda, then the Persian Minister in London, observed that “The worst consequence of the temporary foreign domination is the pervasiveness of the great degeneracy (fasād-e ʿaẓim) of our own people appealing to and ingratiating themselves to foreigners. No pain (dard) greater than this can be imagined that people’s faith has been corrupted. They believe foreign control over everything to be pre-destined and consider cultivating foreigners to be conducive to personal amelioration. Faith and personal dignity and national prestige are thus fast eroding”',
+          text: 'The worst consequence of the temporary foreign domination is the pervasiveness of the great degeneracy (fasād-e ʿaẓim) of our own people appealing to and ingratiating themselves to foreigners. No pain (dard) greater than this can be imagined that people’s faith has been corrupted. They believe foreign control over everything to be pre-destined and consider cultivating foreigners to be conducive to personal amelioration. Faith and personal dignity and national prestige are thus fast eroding',
           lang: 'en',
           cite: {
             source: 'iranica-azimi-great-britain-v',
@@ -23,30 +23,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/great-britain-v/'
-          }
-        }
-      ]
-    },
-    {
-      id: 'belief-in-british-power-an-illusion',
-      category: 'contemporary',
-      holders: [
-        { kind: 'participant', name: 'Sayyed Ḥasan Taqizāda' }
-      ],
-      statements: [
-        {
-          id: 'q2',
-          text: 'Writing in 1945 as Persian ambassador to Britain, Taqizāda, stressing the weaknesses and decline of Britain, strongly castigated his compatriots’ belief in inordinate British power and influence as a very grave illusion (wahm-e ʿaẓim), which “like a plague (epidemic) has overcome our people”',
-          lang: 'en',
-          cite: {
-            source: 'iranica-azimi-great-britain-v',
-            loc: { section: 'GREAT BRITAIN v. British influence in Persia, 1941-79', para: '13' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/great-britain-v/'
           }
         }
@@ -115,6 +92,20 @@ export default defineInterpretation({
         {
           id: 'q6',
           text: 'Their failure indicated that perceived British influence far exceeded the actual.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-azimi-great-britain-v',
+            loc: { section: 'GREAT BRITAIN v. British influence in Persia, 1941-79', para: '13' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/great-britain-v/'
+          }
+        },
+        {
+          id: 'q2',
+          text: 'Writing in 1945 as Persian ambassador to Britain, Taqizāda, stressing the weaknesses and decline of Britain, strongly castigated his compatriots’ belief in inordinate British power and influence as a very grave illusion (wahm-e ʿaẓim), which “like a plague (epidemic) has overcome our people”',
           lang: 'en',
           cite: {
             source: 'iranica-azimi-great-britain-v',

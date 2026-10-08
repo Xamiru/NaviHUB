@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -75,6 +75,7 @@ export default defineEvent({
     {
       key: 'russia',
       name: 'the Russians',
+      polity: 'polity:russian-empire',
       cites: [
         {
           source: 'loc-poland-country-study-1992',

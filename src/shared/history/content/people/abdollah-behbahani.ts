@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Abdollah Behbahani', lang: 'en', role: 'primary' },
     { text: 'عبدالله بهبهانی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -126,5 +126,9 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:AyatFazlollahNouriAndAyatBehbahani.jpg',
     credit: { institution: 'Internet Archive, Digital Library of India' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'safai-1963-rahbaran-e-mashruteh', perspective: 'iranian' },
+    { source: 'malekzadeh-1949-tarikh-e-enqelab-e-mashrutiyat', perspective: 'iranian' }
+  ]
 })

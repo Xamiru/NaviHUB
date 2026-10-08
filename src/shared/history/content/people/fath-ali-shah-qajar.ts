@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -58,6 +58,7 @@ export default definePerson({
   offices: [
     {
       title: 'shah of Iran',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {
@@ -231,5 +232,9 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Portrait_in_oils_of_Fath_%E2%80%98Ali_Shah_Qajar,_ruler_of_Iran_from_1797_to_1834,_by_his_court_painter_Mihr_%27Ali,_Tehran,_about_1810.jpg',
     credit: { institution: 'Victoria and Albert Museum', creator: 'Mihr \'Ali' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'nafisi-1965-tarikh-e-ejtemai-va-siyasi-ye-iran', perspective: 'iranian' },
+    { source: 'bamdad-1968-sharh-e-hal-e-rejal-e-iran', perspective: 'iranian' }
+  ]
 })

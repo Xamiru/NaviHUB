@@ -3,14 +3,51 @@ import { definePerson } from '../../schema'
 export default definePerson({
   id: 'benito-juarez',
   names: [
-    { text: 'Benito Juárez', lang: 'en', role: 'primary' }
+    { text: 'Benito Juárez', lang: 'en', role: 'primary' },
+    { text: 'Benito Juárez', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1806-03-21' },
+        cites: [
+          {
+            source: 'britannica-1911-juarez-benito-pablo',
+            loc: { section: 'JUAREZ, BENITO PABLO', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1872-07-18' },
+        cites: [
+          {
+            source: 'britannica-1911-juarez-benito-pablo',
+            loc: { section: 'JUAREZ, BENITO PABLO', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  diedIn: {
+    ref: 'place:mexico-city',
+    cites: [
+      {
+        source: 'britannica-1911-juarez-benito-pablo',
+        loc: { section: 'JUAREZ, BENITO PABLO', para: '1' }
+      }
+    ]
+  },
   regions: ['latin-america'],
   roles: ['politician', 'head-of-state'],
   offices: [
     {
       title: 'president',
+      polity: 'polity:mexico',
       start: {
         alts: [
           {

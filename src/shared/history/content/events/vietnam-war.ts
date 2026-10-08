@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -106,6 +106,7 @@ export default defineEvent({
     {
       key: 'us',
       name: 'United States',
+      polity: 'polity:united-states',
       cites: [
         {
           source: 'state-dept-milestones-gulf-of-tonkin',
@@ -193,6 +194,39 @@ export default defineEvent({
         {
           source: 'loc-vietnam-country-study-1987',
           loc: { section: 'Escalation of the War', para: '4' }
+        }
+      ]
+    },
+    {
+      name: 'Richard M. Nixon',
+      role: 'head-of-state',
+      side: 'us',
+      cites: [
+        {
+          source: 'loc-vietnam-country-study-1987',
+          loc: { section: 'Peace Negotiations', para: '1' }
+        }
+      ]
+    },
+    {
+      name: 'Van Tien Dung',
+      role: 'commander',
+      side: 'north',
+      cites: [
+        {
+          source: 'loc-vietnam-country-study-1987',
+          loc: { section: 'The Final Campaign', para: '2' }
+        }
+      ]
+    },
+    {
+      name: 'Duong Van Minh',
+      role: 'head-of-state',
+      side: 'south',
+      cites: [
+        {
+          source: 'loc-vietnam-country-study-1987',
+          loc: { section: 'The Final Campaign', para: '2' }
         }
       ]
     }
@@ -318,65 +352,6 @@ export default defineEvent({
       ]
     },
     {
-      kind: 'course',
-      quotes: [
-        {
-          id: 'q4',
-          text: 'In early August 1964, two U.S. destroyers stationed in the Gulf of Tonkin in Vietnam radioed that they had been fired upon by North Vietnamese forces. In response to these reported incidents, President Lyndon B. Johnson requested permission from the U.S. Congress to increase the U.S. military presence in Indochina. On August 7, 1964, Congress passed the Gulf of Tonkin Resolution, authorizing President Johnson to take any measures he believed were necessary to retaliate and to promote the maintenance of international peace and security in southeast Asia. This resolution became the legal basis for the Johnson and Nixon Administrations prosecution of the Vietnam War.',
-          lang: 'en',
-          cite: {
-            source: 'state-dept-milestones-gulf-of-tonkin',
-            loc: {
-              section: 'U.S. Involvement in the Vietnam War: the Gulf of Tonkin and Escalation, 1964',
-              para: '1'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-07',
-            url: 'https://history.state.gov/milestones/1961-1968/gulf-of-tonkin'
-          }
-        },
-        {
-          id: 'q5',
-          text: 'The first two battalions of U.S. Marines (3,500 men) arrived in Vietnam in March 1965 to protect the U.S. airbase at Da Nang. The following month, Westmoreland convinced the administration to commit sufficient combat troops to secure base areas and mount a series of search and destroy missions. By late 1965, the United States expeditionary force in South Vietnam numbered 180,000, and the military situation had stabilized somewhat.',
-          lang: 'en',
-          cite: {
-            source: 'loc-vietnam-country-study-1987',
-            loc: { section: 'Escalation of the War', para: '4' }
-          },
-          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/vietnam/28.htm' }
-        },
-        {
-          id: 'q6',
-          text: 'In late January, 1968, during the lunar new year (or “Tet”) holiday, North Vietnamese and communist Viet Cong forces launched a coordinated attack against a number of targets in South Vietnam. The U.S. and South Vietnamese militaries sustained heavy losses before finally repelling the communist assault. The Tet Offensive played an important role in weakening U.S. public support for the war in Vietnam.',
-          lang: 'en',
-          cite: {
-            source: 'state-dept-milestones-tet',
-            loc: {
-              section: 'U.S. Involvement in the Vietnam War: The Tet Offensive, 1968',
-              para: '1'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-07',
-            url: 'https://history.state.gov/milestones/1961-1968/tet'
-          }
-        },
-        {
-          id: 'q7',
-          text: 'On April 30, communist forces entered the capital, and Duong Van Minh ordered ARVN troops to lay down their arms.',
-          lang: 'en',
-          cite: {
-            source: 'loc-vietnam-country-study-1987',
-            loc: { section: 'The Final Campaign', para: '2' }
-          },
-          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/vietnam/31.htm' }
-        }
-      ]
-    },
-    {
       kind: 'casualties',
       quotes: [
         {
@@ -394,9 +369,59 @@ export default defineEvent({
           }
         }
       ]
+    },
+    {
+      kind: 'consequences',
+      quotes: [
+        {
+          id: 'q14',
+          text: 'The events of April 1975 not only abruptly concluded the war but also prepared the way for the official reunification of the country the following year, when the Vietnamese people were brought together under one independent government for the first time in more than a century.',
+          lang: 'en',
+          cite: {
+            source: 'loc-vietnam-country-study-1987',
+            loc: { section: 'The Final Campaign', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/vietnam/31.htm' }
+        }
+      ]
     }
   ],
   course: [
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1964-08' },
+            cites: [
+              {
+                source: 'state-dept-milestones-gulf-of-tonkin',
+                loc: {
+                  section: 'U.S. Involvement in the Vietnam War: the Gulf of Tonkin and Escalation, 1964',
+                  para: '1'
+                }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q4',
+        text: 'In early August 1964, two U.S. destroyers stationed in the Gulf of Tonkin in Vietnam radioed that they had been fired upon by North Vietnamese forces. In response to these reported incidents, President Lyndon B. Johnson requested permission from the U.S. Congress to increase the U.S. military presence in Indochina. On August 7, 1964, Congress passed the Gulf of Tonkin Resolution, authorizing President Johnson to take any measures he believed were necessary to retaliate and to promote the maintenance of international peace and security in southeast Asia. This resolution became the legal basis for the Johnson and Nixon Administrations prosecution of the Vietnam War.',
+        lang: 'en',
+        cite: {
+          source: 'state-dept-milestones-gulf-of-tonkin',
+          loc: {
+            section: 'U.S. Involvement in the Vietnam War: the Gulf of Tonkin and Escalation, 1964',
+            para: '1'
+          }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-07',
+          url: 'https://history.state.gov/milestones/1961-1968/gulf-of-tonkin'
+        }
+      }
+    },
     {
       date: {
         alts: [
@@ -466,6 +491,176 @@ export default defineEvent({
           url: 'https://history.state.gov/milestones/1961-1968/gulf-of-tonkin'
         }
       }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1965-03' },
+            cites: [
+              {
+                source: 'loc-vietnam-country-study-1987',
+                loc: { section: 'Escalation of the War', para: '4' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q5',
+        text: 'The first two battalions of U.S. Marines (3,500 men) arrived in Vietnam in March 1965 to protect the U.S. airbase at Da Nang. The following month, Westmoreland convinced the administration to commit sufficient combat troops to secure base areas and mount a series of search and destroy missions. By late 1965, the United States expeditionary force in South Vietnam numbered 180,000, and the military situation had stabilized somewhat.',
+        lang: 'en',
+        cite: {
+          source: 'loc-vietnam-country-study-1987',
+          loc: { section: 'Escalation of the War', para: '4' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/vietnam/28.htm' }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1968-01' },
+            cites: [
+              {
+                source: 'state-dept-milestones-tet',
+                loc: {
+                  section: 'U.S. Involvement in the Vietnam War: The Tet Offensive, 1968',
+                  para: '1'
+                }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q6',
+        text: 'In late January, 1968, during the lunar new year (or “Tet”) holiday, North Vietnamese and communist Viet Cong forces launched a coordinated attack against a number of targets in South Vietnam. The U.S. and South Vietnamese militaries sustained heavy losses before finally repelling the communist assault. The Tet Offensive played an important role in weakening U.S. public support for the war in Vietnam.',
+        lang: 'en',
+        cite: {
+          source: 'state-dept-milestones-tet',
+          loc: {
+            section: 'U.S. Involvement in the Vietnam War: The Tet Offensive, 1968',
+            para: '1'
+          }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-07',
+          url: 'https://history.state.gov/milestones/1961-1968/tet'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1968-03-31' },
+            cites: [
+              {
+                source: 'loc-vietnam-country-study-1987',
+                loc: { section: 'The Tet Offensive', para: '3' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q11',
+        text: 'On March 31, 1968, Johnson announced that he would not seek his party\'s nomination for another term of office, declared a halt to the bombing of North Vietnam (except for a narrow strip above the DMZ), and urged Hanoi to agree to peace talks.',
+        lang: 'en',
+        cite: {
+          source: 'loc-vietnam-country-study-1987',
+          loc: { section: 'The Tet Offensive', para: '3' }
+        },
+        provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/vietnam/29.htm' }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1970-04' },
+            cites: [
+              {
+                source: 'loc-vietnam-country-study-1987',
+                loc: { section: 'Peace Negotiations', para: '1' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q12',
+        text: 'In April, Nixon authorized the invasion of Cambodia by a joint United States-ARVN force of 30,000 troops for the purpose of destroying Communist bases across the border.',
+        lang: 'en',
+        cite: {
+          source: 'loc-vietnam-country-study-1987',
+          loc: { section: 'Peace Negotiations', para: '1' }
+        },
+        provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/vietnam/30.htm' }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1973-01-27' },
+            cites: [
+              {
+                source: 'loc-vietnam-country-study-1987',
+                loc: { section: 'Peace Negotiations', para: '3' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q13',
+        text: 'Thieu\'s objections to the failure to require the removal of North Vietnamese forces was in the end ignored, and the Agreement on Ending the War and Restoring Peace in Vietnam was signed in Paris on January 27, 1973.',
+        lang: 'en',
+        cite: {
+          source: 'loc-vietnam-country-study-1987',
+          loc: { section: 'Peace Negotiations', para: '3' }
+        },
+        provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/vietnam/30.htm' }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1975-04-30' },
+            cites: [
+              {
+                source: 'loc-vietnam-country-study-1987',
+                loc: { section: 'The Final Campaign', para: '2' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q7',
+        text: 'On April 30, communist forces entered the capital, and Duong Van Minh ordered ARVN troops to lay down their arms.',
+        lang: 'en',
+        cite: {
+          source: 'loc-vietnam-country-study-1987',
+          loc: { section: 'The Final Campaign', para: '2' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/vietnam/31.htm' }
+      }
+    }
+  ],
+  furtherReading: [
+    {
+      source: 'nguyen-1996-lich-su-khang-chien-chong-my-cuu-nuoc',
+      perspective: 'southeast-asian'
+    },
+    {
+      source: 'gaiduk-1996-the-soviet-union-and-the-vietnam-war',
+      perspective: 'russian-soviet'
     }
   ]
 })

@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'John F. Kennedy', lang: 'en', role: 'primary' },
     { text: 'John Fitzgerald Kennedy', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -51,6 +51,7 @@ export default definePerson({
   offices: [
     {
       title: 'President of the United States',
+      polity: 'polity:united-states',
       start: {
         alts: [
           {
@@ -86,6 +87,7 @@ export default definePerson({
     },
     {
       title: 'United States Senator from Massachusetts',
+      polity: 'polity:united-states',
       start: {
         alts: [
           {
@@ -121,6 +123,7 @@ export default definePerson({
     },
     {
       title: 'United States Representative from Massachusetts',
+      polity: 'polity:united-states',
       start: {
         alts: [
           {

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'russo-persian-war-1804-1813-causes',
   about: ['event:russo-persian-war-1804-1813'],
   topic: 'causes',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'securing-georgia',
@@ -97,9 +97,9 @@ export default defineInterpretation({
     },
     {
       id: 'persian-chronicles-mortaza-qoli',
-      category: 'contemporary',
+      category: 'scholarly',
       holders: [
-        { kind: 'participant', name: 'ʿAbd-al-Razzāq b. Naǰaf-qolī' }
+        { kind: 'scholar', name: 'Heribert Busse' }
       ],
       statements: [
         {

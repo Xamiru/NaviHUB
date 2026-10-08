@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Fall of Diriyah', lang: 'en', role: 'primary' },
     { text: 'سقوط الدرعية', lang: 'ar', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -33,6 +33,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:ottoman-empire' }
   ],
   participants: [
     {
@@ -158,5 +161,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Diriyah_Ruins_Near_Riyadh_10_by_Tom_And_Linda_Anderson_3840959304.jpg',
     credit: { institution: 'Saudi Aramco', creator: 'Tom and Linda Anderson' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'ibn-bishr-1965-unwan-al-majd', perspective: 'arab' }
+  ]
 })

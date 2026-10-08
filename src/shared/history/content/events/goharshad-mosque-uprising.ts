@@ -34,7 +34,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -85,6 +85,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:reign-of-reza-shah' }
+  ],
+  polities: [
+    { ref: 'polity:pahlavi-iran' }
   ],
   participants: [
     {
@@ -254,5 +257,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Imam_Reza_shrine_and_Goharshad_Mosque,_view_from_Tehran_st_-_1935.jpg',
     credit: { institution: 'Astan Quds Razavi photo archive' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'makki-1983-tarikh-e-bist-saleh-ye-iran', perspective: 'iranian' }
+  ]
 })

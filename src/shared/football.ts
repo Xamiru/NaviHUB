@@ -264,3 +264,13 @@ export function formatFootballScore(match: {
       : ''
   return `${base}${extra}${penalties}`
 }
+
+/** Points for a win in a league season: two until each league adopted three. */
+export function footballPointsForWin(competitionKey: FootballCompetitionKey, seasonKey: string): number {
+  const start = Number(seasonKey.match(/\d{4}/)?.[0] ?? 0)
+  if (competitionKey === 'premier-league') return start >= 1981 ? 3 : 2
+  if (competitionKey === 'la-liga') return start >= 1995 ? 3 : 2
+  if (competitionKey === 'serie-a') return start >= 1994 ? 3 : 2
+  if (competitionKey === 'bundesliga') return start >= 1995 ? 3 : 2
+  return 3
+}

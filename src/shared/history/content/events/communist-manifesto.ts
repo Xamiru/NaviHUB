@@ -71,24 +71,17 @@ export default defineEvent({
           }
         },
         {
-          id: 'q1',
-          text: 'Februar: In London wird das von Marx und Engels gemeinsam verfasste "Manifest der Kommunistischen Partei" veröffentlicht, das mit den Worten "Ein Gespenst geht um in Europa - das Gespenst des Kommunismus" beginnt und mit dem Aufruf "Proletarier aller Länder vereinigt euch!" schließt.',
-          lang: 'de',
+          id: 'q7',
+          text: 'Drawn up in German, in January 1848, the manuscript was sent to the printer in London a few weeks before the French Revolution of February 24.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-karl-marx',
-            loc: { section: 'Karl Marx 1818-1883', para: '35' }
+            source: 'engels-1888-preface-communist-manifesto',
+            loc: { section: 'The 1888 English Edition', para: '1' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'https://www.dhm.de/lemo/biografie/karl-marx' }
-        },
-        {
-          id: 'q2',
-          text: 'Ende Februar veröffentlichen Karl Marx und Friedrich Engels das „Manifest der kommunistischen Partei“ in London.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '9' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1848.html'
+            at: '2026-10-07',
+            url: 'https://www.marxists.org/archive/marx/works/1848/communist-manifesto/preface.htm'
           }
         }
       ]
@@ -103,16 +96,6 @@ export default defineEvent({
           cite: {
             source: 'lemo-biografie-karl-marx',
             loc: { section: 'Karl Marx 1818-1883', para: '30' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'https://www.dhm.de/lemo/biografie/karl-marx' }
-        },
-        {
-          id: 'q4',
-          text: 'Marx und Engels erhalten von dem mittlerweile in "Bund der Kommunisten" umbenannten "Bund der Gerechten" den Auftrag, eine programmatische Schrift für die Reorganisation des Bundes zu verfassen.',
-          lang: 'de',
-          cite: {
-            source: 'lemo-biografie-karl-marx',
-            loc: { section: 'Karl Marx 1818-1883', para: '32' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'https://www.dhm.de/lemo/biografie/karl-marx' }
         }

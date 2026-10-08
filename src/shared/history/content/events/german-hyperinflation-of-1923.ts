@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'German hyperinflation of 1923', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'economic',
   start: {
     alts: [
@@ -268,5 +268,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Bundesarchiv_Bild_119-1426,_Hitler-Putsch,_M%C3%BCnchen,_Odeonsplatz.jpg',
     credit: { institution: 'Bundesarchiv' },
     license: { id: 'cc-by-sa', version: '3.0' }
-  }
+  },
+  furtherReading: [
+    { source: 'holtfrerich-1980-die-deutsche-inflation', perspective: 'european' }
+  ]
 })

@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'reforms-of-amir-kabir',
   names: [
-    { text: 'Reforms of Amir Kabir', lang: 'en', role: 'primary' }
+    { text: 'Reforms of Amir Kabir', lang: 'en', role: 'primary' },
+    { text: 'اصلاحات امیرکبیر', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'reform',
   start: {
     alts: [
@@ -49,6 +50,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:qajar-dynasty' },
     { ref: 'period:reign-of-naser-al-din-shah-qajar' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -281,5 +285,10 @@ export default defineEvent({
       creator: 'Mirza Abolhassan Khan Ghaffari (Sani al-Molk)'
     },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'adamiyat-1982-amir-kabir-va-iran', perspective: 'iranian' },
+    { source: 'eqbal-1962-mirza-taqi-khan-amir-kabir', perspective: 'iranian' },
+    { source: 'makki-1944-zendegani-ye-mirza-taqi-khan-amir-kabir', perspective: 'iranian' }
+  ]
 })

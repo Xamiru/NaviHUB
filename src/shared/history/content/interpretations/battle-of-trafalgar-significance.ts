@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'battle-of-trafalgar-significance',
   about: ['event:battle-of-trafalgar'],
   topic: 'significance',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   framing: {
     id: 'q1',
     text: 'Perhaps in the case of few victories has the outcome been so different from that which has been assigned to it in the popular belief.',
@@ -44,10 +44,10 @@ export default defineInterpretation({
       ]
     },
     {
-      id: 'napoleon-made-light',
-      category: 'contemporary',
+      id: 'rose-continental-war',
+      category: 'scholarly',
       holders: [
-        { kind: 'participant', name: 'Napoleon Bonaparte', ref: 'person:napoleon-bonaparte' }
+        { kind: 'scholar', name: 'John Holland Rose' }
       ],
       statements: [
         {
@@ -63,16 +63,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://www.napoleon.org/en/reading_room/articles/files/rose_trafalgar.asp'
           }
-        }
-      ]
-    },
-    {
-      id: 'rose-continental-war',
-      category: 'scholarly',
-      holders: [
-        { kind: 'scholar', name: 'John Holland Rose' }
-      ],
-      statements: [
+        },
         {
           id: 'q4',
           text: 'We have now seen, from the Emperor’s own despatches, that it was the outbreak of war with Austria and Russia, along with Villeneuve’s tame retreat to Cadiz, which gave England a time of respite, while her great foe betook himself to guerrilla tactics on sea.',

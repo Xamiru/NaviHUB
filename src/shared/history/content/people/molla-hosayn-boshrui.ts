@@ -4,9 +4,10 @@ export default definePerson({
   id: 'molla-hosayn-boshrui',
   names: [
     { text: 'Mulla Husayn Boshrui', lang: 'en', role: 'primary' },
+    { text: 'ملا حسین بشرویه‌ای', lang: 'fa', role: 'native' },
     { text: 'Mollā Moḥammad-Ḥosayn Bošrūʾī', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {

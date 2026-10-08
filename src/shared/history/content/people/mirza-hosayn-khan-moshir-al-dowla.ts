@@ -25,12 +25,13 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   regions: ['iran', 'mena'],
   roles: ['diplomat', 'politician'],
   offices: [
     {
       title: 'Persian ambassador at the Ottoman court',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {
@@ -66,6 +67,7 @@ export default definePerson({
     },
     {
       title: 'grand vizier (ṣadr-e aʿẓam)',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {
@@ -110,6 +112,7 @@ export default definePerson({
     },
     {
       title: 'Minister of Foreign Affairs (wazir-e omur-e ḵāreja)',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {
@@ -145,6 +148,7 @@ export default definePerson({
     },
     {
       title: 'Minister of War (wazir-e jang)',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {
@@ -284,5 +288,9 @@ export default definePerson({
         ]
       }
     ]
-  }
+  },
+  furtherReading: [
+    { source: 'adamiyat-1973-andisheh-ye-taraqqi', perspective: 'iranian' },
+    { source: 'sasani-1960-siyasatgaran-e-dowreh-ye-qajar', perspective: 'iranian' }
+  ]
 })

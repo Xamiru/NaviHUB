@@ -14,7 +14,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -80,6 +80,7 @@ export default defineEvent({
     {
       key: 'britain',
       name: 'the British',
+      polity: 'polity:united-kingdom',
       cites: [
         {
           source: 'eo1418-philpott-somme',
@@ -90,6 +91,7 @@ export default defineEvent({
     {
       key: 'france',
       name: 'the French',
+      polity: 'polity:french-third-republic',
       cites: [
         {
           source: 'eo1418-philpott-somme',
@@ -100,6 +102,7 @@ export default defineEvent({
     {
       key: 'germany',
       name: 'The German army',
+      polity: 'polity:german-empire',
       cites: [
         {
           source: 'eo1418-philpott-somme',
@@ -314,5 +317,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:British_Mark_I_male_tank_Somme_25_September_1916.jpg',
     credit: { institution: 'Imperial War Museums', creator: 'Ernest Brooks' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'becker-krumeich-2008-la-grande-guerre', perspective: 'european' }
+  ]
 })

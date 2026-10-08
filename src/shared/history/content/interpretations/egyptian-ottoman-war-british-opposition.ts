@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'egyptian-ottoman-war-british-opposition',
   about: ['event:egyptian-ottoman-war-1831-1833'],
   topic: 'foreign-role',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'economic-and-strategic-threat',
@@ -37,10 +37,9 @@ export default defineInterpretation({
     },
     {
       id: 'ottoman-integrity',
-      category: 'official',
+      category: 'scholarly',
       holders: [
-        { kind: 'state', name: 'British government' },
-        { kind: 'participant', name: 'Lord Palmerston' }
+        { kind: 'organization', name: 'Library of Congress, Federal Research Division' }
       ],
       statements: [
         {

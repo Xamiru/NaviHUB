@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Morant Bay rebellion', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -31,6 +31,9 @@ export default defineEvent({
         { source: 'nlj-national-heroes', loc: { section: 'National Heroes' } }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:british-empire' }
   ],
   participants: [
     {

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'armenian-genocide-causes',
   about: ['event:armenian-genocide'],
   topic: 'causes',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'contingent-radicalisation',
@@ -89,22 +89,41 @@ export default defineInterpretation({
       id: 'suppression-of-rebellion',
       category: 'contemporary',
       holders: [
-        { kind: 'participant', name: 'Mehmed Talat Pasha', ref: 'person:talaat-pasha' },
-        { kind: 'participant', name: 'Ismail Enver Pasha', ref: 'person:enver-pasha' }
+        { kind: 'participant', name: 'Mehmed Talat Pasha' }
       ],
       statements: [
         {
           id: 'q5',
-          text: 'Enver claimed that an Armenian conspiracy existed and that a generalized revolt by the Armenians was imminent.',
+          text: 'I admit that we deported many Armenians from our eastern provinces, but we never acted in this matter upon a previously prepared scheme. The responsibility for these acts falls first of all upon the deported people themselves.',
           lang: 'en',
           cite: {
-            source: 'loc-turkey-country-study-1995',
-            loc: { section: 'World War I', para: '3' }
+            source: 'talat-1921-posthumous-memoirs',
+            loc: { section: 'Deportation of the Armenians', para: '2' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/turkey/12.htm' }
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://en.wikisource.org/wiki/Posthumous_Memoirs_of_Talaat_Pasha/Deportation_of_the_Armenians'
+          }
         },
         {
           id: 'q6',
+          text: 'The Porte, acting under the same obligation, and wishing to secure the safety of its army and its citizens, took energetic measures to check these uprisings. The deportation of the Armenians was one of these preventive measures.',
+          lang: 'en',
+          cite: {
+            source: 'talat-1921-posthumous-memoirs',
+            loc: { section: 'Deportation of the Armenians', para: '2' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://en.wikisource.org/wiki/Posthumous_Memoirs_of_Talaat_Pasha/Deportation_of_the_Armenians'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q7',
           text: 'The deportations of Armenians and Assyrians were rationalized at the time and later as a military necessity, framed by the imperial ambitions and distorted perceptions of the Ottoman leaders, though the government refused to take responsibility for the massacres, claiming that they were caused by local officials and excessive hatred of Armenians by common people.',
           lang: 'en',
           cite: {

@@ -7,7 +7,7 @@ export default defineEvent({
     { text: 'Dandi March', lang: 'en', role: 'alternative' },
     { text: 'Salt Satyagraha', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'protest',
   start: {
     alts: [
@@ -58,7 +58,10 @@ export default defineEvent({
     }
   ],
   partOf: [
-    { ref: 'period:british-raj' }
+    { ref: 'polity:british-raj' }
+  ],
+  polities: [
+    { ref: 'polity:british-raj' }
   ],
   participants: [
     {
@@ -145,6 +148,22 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/india/20.htm' }
         }
       ]
+    },
+    {
+      kind: 'course',
+      quotes: [
+        {
+          id: 'q6',
+          text: 'In Indien kommt es zu schweren Auseinandersetzungen zwischen den Anhängern des Führers der indischen Freiheitsbewegung "Mahatma" Gandhi (1869-1948) und den britischen Kolonialbehörden.',
+          lang: 'de',
+          cite: { source: 'lemo-chronik-1930', loc: { section: 'Chronik 1930', para: '82' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.dhm.de/lemo/jahreschronik/1930.html'
+          }
+        }
+      ]
     }
   ],
   course: [
@@ -152,45 +171,29 @@ export default defineEvent({
       date: {
         alts: [
           {
-            value: { d: '1930-04-18' },
-            cites: [
-              { source: 'lemo-chronik-1930', loc: { section: 'Chronik 1930', para: '81' } }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q6',
-        text: 'In Indien kommt es zu schweren Auseinandersetzungen zwischen den Anhängern des Führers der indischen Freiheitsbewegung "Mahatma" Gandhi (1869-1948) und den britischen Kolonialbehörden.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1930', loc: { section: 'Chronik 1930', para: '82' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1930.html'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
             value: { d: '1930-05-05' },
             cites: [
-              { source: 'lemo-chronik-1930', loc: { section: 'Chronik 1930', para: '90' } }
+              { source: 'lemo-chronik-1930', loc: { section: 'Chronik 1930', para: '90' } },
+              {
+                source: 'hansard-commons-1930-05-05-arrest-of-mr-gandhi',
+                loc: { section: 'Civil Disobedience Campaign (Arrest of Mr. Gandhi)' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q7',
-        text: 'Gandhi wird wegen "Gehorsamsverweigerung" von der britischen Kolonialregierung verhaftet.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1930', loc: { section: 'Chronik 1930', para: '92' } },
+        id: 'q9',
+        text: 'Mr. Gandhi was arrested this morning and is detained under the Bombay State Prisoners\' Regulation of 1827.',
+        lang: 'en',
+        cite: {
+          source: 'hansard-commons-1930-05-05-arrest-of-mr-gandhi',
+          loc: { section: 'Civil Disobedience Campaign (Arrest of Mr. Gandhi)' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1930.html'
+          at: '2026-10-07',
+          url: 'https://api.parliament.uk/historic-hansard/commons/1930/may/05/civil-disobedience-campaign-arrest-of-mr'
         }
       }
     },
@@ -200,20 +203,29 @@ export default defineEvent({
           {
             value: { d: '1931-03-04' },
             cites: [
-              { source: 'lemo-chronik-1931', loc: { section: 'Chronik 1931', para: '46' } }
+              { source: 'lemo-chronik-1931', loc: { section: 'Chronik 1931', para: '46' } },
+              {
+                source: 'hansard-commons-1931-03-05-conversations-with-mr-gandhi',
+                loc: {
+                  section: 'Conversations between the Governor-General of India and Mr. Gandhi'
+                }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q8',
-        text: 'Gandhi und Irwin vereinbaren die Einstellung der Kampagne des bürgerlichen Ungehorsams gegen die britische Kolonialmacht.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1931', loc: { section: 'Chronik 1931', para: '47' } },
+        id: 'q10',
+        text: 'Consequent on the conversations that have taken place between His Excellency the Viceroy and Mr. Gandhi, it has been arranged that the Civil Disobedience Movement be discontinued, and that, with the approval of His Majesty\'s Government, certain action he taken by the Government of India and Local Governments.',
+        lang: 'en',
+        cite: {
+          source: 'hansard-commons-1931-03-05-conversations-with-mr-gandhi',
+          loc: { section: 'Conversations between the Governor-General of India and Mr. Gandhi' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1931.html'
+          at: '2026-10-07',
+          url: 'https://api.parliament.uk/historic-hansard/commons/1931/mar/05/conversations-between-the-governor'
         }
       }
     }
@@ -223,5 +235,12 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Gandhi_and_Indira_1924.jpg',
     credit: { institution: 'Gujarat Vidyapith' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'chandra-1989-indias-struggle-for-independence', perspective: 'south-asian' },
+    {
+      source: 'sitaramayya-1946-history-of-the-indian-national-congress',
+      perspective: 'south-asian'
+    }
+  ]
 })

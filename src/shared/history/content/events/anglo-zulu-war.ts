@@ -13,7 +13,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -45,10 +45,14 @@ export default defineEvent({
       ]
     }
   ],
+  polities: [
+    { ref: 'polity:british-empire' }
+  ],
   sides: [
     {
       key: 'britain',
       name: 'the British',
+      polity: 'polity:united-kingdom',
       cites: [
         { source: 'nam-zulu-war', loc: { section: 'Zulu War', para: '1' } }
       ]
@@ -261,5 +265,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Charles_Edwin_Fripp_(1854-1906)_-_The_Battle_of_Isandlwana,_22_January_1879_-_NAM._1960-11-182_-_National_Army_Museum.jpg',
     credit: { institution: 'National Army Museum', creator: 'Charles Edwin Fripp' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'guy-1979-the-destruction-of-the-zulu-kingdom', perspective: 'african' },
+    { source: 'laband-1992-kingdom-in-crisis', perspective: 'african' }
+  ]
 })

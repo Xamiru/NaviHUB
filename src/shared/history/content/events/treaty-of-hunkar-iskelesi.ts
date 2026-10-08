@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -38,8 +38,15 @@ export default defineEvent({
   },
   regions: ['mena', 'russia-central-asia', 'europe'],
   prominence: 3,
+  places: [
+    { ref: 'place:hunkar-iskelesi' }
+  ],
   partOf: [
     { ref: 'period:reign-of-nicholas-i' }
+  ],
+  polities: [
+    { ref: 'polity:russian-empire' },
+    { ref: 'polity:ottoman-empire' }
   ],
   participants: [
     {

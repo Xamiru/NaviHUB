@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'azerbaijan-peoples-government-nature',
   about: ['event:azerbaijan-peoples-government', 'event:republic-of-mahabad'],
   topic: 'nature',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   framing: {
     id: 'q1',
     text: 'Subsequent developments are subject to differing interpretations.',
@@ -154,6 +154,30 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/kurds-studies-of-modern-kurdish-history'
+          }
+        }
+      ]
+    },
+    {
+      id: 'soviet-national-autonomy',
+      category: 'official',
+      holders: [
+        { kind: 'state', name: 'Soviet Union' },
+        { kind: 'participant', name: 'Andrey Vyshinsky' }
+      ],
+      statements: [
+        {
+          id: 'q9',
+          text: 'As is known, what is happening in northern Iran is connected with the aspirations of the population of northern Iran for national autonomy within the limits of the Iranian State, and with the achievement of the wishes of the local population, which is nothing unusual for a democratic State.',
+          lang: 'en',
+          cite: {
+            source: 'frus-1946-v07-vyshinsky-to-security-council-1946-01-24',
+            loc: { para: '6', page: '311' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://history.state.gov/historicaldocuments/frus1946v07/d224'
           }
         }
       ]

@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Compromise of 1850', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -22,6 +22,9 @@ export default defineEvent({
   },
   regions: ['north-america'],
   prominence: 2,
+  polities: [
+    { ref: 'polity:united-states' }
+  ],
   participants: [
     {
       name: 'Henry Clay',

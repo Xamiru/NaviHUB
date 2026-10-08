@@ -96,17 +96,6 @@ export default defineEvent({
             loc: { section: 'Political Zionism', para: '10' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/israel/9.htm' }
-        },
-        {
-          id: 'q4',
-          text: 'In Basel geht der von dem österreichischen Journalisten und Juristen Theodor Herzl einberufene erste Zionistenkongress zu Ende.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1897', loc: { section: 'Chronik 1897', para: '40' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1897.html'
-          }
         }
       ]
     },

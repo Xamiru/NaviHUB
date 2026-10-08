@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'league-of-nations-american-membership',
   about: ['event:founding-of-the-league-of-nations'],
   topic: 'outcome',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'wilson-league-as-remedy',
@@ -14,31 +14,36 @@ export default defineInterpretation({
       ],
       statements: [
         {
-          id: 'q1',
-          text: 'An effective League, he believed, would mitigate any inequities in the peace terms.',
+          id: 'q7',
+          text: 'XIV. A general association of nations must be formed under specific covenants for the purpose of affording mutual guarantees of political independence and territorial integrity to great and small states alike.',
           lang: 'en',
-          cite: {
-            source: 'state-dept-milestones-league-of-nations',
-            loc: { section: 'The League of Nations, 1920', para: '6' }
-          },
+          cite: { source: 'avalon-wilson-fourteen-points-1918', loc: { section: 'Point XIV' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://history.state.gov/milestones/1914-1920/league'
+            at: '2026-10-07',
+            url: 'https://avalon.law.yale.edu/20th_century/wilson14.asp'
           }
         },
         {
-          id: 'q2',
-          text: 'Speaking before the U.S. Congress on January 8, 1918, President Woodrow Wilson enumerated the last of his Fourteen Points, which called for a “general association of nations…formed under specific covenants for the purpose of affording mutual guarantees of political independence and territorial integrity to great and small states alike.”',
+          id: 'q8',
+          text: 'Unless you get the united, concerted purpose and power of the great Governments of the world behind this settlement, it will fall down like a house of cards.',
           lang: 'en',
-          cite: {
-            source: 'state-dept-milestones-league-of-nations',
-            loc: { section: 'The League of Nations, 1920', para: '3' }
-          },
+          cite: { source: 'wilson-1919-pueblo-league-of-nations-address', loc: { para: '5' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://history.state.gov/milestones/1914-1920/league'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/League_of_Nations_Address'
+          }
+        },
+        {
+          id: 'q9',
+          text: 'The arrangements of justice do not stand of themselves, my fellow citizens. the arrangements of this treaty are just, but they need the support of the combined power of the great nations of the world.',
+          lang: 'en',
+          cite: { source: 'wilson-1919-pueblo-league-of-nations-address', loc: { para: '19' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/League_of_Nations_Address'
           }
         }
       ]
@@ -51,31 +56,14 @@ export default defineInterpretation({
       ],
       statements: [
         {
-          id: 'q3',
-          text: 'Motivated by Republican concerns that the League would commit the United States to an expensive organization that would reduce the United States’ ability to defend its own interests, Lodge led the opposition to joining the League.',
+          id: 'q10',
+          text: 'But I am certain that we can do it best by not putting ourselves in leading strings, or subjecting our policies and our sovereignty to other nations.',
           lang: 'en',
-          cite: {
-            source: 'state-dept-milestones-league-of-nations',
-            loc: { section: 'The League of Nations, 1920', para: '9' }
-          },
+          cite: { source: 'lodge-1919-league-of-nations', loc: { para: '1' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://history.state.gov/milestones/1914-1920/league'
-          }
-        },
-        {
-          id: 'q4',
-          text: 'They adhered to a vision of the United States returning to its traditional aversion to commitments outside the Western Hemisphere.',
-          lang: 'en',
-          cite: {
-            source: 'state-dept-milestones-league-of-nations',
-            loc: { section: 'The League of Nations, 1920', para: '9' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://history.state.gov/milestones/1914-1920/league'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/League_of_Nations_(Lodge)'
           }
         }
       ]

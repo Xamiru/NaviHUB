@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Mexican–American War', lang: 'en', role: 'primary' },
     { text: 'Guerra de Estados Unidos-México', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -33,18 +33,6 @@ export default defineEvent({
         ],
         heldBy: [
           { kind: 'organization', name: 'National Archives and Records Administration' }
-        ]
-      },
-      {
-        value: { d: '1847-09-13' },
-        cites: [
-          {
-            source: 'loc-mexico-country-study-1996',
-            loc: { section: 'The Mexican-American War', para: '7' }
-          }
-        ],
-        heldBy: [
-          { kind: 'organization', name: 'Library of Congress, Federal Research Division' }
         ]
       }
     ]
@@ -73,7 +61,7 @@ export default defineEvent({
   ],
   related: [
     { ref: 'event:texas-revolution', rel: 'related' },
-    { ref: 'period:republic-of-texas', rel: 'related' },
+    { ref: 'polity:republic-of-texas', rel: 'related' },
     {
       ref: 'event:treaty-of-guadalupe-hidalgo',
       rel: 'led-to',
@@ -89,6 +77,7 @@ export default defineEvent({
     {
       key: 'us',
       name: 'United States',
+      polity: 'polity:united-states',
       cites: [
         {
           source: 'loc-mexico-country-study-1996',
@@ -99,6 +88,7 @@ export default defineEvent({
     {
       key: 'mexico',
       name: 'Mexico',
+      polity: 'polity:mexico',
       cites: [
         {
           source: 'loc-mexico-country-study-1996',
@@ -109,7 +99,7 @@ export default defineEvent({
   ],
   participants: [
     {
-      name: 'James K. Polk',
+      ref: 'person:james-k-polk',
       role: 'head-of-state',
       side: 'us',
       cites: [
@@ -156,7 +146,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Santa Anna',
+      ref: 'person:antonio-lopez-de-santa-anna',
       role: 'commander',
       side: 'mexico',
       cites: [
@@ -489,5 +479,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:The_storming_of_Chapu(ltepec)_Sept._13th_(1847)_LCCN2001701801.jpg',
     credit: { institution: 'Library of Congress', creator: 'Sarony & Major' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'vazquez-1997-mexico-al-tiempo-de-su-guerra', perspective: 'latin-american' },
+    { source: 'vazquez-1997-la-intervencion-norteamericana', perspective: 'latin-american' }
+  ]
 })

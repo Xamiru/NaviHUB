@@ -17,12 +17,13 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   regions: ['east-asia'],
   roles: ['monarch'],
   offices: [
     {
       title: 'Emperor of Japan',
+      polity: 'polity:empire-of-japan',
       start: {
         alts: [
           {

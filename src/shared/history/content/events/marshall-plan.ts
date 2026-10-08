@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'economic',
   start: {
     alts: [
@@ -35,8 +35,19 @@ export default defineEvent({
   },
   regions: ['europe', 'north-america'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:paris',
+      cites: [
+        { source: 'millercenter-truman-key-events', loc: { section: 'Key Events' } }
+      ]
+    }
+  ],
   partOf: [
     { ref: 'period:cold-war' }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
   ],
   participants: [
     {
@@ -171,20 +182,21 @@ export default defineEvent({
               {
                 source: 'lemo-chronik-1947',
                 loc: { section: 'Jahreschronik 1947', para: '94' }
-              }
+              },
+              { source: 'millercenter-truman-key-events', loc: { section: 'Key Events' } }
             ]
           }
         ]
       },
       quote: {
-        id: 'q6',
-        text: 'Konferenz von 16 europäischen Staaten in Paris über den Marshallplan. Die Sowjetunion hat bereits die Teilnahme am Marshallplan für sich und andere Ostblockstaaten abgelehnt.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1947', loc: { section: 'Jahreschronik 1947', para: '95' } },
+        id: 'q9',
+        text: 'In July, representatives from sixteen European nations attended a conference in Paris, France, to draw up a proposal for U.S. aid. The Soviets had sent a delegation to an initial meeting, but it soon departed under orders from Moscow.',
+        lang: 'en',
+        cite: { source: 'millercenter-truman-key-events', loc: { section: 'Key Events' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.hdg.de/lemo/jahreschronik/1947.html'
+          at: '2026-10-07',
+          url: 'https://millercenter.org/president/truman/key-events'
         }
       }
     },
@@ -246,5 +258,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Harry_S._Truman_Presidential_Portrait_(3x4_cropped).jpg',
     credit: { institution: 'US National Archives and Records Administration' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'bossuat-1992-la-france-laide-americaine', perspective: 'european' }
+  ]
 })

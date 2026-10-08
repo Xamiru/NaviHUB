@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Benito Mussolini', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -37,6 +37,7 @@ export default definePerson({
   offices: [
     {
       title: 'prime minister of Italy',
+      polity: 'polity:kingdom-of-italy',
       start: {
         alts: [
           {
@@ -71,17 +72,28 @@ export default definePerson({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: '23. März: Mussolini beteiligt sich an der Gründung der "fasci di combattimento".',
-          lang: 'de',
+          id: 'q5',
+          text: 'Italian Socialist Benito Mussolini envisioned war as the prerequisite for revolution. He helped push Italy into World War I. After combat service and medical discharge in 1917, he demanded war until victory. In 1919, he founded the Fascist movement. Using veterans to smash political opposition, he seized power in October 1922.',
+          lang: 'en',
+          cite: { source: 'eo1418-sullivan-mussolini-benito', loc: { section: 'Summary' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://encyclopedia.1914-1918-online.net/article/mussolini-benito/'
+          }
+        },
+        {
+          id: 'q6',
+          text: 'Mussolini inaugurated his Fascist movement on 23 March 1919 before an audience including veterans (some from the black-shirted assault troops, the Arditi), Futurists, ex-Socialists, Syndicalists and Interventionists.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-benito-mussolini',
-            loc: { section: 'Benito Mussolini 1883-1945', para: '35' }
+            source: 'eo1418-sullivan-mussolini-benito',
+            loc: { section: 'Neither Left nor Right', para: '2' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/benito-mussolini'
+            at: '2026-10-07',
+            url: 'https://encyclopedia.1914-1918-online.net/article/mussolini-benito/'
           }
         },
         {

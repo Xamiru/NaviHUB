@@ -26,15 +26,21 @@ def build(spec_path, session):
     ents = [('source', s) for s in getattr(spec, 'SOURCES', [])] + list(spec.ENTITIES)
 
     located = 0
+    used = set()
     for kind, e in ents:
         if kind == 'place' and not e.get('coords'):
             name = next((n['text'] for n in e['names'] if n.get('lang') == 'en'), e['names'][0]['text'])
             c = gazetteer.coords(name, e.get('modernCountry'), lib.TODAY)
+            # Towns and villages Natural Earth lacks: GeoNames, never for regions or waters.
+            if not c and e.get('placeType') not in ('region', 'water', 'country'):
+                c = next((g for g in (gazetteer.geonames_coords(n['text'], e.get('modernCountry')) for n in e['names']) if g), None)
             if c:
                 e['coords'] = c
+                used.add(c['cites'][0]['source'])
                 located += 1
-    if located and not os.path.exists(os.path.join(lib.CONTENT, f'sources/{gazetteer.SOURCE_ID}.ts')):
-        ents.append(('source', gazetteer.source(lib.TODAY)))
+    for sid, make in ((gazetteer.SOURCE_ID, gazetteer.source), (gazetteer.GEONAMES_ID, gazetteer.geonames_source)):
+        if sid in used and not os.path.exists(os.path.join(lib.CONTENT, f'sources/{sid}.ts')):
+            ents.append(('source', make(lib.TODAY)))
     print(f'{located} places located')
 
     for kind, e in ents:

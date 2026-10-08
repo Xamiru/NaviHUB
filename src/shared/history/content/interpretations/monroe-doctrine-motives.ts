@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'monroe-doctrine-motives',
   about: ['event:monroe-doctrine'],
   topic: 'motives',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   framing: {
     id: 'q1',
     text: 'The three main concepts of the doctrine—separate spheres of influence for the Americas and Europe, non-colonization, and non-intervention—were designed to signify a clear break between the New World and the autocratic realm of Europe.',
@@ -58,12 +58,26 @@ export default defineInterpretation({
       ]
     },
     {
-      id: 'adams-unilateralism',
-      category: 'contemporary',
+      id: 'unilateral-rather-than-joint',
+      category: 'scholarly',
       holders: [
-        { kind: 'participant', name: 'John Quincy Adams' }
+        { kind: 'organization', name: 'Office of the Historian, U.S. Department of State' }
       ],
       statements: [
+        {
+          id: 'q6',
+          text: 'Earlier in 1823 British Foreign Minister George Canning suggested to Americans that two nations issue a joint declaration to deter any other power from intervening in Central and South America.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-monroe-doctrine',
+            loc: { section: 'Monroe Doctrine, 1823', para: '4' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://history.state.gov/milestones/1801-1829/monroe'
+          }
+        },
         {
           id: 'q4',
           text: 'Secretary of State John Quincy Adams, however, vigorously opposed cooperation with Great Britain, contending that a statement of bilateral nature could limit United States expansion in the future.',
@@ -95,31 +109,8 @@ export default defineInterpretation({
       ]
     },
     {
-      id: 'canning-joint-declaration',
-      category: 'contemporary',
-      holders: [
-        { kind: 'participant', name: 'George Canning' }
-      ],
-      statements: [
-        {
-          id: 'q6',
-          text: 'Earlier in 1823 British Foreign Minister George Canning suggested to Americans that two nations issue a joint declaration to deter any other power from intervening in Central and South America.',
-          lang: 'en',
-          cite: {
-            source: 'state-dept-milestones-monroe-doctrine',
-            loc: { section: 'Monroe Doctrine, 1823', para: '4' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://history.state.gov/milestones/1801-1829/monroe'
-          }
-        }
-      ]
-    },
-    {
       id: 'trade-and-security',
-      category: 'official',
+      category: 'scholarly',
       holders: [
         { kind: 'organization', name: 'Office of the Historian, U.S. Department of State' }
       ],

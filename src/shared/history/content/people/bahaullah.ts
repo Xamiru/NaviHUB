@@ -22,7 +22,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -187,6 +187,12 @@ export default definePerson({
           }
         }
       ]
+    }
+  ],
+  furtherReading: [
+    {
+      source: 'vahman-2010-yeksad-o-shast-sal-mobarezeh-ba-diyanat-e-bahai',
+      perspective: 'iranian'
     }
   ]
 })

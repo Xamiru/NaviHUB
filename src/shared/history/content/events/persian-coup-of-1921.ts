@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'coup',
   start: {
     alts: [
@@ -86,6 +86,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -466,5 +469,9 @@ export default defineEvent({
       bytes: 22300624,
       date: { d: '1922' }
     }
+  ],
+  furtherReading: [
+    { source: 'makki-1983-tarikh-e-bist-saleh-ye-iran', perspective: 'iranian' },
+    { source: 'sheikholeslami-1989-sima-ye-ahmad-shah-qajar', perspective: 'iranian' }
   ]
 })

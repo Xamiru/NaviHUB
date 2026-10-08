@@ -110,6 +110,11 @@ CREATE TABLE IF NOT EXISTS person (
   external_id     TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_person_name ON person(name);
+-- The cross-source seiyuu key (repos/personMatch.ts): kanji name without
+-- spaces. An expression index, so VNDB and Bangumi imports seek instead of
+-- scanning every person per voice actor; queries must spell it identically.
+CREATE INDEX IF NOT EXISTS idx_person_native_key
+  ON person(REPLACE(REPLACE(name_native, ' ', ''), char(12288), ''));
 
 CREATE TABLE IF NOT EXISTS company (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -141,7 +146,15 @@ CREATE TABLE IF NOT EXISTS credit (
   character_id  INTEGER REFERENCES character(id) ON DELETE SET NULL,
   role          TEXT NOT NULL DEFAULT 'voice_actor',
   language      TEXT,
-  importance    INTEGER
+  importance    INTEGER,
+  -- The source's own credit text ("Story & Art", "Original Creator"), shown in
+  -- place of the coarse role where present.
+  role_note     TEXT,
+  -- Which importer wrote the row, where a title's credits mix imported and
+  -- hand-made ones: 'bangumi' for game cast and staff, whose authoritative
+  -- re-import prunes only its own rows. NULL = hand-made or an importer that
+  -- owns every credit on its titles.
+  origin        TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_credit_media ON credit(media_id);
 CREATE INDEX IF NOT EXISTS idx_credit_person ON credit(person_id);
@@ -243,6 +256,25 @@ CREATE INDEX IF NOT EXISTS idx_media_relation_media ON media_relation(media_id);
 CREATE INDEX IF NOT EXISTS idx_media_relation_related
   ON media_relation(related_source, related_external_id);
 CREATE INDEX IF NOT EXISTS idx_theme_artist_person ON theme_artist(person_id);
+
+-- media_external_link — every identity a title has BESIDES its own
+-- (external_source, external_id) key. Games use it: a RAWG-era or Steam row
+-- keeps its key and gains its LaunchBox work, Bangumi subject, Wikidata item
+-- and Steam app here, so enrichment, relations and dedup reach it without
+-- re-keying the row. method: 'xref' (an id chain baked into the catalog),
+-- 'wikidata', 'exact' (unique exact title + date) or 'manual' (the user's
+-- choice; automatic passes never overwrite it). Manual rows are personal and
+-- the export drops them; the automatic ones are canonical.
+CREATE TABLE IF NOT EXISTS media_external_link (
+  media_id     INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+  source       TEXT NOT NULL,
+  external_id  TEXT NOT NULL,
+  method       TEXT NOT NULL,
+  linked_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (media_id, source)
+);
+CREATE INDEX IF NOT EXISTS idx_media_external_link_ext
+  ON media_external_link(source, external_id);
 
 -- media_image — wallpapers + fan art, attached to a media item or (media_id
 -- NULL) to the Pictures gallery's Unsorted bucket. Files live under

@@ -19,7 +19,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'founding',
   start: {
     alts: [
@@ -59,6 +59,9 @@ export default defineEvent({
       ]
     }
   ],
+  polities: [
+    { ref: 'polity:kingdom-of-italy' }
+  ],
   participants: [
     {
       name: 'Victor-Emmanuel II',
@@ -87,7 +90,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Giuseppe Garibaldi',
+      ref: 'person:giuseppe-garibaldi',
       role: 'commander',
       cites: [
         {
@@ -330,5 +333,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:VictorEmmanuel2.jpg',
     credit: { creator: 'Eugène Disdéri' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'romeo-1969-cavour-e-il-suo-tempo', perspective: 'european' },
+    { source: 'candeloro-1966-storia-dellitalia-moderna', perspective: 'european' }
+  ]
 })

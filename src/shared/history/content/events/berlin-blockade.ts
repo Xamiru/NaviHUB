@@ -24,7 +24,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'crisis',
   start: {
     alts: [
@@ -70,6 +70,10 @@ export default defineEvent({
   partOf: [
     { ref: 'period:cold-war' }
   ],
+  polities: [
+    { ref: 'polity:united-states' },
+    { ref: 'polity:united-kingdom' }
+  ],
   sides: [
     {
       key: 'west',
@@ -84,6 +88,7 @@ export default defineEvent({
     {
       key: 'soviet',
       name: 'Soviet Union',
+      polity: 'polity:soviet-union',
       cites: [
         {
           source: 'state-dept-milestones-berlin-airlift',
@@ -176,17 +181,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1945-1952/berlin-airlift'
           }
-        },
-        {
-          id: 'q3',
-          text: 'Die Sowjetische Militäradministration in Deutschland (SMAD) beginnt die Großblockade der Berliner Westsektoren zu Lande und zu Wasser als Reaktion auf den gescheiterten Versuch, ihre Währungsreform auf Gesamtberlin auszudehnen.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1948', loc: { section: 'Jahreschronik 1948', para: '81' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.hdg.de/lemo/jahreschronik/1948.html'
-          }
         }
       ]
     },
@@ -222,35 +216,25 @@ export default defineEvent({
           }
         }
       ]
+    },
+    {
+      kind: 'background',
+      quotes: [
+        {
+          id: 'q6',
+          text: 'Beginn der "kleinen" Berlin-Blockade: Die sowjetische Besatzungsmacht verhindert westalliierte Militärtransporte nach Berlin. Später werden auch zivile Personen und Güter nicht mehr durchgelassen.',
+          lang: 'de',
+          cite: { source: 'lemo-chronik-1948', loc: { section: 'Jahreschronik 1948', para: '43' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.hdg.de/lemo/jahreschronik/1948.html'
+          }
+        }
+      ]
     }
   ],
   course: [
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1948-04-01' },
-            cites: [
-              {
-                source: 'lemo-chronik-1948',
-                loc: { section: 'Jahreschronik 1948', para: '42' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q6',
-        text: 'Beginn der "kleinen" Berlin-Blockade: Die sowjetische Besatzungsmacht verhindert westalliierte Militärtransporte nach Berlin. Später werden auch zivile Personen und Güter nicht mehr durchgelassen.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1948', loc: { section: 'Jahreschronik 1948', para: '43' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.hdg.de/lemo/jahreschronik/1948.html'
-        }
-      }
-    },
     {
       date: {
         alts: [
@@ -330,5 +314,8 @@ export default defineEvent({
       date: { d: '1948-10-21' },
       durationSec: 110
     }
+  ],
+  furtherReading: [
+    { source: 'keiderling-1998-rosinenbomber-uber-berlin', perspective: 'european' }
   ]
 })

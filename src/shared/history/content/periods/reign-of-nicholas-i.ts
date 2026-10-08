@@ -5,7 +5,7 @@ export default definePeriod({
   names: [
     { text: 'Reign of Nicholas I', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   periodType: 'reign',
   start: {
     alts: [
@@ -38,6 +38,7 @@ export default definePeriod({
   },
   regions: ['russia-central-asia'],
   prominence: 2,
+  parent: 'polity:russian-empire',
   sections: [
     {
       kind: 'overview',

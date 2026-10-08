@@ -95,15 +95,16 @@ export default function FootballTeamPage() {
     queryFn: () => api.football.team(id),
     enabled: Number.isInteger(id) && id > 0
   })
+  // Only the run state is needed here; the full sync overview is the Sync page's payload.
   const { data: sync } = useQuery({
-    queryKey: qk.football.sync,
-    queryFn: () => api.football.syncOverview(),
+    queryKey: qk.football.syncStatus,
+    queryFn: () => api.football.syncStatus(),
     refetchInterval: (query) => {
-      const state = query.state.data?.status.state
+      const state = query.state.data?.state
       return state && ['running', 'pausing', 'paused'].includes(state) ? 700 : false
     }
   })
-  const syncActive = !!sync && ['running', 'pausing', 'paused'].includes(sync.status.state)
+  const syncActive = !!sync && ['running', 'pausing', 'paused'].includes(sync.state)
   const tenureList = useIncrementalList(data?.tenures ?? [], 40, id)
   const matchList = useIncrementalList(data?.matches ?? [], 40, id)
   const finishes = useMemo(() => footballLeagueFinishes(data?.seasonRecords ?? []), [data])
@@ -123,14 +124,14 @@ export default function FootballTeamPage() {
     await api.football.setFavorite('team', id, !data!.favorite)
     if (!data!.favorite && data!.enrichmentState !== 'ready' && !syncActive) {
       await api.football.startSync({ kind: 'enrich', entityKind: 'team', entityId: id })
-      await qc.invalidateQueries({ queryKey: qk.football.sync })
+      await qc.invalidateQueries({ queryKey: qk.football.syncStatus })
     }
     qc.invalidateQueries({ queryKey: qk.football.all })
   }
   async function enrich() {
     if (syncActive) return
     await api.football.startSync({ kind: 'enrich', entityKind: 'team', entityId: id })
-    await qc.invalidateQueries({ queryKey: qk.football.sync })
+    await qc.invalidateQueries({ queryKey: qk.football.syncStatus })
   }
   const colors = footballTeamColors(data.name, data.colors)
   const lineColor = colors.primary.toLowerCase() === '#ffffff' ? colors.secondary : colors.primary

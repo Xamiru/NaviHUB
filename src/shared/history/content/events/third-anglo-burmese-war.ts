@@ -13,7 +13,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -46,12 +46,17 @@ export default defineEvent({
     }
   ],
   partOf: [
-    { ref: 'period:british-raj' }
+    { ref: 'polity:british-raj' }
+  ],
+  polities: [
+    { ref: 'polity:british-empire' },
+    { ref: 'polity:british-raj' }
   ],
   sides: [
     {
       key: 'britain',
       name: 'British',
+      polity: 'polity:united-kingdom',
       cites: [
         { source: 'nam-third-burma-war', loc: { section: 'Third Burma War', para: '17' } }
       ]
@@ -331,5 +336,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:King_thibaw_queen_daughter1885.jpg',
     credit: { institution: 'British Library' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'htin-aung-1965-the-stricken-peacock', perspective: 'southeast-asian' },
+    { source: 'thant-myint-u-2001-the-making-of-modern-burma', perspective: 'southeast-asian' }
+  ]
 })

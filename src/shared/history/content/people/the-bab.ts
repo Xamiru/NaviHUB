@@ -7,7 +7,7 @@ export default definePerson({
     { text: 'باب', lang: 'fa', role: 'native' },
     { text: 'Sayyed ʿAli-Moḥammad Širāzi', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -258,6 +258,13 @@ export default definePerson({
           }
         }
       ]
+    }
+  ],
+  furtherReading: [
+    { source: 'ivanov-1939-babidskie-vosstaniia-v-irane', perspective: 'russian-soviet' },
+    {
+      source: 'vahman-2010-yeksad-o-shast-sal-mobarezeh-ba-diyanat-e-bahai',
+      perspective: 'iranian'
     }
   ]
 })

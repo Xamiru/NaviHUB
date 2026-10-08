@@ -3,7 +3,8 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'first-printing-press-in-tabriz',
   names: [
-    { text: 'First printing press in Tabriz', lang: 'en', role: 'primary' }
+    { text: 'First printing press in Tabriz', lang: 'en', role: 'primary' },
+    { text: 'نخستین چاپخانه تبریز', lang: 'fa', role: 'native' }
   ],
   researched: '2026-10-07',
   type: 'invention',

@@ -4,9 +4,10 @@ export default defineEvent({
   id: 'anglo-persian-preliminary-treaty-of-1809',
   names: [
     { text: 'Anglo-Persian Preliminary Treaty of 1809', lang: 'en', role: 'primary' },
+    { text: 'عهدنامه مجمل ایران و انگلیس', lang: 'fa', role: 'native' },
     { text: 'Preliminary Treaty of Friendship and Alliance', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -44,6 +45,10 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:reign-of-fath-ali-shah' }
+  ],
+  polities: [
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -192,5 +197,12 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 37116917
     }
+  ],
+  furtherReading: [
+    {
+      source: 'mahmud-1949-tarikh-e-ravabet-e-siyasi-ye-iran-va-engelis',
+      perspective: 'iranian'
+    },
+    { source: 'nafisi-1965-tarikh-e-ejtemai-va-siyasi-ye-iran', perspective: 'iranian' }
   ]
 })

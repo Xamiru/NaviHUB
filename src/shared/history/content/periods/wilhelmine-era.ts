@@ -5,7 +5,7 @@ export default definePeriod({
   names: [
     { text: 'Wilhelmine Era', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   periodType: 'era',
   start: {
     alts: [
@@ -35,6 +35,7 @@ export default definePeriod({
   },
   regions: ['europe'],
   prominence: 2,
+  parent: 'polity:german-empire',
   sections: [
     {
       kind: 'overview',

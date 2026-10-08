@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Russian bombardment of the Imam Reza shrine', lang: 'en', role: 'primary' },
     { text: 'توپ‌باران حرم امام رضا', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'massacre',
   start: {
     alts: [
@@ -74,6 +74,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-ahmad-shah-qajar' },
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:russian-empire' }
   ],
   figures: [
     {

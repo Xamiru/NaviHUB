@@ -7,7 +7,7 @@ export default defineEvent({
     { text: 'הצהרת בלפור', lang: 'he', role: 'alternative' },
     { text: 'وعد بلفور', lang: 'ar', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -28,6 +28,20 @@ export default defineEvent({
   },
   regions: ['mena', 'europe'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:london',
+      cites: [
+        {
+          source: 'eo1418-rhett-balfour-declaration',
+          loc: { section: 'Images, Balfour Declaration' }
+        }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:united-kingdom' }
+  ],
   participants: [
     {
       ref: 'person:arthur-balfour',
@@ -84,7 +98,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'David Lloyd George',
+      ref: 'person:david-lloyd-george',
       role: 'head-of-government',
       cites: [
         {

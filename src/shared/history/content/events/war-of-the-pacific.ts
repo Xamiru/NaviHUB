@@ -14,7 +14,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -72,6 +72,17 @@ export default defineEvent({
   },
   regions: ['latin-america'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:lima',
+      cites: [
+        {
+          source: 'loc-chile-country-study-1994',
+          loc: { section: 'War of the Pacific, 1879-83', para: '3' }
+        }
+      ]
+    }
+  ],
   sides: [
     {
       key: 'chile',
@@ -141,17 +152,6 @@ export default defineEvent({
             loc: { section: 'War of the Pacific, 1879-83', para: '3' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/chile/15.htm' }
-        },
-        {
-          id: 'q2',
-          text: 'Beginn des bis 1884 andauernden so genannten Salpeterkrieges, den Chile gegen Bolivien und Peru führt, um die Atacama-Wüste zu erringen, in der es reiche Salpetervorkommen gibt.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1879', loc: { section: 'Chronik 1879', para: '17' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1879.html'
-          }
         }
       ]
     },
@@ -248,5 +248,10 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Combate_Naval_de_Iquique_-_Nicol%C3%A1s_Guzm%C3%A1n.jpg',
     credit: { creator: 'Nicolás Guzmán Bustamante' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'bulnes-1979-guerra-del-pacifico', perspective: 'latin-american' },
+    { source: 'bonilla-1980-un-siglo-a-la-deriva', perspective: 'latin-american' },
+    { source: 'basadre-1968-historia-de-la-republica-del-peru', perspective: 'latin-american' }
+  ]
 })

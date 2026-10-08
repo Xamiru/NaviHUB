@@ -24,7 +24,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'conference',
   start: {
     alts: [
@@ -69,9 +69,17 @@ export default defineEvent({
       ]
     }
   ],
+  polities: [
+    { ref: 'polity:german-empire' },
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:french-third-republic' },
+    { ref: 'polity:congo-free-state' },
+    { ref: 'polity:ottoman-empire' },
+    { ref: 'polity:russian-empire' }
+  ],
   related: [
     {
-      ref: 'period:congo-free-state',
+      ref: 'polity:congo-free-state',
       rel: 'led-to',
       cites: [
         {
@@ -129,8 +137,8 @@ export default defineEvent({
           }
         },
         {
-          id: 'q1',
-          text: 'The conference assembled at Berlin on the 15th of November 1884, and after protracted deliberations the “General Act of the Berlin Conference” was signed by the representatives of all the powers attending the conference, on the 26th of February 1885.',
+          id: 'q14',
+          text: 'The powers represented were Germany, Austria-Hungary, Belgium, […] Denmark, Spain, the United States, France, Great Britain, Italy, Holland, Portugal, Russia, Sweden and Norway, and Turkey, to name them in the alphabetical order adopted in the preamble to the French text of the General Act.',
           lang: 'en',
           cite: {
             source: 'britannica-1911-africa',
@@ -138,30 +146,8 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Africa'
-          }
-        },
-        {
-          id: 'q2',
-          text: 'Eröffnung der bis zum 26. Februar 1885 andauernden internationalen Kongo-Konferenz in Berlin.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1884', loc: { section: 'Chronik 1884', para: '50' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1884.html'
-          }
-        },
-        {
-          id: 'q3',
-          text: 'Auf Einladung Bismarcks nehmen 14 europäischen Mächte und die Vereinigten Staaten an der Konferenz teil,',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1884', loc: { section: 'Chronik 1884', para: '50' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1884.html'
           }
         }
       ]
@@ -214,53 +200,6 @@ export default defineEvent({
       ]
     },
     {
-      kind: 'course',
-      quotes: [
-        {
-          id: 'q7',
-          text: 'The General Act dealt with six specific subjects: (1) freedom of trade in the basin of the Congo, (2) the slave trade, (3) neutrality of territories in the basin of the Congo, (4) navigation of the Congo, (5) navigation of the Niger, (6) rules for future occupation on the coasts of the African continent.',
-          lang: 'en',
-          cite: {
-            source: 'britannica-1911-africa',
-            loc: { section: 'AFRICA, V. Partition among European Powers', para: '26' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Africa'
-          }
-        },
-        {
-          id: 'q8',
-          text: 'The signatory powers undertook that any fresh act of taking possession on any portion of the African coast must be notified by the power taking possession, or assuming a protectorate, to the other signatory powers. It was further provided that any such occupation to be valid must be effective.',
-          lang: 'en',
-          cite: {
-            source: 'britannica-1911-africa',
-            loc: { section: 'AFRICA, V. Partition among European Powers', para: '26' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Africa'
-          }
-        },
-        {
-          id: 'q9',
-          text: 'But King Leopold and his agents had taken full advantage of the opportunity which the conference afforded,',
-          lang: 'en',
-          cite: {
-            source: 'britannica-1911-africa',
-            loc: { section: 'AFRICA, V. Partition among European Powers', para: '27' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Africa'
-          }
-        }
-      ]
-    },
-    {
       kind: 'consequences',
       quotes: [
         {
@@ -278,14 +217,17 @@ export default defineEvent({
           }
         },
         {
-          id: 'q11',
-          text: 'Versehen mit dem Rückhalt durch die Kongo-Akte vom Februar 1885, erklärt sich Leopold II. von Belgien zum Eigentümer des Kongo.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1885', loc: { section: 'Chronik 1885', para: '18' } },
+          id: 'q15',
+          text: 'The Congo Free State owed its existence to the ambition and force of character of a single individual. It dated its formal inclusion among the independent states of the world from 1885, when its founder, Leopold II., king of the Belgians, became its head.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-congo-free-state',
+            loc: { section: 'CONGO FREE STATE', para: '3' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1885.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Congo_Free_State'
           }
         },
         {
@@ -300,6 +242,20 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Congo_Free_State'
+          }
+        },
+        {
+          id: 'q19',
+          text: 'It was not, however, until two months later, in April 1885, that King Leopold, with the sanction of the Belgian legislature, formally assumed the headship of the new state; and on the 1st of August in the same year His Majesty notified the powers that from that date the “Independent State of the Congo” declared that “it shall be perpetually neutral” in conformity with the provisions of the Berlin Act.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-africa',
+            loc: { section: 'AFRICA, V. Partition among European Powers', para: '27' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Africa'
           }
         }
       ]
@@ -323,5 +279,99 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 1236952
     }
+  ],
+  course: [
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1884-11-15' },
+            cites: [
+              {
+                source: 'britannica-1911-africa',
+                loc: { section: 'AFRICA, V. Partition among European Powers', para: '26' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q16',
+        text: 'The conference assembled at Berlin on the 15th of November 1884, and after protracted deliberations the “General Act of the Berlin Conference” was signed by the representatives of all the powers attending the conference, on the 26th of February 1885.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-africa',
+          loc: { section: 'AFRICA, V. Partition among European Powers', para: '26' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-06',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Africa'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1885-02-26' },
+            cites: [
+              {
+                source: 'britannica-1911-africa',
+                loc: { section: 'AFRICA, V. Partition among European Powers', para: '26' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q17',
+        text: 'The General Act dealt with six specific subjects: (1) freedom of trade in the basin of the Congo, (2) the slave trade, (3) neutrality of territories in the basin of the Congo, (4) navigation of the Congo, (5) navigation of the Niger, (6) rules for future occupation on the coasts of the African continent.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-africa',
+          loc: { section: 'AFRICA, V. Partition among European Powers', para: '26' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-06',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Africa'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1885-02-26' },
+            cites: [
+              {
+                source: 'britannica-1911-africa',
+                loc: { section: 'AFRICA, V. Partition among European Powers', para: '26' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q18',
+        text: 'The signatory powers undertook that any fresh act of taking possession on any portion of the African coast must be notified by the power taking possession, or assuming a protectorate, to the other signatory powers. It was further provided that any such occupation to be valid must be effective.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-africa',
+          loc: { section: 'AFRICA, V. Partition among European Powers', para: '26' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-06',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Africa'
+        }
+      }
+    }
+  ],
+  furtherReading: [
+    { source: 'boahen-1987-african-perspectives-on-colonialism', perspective: 'african' },
+    { source: 'uzoigwe-1974-britain-and-the-conquest-of-africa', perspective: 'african' },
+    { source: 'forster-1988-bismarck-europe-and-africa', perspective: 'european' }
   ]
 })

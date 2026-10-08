@@ -5,7 +5,7 @@ import type { BulkListParams, BulkStartPayload } from '../src/shared/types'
 
 // The /bulk section: the pure per-source request builders (AniList GraphQL
 // variables, TMDB discover params, VNDB query body — the catalog SQL builder
-// lives in gamesCatalog.test.ts) and the job singleton's loop (skip-existing,
+// lives in launchboxCatalog.test.ts) and the job singleton's loop (skip-existing,
 // failure tolerance, the consecutive-failure bail, cancel keeping counts).
 
 let db: Database.Database
@@ -27,8 +27,14 @@ vi.mock('../src/main/http', () => ({
   fetchWithRetry: (url: string, init?: RequestInit) => httpHandler(url, init)
 }))
 let catalog: Database.Database | null = null
+vi.mock('../src/main/launchboxCatalogDb', () => ({
+  getLaunchboxDb: () => catalog,
+  closeLaunchboxDb: () => {},
+  launchboxCatalogPath: () => ':memory:',
+  inspectLaunchboxCatalog: () => ({ workCount: 1, snapshot: null })
+}))
 vi.mock('../src/main/gamesCatalogDb', () => ({
-  getCatalogDb: () => catalog,
+  getCatalogDb: () => null,
   closeCatalogDb: () => {},
   catalogPath: () => ':memory:'
 }))
@@ -40,7 +46,7 @@ vi.mock('../src/main/repos/settingsRepo', () => ({
 import { anilistThrottle, buildTopVariables, topList } from '../src/main/anilist'
 import { buildDiscoverParams, discoverTop } from '../src/main/tmdb'
 import { buildVndbTopBody } from '../src/main/vndb'
-import { CATALOG_DDL } from '../src/main/gamesCatalogSchema'
+import { LAUNCHBOX_CATALOG_DDL } from '../src/main/launchboxCatalogSchema'
 import * as bulk from '../src/main/bulkImport'
 import { __resetLibraryJobLock } from '../src/main/libraryJobLock'
 
@@ -287,15 +293,26 @@ describe('makeKeep (the crawl predicate)', () => {
 describe('preview', () => {
   it('excludes in-library rows entirely and tops the list up to count', async () => {
     catalog = new Database(':memory:')
-    catalog.exec(CATALOG_DDL)
-    const ins = catalog.prepare(`INSERT INTO catalog_game (id, name, added) VALUES (?, ?, ?)`)
+    catalog.exec(LAUNCHBOX_CATALOG_DDL)
+    const ins = catalog.prepare(`INSERT INTO lb_work (id, name, popularity) VALUES (?, ?, ?)`)
     ins.run(1, 'Owned Game', 100)
     ins.run(2, 'New Game', 50)
     ins.run(3, 'Backfill Game', 40)
+    ins.run(4, 'Linked Under Another Name', 30)
     db.prepare(
       `INSERT INTO media_item (media_type, title, external_source, external_id)
-       VALUES ('game', 'Owned Game', 'rawg', '1')`
+       VALUES ('game', 'Owned Game', 'launchbox', '1')`
     ).run()
+    // A RAWG-era row the upgrade tied to work 4 owns it too.
+    const rawgRow = db
+      .prepare(
+        `INSERT INTO media_item (media_type, title, external_source, external_id)
+         VALUES ('game', 'Old RAWG Title', 'rawg', '77')`
+      )
+      .run().lastInsertRowid
+    db.prepare(
+      `INSERT INTO media_external_link (media_id, source, external_id, method) VALUES (?, 'launchbox', '4', 'exact')`
+    ).run(rawgRow)
     // Same external id under a DIFFERENT media_type must not exclude it.
     db.prepare(
       `INSERT INTO media_item (media_type, title, external_source, external_id)
@@ -305,6 +322,7 @@ describe('preview', () => {
     // count 2: the owned #1 is skipped WITHOUT consuming a slot — #2 and #3 fill it.
     const items = await bulk.preview(params({ source: 'game', count: 2 }))
     expect(items.map((it) => it.sourceId)).toEqual([2, 3])
+    expect((await bulk.preview(params({ source: 'game', count: 10 }))).map((it) => it.sourceId)).toEqual([2, 3])
   })
 
   it('online sources top up too: an owned movie is skipped without consuming a slot', async () => {
@@ -337,12 +355,12 @@ describe('preview', () => {
 
   it('excludes a Steam-owned game by normalized title (disjoint id spaces)', async () => {
     catalog = new Database(':memory:')
-    catalog.exec(CATALOG_DDL)
-    const ins = catalog.prepare(`INSERT INTO catalog_game (id, name, added) VALUES (?, ?, ?)`)
+    catalog.exec(LAUNCHBOX_CATALOG_DDL)
+    const ins = catalog.prepare(`INSERT INTO lb_work (id, name, popularity) VALUES (?, ?, ?)`)
     ins.run(11, 'Persona 5 Royal', 100)
     ins.run(12, 'Bloodborne', 90)
     // Imported via Steam: external_source 'steam', appid — nothing matches the
-    // catalog's rawg id space, only the name can.
+    // catalog's work ids, only the name can.
     db.prepare(
       `INSERT INTO media_item (media_type, title, external_source, external_id)
        VALUES ('game', 'PERSONA 5: Royal', 'steam', '1687950')`

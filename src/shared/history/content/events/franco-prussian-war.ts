@@ -7,7 +7,7 @@ export default defineEvent({
     { text: 'Deutsch-Französischer Krieg', lang: 'de', role: 'alternative' },
     { text: 'Guerre franco-allemande de 1870', lang: 'fr', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -51,18 +51,32 @@ export default defineEvent({
       ]
     }
   ],
+  polities: [
+    { ref: 'polity:french-third-republic' },
+    { ref: 'polity:german-empire' }
+  ],
   sides: [
     {
       key: 'france',
-      name: 'Frankreich',
+      name: 'France',
+      polity: 'polity:second-french-empire',
       cites: [
+        {
+          source: 'loc-austria-country-study-1994',
+          loc: { section: 'The Final Defeat in Germany and Reconciliation with Prussia', para: '2' }
+        },
         { source: 'lemo-chronik-1870', loc: { section: 'Chronik 1870', para: '28' } }
       ]
     },
     {
       key: 'germany',
-      name: 'Preußen',
+      name: 'Prussia',
+      polity: 'polity:kingdom-of-prussia',
       cites: [
+        {
+          source: 'loc-austria-country-study-1994',
+          loc: { section: 'The Final Defeat in Germany and Reconciliation with Prussia', para: '2' }
+        },
         { source: 'lemo-chronik-1870', loc: { section: 'Chronik 1870', para: '28' } }
       ]
     }
@@ -145,25 +159,31 @@ export default defineEvent({
       kind: 'background',
       quotes: [
         {
-          id: 'q1',
-          text: 'Die vom preußischen Ministerpräsidenten Otto von Bismarck nachhaltig geförderte Kandidatur des Erbprinzen Leopold aus der Sigmaringer Hohenzollern-Linie für den vakanten spanischen Königsthron veranlasst die französische Regierung zu einer Kriegsdrohung für den Fall, dass Leopold seine Kandidatur nicht zurückziehe.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1870', loc: { section: 'Chronik 1870', para: '20' } },
+          id: 'q13',
+          text: 'The desired pretext was offered on the 3rd of July 1870 by the candidature of a Hohenzollern prince for the throne of Spain.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-france-history',
+            loc: { section: 'FRANCE: History', para: '531' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1870.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/France/History'
           }
         },
         {
-          id: 'q2',
-          text: 'Der französische Botschafter verlangt von König Wilhelm I. in Bad Ems die Zusicherung, auch künftig keine Kandidatur eines Hohenzollern für die spanische Krone zuzulassen. Der König lehnt ab und berichtet telegraphisch Bismarck. Dieser gibt noch am selben Tag die von ihm gekürzte "Emser Depesche" mit den französischen Forderungen an die Presse weiter.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1870', loc: { section: 'Chronik 1870', para: '24' } },
+          id: 'q14',
+          text: 'The ill-advised action of Gramont in demanding from King William one of those promises for the future which are humiliating but never binding, gave Bismarck his opportunity, and the king’s refusal was transformed by him into an insult by the “editing” of the Ems telegram.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-france-history',
+            loc: { section: 'FRANCE: History', para: '533' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1870.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/France/History'
           }
         }
       ]
@@ -227,21 +247,27 @@ export default defineEvent({
           {
             value: { d: '1870-07-19' },
             cites: [
-              { source: 'lemo-chronik-1870', loc: { section: 'Chronik 1870', para: '27' } }
+              { source: 'lemo-chronik-1870', loc: { section: 'Chronik 1870', para: '27' } },
+              {
+                source: 'loc-austria-country-study-1994',
+                loc: {
+                  section: 'The Final Defeat in Germany and Reconciliation with Prussia',
+                  para: '2'
+                }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q7',
-        text: 'Frankreich erklärt Preußen den Krieg.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1870', loc: { section: 'Chronik 1870', para: '28' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1870.html'
-        }
+        id: 'q15',
+        text: 'France declared war on Prussia and invaded German territory in July 1870.',
+        lang: 'en',
+        cite: {
+          source: 'loc-austria-country-study-1994',
+          loc: { section: 'The Final Defeat in Germany and Reconciliation with Prussia', para: '2' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/austria/27.htm' }
       }
     },
     {
@@ -250,20 +276,24 @@ export default defineEvent({
           {
             value: { d: '1870-09-01', notAfter: '1870-09-02' },
             cites: [
-              { source: 'lemo-chronik-1870', loc: { section: 'Chronik 1870', para: '35' } }
+              { source: 'lemo-chronik-1870', loc: { section: 'Chronik 1870', para: '35' } },
+              { source: 'britannica-1911-sedan', loc: { section: 'SEDAN', para: '2' } }
             ]
           }
         ]
       },
       quote: {
-        id: 'q8',
-        text: 'Schlacht bei Sedan: Kapitulation der französischen Armee unter Marschall McMahon (1808-1893) und Gefangennahme Kaiser Napoleons III.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1870', loc: { section: 'Chronik 1870', para: '36' } },
+        id: 'q16',
+        text: 'The battle of Sedan was closed about 4.15 P.M. by the hoisting of the white flag. Terms were agreed upon during the night, and the whole French army, with the emperor, passed into captivity.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-franco-german-war',
+          loc: { section: 'FRANCO-GERMAN WAR', para: '140' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1870.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Franco-German_War'
         }
       }
     },
@@ -279,14 +309,14 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q9',
-        text: 'Die französische Hauptstadt Paris wird von deutschen Truppen eingeschlossen und belagert.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1870', loc: { section: 'Chronik 1870', para: '40' } },
+        id: 'q17',
+        text: 'The two sieges of Paris in 1870-71 are among the most dramatic episodes of its history. The first siege began on the 19th of September 1870, with the occupation by the Germans of the heights on the left side of the river and the capture of the unfinished redoubt of Châtillon. Two days later the investment was complete.',
+        lang: 'en',
+        cite: { source: 'britannica-1911-paris', loc: { section: 'PARIS', para: '368' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1870.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Paris'
         }
       }
     },
@@ -296,20 +326,20 @@ export default defineEvent({
           {
             value: { d: '1871-01-28' },
             cites: [
-              { source: 'lemo-chronik-1871', loc: { section: 'Chronik 1871', para: '8' } }
+              { source: 'britannica-1911-paris', loc: { section: 'PARIS', para: '368' } }
             ]
           }
         ]
       },
       quote: {
-        id: 'q10',
-        text: 'Nach viermonatiger Belagerung kapituliert die französische Hauptstadt Paris vor den deutschen Truppen.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1871', loc: { section: 'Chronik 1871', para: '9' } },
+        id: 'q18',
+        text: 'An armistice was signed on the 27th of January, the capitulation on the 28th.',
+        lang: 'en',
+        cite: { source: 'britannica-1911-paris', loc: { section: 'PARIS', para: '368' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1871.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Paris'
         }
       }
     },
@@ -342,20 +372,26 @@ export default defineEvent({
           {
             value: { d: '1871-05-10' },
             cites: [
-              { source: 'lemo-chronik-1871', loc: { section: 'Chronik 1871', para: '35' } }
+              {
+                source: 'britannica-1911-france-history',
+                loc: { section: 'FRANCE: History', para: '538' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q12',
-        text: 'Der Friedensvertrag von Frankfurt/Main verpflichtet Frankreich zur Abtretung des Elsass ohne Belfort und Nordlothringens mit der Festung Metz sowie zur Zahlung von fünf Milliarden Francs Reparationen an Deutschland.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1871', loc: { section: 'Chronik 1871', para: '36' } },
+        id: 'q19',
+        text: 'The same day the preliminaries of peace were signed at Versailles, which, confirmed by the treaty of Frankfort of the 10th of May, transferred from France to Germany the whole of Alsace, excepting Belfort, and a large portion of Lorraine, including Metz, with a money indemnity of two hundred millions sterling.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-france-history',
+          loc: { section: 'FRANCE: History', para: '538' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1871.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/France/History'
         }
       }
     }
@@ -365,5 +401,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:1877_Camphausen_Otto_von_Bismarck_geleitet_Kaiser_Napoleon_III_anagoria.JPG',
     credit: { institution: 'Deutsches Historisches Museum', creator: 'Wilhelm Camphausen' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'roth-1990-la-guerre-de-1870', perspective: 'european' },
+    { source: 'bremm-2019-70-71', perspective: 'european' }
+  ]
 })

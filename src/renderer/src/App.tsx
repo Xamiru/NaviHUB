@@ -53,6 +53,7 @@ const ThemeSongsPage = lazy(() => import('./pages/ThemeSongsPage'))
 const EntityListView = lazy(() => import('./components/EntityListView'))
 const PersonDetailPage = lazy(() => import('./pages/PersonDetailPage'))
 const StudioListPage = lazy(() => import('./pages/StudioListPage'))
+const CreatorDirectoryPage = lazy(() => import('./pages/CreatorDirectoryPage'))
 const StudioDetailPage = lazy(() => import('./pages/StudioDetailPage'))
 const CharacterDetailPage = lazy(() => import('./pages/CharacterDetailPage'))
 const ChecklistPage = lazy(() => import('./pages/ChecklistPage'))
@@ -135,6 +136,7 @@ const FootballHomePage = lazy(() => import('./pages/FootballHomePage'))
 const HistoryHomePage = lazy(() => import('./pages/HistoryHomePage'))
 const HistoryArticlePage = lazy(() => import('./pages/HistoryArticlePage'))
 const HistorySourcesPage = lazy(() => import('./pages/HistorySourcesPage'))
+const HistoryThemesPage = lazy(() => import('./pages/HistoryThemesPage'))
 const HistoryMapPage = lazy(() => import('./pages/HistoryMapPage'))
 const HistorySourcePage = lazy(() => import('./pages/HistorySourcePage'))
 const HistoryEditPage = lazy(() => import('./pages/HistoryEditPage'))
@@ -422,15 +424,7 @@ export default function App() {
             />
             <Route
               path="/mangaka"
-              element={
-                <EntityListView
-                  kind="person"
-                  title="Mangaka"
-                  basePath="/people"
-                  personRole="mangaka"
-                  mediaType="manga"
-                />
-              }
+              element={<CreatorDirectoryPage cfg={MANGA} role="mangaka" title="Mangaka" />}
             />
             <Route path="/people/:id" element={<PersonDetailPage />} />
 
@@ -599,8 +593,11 @@ export default function App() {
             <Route path="/history/event/:id" element={<HistoryArticlePage kind="event" />} />
             <Route path="/history/person/:id" element={<HistoryArticlePage kind="person" />} />
             <Route path="/history/period/:id" element={<HistoryArticlePage kind="period" />} />
+            <Route path="/history/polity/:id" element={<HistoryArticlePage kind="polity" />} />
+            <Route path="/history/theme/:id" element={<HistoryArticlePage kind="theme" />} />
             <Route path="/history/place/:id" element={<HistoryArticlePage kind="place" />} />
             <Route path="/history/sources" element={<HistorySourcesPage />} />
+            <Route path="/history/themes" element={<HistoryThemesPage />} />
             <Route path="/history/map" element={<HistoryMapPage />} />
             <Route path="/history/source/:id" element={<HistorySourcePage />} />
             <Route path="/history/my" element={<HistoryMyPage />} />

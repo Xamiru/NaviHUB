@@ -61,7 +61,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -110,6 +110,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:mughal-empire' }
   ],
   sides: [
     {
@@ -161,7 +164,7 @@ export default defineEvent({
   ],
   related: [
     {
-      ref: 'period:british-raj',
+      ref: 'polity:british-raj',
       rel: 'led-to',
       cites: [
         {
@@ -374,5 +377,14 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 4536875
     }
+  ],
+  furtherReading: [
+    { source: 'sen-1957-eighteen-fifty-seven', perspective: 'south-asian' },
+    {
+      source: 'majumdar-1963-the-sepoy-mutiny-and-the-revolt-of-1857',
+      perspective: 'south-asian'
+    },
+    { source: 'mukherjee-1984-awadh-in-revolt', perspective: 'south-asian' },
+    { source: 'osipov-reisner-1957-narodnoe-vosstanie-v-indii', perspective: 'russian-soviet' }
   ]
 })

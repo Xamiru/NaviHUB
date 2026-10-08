@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -56,6 +56,15 @@ export default defineEvent({
   prominence: 1,
   places: [
     { ref: 'place:beijing' }
+  ],
+  polities: [
+    { ref: 'polity:united-states' },
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:german-empire' },
+    { ref: 'polity:french-third-republic' },
+    { ref: 'polity:austria-hungary' },
+    { ref: 'polity:kingdom-of-italy' },
+    { ref: 'polity:qing-empire' }
   ],
   participants: [
     {
@@ -233,5 +242,11 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 8404261
     }
+  ],
+  furtherReading: [
+    { source: 'lin-1993-yihetuan-shishi-kao', perspective: 'chinese' },
+    { source: 'sato-1999-giwadan-no-kigen-to-sono-undo', perspective: 'japanese' },
+    { source: 'kobayashi-1986-giwadan-senso-to-meiji-kokka', perspective: 'japanese' },
+    { source: 'datsyshen-2001-bokserskaya-voina', perspective: 'russian-soviet' }
   ]
 })

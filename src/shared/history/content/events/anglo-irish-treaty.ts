@@ -20,7 +20,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -49,6 +49,9 @@ export default defineEvent({
       ]
     }
   ],
+  polities: [
+    { ref: 'polity:united-kingdom' }
+  ],
   participants: [
     {
       name: 'D. Lloyd George',
@@ -71,7 +74,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Winston S. Churchill',
+      ref: 'person:winston-churchill',
       role: 'signatory',
       cites: [
         {
@@ -295,5 +298,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Michael_Collins_1921.jpg',
     credit: { institution: 'Bibliothèque nationale de France', creator: 'Agence de presse Meurisse' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'macardle-1937-the-irish-republic', perspective: 'european' },
+    { source: 'ferriter-2015-a-nation-and-not-a-rabble', perspective: 'european' }
+  ]
 })

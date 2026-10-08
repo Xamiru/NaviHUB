@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'murder-of-alexander-griboedov',
   names: [
-    { text: 'Murder of Alexander Griboedov', lang: 'en', role: 'primary' }
+    { text: 'Murder of Alexander Griboedov', lang: 'en', role: 'primary' },
+    { text: 'قتل گریبایدوف', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'massacre',
   start: {
     alts: [
@@ -73,6 +74,10 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' },
+    { ref: 'polity:russian-empire' }
   ],
   participants: [
     {
@@ -297,5 +302,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Ivan_Nikolayevich_Kramskoi_-_Portrait_of_Alexander_Sergeyevich_Griboyedov,_1873.jpg',
     credit: { creator: 'Ivan Kramskoi' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'potto-1885-kavkazskaia-voina', perspective: 'russian-soviet' }
+  ]
 })

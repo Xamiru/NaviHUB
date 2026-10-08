@@ -15,9 +15,14 @@ import * as themes from './themes'
 import * as hltb from './hltb'
 import * as gamesCatalog from './gamesCatalog'
 import { getCatalogDb } from './gamesCatalogDb'
+import * as launchboxCatalog from './launchboxCatalog'
+import { getLaunchboxDb } from './launchboxCatalogDb'
+import { LAUNCHBOX_SOURCE } from './launchboxCatalogCore'
+import { castOrWarn } from './gameLinks'
+import * as links from './repos/externalLinkRepo'
 import { REFRESHABLE_SOURCES, aspectsForType, missingClause } from '@shared/refresh'
 import type { RefreshAspect, RefreshRequest } from '@shared/refresh'
-import type { MediaType, RefreshPreview, RefreshRunStatus } from '@shared/types'
+import type { ExternalLinkMethod, MediaType, RefreshPreview, RefreshRunStatus } from '@shared/types'
 
 // Library Refresh — re-runs each title's own importer, writing ONLY the aspects
 // you picked (see @shared/refresh.ts for the vocabulary and the invariant).
@@ -37,13 +42,14 @@ const SOURCE_DELAY_MS: Record<string, number> = {
   vndb: 600,
   steam: 1600, // Steam documents ~200 requests / 5 min / IP
   openlibrary: 300,
-  rawg: 800 // local catalog, but a 'length' or full pass asks HowLongToBeat
+  rawg: 800, // local catalog, but a 'length' or full pass asks HowLongToBeat
+  launchbox: 300 // local catalog; cover downloads and Bangumi pace themselves
 }
 
 // Quick sources first: an AniList pass takes hours, and a mixed run should not
 // hold minutes of TMDB or Steam work behind it.
 const SOURCE_ORDER_SQL = `CASE m.external_source
-    WHEN 'rawg' THEN 0 WHEN 'openlibrary' THEN 1 WHEN 'steam' THEN 2 WHEN 'tmdb' THEN 3
+    WHEN 'rawg' THEN 0 WHEN 'launchbox' THEN 0 WHEN 'openlibrary' THEN 1 WHEN 'steam' THEN 2 WHEN 'tmdb' THEN 3
     WHEN 'vndb' THEN 4 WHEN 'anilist' THEN 6 ELSE 5 END`
 
 const SOURCE_NAMES: Record<string, string> = {
@@ -52,7 +58,8 @@ const SOURCE_NAMES: Record<string, string> = {
   vndb: 'VNDB',
   steam: 'Steam',
   openlibrary: 'Open Library',
-  rawg: 'The games catalog'
+  rawg: 'The RAWG catalog',
+  launchbox: 'The games catalog'
 }
 
 // Ten in a row from one source means that source (or the network) is down, not
@@ -94,11 +101,15 @@ export function selectRows(req: RefreshRequest): RefreshRow[] {
     .all(...req.types, ...ids) as RefreshRow[]
 }
 
-// 'rawg' rows refresh from the local games catalog, so only while it is
-// installed. HowLongToBeat lengths need no importer, so a 'length' request also
+// The catalog sources are served only while a catalog is installed: 'launchbox'
+// rows by the v2 pack, 'rawg' rows by either (the v2 pack through the row's
+// link). HowLongToBeat lengths need no importer, so a 'length' request also
 // takes games from any source (legacy IGDB rows included).
 function servedSources(): string[] {
-  return REFRESHABLE_SOURCES.filter((src) => src !== 'rawg' || getCatalogDb() != null)
+  const v2 = getLaunchboxDb() != null
+  return REFRESHABLE_SOURCES.filter((src) =>
+    src === 'launchbox' ? v2 : src === 'rawg' ? v2 || getCatalogDb() != null : true
+  )
 }
 
 function servedSourceSql(aspects: RefreshAspect[]): string {
@@ -145,6 +156,8 @@ export function estimateTitleSeconds(
       return s + 2
     case 'rawg':
       return s + (full ? 2.8 : 0.8)
+    case 'launchbox':
+      return s + (full ? 4 : 1)
     default:
       return s
   }
@@ -193,6 +206,15 @@ export async function refreshOne(row: RefreshRow, aspects: RefreshAspect[]): Pro
   }
   const metadataOnly = only.filter((aspect) => aspect !== 'themes' && aspect !== 'length')
   if (!metadataOnly.length || !servedSources().includes(row.external_source)) return changed
+  if (row.media_type === 'game') {
+    const work = catalogWork(row)
+    if (work) {
+      await refreshGameFromCatalog(row, work, metadataOnly)
+      return true
+    }
+    // An unlinked RAWG-era row with only the v2 pack installed: nothing to ask.
+    if (row.external_source === 'rawg' && getCatalogDb() == null) return changed
+  }
   if (metadataOnly.includes('full')) {
     await fullImport(row, metadataOnly.includes('text'))
     return true
@@ -218,9 +240,45 @@ export async function refreshOne(row: RefreshRow, aspects: RefreshAspect[]): Pro
     case 'rawg':
       await gamesCatalog.importGame(Number(row.external_id), { only: metadataOnly })
       return true
+    case 'launchbox':
+      await launchboxCatalog.importWork(Number(row.external_id), { only: metadataOnly })
+      return true
     default:
       throw new Error(`No importer for source "${row.external_source}"`)
   }
+}
+
+// The games catalog v2 work a game row belongs to, when the pack is installed:
+// its own key, or the link the upgrade (or the user) recorded.
+function catalogWork(row: RefreshRow): { id: number; method: ExternalLinkMethod } | null {
+  if (getLaunchboxDb() == null) return null
+  if (row.external_source === LAUNCHBOX_SOURCE) return { id: Number(row.external_id), method: 'xref' }
+  const link = links.get(row.id, 'launchbox')
+  return link && link.externalId ? { id: Number(link.externalId), method: link.method } : null
+}
+
+// A catalog-linked game. The catalog owns its cover (Japanese box first) and
+// cast; a Steam row's own importer still refreshes its store text, so a
+// Steam pass never puts the store capsule back over the box art.
+async function refreshGameFromCatalog(
+  row: RefreshRow,
+  work: { id: number; method: ExternalLinkMethod },
+  aspects: RefreshAspect[]
+): Promise<void> {
+  const full = aspects.includes('full')
+  const own = row.external_source === LAUNCHBOX_SOURCE
+  const asRow = own ? {} : { mediaId: row.id, linkMethod: work.method }
+  if (row.external_source === 'steam') {
+    const storeAspects = aspects.filter((a) => a !== 'cover')
+    if (full) await steam.importGame(Number(row.external_id))
+    else if (storeAspects.length) await steam.importGame(Number(row.external_id), { only: storeAspects })
+    if (full) await launchboxCatalog.importWork(work.id, asRow)
+    else if (aspects.includes('cover')) await launchboxCatalog.importWork(work.id, { ...asRow, only: ['cover'] })
+  } else {
+    await launchboxCatalog.importWork(work.id, full ? asRow : { ...asRow, only: aspects })
+  }
+  // The catalog part has landed; Bangumi being down only costs the cast.
+  if (full) await castOrWarn(row.id, row.title)
 }
 
 // The import-dialog import, run for an existing row. AniList always pages the
@@ -249,6 +307,9 @@ async function fullImport(row: RefreshRow, withOmdb: boolean): Promise<void> {
       return
     case 'rawg':
       await gamesCatalog.importGame(id)
+      return
+    case 'launchbox':
+      await launchboxCatalog.importWork(id)
       return
     default:
       throw new Error(`No importer for source "${row.external_source}"`)

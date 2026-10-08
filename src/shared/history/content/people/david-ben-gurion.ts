@@ -6,12 +6,13 @@ export default definePerson({
     { text: 'David Ben-Gurion', lang: 'en', role: 'primary' },
     { text: 'דוד בן-גוריון', lang: 'he', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   regions: ['mena'],
   roles: ['politician'],
   offices: [
     {
       title: 'Prime Minister of Israel',
+      polity: 'polity:state-of-israel',
       lang: 'en',
       cites: [
         {

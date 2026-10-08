@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Mexican oil expropriation', lang: 'en', role: 'primary' },
     { text: 'Expropiación petrolera', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'nationalization',
   start: {
     alts: [
@@ -29,6 +29,9 @@ export default defineEvent({
   prominence: 2,
   places: [
     { ref: 'place:mexico-city' }
+  ],
+  polities: [
+    { ref: 'polity:mexico' }
   ],
   participants: [
     {
@@ -233,5 +236,12 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:L%C3%A1zaro_C%C3%A1rdenas,_Retrato.png',
     credit: { institution: 'Secretaría de Cultura (México), Mexicana' },
     license: { id: 'cc-by', version: '4.0', url: 'https://creativecommons.org/licenses/by/4.0' }
-  }
+  },
+  furtherReading: [
+    { source: 'silva-herzog-1988-historia-de-la-expropiacion', perspective: 'latin-american' },
+    {
+      source: 'meyer-1972-mexico-y-los-estados-unidos-en-el-conflicto-petrolero',
+      perspective: 'latin-american'
+    }
+  ]
 })

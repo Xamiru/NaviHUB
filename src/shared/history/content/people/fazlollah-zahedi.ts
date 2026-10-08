@@ -7,12 +7,13 @@ export default definePerson({
     { text: 'فضل‌الله زاهدی', lang: 'fa', role: 'native' },
     { text: 'Fażl-Allāh Zāhedi', lang: 'fa-Latn', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   regions: ['iran'],
   roles: ['military', 'politician'],
   offices: [
     {
       title: 'prime minister',
+      polity: 'polity:pahlavi-iran',
       start: {
         alts: [
           {
@@ -22,6 +23,21 @@ export default definePerson({
                 source: 'iranica-gasiorowski-coup-detat-1953',
                 loc: { section: 'COUP D’ETAT OF 1332 Š./1953', para: '1' }
               }
+            ],
+            heldBy: [
+              { kind: 'scholar', name: 'Mark J. Gasiorowski' }
+            ]
+          },
+          {
+            value: { d: '1953-08-15' },
+            cites: [
+              { source: 'frus-1952-1954-iran-1951-1954', loc: { section: 'Persons' } }
+            ],
+            heldBy: [
+              {
+                kind: 'organization',
+                name: 'Office of the Historian, U.S. Department of State'
+              }
             ]
           }
         ]
@@ -29,12 +45,9 @@ export default definePerson({
       end: {
         alts: [
           {
-            value: { d: '1955-04' },
+            value: { d: '1955-04-06' },
             cites: [
-              {
-                source: 'loc-iran-country-study-1987',
-                loc: { section: 'THE SHAH\'S WHITE REVOLUTION', para: '1' }
-              }
+              { source: 'frus-1952-1954-iran-1951-1954', loc: { section: 'Persons' } }
             ]
           }
         ]
@@ -47,7 +60,54 @@ export default definePerson({
         {
           source: 'loc-iran-country-study-1987',
           loc: { section: 'THE SHAH\'S WHITE REVOLUTION', para: '1' }
-        }
+        },
+        { source: 'frus-1952-1954-iran-1951-1954', loc: { section: 'Persons' } }
+      ]
+    },
+    {
+      title: 'Minister of the Interior',
+      polity: 'polity:pahlavi-iran',
+      lang: 'en',
+      start: {
+        alts: [
+          {
+            value: { d: '1953-08-15' },
+            cites: [
+              { source: 'frus-1952-1954-iran-1951-1954', loc: { section: 'Persons' } }
+            ]
+          }
+        ]
+      },
+      end: {
+        alts: [
+          {
+            value: { d: '1955-04-06' },
+            cites: [
+              { source: 'frus-1952-1954-iran-1951-1954', loc: { section: 'Persons' } }
+            ]
+          }
+        ]
+      },
+      cites: [
+        { source: 'frus-1952-1954-iran-1951-1954', loc: { section: 'Persons' } }
+      ]
+    },
+    {
+      title: 'Member of the Iranian Senate',
+      polity: 'polity:pahlavi-iran',
+      lang: 'en',
+      end: {
+        alts: [
+          {
+            value: { d: '1953-08' },
+            cites: [
+              { source: 'frus-1952-1954-iran-1951-1954', loc: { section: 'Persons' } }
+            ]
+          }
+        ]
+      },
+      cites: [
+        { source: 'frus-1952-1954-iran-1951-1954', loc: { section: 'Persons' } }
       ]
     }
   ],
@@ -82,7 +142,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'Kāšāni, Šams Qanātābādi, and General Fażl-Allāh Zāhedi are reported to have been closely affiliated with the Azure Party (Qanātābādi, pp. 262-64).',
+          text: 'Kāšāni, Šams Qanātābādi, and General Fażl-Allāh Zāhedi are reported to have been closely affiliated with the Azure Party',
           lang: 'en',
           cite: {
             source: 'iranica-rahnema-kashani',
@@ -90,22 +150,8 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-08',
             url: 'https://www.iranicaonline.org/articles/kasani-abul-qasem/'
-          }
-        },
-        {
-          id: 'q3',
-          text: 'I should record that General Zahedi had been a close associate of Mossadegh, and had in fact served for awhile as his Minister of the Interior. Earlier he had been Chief of Police in Razmara’s Government and had helped re-elect Mossadegh to Parliament.',
-          lang: 'en',
-          cite: {
-            source: 'pahlavi-1961-mission-for-my-country',
-            loc: { section: 'Mission for My Country' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-07',
-            url: 'https://archive.org/download/mission-for-my-country-mohammad-reza-pahlavi_202605/Mission%20For%20My%20Country%20-%20Mohammad%20Reza%20Pahlavi_djvu.txt'
           }
         },
         {
@@ -120,6 +166,20 @@ export default definePerson({
             via: 'web',
             at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/coup-detat-1953/'
+          }
+        },
+        {
+          id: 'q3',
+          text: 'I should record that General Zahedi had been a close associate of Mossadegh, and had in fact served for awhile as his Minister of the Interior. Earlier he had been Chief of Police in Razmara’s Government and had helped re-elect Mossadegh to Parliament.',
+          lang: 'en',
+          cite: {
+            source: 'pahlavi-1961-mission-for-my-country',
+            loc: { section: 'Mission for My Country' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://archive.org/download/mission-for-my-country-mohammad-reza-pahlavi_202605/Mission%20For%20My%20Country%20-%20Mohammad%20Reza%20Pahlavi_djvu.txt'
           }
         }
       ]

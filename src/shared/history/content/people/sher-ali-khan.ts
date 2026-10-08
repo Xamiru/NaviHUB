@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   died: {
     alts: [
       {
@@ -36,6 +36,7 @@ export default definePerson({
   offices: [
     {
       title: 'amir',
+      polity: 'polity:emirate-of-afghanistan',
       start: {
         alts: [
           {

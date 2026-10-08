@@ -18,7 +18,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -48,6 +48,10 @@ export default defineEvent({
   prominence: 1,
   places: [
     { ref: 'place:london' }
+  ],
+  polities: [
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:british-empire' }
   ],
   related: [
     {
@@ -288,5 +292,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Slaves_on_a_British_plantation_in_the_West_Indies_receiving_news_of_their_emancipation_following_the_passage_of_the_Slavery_Abolition_Act_of_1833.jpg',
     credit: { creator: 'Cassell\'s History of England' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'beckles-2013-britains-black-debt', perspective: 'caribbean' }
+  ]
 })

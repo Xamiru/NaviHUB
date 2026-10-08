@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Russo-Japanese War', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -45,10 +45,34 @@ export default defineEvent({
   },
   regions: ['east-asia', 'russia-central-asia'],
   prominence: 1,
+  places: [
+    {
+      ref: 'place:port-arthur',
+      cites: [
+        {
+          source: 'loc-russia-country-study-1996',
+          loc: { section: 'Transformation of Russia in the Nineteenth Century', para: '36' }
+        }
+      ]
+    },
+    {
+      ref: 'place:shenyang',
+      cites: [
+        {
+          source: 'state-dept-milestones-portsmouth',
+          loc: {
+            section: 'The Treaty of Portsmouth and the Russo-Japanese War, 1904–1905',
+            para: '5'
+          }
+        }
+      ]
+    }
+  ],
   sides: [
     {
       key: 'russia',
       name: 'Russia',
+      polity: 'polity:russian-empire',
       cites: [
         {
           source: 'state-dept-milestones-portsmouth',
@@ -62,6 +86,7 @@ export default defineEvent({
     {
       key: 'japan',
       name: 'Japan',
+      polity: 'polity:empire-of-japan',
       cites: [
         {
           source: 'state-dept-milestones-portsmouth',
@@ -307,5 +332,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Battle_of_Port_Arthur_original.jpg',
     credit: { institution: 'Library of Congress', creator: 'Kasai Torajirō' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'vik-1910-russko-iaponskaia-voina', perspective: 'russian-soviet' },
+    { source: 'sanbo-honbu-1912-nichi-ro-senshi', perspective: 'japanese' }
+  ]
 })

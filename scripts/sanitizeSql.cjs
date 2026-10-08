@@ -118,6 +118,8 @@ const FIXED_WIPES = [
   // Before the asset pass nulls cover/photo/image paths: a surviving row
   // would make the restore triggers put the hand-picked image back.
   'DELETE FROM image_override',
+  // A hand-made link is the user's choice; automatic links are canonical.
+  "DELETE FROM media_external_link WHERE method = 'manual'",
   'DELETE FROM quiz_session',
   'DELETE FROM game_session',
   'DELETE FROM achievement_unlock',

@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'babi-attempt-on-naser-al-din-shah',
   names: [
-    { text: 'Babi attempt on the life of Naser al-Din Shah', lang: 'en', role: 'primary' }
+    { text: 'Babi attempt on the life of Naser al-Din Shah', lang: 'en', role: 'primary' },
+    { text: 'سوءقصد بابیان به ناصرالدین شاه', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'assassination',
   start: {
     alts: [
@@ -30,6 +31,9 @@ export default defineEvent({
     { ref: 'period:reign-of-naser-al-din-shah-qajar' },
     { ref: 'period:qajar-dynasty' }
   ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
+  ],
   participants: [
     {
       ref: 'person:naser-al-din-shah-qajar',
@@ -52,7 +56,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Mīrzā Ḥosayn-ʿAlī Nūrī Bahāʾ-Allāh',
+      ref: 'person:bahaullah',
       role: 'participant',
       cites: [
         {
@@ -128,8 +132,41 @@ export default defineEvent({
       ]
     },
     {
+      kind: 'background',
+      quotes: [
+        {
+          id: 'q5',
+          text: 'Coupled with the debacles of Māzandarān, Neyrīz, and Zanjān, in the course of which some 2,000 to 3,000 Babis, including most of the provincial leadership, perished (on these figures see MacEoin, “From Babism to Baha’ism,” p. 236), the Bāb’s death spelt the end of the movement as a vital political force in Iran.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-maceoin-babism-ii',
+            loc: { section: 'BABISM ii. Babi executions and uprisings', para: '4' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.iranicaonline.org/articles/babism-index/babism-ii-babi-executions-and-uprisings'
+          }
+        }
+      ]
+    },
+    {
       kind: 'aftermath',
       quotes: [
+        {
+          id: 'q6',
+          text: 'Among those arrested was Mīrzā Ḥosayn-ʿAlī Nūrī Bahāʾ-Allāh, a Babi from a wealthy family connected with the Qajar court.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-maceoin-babism-ii',
+            loc: { section: 'BABISM ii. Babi executions and uprisings', para: '4' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.iranicaonline.org/articles/babism-index/babism-ii-babi-executions-and-uprisings'
+          }
+        },
         {
           id: 'q3',
           text: 'Released on the intervention of the Russian Minister in January, 1853 (Zarandi, Dawn-Breakers, p. 636), he was instructed to leave the country and chose to go to Baghdad, accompanied by members of his family and other Babis.',
@@ -166,5 +203,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:The_Young_Nasir_Al-Din_Shah_Qajar.jpg',
     credit: { creator: 'Mirza Abolhassan Khan Ghaffari' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'ivanov-1939-babidskie-vosstaniia-v-irane', perspective: 'russian-soviet' }
+  ]
 })

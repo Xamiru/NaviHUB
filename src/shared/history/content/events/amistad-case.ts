@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -33,6 +33,21 @@ export default defineEvent({
   },
   regions: ['north-america', 'latin-america', 'subsaharan-africa'],
   prominence: 3,
+  places: [
+    {
+      ref: 'place:connecticut',
+      cites: [
+        {
+          source: 'state-dept-milestones-amistad',
+          loc: { section: 'The Amistad Case, 1839', para: '3' }
+        }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:united-states' },
+    { ref: 'polity:kingdom-of-spain' }
+  ],
   participants: [
     {
       name: 'John Forsyth',
@@ -45,7 +60,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'John Quincy Adams',
+      ref: 'person:john-quincy-adams',
       role: 'participant',
       cites: [
         {

@@ -27,7 +27,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -63,6 +63,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:mandatory-iraq' }
   ],
   participants: [
     {
@@ -252,5 +255,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Tal_Afar_1920.png',
     credit: { institution: 'Newcastle University, Gertrude Bell Archive' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'wardi-1969-lamahat-ijtimaiyah', perspective: 'arab' }
+  ]
 })

@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Jameson Raid', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'invasion',
   start: {
     alts: [
@@ -30,6 +30,20 @@ export default defineEvent({
   },
   regions: ['subsaharan-africa', 'europe'],
   prominence: 3,
+  places: [
+    {
+      ref: 'place:doornkop',
+      cites: [
+        {
+          source: 'britannica-1911-jameson-leander-starr',
+          loc: { section: 'JAMESON, LEANDER STARR', para: '1' }
+        }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:british-empire' }
+  ],
   participants: [
     {
       ref: 'person:cecil-rhodes',
@@ -142,25 +156,31 @@ export default defineEvent({
       kind: 'aftermath',
       quotes: [
         {
-          id: 'q4',
-          text: 'Kaiser Wilhelm II. beglückwünscht den Präsidenten der Burenrepublik Transvaal, Paulus "Ohm" Krüger (1825-1904), zu einem Abwehrsieg gegen britische Übergriffe.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1896', loc: { section: 'Chronik 1896', para: '6' } },
+          id: 'q8',
+          text: 'On the occasion of the Jameson Raid he despatched to the president of the Transvaal a telegram, in which he congratulated him that “without appealing to the help of friendly powers,” he had succeeded in restoring peace and preserving the independence of his country.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-william-ii-of-germany',
+            loc: { section: 'WILLIAM II. OF GERMANY', para: '4' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1896.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/William_II._of_Germany'
           }
         },
         {
-          id: 'q5',
-          text: 'Diese so genannte Krügerdepesche verstärkt die spürbar gewordene Entfremdung zwischen Großbritannien und dem Deutschen Reich.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1896', loc: { section: 'Chronik 1896', para: '6' } },
+          id: 'q9',
+          text: 'It was very difficult to regard this merely as an impulsive act of generous sympathy with a weak state unjustly attacked, and though warmly approved in Germany, it caused a long alienation from Great Britain.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-william-ii-of-germany',
+            loc: { section: 'WILLIAM II. OF GERMANY', para: '4' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1896.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/William_II._of_Germany'
           }
         }
       ]

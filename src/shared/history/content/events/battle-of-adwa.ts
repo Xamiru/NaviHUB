@@ -14,7 +14,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -43,6 +43,7 @@ export default defineEvent({
     {
       key: 'ethiopia',
       name: 'Ethiopia',
+      polity: 'polity:ethiopian-empire',
       cites: [
         {
           source: 'loc-ethiopia-country-study-1991',
@@ -53,6 +54,7 @@ export default defineEvent({
     {
       key: 'italy',
       name: 'Italy',
+      polity: 'polity:kingdom-of-italy',
       cites: [
         {
           source: 'loc-ethiopia-country-study-1991',
@@ -145,17 +147,6 @@ export default defineEvent({
             loc: { section: 'The Reign of Menelik II, 1889-1913', para: '6' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/ethiopia/15.htm' }
-        },
-        {
-          id: 'q5',
-          text: 'Bei Adua werden die italienischen Invasionstruppen von den Verbänden Kaiser Meneliks II. von Äthiopien (1844-1913) vernichtend geschlagen.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1896', loc: { section: 'Chronik 1896', para: '21' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1896.html'
-          }
         }
       ]
     },
@@ -183,14 +174,17 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/ethiopia/15.htm' }
         },
         {
-          id: 'q8',
-          text: 'Ministerpräsident Francesco Crispi (1819-1901), der die Annexion Äthiopiens als Kolonie maßgeblich betrieben hat, muss daraufhin am 5. März zurücktreten.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1896', loc: { section: 'Chronik 1896', para: '21' } },
+          id: 'q11',
+          text: 'They produced so little effect that the general election of 1895 gave Crispi a huge majority, but, a year later, the defeat of the Italian army at Adowa in Abyssinia brought about his resignation.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-crispi',
+            loc: { section: 'CRISPI, FRANCESCO', para: '4' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1896.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Crispi,_Francesco'
           }
         }
       ]
@@ -203,20 +197,23 @@ export default defineEvent({
           {
             value: { d: '1896-10-26' },
             cites: [
-              { source: 'lemo-chronik-1896', loc: { section: 'Chronik 1896', para: '60' } }
+              {
+                source: 'britannica-1911-abyssinia',
+                loc: { section: 'ABYSSINIA', para: '110' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q9',
-        text: 'Mit dem Friedensvertrag von Addis Abeba verzichtet Italien endgültig auf die Schutzherrschaft über Abessinien (heute Äthiopien).',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1896', loc: { section: 'Chronik 1896', para: '61' } },
+        id: 'q12',
+        text: 'On the 26th of October following a provisional treaty of peace was concluded at Adis Ababa, annulling the treaty of Uccialli and recognizing the absolute independence of Abyssinia.',
+        lang: 'en',
+        cite: { source: 'britannica-1911-abyssinia', loc: { section: 'ABYSSINIA', para: '110' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1896.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Abyssinia'
         }
       }
     }
@@ -226,5 +223,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Ethiopian_painting,_Battle_of_Adwa,_1896.jpg',
     credit: { institution: 'British Museum', creator: 'Szilas' },
     license: { id: 'cc-by-sa', version: '4.0' }
-  }
+  },
+  furtherReading: [
+    { source: 'bahru-zewde-1991-a-history-of-modern-ethiopia', perspective: 'african' },
+    { source: 'del-boca-1976-gli-italiani-in-africa-orientale', perspective: 'european' }
+  ]
 })

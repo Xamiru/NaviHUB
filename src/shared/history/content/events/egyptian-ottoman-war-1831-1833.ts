@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -62,6 +62,7 @@ export default defineEvent({
     {
       key: 'ottoman',
       name: 'the Ottoman army',
+      polity: 'polity:ottoman-empire',
       cites: [
         {
           source: 'loc-turkey-country-study-1995',
@@ -212,5 +213,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:%D8%A5%D8%A8%D8%B1%D8%A7%D9%87%D9%8A%D9%85_%D8%A8%D8%A7%D8%B4%D8%A7_%D9%8A%D9%82%D9%88%D8%AF_%D8%AC%D9%8A%D8%B4%D9%87_%D9%81%D9%8A_%D9%85%D8%B9%D8%B1%D9%83%D8%A9_%D9%82%D9%88%D9%86%D9%8A%D8%A9.jpg',
     credit: { institution: 'Ibrahim fi al-Maydan (Al-Hilal, 1934)' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'rafii-1982-asr-muhammad-ali', perspective: 'arab' }
+  ]
 })

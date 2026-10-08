@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Bosnian annexation crisis', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'crisis',
   start: {
     alts: [
@@ -26,6 +26,26 @@ export default defineEvent({
   },
   regions: ['europe', 'russia-central-asia'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:bosnia-and-herzegovina',
+      cites: [
+        {
+          source: 'loc-austria-country-study-1994',
+          loc: {
+            section: 'THE FINAL YEARS OF THE EMPIRE AND WORLD WAR I: The Crisis over Bosnia and Hercegovina',
+            para: '1'
+          }
+        }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:austria-hungary' },
+    { ref: 'polity:kingdom-of-serbia' },
+    { ref: 'polity:ottoman-empire' },
+    { ref: 'polity:russian-empire' }
+  ],
   participants: [
     {
       name: 'Aleksandr Izvol\'skiy',

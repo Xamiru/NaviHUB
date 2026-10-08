@@ -16,7 +16,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -48,6 +48,7 @@ export default definePerson({
   offices: [
     {
       title: 'director-general in London of the Government of India\'s Indo-European Telegraph Department',
+      polity: 'polity:british-raj',
       start: {
         alts: [
           {

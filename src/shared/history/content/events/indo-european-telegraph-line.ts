@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'indo-european-telegraph-line',
   names: [
     { text: 'Indo-European telegraph line through Iran', lang: 'en', role: 'primary' },
+    { text: 'خط تلگراف هند و اروپا', lang: 'fa', role: 'native' },
     {
       text: 'Anglo-Iranian telegraph engagement',
       lang: 'en',
@@ -16,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'economic',
   start: {
     alts: [
@@ -72,6 +73,10 @@ export default defineEvent({
   ],
   related: [
     { ref: 'event:first-telegraph-line-in-iran', rel: 'preceded-by' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' },
+    { ref: 'polity:british-raj' }
   ],
   participants: [
     {
@@ -145,7 +150,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Frederic Goldsmid',
+      ref: 'person:frederic-goldsmid',
       role: 'participant',
       cites: [
         {

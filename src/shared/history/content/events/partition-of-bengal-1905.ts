@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Partition of Bengal (1905)', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'partition',
   start: {
     alts: [
@@ -38,9 +38,12 @@ export default defineEvent({
   places: [
     { ref: 'place:dhaka' }
   ],
+  polities: [
+    { ref: 'polity:british-raj' }
+  ],
   participants: [
     {
-      name: 'George Curzon',
+      ref: 'person:george-curzon',
       role: 'head-of-government',
       cites: [
         {
@@ -120,5 +123,8 @@ export default defineEvent({
       creator: 'W. H. Allen and Co.'
     },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'sarkar-1973-the-swadeshi-movement-in-bengal', perspective: 'south-asian' }
+  ]
 })

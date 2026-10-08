@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'invasion',
   start: {
     alts: [
@@ -62,6 +62,7 @@ export default defineEvent({
     {
       key: 'france',
       name: 'Grand Army',
+      polity: 'polity:first-french-empire',
       cites: [
         {
           source: 'hartley-1991-napoleon-in-russia',
@@ -72,6 +73,7 @@ export default defineEvent({
     {
       key: 'russia',
       name: 'Russian forces',
+      polity: 'polity:russian-empire',
       cites: [
         {
           source: 'hartley-1991-napoleon-in-russia',
@@ -428,6 +430,13 @@ export default defineEvent({
       },
       license: { id: 'public-domain' },
       bytes: 25556277
+    }
+  ],
+  furtherReading: [
+    { source: 'tarle-1938-nashestvie-napoleona-na-rossiiu', perspective: 'russian-soviet' },
+    {
+      source: 'zhilin-1968-gibel-napoleonovskoi-armii-v-rossii',
+      perspective: 'russian-soviet'
     }
   ]
 })

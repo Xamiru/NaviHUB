@@ -4,6 +4,7 @@ export default definePerson({
   id: 'tahereh-qorrat-al-ayn',
   names: [
     { text: 'Tahereh', lang: 'en', role: 'primary' },
+    { text: 'طاهره قرةالعین', lang: 'fa', role: 'native' },
     {
       text: 'Qorrat-al-ʿAyn',
       lang: 'en',
@@ -32,7 +33,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -117,5 +118,9 @@ export default definePerson({
         }
       ]
     }
+  ],
+  furtherReading: [
+    { source: 'ivanov-1939-babidskie-vosstaniia-v-irane', perspective: 'russian-soviet' },
+    { source: 'bamdad-1968-zan-e-irani', perspective: 'iranian' }
   ]
 })

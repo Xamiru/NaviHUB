@@ -139,22 +139,6 @@ export default defineEvent({
       ]
     },
     {
-      kind: 'background',
-      quotes: [
-        {
-          id: 'q3',
-          text: 'In den USA beginnt ein mehrtätiger Generalstreik für die Einführung des Achtstundentages. Während des Ausstands, an dem rund 350.000 Arbeiter teilnehmen, kommt es zu blutigen Auseinandersetzungen mit der Polizei.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1886', loc: { section: 'Chronik 1886', para: '27' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1886.html'
-          }
-        }
-      ]
-    },
-    {
       kind: 'course',
       quotes: [
         {

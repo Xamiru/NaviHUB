@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Louisiana Purchase', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -22,6 +22,17 @@ export default defineEvent({
   },
   regions: ['north-america', 'europe'],
   prominence: 1,
+  places: [
+    {
+      ref: 'place:paris',
+      cites: [
+        {
+          source: 'louisiana-purchase-treaty-1803',
+          loc: { section: 'Louisiana Purchase Treaty, closing' }
+        }
+      ]
+    }
+  ],
   participants: [
     {
       ref: 'person:thomas-jefferson',
@@ -44,7 +55,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'James Monroe',
+      ref: 'person:james-monroe',
       role: 'negotiator',
       cites: [
         {
@@ -92,20 +103,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1801-1829/louisiana-purchase'
-          }
-        },
-        {
-          id: 'q2',
-          text: 'Done at Paris the tenth day of Floreal in the eleventh year of the French Republic; and the 30th of April 1803.',
-          lang: 'en',
-          cite: {
-            source: 'louisiana-purchase-treaty-1803',
-            loc: { section: 'Louisiana Purchase Treaty, closing' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://avalon.law.yale.edu/19th_century/louis1.asp'
           }
         }
       ]
@@ -212,5 +209,39 @@ export default defineEvent({
     title: 'Louisiana Purchase Treaty',
     credit: { institution: 'U.S. National Archives' },
     license: { id: 'public-domain' }
-  }
+  },
+  course: [
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1803-04-30' },
+            cites: [
+              {
+                source: 'louisiana-purchase-treaty-1803',
+                loc: { section: 'Louisiana Purchase Treaty, closing' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q9',
+        text: 'Done at Paris the tenth day of Floreal in the eleventh year of the French Republic; and the 30th of April 1803.',
+        lang: 'en',
+        cite: {
+          source: 'louisiana-purchase-treaty-1803',
+          loc: { section: 'Louisiana Purchase Treaty, closing' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-06',
+          url: 'https://avalon.law.yale.edu/19th_century/louis1.asp'
+        }
+      }
+    }
+  ],
+  furtherReading: [
+    { source: 'havard-vidal-2003-histoire-de-lamerique-francaise', perspective: 'european' }
+  ]
 })

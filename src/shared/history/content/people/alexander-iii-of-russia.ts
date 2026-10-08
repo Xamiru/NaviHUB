@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Alexander III of Russia', lang: 'en', role: 'primary' },
     { text: 'Александр III', lang: 'ru', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -38,6 +38,7 @@ export default definePerson({
   offices: [
     {
       title: 'Emperor of Russia',
+      polity: 'polity:russian-empire',
       start: {
         alts: [
           {

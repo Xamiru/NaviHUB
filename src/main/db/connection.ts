@@ -176,6 +176,9 @@ export function runMigrations(sqlite: Database.Database): string[] {
   // fail during startup. This stays in migrations rather than init.sql because
   // init.sql runs first and old databases may already contain duplicates.
   migrateFootballCoverageUniqueness(sqlite)
+  // Game cast and staff from Bangumi mix with hand-made credits; the column
+  // marks which rows a Bangumi re-import may prune.
+  ensureColumn(sqlite, 'credit', 'origin', 'origin TEXT')
   ensureColumn(sqlite, 'music_track', 'spotify_review_required', 'spotify_review_required INTEGER NOT NULL DEFAULT 0')
   // Existing rows start at 0, so the next scan re-reads their tags once for genres.
   ensureColumn(sqlite, 'music_track', 'genres_scanned', 'genres_scanned INTEGER NOT NULL DEFAULT 0')
@@ -239,6 +242,9 @@ export function runMigrations(sqlite: Database.Database): string[] {
   // AniList character gender powers plausible same-VA quiz distractors. Old
   // rows remain NULL until their anime is re-imported.
   ensureColumn(sqlite, 'character', 'gender', 'gender TEXT')
+  // The source's credit text ("Story & Art") arrived after credits; old rows
+  // stay null until their title is re-imported.
+  ensureColumn(sqlite, 'credit', 'role_note', 'role_note TEXT')
   ensureColumn(sqlite, 'credit', 'importance', 'importance INTEGER')
   ensureColumn(sqlite, 'media_character', 'sort_order', 'sort_order INTEGER')
   // Japanese section: kanji readings + mined-word source (DBs created before

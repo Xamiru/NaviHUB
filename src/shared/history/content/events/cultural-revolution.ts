@@ -17,7 +17,7 @@ export default defineEvent({
     },
     { text: '无产阶级文化大革命', lang: 'zh', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'movement',
   start: {
     alts: [
@@ -57,6 +57,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:peoples-republic-of-china' }
   ],
   participants: [
     {
@@ -120,6 +123,26 @@ export default defineEvent({
         {
           source: 'loc-china-country-study-1987',
           loc: { section: 'The Cultural Revolution, 1966-76', para: '6' }
+        }
+      ]
+    },
+    {
+      name: 'Hua Guofeng',
+      role: 'leader',
+      cites: [
+        {
+          source: 'loc-china-country-study-1987',
+          loc: { section: 'The Cultural Revolution, 1966-76', para: '21' }
+        }
+      ]
+    },
+    {
+      name: 'Gang of Four',
+      role: 'leader',
+      cites: [
+        {
+          source: 'loc-china-country-study-1987',
+          loc: { section: 'The Cultural Revolution, 1966-76', para: '23' }
         }
       ]
     }
@@ -209,16 +232,21 @@ export default defineEvent({
             loc: { section: 'The Cultural Revolution, 1966-76', para: '8' }
           },
           provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/china/28.htm' }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'consequences',
+      quotes: [
         {
-          id: 'q7',
-          text: 'The activist phase of the Cultural Revolution--considered to be the first in a series of cultural revolutions--was brought to an end in April 1969.',
+          id: 'q18',
+          text: 'These were also accompanied by the rehabilitation of those persons who had been persecuted or fallen into disgrace in 1966-68.',
           lang: 'en',
           cite: {
             source: 'loc-china-country-study-1987',
-            loc: { section: 'The Cultural Revolution, 1966-76', para: '12' }
+            loc: { section: 'The Cultural Revolution, 1966-76', para: '16' }
           },
-          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/china/28.htm' }
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/china/28.htm' }
         }
       ]
     },
@@ -247,6 +275,81 @@ export default defineEvent({
       date: {
         alts: [
           {
+            value: { d: '1965' },
+            cites: [
+              {
+                source: 'loc-china-country-study-1987',
+                loc: { section: 'The Cultural Revolution, 1966-76', para: '5' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q10',
+        text: 'In late 1965 a leading member of Mao\'s "Shanghai Mafia," Yao Wenyuan, wrote a thinly veiled attack on the deputy mayor of Beijing, Wu Han.',
+        lang: 'en',
+        cite: {
+          source: 'loc-china-country-study-1987',
+          loc: { section: 'The Cultural Revolution, 1966-76', para: '5' }
+        },
+        provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/china/28.htm' }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1967' },
+            cites: [
+              {
+                source: 'loc-china-country-study-1987',
+                loc: { section: 'The Cultural Revolution, 1966-76', para: '8' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q11',
+        text: 'The PLA also was responsible for the appearance in early 1967 of the revolutionary committees, a new form of local control that replaced local party committees and administrative bodies. The revolutionary committees were staffed with Cultural Revolution activists, trusted cadres, and military commanders, the latter frequently holding the greatest power.',
+        lang: 'en',
+        cite: {
+          source: 'loc-china-country-study-1987',
+          loc: { section: 'The Cultural Revolution, 1966-76', para: '8' }
+        },
+        provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/china/28.htm' }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1967' },
+            cites: [
+              {
+                source: 'loc-china-country-study-1987',
+                loc: { section: 'The Cultural Revolution, 1966-76', para: '9' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q12',
+        text: 'Liu Shaoqi, Deng Xiaoping, and their fellow "revisionists" and "capitalist roaders" had been purged from public life by early 1967, and the Maoist group had since been in full command of the political scene.',
+        lang: 'en',
+        cite: {
+          source: 'loc-china-country-study-1987',
+          loc: { section: 'The Cultural Revolution, 1966-76', para: '9' }
+        },
+        provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/china/28.htm' }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
             value: { d: '1969-04' },
             cites: [
               {
@@ -258,15 +361,95 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q9',
-        text: 'This end was formally signaled at the CCP\'s Ninth National Party Congress, which convened under the dominance of the Maoist group. Mao was confirmed as the supreme leader.',
+        id: 'q16',
+        text: 'The activist phase of the Cultural Revolution--considered to be the first in a series of cultural revolutions--was brought to an end in April 1969. This end was formally signaled at the CCP\'s Ninth National Party Congress, which convened under the dominance of the Maoist group. Mao was confirmed as the supreme leader.',
         lang: 'en',
         cite: {
           source: 'loc-china-country-study-1987',
           loc: { section: 'The Cultural Revolution, 1966-76', para: '12' }
         },
-        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/china/28.htm' }
+        provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/china/28.htm' }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1971-09' },
+            cites: [
+              {
+                source: 'loc-china-country-study-1987',
+                loc: { section: 'The Cultural Revolution, 1966-76', para: '16' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q13',
+        text: 'Without question, the turning point in the decade of the Cultural Revolution was Lin Biao\'s abortive coup attempt and his subsequent death in a plane crash as he fled China in September 1971.',
+        lang: 'en',
+        cite: {
+          source: 'loc-china-country-study-1987',
+          loc: { section: 'The Cultural Revolution, 1966-76', para: '16' }
+        },
+        provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/china/28.htm' }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1976-10' },
+            cites: [
+              {
+                source: 'loc-china-country-study-1987',
+                loc: { section: 'The Cultural Revolution, 1966-76', para: '23' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q14',
+        text: 'In October, less than a month after Mao\'s death, Jiang Qing and her three principal associates-- denounced as the Gang of Four--were arrested with the assistance of two senior Political Bureau members, Minister of National Defense Ye Jianying (1897-1986) and Wang Dongxing, commander of the CCP\'s elite bodyguard.',
+        lang: 'en',
+        cite: {
+          source: 'loc-china-country-study-1987',
+          loc: { section: 'The Cultural Revolution, 1966-76', para: '23' }
+        },
+        provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/china/28.htm' }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1977-08-12' },
+            cites: [
+              {
+                source: 'loc-china-country-study-1987',
+                loc: { section: 'The Post-Mao Period, 1976-78', para: '2' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q15',
+        text: 'The post-Mao political order was given its first vote of confidence at the Eleventh National Party Congress, held August 12- 18, 1977. Hua was confirmed as party chairman, and Ye Jianying, Deng Xiaoping, Li Xiannian, and Wang Dongxing were elected vice chairmen. The congress proclaimed the formal end of the Cultural Revolution, blamed it entirely on the Gang of Four, and reiterated that "the fundamental task of the party in the new historical period is to build China into a modern, powerful socialist country by the end of the twentieth century."',
+        lang: 'en',
+        cite: {
+          source: 'loc-china-country-study-1987',
+          loc: { section: 'The Post-Mao Period, 1976-78', para: '2' }
+        },
+        provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/china/29.htm' }
       }
     }
+  ],
+  furtherReading: [
+    { source: 'ccp-1985-guanyu-jianguo-yilai-jueyi-zhushiben', perspective: 'chinese' },
+    { source: 'wang-1988-da-dongluan-de-niandai', perspective: 'chinese' },
+    { source: 'gao-yan-1986-wenhua-dageming-shinian-shi', perspective: 'chinese' }
   ]
 })

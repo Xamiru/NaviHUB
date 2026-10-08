@@ -19,7 +19,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -54,6 +54,11 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:napoleonic-wars' }
+  ],
+  polities: [
+    { ref: 'polity:first-french-empire' },
+    { ref: 'polity:kingdom-of-spain' },
+    { ref: 'polity:united-kingdom' }
   ],
   participants: [
     {
@@ -279,5 +284,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:El_Tres_de_Mayo,_by_Francisco_de_Goya,_from_Prado_(cropped).jpg',
     credit: { institution: 'Museo del Prado', creator: 'Francisco Goya' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'artola-2007-la-guerra-de-la-independencia', perspective: 'european' }
+  ]
 })

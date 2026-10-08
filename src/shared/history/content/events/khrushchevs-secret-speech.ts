@@ -20,7 +20,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -52,7 +52,7 @@ export default defineEvent({
     }
   ],
   partOf: [
-    { ref: 'period:soviet-union' },
+    { ref: 'polity:soviet-union' },
     { ref: 'period:cold-war' }
   ],
   participants: [
@@ -288,5 +288,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:The_Crimes_of_the_Stalin_Era_(Khrushchev,_tr._Nicolaevsky).djvu',
     credit: { institution: 'Internet Archive' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'medvedev-1974-k-sudu-istorii', perspective: 'russian-soviet' }
+  ]
 })

@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Russo-Turkish War of 1828–1829', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -97,6 +97,10 @@ export default defineEvent({
       ]
     },
     { ref: 'event:greek-war-of-independence', rel: 'related' }
+  ],
+  polities: [
+    { ref: 'polity:russian-empire' },
+    { ref: 'polity:ottoman-empire' }
   ],
   participants: [
     {
@@ -252,5 +256,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Oorlog_tusschen_Rusland_en_Turkije_in_1828_Guerre_entre_la_Russie_et_la_Turquie_en_1828_(titel_op_object),_RP-P-OB-201.970.jpg',
     credit: { institution: 'Rijksmuseum' },
     license: { id: 'cc0' }
-  }
+  },
+  furtherReading: [
+    { source: 'kurat-1970-turkiye-ve-rusya', perspective: 'turkish' }
+  ]
 })

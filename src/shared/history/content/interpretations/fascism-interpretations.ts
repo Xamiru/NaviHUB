@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'fascism-interpretations',
   about: ['event:march-on-rome', 'period:fascist-italy'],
   topic: 'nature',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   framing: {
     id: 'q1',
     text: 'Dès son apparition, les interprétations des contemporains se multiplient sur les origines du fascisme.',
@@ -21,10 +21,74 @@ export default defineInterpretation({
   },
   positions: [
     {
-      id: 'crisis-of-capitalism',
-      category: 'contemporary',
+      id: 'fascist-doctrine-of-the-state',
+      category: 'official',
       holders: [
-        { kind: 'school', name: 'Marxistes' }
+        { kind: 'party', name: 'Partito Nazionale Fascista' },
+        { kind: 'participant', name: 'Benito Mussolini' }
+      ],
+      statements: [
+        {
+          id: 'q11',
+          text: 'Caposaldo della dottrina fascista è la concezione dello Stato, della sua essenza, dei suoi compiti, delle sue finalità. Per il fascismo lo Stato è un assoluto, davanti al quale individui e gruppi sono il relativo.',
+          lang: 'it',
+          cite: {
+            source: 'mussolini-gentile-1932-dottrina-del-fascismo',
+            loc: { section: 'Dottrina politica e sociale (di B. Mussolini)', para: '10' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://it.wikisource.org/wiki/La_dottrina_del_fascismo'
+          }
+        },
+        {
+          id: 'q12',
+          text: 'Il fascismo nega che il numero, per il semplice fatto di essere numero, possa dirigere le società umane; nega che questo numero possa governare attraverso una consultazione periodica;',
+          lang: 'it',
+          cite: {
+            source: 'mussolini-gentile-1932-dottrina-del-fascismo',
+            loc: { section: 'Dottrina politica e sociale (di B. Mussolini)', para: '6' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://it.wikisource.org/wiki/La_dottrina_del_fascismo'
+          }
+        }
+      ]
+    },
+    {
+      id: 'comintern-open-terrorist-dictatorship',
+      category: 'official',
+      holders: [
+        { kind: 'organization', name: 'Communist International' },
+        { kind: 'participant', name: 'Georgi Dimitrov' }
+      ],
+      statements: [
+        {
+          id: 'q10',
+          text: 'fascism in power was correctly described by the Thirteenth Plenum of the Executive Committee of the Communist International as the open terrorist dictatorship of the most reactionary, most chauvinistic and most imperialist elements of finance capital.',
+          lang: 'en',
+          cite: {
+            source: 'dimitrov-1935-fascist-offensive',
+            loc: {
+              section: 'Main Report delivered at the Seventh World Congress of the Communist International'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.marxists.org/reference/archive/dimitrov/works/1935/08_02.htm'
+          }
+        }
+      ]
+    },
+    {
+      id: 'historiography-of-fascism',
+      category: 'scholarly',
+      holders: [
+        { kind: 'scholar', name: 'Suzy Toson' }
       ],
       statements: [
         {
@@ -40,16 +104,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://ehne.fr/fr/encyclopedie/th%C3%A9matiques/l\'europe-politique/les-modeles-politiques-pour-faire-l\'europe/qu\'est-ce-que-le-fascisme-definition-et-histoire'
           }
-        }
-      ]
-    },
-    {
-      id: 'unfinished-national-unity',
-      category: 'contemporary',
-      holders: [
-        { kind: 'school', name: 'Courant libéral-démocrate' }
-      ],
-      statements: [
+        },
         {
           id: 'q3',
           text: 'Le courant libéral-démocrate l’envisage lui comme un révélateur d’une unité nationale italienne inachevée.',
@@ -63,16 +118,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://ehne.fr/fr/encyclopedie/th%C3%A9matiques/l\'europe-politique/les-modeles-politiques-pour-faire-l\'europe/qu\'est-ce-que-le-fascisme-definition-et-histoire'
           }
-        }
-      ]
-    },
-    {
-      id: 'moral-sickness',
-      category: 'contemporary',
-      holders: [
-        { kind: 'school', name: 'Libéraux' }
-      ],
-      statements: [
+        },
         {
           id: 'q4',
           text: 'Enfin, les libéraux l’interprètent comme le produit d\'une « maladie morale », une réaction contre le rationalisme et les valeurs héritées des Lumières.',
@@ -86,17 +132,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://ehne.fr/fr/encyclopedie/th%C3%A9matiques/l\'europe-politique/les-modeles-politiques-pour-faire-l\'europe/qu\'est-ce-que-le-fascisme-definition-et-histoire'
           }
-        }
-      ]
-    },
-    {
-      id: 'parenthesis',
-      category: 'contemporary',
-      holders: [
-        { kind: 'participant', name: 'Ivanoe Bonomi' },
-        { kind: 'participant', name: 'Francesco Saverio Nitti' }
-      ],
-      statements: [
+        },
         {
           id: 'q5',
           text: 'À rebours de ces approches explicatives, certaines grandes figures politiques de l’époque considèrent le fascisme comme une « parenthèse » dans l’histoire de l’Italie (Ivanoe Bonomi) ou encore comme un « accident de l’Histoire » (Francesco Saverio Nitti).',
@@ -110,16 +146,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://ehne.fr/fr/encyclopedie/th%C3%A9matiques/l\'europe-politique/les-modeles-politiques-pour-faire-l\'europe/qu\'est-ce-que-le-fascisme-definition-et-histoire'
           }
-        }
-      ]
-    },
-    {
-      id: 'republic-memory',
-      category: 'official',
-      holders: [
-        { kind: 'state', name: 'République italienne' }
-      ],
-      statements: [
+        },
         {
           id: 'q6',
           text: 'En 1946, la jeune République italienne suit très majoritairement cette vision, menant à un refoulement mémoriel du fascisme et à une mémoire sélective de la dictature,',
@@ -133,18 +160,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://ehne.fr/fr/encyclopedie/th%C3%A9matiques/l\'europe-politique/les-modeles-politiques-pour-faire-l\'europe/qu\'est-ce-que-le-fascisme-definition-et-histoire'
           }
-        }
-      ]
-    },
-    {
-      id: 'ideology-and-culture',
-      category: 'scholarly',
-      holders: [
-        { kind: 'scholar', name: 'George L. Mosse' },
-        { kind: 'scholar', name: 'Ernst Nolte' },
-        { kind: 'scholar', name: 'Roger Griffin' }
-      ],
-      statements: [
+        },
         {
           id: 'q7',
           text: 'La première privilégie la dimension idéologique et culturelle du fascisme (George L. Mosse, Ernst Nolte, Roger Griffin)',
@@ -158,18 +174,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://ehne.fr/fr/encyclopedie/th%C3%A9matiques/l\'europe-politique/les-modeles-politiques-pour-faire-l\'europe/qu\'est-ce-que-le-fascisme-definition-et-histoire'
           }
-        }
-      ]
-    },
-    {
-      id: 'practice-and-institutions',
-      category: 'scholarly',
-      holders: [
-        { kind: 'scholar', name: 'Juan Linz' },
-        { kind: 'scholar', name: 'Stanley Payne' },
-        { kind: 'scholar', name: 'Emilio Gentile' }
-      ],
-      statements: [
+        },
         {
           id: 'q8',
           text: 'quand la seconde s’appuie sur une analyse précise de la pratique politique et des institutions du fascisme (Juan Linz, Stanley Payne, Emilio Gentile).',
@@ -183,16 +188,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://ehne.fr/fr/encyclopedie/th%C3%A9matiques/l\'europe-politique/les-modeles-politiques-pour-faire-l\'europe/qu\'est-ce-que-le-fascisme-definition-et-histoire'
           }
-        }
-      ]
-    },
-    {
-      id: 'fascism-in-action',
-      category: 'scholarly',
-      holders: [
-        { kind: 'scholar', name: 'Robert Paxton' }
-      ],
-      statements: [
+        },
         {
           id: 'q9',
           text: 'En 2004, Robert Paxton propose, pour le définir, de « saisir le fascisme en action » : il s’agit d’abord d’observer concrètement la manière dont les mouvements et les régimes fascistes s’insèrent dans le tissu social des idées.',

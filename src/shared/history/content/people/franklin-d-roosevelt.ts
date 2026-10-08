@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Franklin D. Roosevelt', lang: 'en', role: 'primary' },
     { text: 'FDR', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -46,6 +46,7 @@ export default definePerson({
   offices: [
     {
       title: 'President of the United States',
+      polity: 'polity:united-states',
       start: {
         alts: [
           {
@@ -97,31 +98,42 @@ export default definePerson({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'Die verheerenden Folgen der Weltwirtschaftskrise auf die amerikanische Ökonomie bringen den amtierenden Präsidenten Herbert Hoover (1874-1964) in eine defensive Position im Präsidentschaftswahlkampf. Roosevelt gelingt gegen Hoover ein deutlicher Wahlsieg.',
-          lang: 'de',
+          id: 'q7',
+          text: 'Faced with the Great Depression and World War II, Franklin D. Roosevelt, nicknamed “FDR,” guided America through its greatest domestic crisis, with the exception of the Civil War, and its greatest foreign crisis. His presidency—which spanned twelve years—was unparalleled, not only in length but in scope.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-franklin-d-roosevelt',
-            loc: { section: 'Franklin D. Roosevelt 1882-1945', para: '34' }
+            source: 'millercenter-leuchtenburg-franklin-d-roosevelt',
+            loc: { section: 'Franklin D. Roosevelt' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/franklin-d-roosevelt'
+            at: '2026-10-07',
+            url: 'https://millercenter.org/president/fdroosevelt'
           }
         },
         {
-          id: 'q2',
-          text: '4. März: Roosevelt wird als Präsident der USA vereidigt. Er leitet ein Hilfs- und Sanierungsprogramm für die amerikanische Wirtschaft und das Finanzwesen ein.',
-          lang: 'de',
+          id: 'q8',
+          text: 'The outcome of the 1932 presidential contest between Roosevelt and Hoover was never greatly in doubt. Dispirited Americans swept the fifty-year-old FDR into office in a landslide in both the popular and electoral college votes.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-franklin-d-roosevelt',
-            loc: { section: 'Franklin D. Roosevelt 1882-1945', para: '37' }
+            source: 'millercenter-leuchtenburg-fdr-campaigns-and-elections',
+            loc: { section: 'The Campaign and Election of 1932' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/franklin-d-roosevelt'
+            at: '2026-10-07',
+            url: 'https://millercenter.org/president/fdroosevelt/campaigns-and-elections'
+          }
+        },
+        {
+          id: 'q9',
+          text: 'Roosevelt is inaugurated as the thirty-second President of the United States.',
+          lang: 'en',
+          cite: { source: 'millercenter-fdr-key-events', loc: { section: 'Key Events' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://millercenter.org/president/fdroosevelt/key-events'
           }
         }
       ]
@@ -130,31 +142,25 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
-          id: 'q3',
-          text: 'Mit einem überwältigenden Sieg wird Roosevelt als Präsident wiedergewählt.',
-          lang: 'de',
-          cite: {
-            source: 'lemo-biografie-franklin-d-roosevelt',
-            loc: { section: 'Franklin D. Roosevelt 1882-1945', para: '41' }
-          },
+          id: 'q10',
+          text: 'Roosevelt wins reelection to the presidency in stunning fashion, gaining 523 electoral votes (27,750,000 popular) to Landon\'s 8 (16,680,000 popular).',
+          lang: 'en',
+          cite: { source: 'millercenter-fdr-key-events', loc: { section: 'Key Events' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/franklin-d-roosevelt'
+            at: '2026-10-07',
+            url: 'https://millercenter.org/president/fdroosevelt/key-events'
           }
         },
         {
-          id: 'q4',
-          text: 'Seine Außenpolitik zielt auf eine Isolierung der totalitären Regierungen von Adolf Hitler und Benito Mussolini sowie auf eine Begrenzung der japanischen Expansionspolitik.',
-          lang: 'de',
-          cite: {
-            source: 'lemo-biografie-franklin-d-roosevelt',
-            loc: { section: 'Franklin D. Roosevelt 1882-1945', para: '45' }
-          },
+          id: 'q11',
+          text: 'FDR works to cement the U.S. alliance with Britain against the looming Fascist-totalitarian threat.',
+          lang: 'en',
+          cite: { source: 'millercenter-fdr-key-events', loc: { section: 'Key Events' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/franklin-d-roosevelt'
+            at: '2026-10-07',
+            url: 'https://millercenter.org/president/fdroosevelt/key-events'
           }
         }
       ]
@@ -182,17 +188,14 @@ export default definePerson({
       kind: 'death',
       quotes: [
         {
-          id: 'q6',
-          text: '12. April: Franklin D. Roosevelt stirbt in Warm Springs.',
-          lang: 'de',
-          cite: {
-            source: 'lemo-biografie-franklin-d-roosevelt',
-            loc: { section: 'Franklin D. Roosevelt 1882-1945', para: '72' }
-          },
+          id: 'q12',
+          text: 'While vacationing in Warm Springs, Georgia, President Franklin D. Roosevelt dies following a massive cerebral hemorrhage.',
+          lang: 'en',
+          cite: { source: 'millercenter-fdr-key-events', loc: { section: 'Key Events' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/franklin-d-roosevelt'
+            at: '2026-10-07',
+            url: 'https://millercenter.org/president/fdroosevelt/key-events'
           }
         }
       ]

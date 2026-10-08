@@ -7,7 +7,7 @@ export default defineEvent({
     { text: 'Marcia su Roma', lang: 'it', role: 'native' },
     { text: 'Marche sur Rome', lang: 'fr', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'coup',
   start: {
     alts: [
@@ -28,6 +28,9 @@ export default defineEvent({
         { source: 'lemo-chronik-1922', loc: { section: 'Chronik 1922', para: '188' } }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:kingdom-of-italy' }
   ],
   participants: [
     {
@@ -69,14 +72,14 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'Auf Befehl von Mussolini beginnen etwa 40.000 Faschisten den "Marsch auf Rom". Da sich König Viktor Emanuel III. weigert, den Ausnahmezustand zu verhängen und das Militär einzusetzen, tritt Ministerpräsident Facta zurück.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1922', loc: { section: 'Chronik 1922', para: '188' } },
+          id: 'q8',
+          text: 'Italian Socialist Benito Mussolini envisioned war as the prerequisite for revolution. He helped push Italy into World War I. After combat service and medical discharge in 1917, he demanded war until victory. In 1919, he founded the Fascist movement. Using veterans to smash political opposition, he seized power in October 1922.',
+          lang: 'en',
+          cite: { source: 'eo1418-sullivan-mussolini-benito', loc: { section: 'Summary' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1922.html'
+            at: '2026-10-07',
+            url: 'https://encyclopedia.1914-1918-online.net/article/mussolini-benito/'
           }
         },
         {
@@ -99,31 +102,31 @@ export default defineEvent({
       kind: 'background',
       quotes: [
         {
-          id: 'q3',
-          text: 'Le fascisme comme mouvement politique apparaît avec la constitution des Fasci di combattimento (« faisceaux de combat ») par Benito Mussolini sur la Piazza San Sepolcro, à Milan, en 1919.',
-          lang: 'fr',
+          id: 'q9',
+          text: 'Mussolini inaugurated his Fascist movement on 23 March 1919 before an audience including veterans (some from the black-shirted assault troops, the Arditi), Futurists, ex-Socialists, Syndicalists and Interventionists.',
+          lang: 'en',
           cite: {
-            source: 'ehne-toson-quest-ce-que-le-fascisme',
-            loc: { section: 'Qu’est-ce que le fascisme ? Définition et histoire', para: '5' }
+            source: 'eo1418-sullivan-mussolini-benito',
+            loc: { section: 'Neither Left nor Right', para: '2' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://ehne.fr/fr/encyclopedie/th%C3%A9matiques/l\'europe-politique/les-modeles-politiques-pour-faire-l\'europe/qu\'est-ce-que-le-fascisme-definition-et-histoire'
+            at: '2026-10-07',
+            url: 'https://encyclopedia.1914-1918-online.net/article/mussolini-benito/'
           }
         },
         {
-          id: 'q4',
-          text: 'Les squadristes s’illustrent notamment lors du biennio rosso (1919-1920), période de mobilisations paysannes et ouvrières durant laquelle ils répriment ce qu’ils perçoivent comme une menace de subversion socialiste.',
-          lang: 'fr',
+          id: 'q10',
+          text: 'Seventeen months passed before the violence of the 1919-1920 biennio rosso (“The Two Red Years”) revived Mussolini’s movement. The army and police proved unequal to peasant and worker strikes and unrest.',
+          lang: 'en',
           cite: {
-            source: 'ehne-toson-quest-ce-que-le-fascisme',
-            loc: { section: 'Qu’est-ce que le fascisme ? Définition et histoire', para: '5' }
+            source: 'eo1418-sullivan-mussolini-benito',
+            loc: { section: 'Arms and the Man', para: '1' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://ehne.fr/fr/encyclopedie/th%C3%A9matiques/l\'europe-politique/les-modeles-politiques-pour-faire-l\'europe/qu\'est-ce-que-le-fascisme-definition-et-histoire'
+            at: '2026-10-07',
+            url: 'https://encyclopedia.1914-1918-online.net/article/mussolini-benito/'
           }
         },
         {
@@ -150,20 +153,27 @@ export default defineEvent({
           {
             value: { d: '1922-10-30' },
             cites: [
-              { source: 'lemo-chronik-1922', loc: { section: 'Chronik 1922', para: '189' } }
+              { source: 'lemo-chronik-1922', loc: { section: 'Chronik 1922', para: '189' } },
+              {
+                source: 'eo1418-sullivan-mussolini-benito',
+                loc: { section: 'Arms and the Man', para: '1' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q6',
-        text: 'König Viktor Emanuel III. betraut Mussolini mit dem Amt des Ministerpräsidenten und übergeht damit eigenmächtig das italienische Parlament.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1922', loc: { section: 'Chronik 1922', para: '190' } },
+        id: 'q11',
+        text: 'Coalescing around a core of ex-officers and NCOs, the Fasci multiplied, bringing government forces welcome reinforcement. Official toleration and Mussolini’s skills helped him lead such groups to power in October 1922.',
+        lang: 'en',
+        cite: {
+          source: 'eo1418-sullivan-mussolini-benito',
+          loc: { section: 'Arms and the Man', para: '1' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1922.html'
+          at: '2026-10-07',
+          url: 'https://encyclopedia.1914-1918-online.net/article/mussolini-benito/'
         }
       }
     },
@@ -227,5 +237,9 @@ export default defineEvent({
       bytes: 29434916,
       date: { d: '1923' }
     }
+  ],
+  furtherReading: [
+    { source: 'de-felice-1966-mussolini-il-fascista', perspective: 'european' },
+    { source: 'gentile-2012-e-fu-subito-regime', perspective: 'european' }
   ]
 })

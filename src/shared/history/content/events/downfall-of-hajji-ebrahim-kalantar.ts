@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'downfall-of-hajji-ebrahim-kalantar',
   names: [
-    { text: 'Downfall of Hajji Ebrahim Kalantar', lang: 'en', role: 'primary' }
+    { text: 'Downfall of Hajji Ebrahim Kalantar', lang: 'en', role: 'primary' },
+    { text: 'قتل حاج ابراهیم کلانتر', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -24,6 +25,9 @@ export default defineEvent({
   prominence: 3,
   partOf: [
     { ref: 'period:reign-of-fath-ali-shah' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {

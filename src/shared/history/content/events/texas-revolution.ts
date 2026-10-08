@@ -19,7 +19,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'independence',
   start: {
     alts: [
@@ -64,6 +64,7 @@ export default defineEvent({
     {
       key: 'texas',
       name: 'the Texans',
+      polity: 'polity:republic-of-texas',
       cites: [
         {
           source: 'loc-mexico-country-study-1996',
@@ -74,6 +75,7 @@ export default defineEvent({
     {
       key: 'mexico',
       name: 'Mexican forces',
+      polity: 'polity:mexico',
       cites: [
         {
           source: 'loc-mexico-country-study-1996',
@@ -144,7 +146,7 @@ export default defineEvent({
   ],
   related: [
     {
-      ref: 'period:republic-of-texas',
+      ref: 'polity:republic-of-texas',
       rel: 'led-to',
       cites: [
         {
@@ -392,5 +394,11 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:FalloftheAlamo.jpg',
     credit: { institution: 'Texas State Archives', creator: 'Robert Jenkins Onderdonk' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'filisola-1849-memorias-para-la-historia-de-la-guerra-de-tejas',
+      perspective: 'latin-american'
+    }
+  ]
 })

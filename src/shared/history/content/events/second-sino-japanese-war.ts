@@ -15,7 +15,7 @@ export default defineEvent({
     },
     { text: '日中戦争', lang: 'ja', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -77,6 +77,7 @@ export default defineEvent({
     {
       key: 'china',
       name: 'China',
+      polity: 'polity:republic-of-china',
       cites: [
         {
           source: 'loc-china-country-study-1987',
@@ -87,6 +88,7 @@ export default defineEvent({
     {
       key: 'japan',
       name: 'Japan',
+      polity: 'polity:empire-of-japan',
       cites: [
         {
           source: 'loc-china-country-study-1987',
@@ -338,5 +340,12 @@ export default defineEvent({
       date: { d: '1937-12-12' },
       durationSec: 1313
     }
+  ],
+  furtherReading: [
+    { source: 'ams-1991-zhongguo-kangri-zhanzheng-shi', perspective: 'chinese' },
+    { source: 'zhang-2001-zhongguo-kangri-zhanzheng-shi', perspective: 'chinese' },
+    { source: 'senshishitsu-1975-shina-jihen-rikugun-sakusen', perspective: 'japanese' },
+    { source: 'hata-1961-nitchu-senso-shi', perspective: 'japanese' },
+    { source: 'kasahara-2017-nitchu-senso-zenshi', perspective: 'japanese' }
   ]
 })

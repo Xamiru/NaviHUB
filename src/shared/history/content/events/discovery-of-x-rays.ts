@@ -14,7 +14,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'discovery',
   start: {
     alts: [
@@ -72,28 +72,31 @@ export default defineEvent({
           }
         },
         {
-          id: 'q1',
-          text: 'Der Würzburger Physikprofessor Wilhelm Conrad Röntgen entdeckt die später nach ihm benannten X-Strahlen.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1895', loc: { section: 'Chronik 1895', para: '56' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1895.html'
-          }
-        },
-        {
-          id: 'q2',
-          text: 'Röntgen entdeckt bei der Untersuchung der Leitung von Elektrizität in Gasen eine unsichtbare Strahlung, mit der das bisher verborgene Innere eines Organismus betrachtet werden kann. Die Röntgenstrahlung, die nach ihm benannt werden wird, nennt er vorab "X-Strahlen".',
-          lang: 'de',
+          id: 'q9',
+          text: 'In 1879 he was chosen ordinary professor of physics and director of the Physical Institute at Giessen, whence in 1885 he removed in the same capacity to Würzburg. It was at the latter place that he made the discovery for which his name is chiefly known, the Röntgen rays.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-wilhelm-conrad-roentgen',
-            loc: { section: 'Wilhelm Conrad Röntgen 1845-1923', para: '30' }
+            source: 'britannica-1911-rontgen-wilhelm-konrad',
+            loc: { section: 'RÖNTGEN, WILHELM KONRAD', para: '1' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/wilhelm-conrad-roentgen'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/R%C3%B6ntgen,_Wilhelm_Konrad'
+          }
+        },
+        {
+          id: 'q10',
+          text: 'In 1895, while experimenting with a highly exhausted vacuum tube on the conduction of electricity through gases, he noticed that a paper screen covered with barium platinocyanide, which happened to be lying near, became fluorescent under the action of some radiation emitted from the tube, which at the time was enclosed in a box of black cardboard. Further investigation showed that this radiation had the power of passing through various substances which are opaque to ordinary light, and also of affecting a photographic plate. Its behaviour being curious in several respects, particularly in regard to reflection and refraction, doubt arose in his mind whether it was to be looked upon as light or not, and he was led to put forward the hypothesis that it was due to longitudinal vibrations in the ether, not to transverse ones like ordinary light; but in view of the uncertainty existing as to its nature, he called it X-rays.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-rontgen-wilhelm-konrad',
+            loc: { section: 'RÖNTGEN, WILHELM KONRAD', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/R%C3%B6ntgen,_Wilhelm_Konrad'
           }
         }
       ]
@@ -148,17 +151,17 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q5',
-        text: 'Einreichung des Manuskripts "Eine neue Art von Strahlen" an der Physikalisch-Medizinischen Gesellschaft in Würzburg. In seiner Publikation gibt Röntgen bereits Hinweise auf die medizinische Anwendbarkeit.',
-        lang: 'de',
+        id: 'q11',
+        text: 'Prof. Röntgen reported his investigations in a paper before the Physico-Medical Society of Würzburg, in December, 1895.',
+        lang: 'en',
         cite: {
-          source: 'lemo-biografie-wilhelm-conrad-roentgen',
-          loc: { section: 'Wilhelm Conrad Röntgen 1845-1923', para: '31' }
+          source: 'hering-1897-year-of-the-x-rays',
+          loc: { section: 'A YEAR OF THE X RAYS', para: '2' }
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/biografie/wilhelm-conrad-roentgen'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/Popular_Science_Monthly/Volume_50/March_1897/The_Year_of_the_X_Rays'
         }
       }
     },
@@ -242,5 +245,8 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 1359079
     }
+  ],
+  furtherReading: [
+    { source: 'folsing-1995-wilhelm-conrad-rontgen', perspective: 'european' }
   ]
 })

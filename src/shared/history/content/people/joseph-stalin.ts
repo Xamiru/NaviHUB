@@ -92,31 +92,27 @@ export default definePerson({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/9.htm' }
         },
         {
-          id: 'q2',
-          text: 'Das neugeschaffene Amt des Generalsekretärs wird von Stalin zur Schlüsselstellung seiner innerparteilichen Machtbasis ausgebaut und im Kampf gegen Rivalen eingesetzt.',
-          lang: 'de',
+          id: 'q6',
+          text: 'In the meantime, Stalin gradually consolidated his power base and, when he had sufficient strength, broke with Kamenev and Zinov\'yev.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-josef-stalin',
-            loc: { section: 'Josef W. Stalin 1878/79-1953', para: '35' }
+            source: 'loc-russia-country-study-1996',
+            loc: { section: 'The Era of the New Economic Policy', para: '10' }
           },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/josef-stalin'
-          }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/russia/9.htm' }
         },
         {
-          id: 'q3',
-          text: 'Mit Hilfe seiner Machtstellung und skrupellos geschlossener Allianzen kann Stalin seine Konkurrenten nacheinander ausschalten und jegliche innerparteiliche Opposition unterdrücken.',
-          lang: 'de',
+          id: 'q7',
+          text: 'During the second half of the 1920s, Joseph Stalin set the stage for gaining absolute power by employing police repression against opposition elements within the Communist Party.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-josef-stalin',
-            loc: { section: 'Josef W. Stalin 1878/79-1953', para: '37' }
+            source: 'loc-revelations-russian-archives-internal-workings',
+            loc: { section: 'Internal Workings of the Soviet Union' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/josef-stalin'
+            at: '2026-10-07',
+            url: 'https://www.loc.gov/exhibits/archives/intn.html'
           }
         }
       ]

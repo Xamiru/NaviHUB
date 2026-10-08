@@ -6,7 +6,17 @@ export default definePerson({
     { text: 'Cetshwayo', lang: 'en', role: 'primary' },
     { text: 'Cetshwayo kaMpande', lang: 'zu', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  died: {
+    alts: [
+      {
+        value: { d: '1884-02-08' },
+        cites: [
+          { source: 'britannica-1911-cetywayo', loc: { section: 'CETYWAYO', para: '2' } }
+        ]
+      }
+    ]
+  },
   regions: ['subsaharan-africa'],
   roles: ['monarch'],
   sections: [

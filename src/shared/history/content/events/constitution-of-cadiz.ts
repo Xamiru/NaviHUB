@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -44,6 +44,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:kingdom-of-spain' }
   ],
   sections: [
     {
@@ -129,6 +132,14 @@ export default defineEvent({
       credit: { institution: 'Biblioteca de la Universidad de Sevilla (Internet Archive)' },
       license: { id: 'public-domain' },
       bytes: 8415167
+    }
+  ],
+  furtherReading: [
+    { source: 'chust-1999-la-cuestion-nacional-americana', perspective: 'european' },
+    { source: 'suarez-1982-las-cortes-de-cadiz', perspective: 'european' },
+    {
+      source: 'rodriguez-2009-nosotros-somos-ahora-los-verdaderos-espanoles',
+      perspective: 'latin-american'
     }
   ]
 })

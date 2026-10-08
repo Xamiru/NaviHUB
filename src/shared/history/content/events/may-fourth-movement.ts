@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'protest',
   start: {
     alts: [
@@ -57,6 +57,9 @@ export default defineEvent({
       ]
     },
     { ref: 'event:xinhai-revolution', rel: 'related' }
+  ],
+  polities: [
+    { ref: 'polity:republic-of-china' }
   ],
   sections: [
     {
@@ -140,5 +143,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Tsinghua%27s_Students_in_May_Fourth_Movement,_by_Wenyiduo.jpg',
     credit: { creator: 'Wen Yiduo' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'peng-1984-wusi-yundong-shi', perspective: 'chinese' },
+    { source: 'chow-1960-the-may-fourth-movement', perspective: 'chinese' }
+  ]
 })

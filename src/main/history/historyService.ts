@@ -5,10 +5,11 @@
 // pure index and view builders.
 
 import { existsSync } from 'fs'
-import { loadCatalogEntries } from '@shared/history/catalog'
+import { ID_LOCK, loadCatalogEntries } from '@shared/history/catalog'
 import { buildCatalog, lookup, type CatalogEntry } from '@shared/history/model'
 import { HISTORY_SCHEMA_VERSION, primaryName, refOf, type ArchiveSuggestion, type HistoryEntity } from '@shared/history/schema'
 import { validateEntity } from '@shared/history/validate'
+import { territoryOf } from '@shared/history/mapGeometry'
 import type {
   HistoryArticleView,
   HistoryDecade,
@@ -19,6 +20,9 @@ import type {
   HistoryNoteKind,
   HistoryNoteRow,
   HistoryMapPin,
+  HistoryMapPolity,
+  HistoryThemeRow,
+  HistoryOnThisDay,
   HistoryOverview,
   HistorySaveResult,
   HistorySearchHit,
@@ -36,8 +40,21 @@ import { library, libraryItem } from './library'
 let entries: CatalogEntry[] | null = null
 let cached: HistoryIndex | null = null
 
+let redirectsFollowed = false
+
+/** A retired ref's replacement (ids.lock.json redirects), or the ref itself. */
+export function follow(ref: string): string {
+  return ID_LOCK.redirects[ref] ?? ref
+}
+
 function index(): HistoryIndex {
   if (!cached) {
+    if (!redirectsFollowed) {
+      // Renamed content (a period that became a state) keeps this machine's
+      // marks, notes, links and files: move them once per launch, before reading.
+      repo.followRedirects(ID_LOCK.redirects)
+      redirectsFollowed = true
+    }
     entries ??= loadCatalogEntries()
     cached = buildIndex(entries, repo.userEntities())
   }
@@ -50,6 +67,7 @@ function invalidate(): void {
 }
 
 const cachedUrl = (url: string): string | null => cachedDownload(url)
+const themeRows = views.themeRows
 
 function fileExists(relPath: string): boolean {
   try {
@@ -89,8 +107,16 @@ export function decade(start: number): HistoryDecade {
   return d
 }
 
-export function article(ref: string): HistoryArticleView | null {
+export async function article(requested: string): Promise<HistoryArticleView | null> {
+  // An old link (a bookmark, a note) to a renamed page opens its replacement.
+  const ref = follow(requested)
   const view = views.article(index(), ref, { ...context(), note: repo.note(ref) })
+  if (view?.entity.kind === 'polity' && view.entity.cshapes?.length) {
+    // The borders file is large and lazy: only a state page that links to the
+    // map loads it, and the map page shares the same parsed copy.
+    const { borders } = await import('./historyMap')
+    view.territory = territoryOf(await borders(), view.entity.cshapes)
+  }
   if (view) {
     const urls = [view.hero?.url, ...Object.values(view.refs).map((r) => r.image?.url), ...view.media.map((m) => m.poster)]
     ensureImages(urls.filter((u): u is string => !!u), 'Caching History images')
@@ -119,6 +145,22 @@ export function mapPins(): HistoryMapPin[] {
   // page that asked first, as for the timeline's medallions.
   ensureImages(missingImages(pins), 'Caching map images', Date.now(), { back: true })
   return pins
+}
+
+export function onThisDay(month: number, day: number): HistoryOnThisDay[] {
+  const rows = views.onThisDay(index(), month, day, cachedUrl)
+  ensureImages(missingImages(rows.map((r) => r.info)), 'Caching History images')
+  return rows
+}
+
+export function themes(): HistoryThemeRow[] {
+  const rows = themeRows(index(), cachedUrl)
+  ensureImages(missingImages(rows.map((r) => r.info)), 'Caching History images')
+  return rows
+}
+
+export function mapPolities(): HistoryMapPolity[] {
+  return views.mapPolities(index())
 }
 
 export function search(q: string): HistorySearchHit[] {

@@ -3,7 +3,8 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'assassination-of-hassan-ali-mansur',
   names: [
-    { text: 'Assassination of Hassan Ali Mansur', lang: 'en', role: 'primary' }
+    { text: 'Assassination of Hassan Ali Mansur', lang: 'en', role: 'primary' },
+    { text: 'ترور حسنعلی منصور', lang: 'fa', role: 'native' }
   ],
   researched: '2026-10-07',
   type: 'assassination',

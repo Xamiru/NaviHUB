@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'iranian-land-reform',
   names: [
     { text: 'Iranian land reform', lang: 'en', role: 'primary' },
+    { text: 'اصلاحات ارضی', lang: 'fa', role: 'native' },
     {
       text: 'Land reform of 1962',
       lang: 'en',
@@ -16,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'reform',
   start: {
     alts: [
@@ -48,6 +49,9 @@ export default defineEvent({
   prominence: 2,
   partOf: [
     { ref: 'period:reign-of-mohammad-reza-shah' }
+  ],
+  polities: [
+    { ref: 'polity:pahlavi-iran' }
   ],
   participants: [
     {
@@ -239,5 +243,8 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  furtherReading: [
+    { source: 'pahlavi-1967-enqelab-e-sefid', perspective: 'iranian' }
   ]
 })

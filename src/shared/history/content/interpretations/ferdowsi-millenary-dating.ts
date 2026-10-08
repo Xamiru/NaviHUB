@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'ferdowsi-millenary-dating',
   about: ['event:ferdowsi-millenary'],
   topic: 'other',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'birth-934',
@@ -59,12 +59,16 @@ export default defineInterpretation({
       id: 'foroughi-1934',
       category: 'contemporary',
       holders: [
-        { kind: 'participant', name: 'Moḥammad-ʿAlī Forūḡī' }
+        {
+          kind: 'participant',
+          name: 'Moḥammad-ʿAlī Forūḡī',
+          ref: 'person:mohammad-ali-foroughi'
+        }
       ],
       statements: [
         {
           id: 'q3',
-          text: 'Forūḡī settled in favor of 1934: “The hazāra of Ferdowsī in any rate coincides with these current years. A few years earlier or later makes no difference” (1933, p. 757).',
+          text: 'The hazāra of Ferdowsī in any rate coincides with these current years. A few years earlier or later makes no difference',
           lang: 'en',
           cite: {
             source: 'iranica-shahbazi-ferdowsi-millenary',
@@ -72,7 +76,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/ferdowsi-iv/'
           }
         }

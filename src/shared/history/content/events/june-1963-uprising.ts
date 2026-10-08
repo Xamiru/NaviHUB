@@ -17,7 +17,7 @@ export default defineEvent({
     },
     { text: 'قیام ۱۵ خرداد', lang: 'fa', role: 'native', translit: 'Qiām-e 15 Ḵordād' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -70,6 +70,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:reign-of-mohammad-reza-shah' }
+  ],
+  polities: [
+    { ref: 'polity:pahlavi-iran' }
   ],
   participants: [
     {
@@ -304,6 +307,12 @@ export default defineEvent({
           }
         }
       ]
+    }
+  ],
+  furtherReading: [
+    {
+      source: 'ruhani-1977-barresi-va-tahlili-az-nehzat-e-imam-khomeini',
+      perspective: 'iranian'
     }
   ]
 })

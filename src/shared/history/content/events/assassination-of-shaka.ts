@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Assassination of Shaka', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'assassination',
   start: {
     alts: [
@@ -22,6 +22,14 @@ export default defineEvent({
   },
   regions: ['subsaharan-africa'],
   prominence: 3,
+  places: [
+    {
+      ref: 'place:umvoti-river',
+      cites: [
+        { source: 'britannica-1911-zululand', loc: { section: 'ZULULAND', para: '18' } }
+      ]
+    }
+  ],
   related: [
     { ref: 'event:rise-of-the-zulu-kingdom', rel: 'related' }
   ],

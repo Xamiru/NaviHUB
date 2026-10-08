@@ -24,7 +24,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -89,6 +89,7 @@ export default defineEvent({
     {
       key: 'ottoman',
       name: 'the Ottoman Empire',
+      polity: 'polity:ottoman-empire',
       cites: [
         { source: 'eo1418-hall-balkan-wars', loc: { section: 'Balkan Wars 1912-1913' } }
       ]
@@ -103,6 +104,7 @@ export default defineEvent({
     {
       key: 'greece',
       name: 'the Greeks',
+      polity: 'polity:kingdom-of-greece',
       cites: [
         { source: 'eo1418-hall-balkan-wars', loc: { section: 'Consequences', para: '1' } }
       ]
@@ -110,6 +112,7 @@ export default defineEvent({
     {
       key: 'serbia',
       name: 'the Serbs',
+      polity: 'polity:kingdom-of-serbia',
       cites: [
         { source: 'eo1418-hall-balkan-wars', loc: { section: 'Consequences', para: '1' } }
       ]

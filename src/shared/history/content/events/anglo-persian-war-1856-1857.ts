@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Anglo-Persian War', lang: 'en', role: 'primary' },
     { text: 'جنگ ایران و انگلیس', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -86,6 +86,7 @@ export default defineEvent({
     {
       key: 'persia',
       name: 'the Persians',
+      polity: 'polity:qajar-iran',
       cites: [
         {
           source: 'iranica-calmard-anglo-persian-war',
@@ -96,6 +97,7 @@ export default defineEvent({
     {
       key: 'britain',
       name: 'the British',
+      polity: 'polity:united-kingdom',
       cites: [
         {
           source: 'iranica-calmard-anglo-persian-war',
@@ -613,5 +615,12 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Sketch_of_the_Attack_on_Bushire._December_10th._1856.jpg',
     credit: { institution: 'Qatar Digital Library' },
     license: { id: 'cc0' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'mahmud-1949-tarikh-e-ravabet-e-siyasi-ye-iran-va-engelis',
+      perspective: 'iranian'
+    },
+    { source: 'ghubar-1980-afghanistan-dar-masir-e-tarikh', perspective: 'south-asian' }
+  ]
 })

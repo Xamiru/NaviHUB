@@ -135,6 +135,13 @@ function articleView(): HistoryArticleView {
   return {
     ref: 'event:sample',
     mapYear: null,
+    rulers: [],
+    successors: [],
+    dependencies: [],
+    events: [],
+    themes: [],
+    furtherReading: [],
+    territory: [],
     entity: {
       v: 1,
       kind: 'event',

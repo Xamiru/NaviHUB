@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'movement',
   start: {
     alts: [
@@ -93,6 +93,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-ahmad-shah-qajar' },
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -576,5 +579,8 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 27628488
     }
+  ],
+  furtherReading: [
+    { source: 'fakhrai-1978-sardar-e-jangal', perspective: 'iranian' }
   ]
 })

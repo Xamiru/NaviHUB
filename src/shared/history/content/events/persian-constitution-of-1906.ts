@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'persian-constitution-of-1906',
   names: [
     { text: 'Persian Constitution of 1906', lang: 'en', role: 'primary' },
+    { text: 'قانون اساسی مشروطه', lang: 'fa', role: 'native' },
     {
       text: 'qānun-e asāsi',
       lang: 'fa-Latn',
@@ -16,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -26,6 +27,10 @@ export default defineEvent({
           {
             source: 'loc-iran-country-study-1987',
             loc: { section: 'The Constitutional Revolution', para: '2' }
+          },
+          {
+            source: 'iranica-arjomand-constitutional-revolution-constitution',
+            loc: { section: 'iii. The Constitution', para: '3' }
           }
         ]
       },
@@ -45,8 +50,22 @@ export default defineEvent({
   },
   regions: ['iran'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:tehran',
+      cites: [
+        {
+          source: 'iranica-arjomand-constitutional-revolution-constitution',
+          loc: { section: 'iii. The Constitution', para: '6' }
+        }
+      ]
+    }
+  ],
   partOf: [
     { ref: 'event:persian-constitutional-revolution' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -56,6 +75,30 @@ export default defineEvent({
         {
           source: 'loc-iran-country-study-1987',
           loc: { section: 'The Constitutional Revolution', para: '2' }
+        },
+        {
+          source: 'iranica-arjomand-constitutional-revolution-constitution',
+          loc: { section: 'iii. The Constitution', para: '3' }
+        }
+      ]
+    },
+    {
+      name: 'Ṣanīʿ-al-Dawla',
+      role: 'organizer',
+      cites: [
+        {
+          source: 'iranica-arjomand-constitutional-revolution-constitution',
+          loc: { section: 'iii. The Constitution', para: '3' }
+        }
+      ]
+    },
+    {
+      ref: 'person:mohammad-ali-shah-qajar',
+      role: 'signatory',
+      cites: [
+        {
+          source: 'iranica-arjomand-constitutional-revolution-constitution',
+          loc: { section: 'iii. The Constitution', para: '4' }
         }
       ]
     }
@@ -63,6 +106,49 @@ export default defineEvent({
   sections: [
     {
       kind: 'overview',
+      quotes: [
+        {
+          id: 'q6',
+          text: 'The constitutional law of 1906 consisted of a short preamble and fifty-one articles, at least six of which (Arts. 12, 31-32, 34, 46, 48) corresponded, fully or in part, to articles in the Belgian constitution; at least five (Arts. 13, 18, 23, 25, 42) corresponded to provisions in the Bulgarian constitution of 1879, though none was a verbatim translation',
+          lang: 'en',
+          cite: {
+            source: 'iranica-arjomand-constitutional-revolution-constitution',
+            loc: { section: 'iii. The Constitution', para: '5' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.iranicaonline.org/articles/constitutional-revolution-iii'
+          }
+        },
+        {
+          id: 'q7',
+          text: 'The section entitled “On the formation of the Majles” (Arts. 1-14) established the Majles-e šūrā-ye mellī (National consultative assembly), consisting of 162 representatives from Tehran and the provinces, to be elected for two years and to convene in the capital.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-arjomand-constitutional-revolution-constitution',
+            loc: { section: 'iii. The Constitution', para: '6' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.iranicaonline.org/articles/constitutional-revolution-iii'
+          }
+        },
+        {
+          id: 'q3',
+          text: 'In October an elected assembly convened and drew up a constitution that provided for strict limitations on royal power, an elected parliament, or Majlis, with wide powers to represent the people, and a government with a cabinet subject to confirmation by the Majlis.',
+          lang: 'en',
+          cite: {
+            source: 'loc-iran-country-study-1987',
+            loc: { section: 'The Constitutional Revolution', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/iran/13.htm' }
+        }
+      ]
+    },
+    {
+      kind: 'background',
       quotes: [
         {
           id: 'q1',
@@ -97,29 +183,24 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/constitutional-revolution-ii'
           }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'causes',
+      quotes: [
         {
-          id: 'q3',
-          text: 'In October an elected assembly convened and drew up a constitution that provided for strict limitations on royal power, an elected parliament, or Majlis, with wide powers to represent the people, and a government with a cabinet subject to confirmation by the Majlis.',
+          id: 'q8',
+          text: 'The foremost goal of the constitutionalists was, of course, to limit the absolute power of the shah.',
           lang: 'en',
           cite: {
-            source: 'loc-iran-country-study-1987',
-            loc: { section: 'The Constitutional Revolution', para: '2' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/iran/13.htm' }
-        },
-        {
-          id: 'q4',
-          text: 'ʿAyn al-Dawla was dismissed, and his successor, the liberal Naṣr-Allāh Khan Mošir al-Dawla, managed to secure the signature of the sickly shah on the Constitutional Charter, which included the Constitutional Law (qānun-e asāsi, lit. basic or foundational law), a few days before the latter’s passing.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-yarshater-iranian-history-islamic-period-5',
-            loc: { section: 'IRAN ii. IRANIAN HISTORY (2) Islamic period, Qajar period' }
+            source: 'iranica-arjomand-constitutional-revolution-constitution',
+            loc: { section: 'iii. The Constitution', para: '15' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/iran-ii2-islamic-period-page-5/'
+            at: '2026-10-08',
+            url: 'https://www.iranicaonline.org/articles/constitutional-revolution-iii'
           }
         }
       ]
@@ -127,6 +208,20 @@ export default defineEvent({
     {
       kind: 'consequences',
       quotes: [
+        {
+          id: 'q13',
+          text: 'The Constitution of Persia thus consisted of the constitutional law signed in December 1906 and the supplement signed in October 1907',
+          lang: 'en',
+          cite: {
+            source: 'iranica-arjomand-constitutional-revolution-constitution',
+            loc: { section: 'iii. The Constitution', para: '4' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.iranicaonline.org/articles/constitutional-revolution-iii'
+          }
+        },
         {
           id: 'q5',
           text: 'The Supplementary Fundamental Laws approved in 1907 provided, within limits, for freedom of press, speech, and association, and for security of life and property.',
@@ -149,5 +244,133 @@ export default defineEvent({
       creator: 'Antoin Sevruguin'
     },
     license: { id: 'public-domain' }
-  }
+  },
+  course: [
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1906-10-18' },
+            cites: [
+              {
+                source: 'iranica-arjomand-constitutional-revolution-constitution',
+                loc: { section: 'iii. The Constitution', para: '3' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q9',
+        text: 'A charter was speedily drafted and sent to the monarch; the shah acknowledged its receipt on 29 Šaʿbān 1324/18 October 1906 but procrastinated for weeks and returned it with alterations only on 9 Ḏu’l-Qaʿda/25 December.',
+        lang: 'en',
+        cite: {
+          source: 'iranica-arjomand-constitutional-revolution-constitution',
+          loc: { section: 'iii. The Constitution', para: '3' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://www.iranicaonline.org/articles/constitutional-revolution-iii'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1906-12-30' },
+            cites: [
+              {
+                source: 'iranica-arjomand-constitutional-revolution-constitution',
+                loc: { section: 'iii. The Constitution', para: '3' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q10',
+        text: 'A new draft, incorporating some of his alterations, was submitted two days later, and the shah signed it on 14 Ḏu’l-Qaʿda/30 December, ten days before his death.',
+        lang: 'en',
+        cite: {
+          source: 'iranica-arjomand-constitutional-revolution-constitution',
+          loc: { section: 'iii. The Constitution', para: '3' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://www.iranicaonline.org/articles/constitutional-revolution-iii'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1907-01-01' },
+            cites: [
+              {
+                source: 'iranica-martin-constitutional-revolution-events',
+                loc: {
+                  section: 'CONSTITUTIONAL REVOLUTION ii. Events, Adoption of the Constitution and early debates',
+                  para: '10'
+                }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q11',
+        text: 'The Constitution was rushed to the shah to be signed and presented to the Majles on 16 Ḏu’l-qaʿda 1324/1 January 1907, just before his death',
+        lang: 'en',
+        cite: {
+          source: 'iranica-martin-constitutional-revolution-events',
+          loc: {
+            section: 'CONSTITUTIONAL REVOLUTION ii. Events, Adoption of the Constitution and early debates',
+            para: '10'
+          }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://www.iranicaonline.org/articles/constitutional-revolution-ii'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1907-10-08' },
+            cites: [
+              {
+                source: 'iranica-arjomand-constitutional-revolution-constitution',
+                loc: { section: 'iii. The Constitution', para: '4' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q12',
+        text: 'After a considerable period of debate over its provisions the supplement was eventually ratified by the Majles and signed by Moḥammad-ʿAlī Shah (1324-27/1907-09) on 29 Šaʿbān 1325/8 October 1907.',
+        lang: 'en',
+        cite: {
+          source: 'iranica-arjomand-constitutional-revolution-constitution',
+          loc: { section: 'iii. The Constitution', para: '4' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://www.iranicaonline.org/articles/constitutional-revolution-iii'
+        }
+      }
+    }
+  ],
+  furtherReading: [
+    { source: 'kasravi-1940-tarikh-e-mashruteh-ye-iran', perspective: 'iranian' },
+    { source: 'adamiyat-1976-ideolozhi-ye-nehzat-e-mashrutiyat', perspective: 'iranian' }
+  ]
 })

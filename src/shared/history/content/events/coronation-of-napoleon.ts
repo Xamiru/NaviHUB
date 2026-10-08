@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Coronation of Napoleon', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -22,8 +22,19 @@ export default defineEvent({
   },
   regions: ['europe'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:paris',
+      cites: [
+        { source: 'britannica-1911-paris', loc: { section: 'PARIS', para: '357' } }
+      ]
+    }
+  ],
   partOf: [
-    { ref: 'period:first-french-empire' }
+    { ref: 'polity:first-french-empire' }
+  ],
+  polities: [
+    { ref: 'polity:first-french-empire' }
   ],
   participants: [
     {
@@ -96,5 +107,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Jacques-Louis_David_-_The_Coronation_of_Napoleon_(1805-1807).jpg',
     credit: { creator: 'Jacques-Louis David' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'tulard-1986-napoleon-ou-le-mythe-du-sauveur', perspective: 'european' },
+    { source: 'lentz-2002-nouvelle-histoire-du-premier-empire', perspective: 'european' }
+  ]
 })

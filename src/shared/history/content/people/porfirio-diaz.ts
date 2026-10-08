@@ -3,9 +3,10 @@ import { definePerson } from '../../schema'
 export default definePerson({
   id: 'porfirio-diaz',
   names: [
-    { text: 'Porfirio Díaz', lang: 'en', role: 'primary' }
+    { text: 'Porfirio Díaz', lang: 'en', role: 'primary' },
+    { text: 'Porfirio Díaz', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {

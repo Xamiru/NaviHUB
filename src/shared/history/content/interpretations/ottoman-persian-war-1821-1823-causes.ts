@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'ottoman-persian-war-1821-1823-causes',
   about: ['event:ottoman-persian-war-1821-1823'],
   topic: 'causes',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'border-tensions-and-europe',
@@ -84,7 +84,7 @@ export default defineInterpretation({
       id: 'greek-war-opportunity',
       category: 'scholarly',
       holders: [
-        { kind: 'scholar', name: 'Heribert Busse', discipline: 'historian' }
+        { kind: 'scholar', name: 'Heribert Busse' }
       ],
       statements: [
         {
@@ -100,16 +100,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/abbas-mirza'
           }
-        }
-      ]
-    },
-    {
-      id: 'jealousy',
-      category: 'contemporary',
-      holders: [
-        { kind: 'participant', name: 'James Baillie Fraser' }
-      ],
-      statements: [
+        },
         {
           id: 'q6',
           text: 'Jealous of his brother’s success (so Fraser maintains, Caspian Sea, p. 312), he campaigned in the Kurdish territory of Bitlīs and Mūš, west of Lake Van.',

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'war-of-1812-causes',
   about: ['event:war-of-1812'],
   topic: 'causes',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'blockade-and-impressment',
@@ -30,6 +30,20 @@ export default defineInterpretation({
         {
           id: 'q2',
           text: 'Britain imposed a blockade on neutral countries such as the United States. In addition, the British took American sailors from their ships and "impressed" them into the British Navy.',
+          lang: 'en',
+          cite: {
+            source: 'nara-milestone-treaty-of-ghent',
+            loc: { section: 'Treaty of Ghent (1814)', para: '2' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.archives.gov/milestone-documents/treaty-of-ghent'
+          }
+        },
+        {
+          id: 'q6',
+          text: 'In Congress, southern and western Democratic-Republican "War Hawks," such as the new Speaker of the House, Henry Clay of Kentucky, and Representative John C. Calhoun of South Carolina, led the sentiment for war, calling for a defense of American interests and honor.',
           lang: 'en',
           cite: {
             source: 'nara-milestone-treaty-of-ghent',
@@ -77,6 +91,20 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1801-1829/war-of-1812'
           }
+        },
+        {
+          id: 'q7',
+          text: 'Pro-British Federalists in Washington were outraged by what they considered Republican favoritism toward France.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-war-of-1812',
+            loc: { section: 'War of 1812–1815', para: '4' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://history.state.gov/milestones/1801-1829/war-of-1812'
+          }
         }
       ]
     },
@@ -104,48 +132,45 @@ export default defineInterpretation({
       ]
     },
     {
-      id: 'war-hawks',
-      category: 'contemporary',
+      id: 'british-aggressions',
+      category: 'official',
       holders: [
-        { kind: 'participant', name: 'Henry Clay' },
-        { kind: 'participant', name: 'John C. Calhoun' }
+        { kind: 'state', name: 'United States' },
+        { kind: 'participant', name: 'James Madison' }
       ],
       statements: [
         {
-          id: 'q6',
-          text: 'In Congress, southern and western Democratic-Republican "War Hawks," such as the new Speaker of the House, Henry Clay of Kentucky, and Representative John C. Calhoun of South Carolina, led the sentiment for war, calling for a defense of American interests and honor.',
+          id: 'q8',
+          text: 'Under pretended blockades, without the presence of an adequate force and sometimes without the practicability of applying one, our commerce has been plundered in every sea, the great staples of our country have been cut off from their legitimate markets, and a destructive blow aimed at our agricultural and maritime interests.',
           lang: 'en',
           cite: {
-            source: 'nara-milestone-treaty-of-ghent',
-            loc: { section: 'Treaty of Ghent (1814)', para: '2' }
+            source: 'madison-1812-06-01-war-message',
+            loc: {
+              section: 'June 1, 1812: Special Message to Congress on the Foreign Policy Crisis—War Message',
+              para: '8'
+            }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.archives.gov/milestone-documents/treaty-of-ghent'
+            at: '2026-10-08',
+            url: 'https://millercenter.org/the-presidency/presidential-speeches/june-1-1812-special-message-congress-foreign-policy-crisis-war'
           }
-        }
-      ]
-    },
-    {
-      id: 'federalist-opposition',
-      category: 'contemporary',
-      holders: [
-        { kind: 'party', name: 'Federalists' }
-      ],
-      statements: [
+        },
         {
-          id: 'q7',
-          text: 'Pro-British Federalists in Washington were outraged by what they considered Republican favoritism toward France.',
+          id: 'q9',
+          text: 'Not content with these occasional expedients for laying waste our neutral trade, the cabinet of Britain resorted at length to the sweeping system of blockades, under the name of orders in council, which has been molded and managed as might best suit its political views, its commercial jealousies, or the avidity of British cruisers.',
           lang: 'en',
           cite: {
-            source: 'state-dept-milestones-war-of-1812',
-            loc: { section: 'War of 1812–1815', para: '4' }
+            source: 'madison-1812-06-01-war-message',
+            loc: {
+              section: 'June 1, 1812: Special Message to Congress on the Foreign Policy Crisis—War Message',
+              para: '9'
+            }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://history.state.gov/milestones/1801-1829/war-of-1812'
+            at: '2026-10-08',
+            url: 'https://millercenter.org/the-presidency/presidential-speeches/june-1-1812-special-message-congress-foreign-policy-crisis-war'
           }
         }
       ]

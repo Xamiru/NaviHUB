@@ -20,7 +20,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   died: {
     alts: [
       {
@@ -39,6 +39,7 @@ export default definePerson({
   offices: [
     {
       title: 'premier of Mohammad Shah',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {

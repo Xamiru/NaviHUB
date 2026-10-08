@@ -3,9 +3,10 @@ import { definePerson } from '../../schema'
 export default definePerson({
   id: 'francisco-solano-lopez',
   names: [
-    { text: 'Francisco Solano López', lang: 'en', role: 'primary' }
+    { text: 'Francisco Solano López', lang: 'en', role: 'primary' },
+    { text: 'Francisco Solano López', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {

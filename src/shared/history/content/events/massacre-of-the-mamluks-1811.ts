@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Massacre of the Mamluks', lang: 'en', role: 'primary' },
     { text: 'Citadel massacre', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'massacre',
   start: {
     alts: [
@@ -103,5 +103,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Massacre_of_the_Mamelukes_at_Cairo.png',
     credit: { creator: 'Horace Vernet' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'jabarti-1958-ajaib-al-athar', perspective: 'arab' },
+    { source: 'rafii-1982-asr-muhammad-ali', perspective: 'arab' }
+  ]
 })

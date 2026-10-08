@@ -19,6 +19,7 @@ export type HomeWidgetKey =
   | 'recent'
   | 'favorites'
   | 'pictures'
+  | 'historyToday'
 
 export interface HomeWidgetDef {
   key: HomeWidgetKey
@@ -44,7 +45,8 @@ export const HOME_WIDGETS: HomeWidgetDef[] = [
   { key: 'favorites', label: 'Favorites', hint: 'Everything you starred', span: 'full' },
   // Renders nothing until a picture is starred, so its automatic appearance in
   // existing layouts stays invisible for anyone who never uses the gallery.
-  { key: 'pictures', label: 'Pictures', hint: 'A random favorite picture', span: 'full' }
+  { key: 'pictures', label: 'Pictures', hint: 'A random favorite picture', span: 'full' },
+  { key: 'historyToday', label: 'On this day', hint: 'History', span: 'half' }
 ]
 
 // Retired keys still sit in stored layouts, where parseHomeLayout drops them.

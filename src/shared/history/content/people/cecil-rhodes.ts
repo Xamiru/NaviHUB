@@ -54,14 +54,17 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
-          id: 'q1',
-          text: 'Der britische Geschäftsmann Cecil Rhodes (1853-1902) wird Premierminister der britischen Kapkolonie in Südafrika.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1890', loc: { section: 'Chronik 1890', para: '39' } },
+          id: 'q4',
+          text: 'In 1890, not many months after the granting of the charter, Mr Rhodes accepted the position of prime minister of the Cape.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-rhodes-cecil-john',
+            loc: { section: 'RHODES, CECIL JOHN', para: '9' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1890.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Rhodes,_Cecil_John'
           }
         },
         {

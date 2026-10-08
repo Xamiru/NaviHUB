@@ -12,7 +12,9 @@ import {
   type HistoryPeriod,
   type HistoryPerson,
   type HistoryPlace,
-  type HistorySource
+  type HistoryPolity,
+  type HistorySource,
+  type HistoryTheme
 } from './schema'
 
 export interface CatalogEntry {
@@ -29,6 +31,8 @@ export interface HistoryCatalog {
   sources: Map<string, HistorySource>
   interpretations: Map<string, HistoryInterpretation>
   media: Map<string, HistoryMedia>
+  polities: Map<string, HistoryPolity>
+  themes: Map<string, HistoryTheme>
 }
 
 export const KIND_DIRS: Record<EntityKind, keyof HistoryCatalog> = {
@@ -38,7 +42,9 @@ export const KIND_DIRS: Record<EntityKind, keyof HistoryCatalog> = {
   place: 'places',
   source: 'sources',
   interpretation: 'interpretations',
-  media: 'media'
+  media: 'media',
+  polity: 'polities',
+  theme: 'themes'
 }
 
 export function emptyCatalog(): HistoryCatalog {
@@ -49,7 +55,9 @@ export function emptyCatalog(): HistoryCatalog {
     places: new Map(),
     sources: new Map(),
     interpretations: new Map(),
-    media: new Map()
+    media: new Map(),
+    polities: new Map(),
+    themes: new Map()
   }
 }
 
@@ -74,7 +82,9 @@ export function allEntities(c: HistoryCatalog): HistoryEntity[] {
     ...c.places.values(),
     ...c.sources.values(),
     ...c.interpretations.values(),
-    ...c.media.values()
+    ...c.media.values(),
+    ...c.polities.values(),
+    ...c.themes.values()
   ]
 }
 

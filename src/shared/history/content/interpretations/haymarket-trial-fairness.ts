@@ -4,13 +4,13 @@ export default defineInterpretation({
   id: 'haymarket-trial-fairness',
   about: ['event:haymarket-affair'],
   topic: 'responsibility',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'verdict-upheld',
-      category: 'official',
+      category: 'scholarly',
       holders: [
-        { kind: 'state', name: 'Supreme Court of Illinois' }
+        { kind: 'organization', name: 'Library of Congress' }
       ],
       statements: [
         {

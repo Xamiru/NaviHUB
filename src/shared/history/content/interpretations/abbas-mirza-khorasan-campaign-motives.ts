@@ -4,13 +4,13 @@ export default defineInterpretation({
   id: 'abbas-mirza-khorasan-campaign-motives',
   about: ['event:abbas-mirza-khorasan-campaign'],
   topic: 'motives',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'safavid-reconquest',
-      category: 'contemporary',
+      category: 'scholarly',
       holders: [
-        { kind: 'school', name: 'Qajar court chroniclers' }
+        { kind: 'scholar', name: 'Heribert Busse' }
       ],
       statements: [
         {
@@ -31,9 +31,9 @@ export default defineInterpretation({
     },
     {
       id: 'compensation-and-succession',
-      category: 'contemporary',
+      category: 'scholarly',
       holders: [
-        { kind: 'participant', name: 'James Baillie Fraser' }
+        { kind: 'scholar', name: 'Heribert Busse' }
       ],
       statements: [
         {
@@ -54,9 +54,9 @@ export default defineInterpretation({
     },
     {
       id: 'russian-favour',
-      category: 'contemporary',
+      category: 'scholarly',
       holders: [
-        { kind: 'public', name: 'British observers' }
+        { kind: 'scholar', name: 'Abbas Amanat' }
       ],
       statements: [
         {

@@ -4,14 +4,13 @@ export default defineInterpretation({
   id: 'first-anglo-afghan-war-causes',
   about: ['event:first-anglo-afghan-war'],
   topic: 'causes',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
-      id: 'simla-manifesto',
-      category: 'official',
+      id: 'manifesto-and-pretense',
+      category: 'scholarly',
       holders: [
-        { kind: 'state', name: 'British Indian government' },
-        { kind: 'participant', name: 'Lord Auckland' }
+        { kind: 'organization', name: 'Library of Congress, Federal Research Division' }
       ],
       statements: [
         {
@@ -33,16 +32,7 @@ export default defineInterpretation({
             loc: { section: 'The First Anglo-Afghan War', para: '1' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/afghanistan/13.htm' }
-        }
-      ]
-    },
-    {
-      id: 'pretense',
-      category: 'scholarly',
-      holders: [
-        { kind: 'organization', name: 'Library of Congress, Federal Research Division' }
-      ],
-      statements: [
+        },
         {
           id: 'q3',
           text: 'The British pretense that their troops were merely supporting Shuja\'s small army in retaking what was once his throne fooled no one.',

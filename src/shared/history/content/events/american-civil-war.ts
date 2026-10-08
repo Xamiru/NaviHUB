@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'American Civil War', lang: 'en', role: 'primary' },
     { text: 'Civil War', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -64,6 +64,7 @@ export default defineEvent({
     {
       key: 'us',
       name: 'United States',
+      polity: 'polity:united-states',
       cites: [
         {
           source: 'nps-reardon-the-military-experience',
@@ -74,6 +75,7 @@ export default defineEvent({
     {
       key: 'csa',
       name: 'Confederate States of America',
+      polity: 'polity:confederate-states-of-america',
       cites: [
         {
           source: 'nps-reardon-the-military-experience',
@@ -95,7 +97,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Jefferson Davis',
+      ref: 'person:jefferson-davis',
       role: 'head-of-state',
       side: 'csa',
       cites: [
@@ -106,7 +108,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Ulysses S. Grant',
+      ref: 'person:ulysses-s-grant',
       role: 'commander',
       side: 'us',
       cites: [
@@ -128,7 +130,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Robert E. Lee',
+      ref: 'person:robert-e-lee',
       role: 'commander',
       side: 'csa',
       cites: [
@@ -609,5 +611,13 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:The_battle_of_Gettysburg,_Pa._July_3d._1863_LCCN90709061.jpg',
     credit: { institution: 'Library of Congress', creator: 'Currier & Ives' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'ameur-2004-la-guerre-de-secession', perspective: 'european' },
+    { source: 'ivanov-1960-grazhdanskaya-voina-v-ssha', perspective: 'russian-soviet' },
+    {
+      source: 'malkin-1939-grazhdanskaya-voina-v-ssha-i-tsarskaya-rossiya',
+      perspective: 'russian-soviet'
+    }
+  ]
 })

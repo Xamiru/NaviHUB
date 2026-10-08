@@ -1,4 +1,3 @@
-import { createGunzip } from 'zlib'
 import { getSqlite } from './db/connection'
 import {
   getCatalogDb,
@@ -8,9 +7,9 @@ import {
 } from './gamesCatalogDb'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
-import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
-import { streamResponseToFile } from './streamDownload'
+import { installCatalogRelease } from './catalogRelease'
 import { fetchPlaytimes, hltbLengthHours } from './hltb'
+import { ftsQueryFor } from './ftsQuery'
 import type { RefreshAspect } from '@shared/refresh'
 import type {
   BulkListParams,
@@ -31,14 +30,10 @@ import type {
 // from media.rawg.io, which outlived the API — a cover miss never blocks.
 const CATALOG_TAG = 'games-catalog-1'
 const ASSET_NAME = 'rawg-catalog.db.gz'
-// Same owner/repo the updater pins (updater.ts documents why they're constants).
-const GITHUB_OWNER = 'Xamiru'
-const GITHUB_REPO = 'NaviHUB'
 const SOURCE = 'rawg'
 const MAX_CATALOG_ARCHIVE_BYTES = 96 * 1024 * 1024
 const MAX_CATALOG_DATABASE_BYTES = 512 * 1024 * 1024
 
-const GH_HEADERS = { 'user-agent': 'NaviHUB' }
 
 export function status(): GamesCatalogStatus {
   const db = getCatalogDb()
@@ -54,59 +49,22 @@ export function status(): GamesCatalogStatus {
   }
 }
 
-// Download the data pack from the games-catalog release. Stage-then-swap: the
-// gunzipped file lands beside the target and is renamed into place, so a
-// failed download can never leave a truncated catalog behind.
+// Download the data pack from the games-catalog release (catalogRelease.ts:
+// stage, validate, swap).
 export async function install(): Promise<GamesCatalogStatus> {
-  const relRes = await fetchWithRetry(
-    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/tags/${CATALOG_TAG}`,
-    {
-      headers: { ...GH_HEADERS, accept: 'application/vnd.github+json' },
-      timeoutMs: 20_000,
-      maxResponseBytes: MAX_API_RESPONSE_BYTES
-    }
-  )
-  if (!relRes.ok) {
-    throw new Error(`Catalog release not found (${relRes.status}) — has ${CATALOG_TAG} been published?`)
-  }
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const rel = (await relRes.json()) as any
-  const asset = (rel?.assets ?? []).find((a: any) => a?.name === ASSET_NAME)
-  if (!asset?.browser_download_url) {
-    throw new Error(`The ${CATALOG_TAG} release has no ${ASSET_NAME} download.`)
-  }
-
-  updateActivity({ phase: 'fetching' })
-  const dlRes = await fetchWithRetry(String(asset.browser_download_url), {
-    headers: GH_HEADERS,
-    timeoutMs: 600_000
-  })
-  if (!dlRes.ok) throw new Error(`Catalog download failed (${dlRes.status})`)
-  const target = catalogPath()
-  let progressMark = 0
-  await streamResponseToFile(dlRes, target, {
+  await installCatalogRelease({
+    tag: CATALOG_TAG,
+    asset: ASSET_NAME,
+    target: catalogPath(),
     label: 'Games catalog archive',
-    maxInputBytes: MAX_CATALOG_ARCHIVE_BYTES,
-    maxOutputBytes: MAX_CATALOG_DATABASE_BYTES,
-    transform: createGunzip(),
-    replace: true,
-    onProgress: (done, total) => {
-      // Keep progress responsive without churning the task row for every small
-      // network chunk. Completion is surfaced by the writing phase below.
-      if (done === 0 || done === total || done - progressMark >= 512 * 1024) {
-        progressMark = done
-        updateActivity({ phase: 'fetching', done, total })
-      }
-    },
-    validateTemp: (tmp) => {
+    maxArchiveBytes: MAX_CATALOG_ARCHIVE_BYTES,
+    maxDatabaseBytes: MAX_CATALOG_DATABASE_BYTES,
+    timeoutMs: 600_000,
+    inspect: (tmp) => {
       inspectCatalogFile(tmp)
     },
-    beforeCommit: () => {
-      updateActivity({ phase: 'writing' })
-      closeCatalogDb() // release any handle on the old file before the swap
-    }
+    close: closeCatalogDb
   })
-
   const after = status()
   if (!after.installed || after.gameCount === 0) {
     closeCatalogDb()
@@ -115,16 +73,7 @@ export async function install(): Promise<GamesCatalogStatus> {
   return after
 }
 
-// User text → FTS5 prefix query: bare quoted tokens ANDed, each with a
-// trailing *. Quoting neutralizes FTS operators (NEAR, -, ^) in user input.
-export function ftsQueryFor(raw: string): string | null {
-  const tokens = raw
-    .split(/\s+/)
-    .map((t) => t.replace(/"/g, '').trim())
-    .filter(Boolean)
-  if (!tokens.length) return null
-  return tokens.map((t) => `"${t}"*`).join(' ')
-}
+export { ftsQueryFor }
 
 interface CatalogRow {
   id: number

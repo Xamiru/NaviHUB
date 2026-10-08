@@ -13,7 +13,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -45,6 +45,11 @@ export default defineEvent({
   },
   regions: ['mena', 'europe'],
   prominence: 2,
+  polities: [
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:french-third-republic' },
+    { ref: 'polity:russian-empire' }
+  ],
   participants: [
     {
       name: 'Sir Mark Sykes',

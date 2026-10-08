@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Cuban Revolution', lang: 'en', role: 'primary' },
     { text: 'Revolución cubana', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'revolution',
   start: {
     alts: [
@@ -53,6 +53,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:cold-war' }
+  ],
+  polities: [
+    { ref: 'polity:republic-of-cuba' }
   ],
   participants: [
     {
@@ -294,5 +297,11 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Fidel_Castro_and_Christian_Herter.jpg',
     credit: { institution: 'Library of Congress', creator: 'Warren K. Leffler' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'guevara-2006-pasajes-de-la-guerra-revolucionaria',
+      perspective: 'latin-american'
+    }
+  ]
 })

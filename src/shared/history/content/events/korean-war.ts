@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Korean War', lang: 'en', role: 'primary' },
     { text: '한국 전쟁', lang: 'ko', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -63,6 +63,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:cold-war' }
   ],
+  polities: [
+    { ref: 'polity:united-states' }
+  ],
   sides: [
     {
       key: 'north',
@@ -81,6 +84,7 @@ export default defineEvent({
     {
       key: 'china',
       name: 'Chinese People\'s Volunteer Army',
+      polity: 'polity:peoples-republic-of-china',
       cites: [
         {
           source: 'loc-north-korea-country-study-1993',
@@ -91,7 +95,7 @@ export default defineEvent({
   ],
   participants: [
     {
-      name: 'Kim Il Sung',
+      ref: 'person:kim-il-sung',
       role: 'leader',
       side: 'north',
       cites: [
@@ -125,7 +129,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Douglas MacArthur',
+      ref: 'person:douglas-macarthur',
       role: 'commander',
       side: 'un',
       cites: [
@@ -506,5 +510,11 @@ export default defineEvent({
       bytes: 151656388,
       durationSec: 1122
     }
+  ],
+  furtherReading: [
+    { source: 'ams-2000-kangmei-yuanchao-zhanzheng-shi', perspective: 'chinese' },
+    { source: 'shen-2004-mao-zedong-sidalin-yu-chaoxian-zhanzheng', perspective: 'chinese' },
+    { source: 'torkunov-2000-zagadochnaya-voina', perspective: 'russian-soviet' },
+    { source: 'wada-2002-chosen-senso-zenshi', perspective: 'japanese' }
   ]
 })

@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Vienna stock exchange crash of 1873', lang: 'en', role: 'primary' },
     { text: 'Wiener Börsenkrach', lang: 'de', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'economic',
   start: {
     alts: [
@@ -28,19 +28,25 @@ export default defineEvent({
       ]
     }
   ],
+  polities: [
+    { ref: 'polity:austria-hungary' }
+  ],
   sections: [
     {
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'Der Wiener Börsenkrach beendet den Wirtschaftsboom der Gründerzeit.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1873', loc: { section: 'Chronik 1873', para: '19' } },
+          id: 'q7',
+          text: 'For some years there had been active speculations on the Stock Exchange; a great number of companies, chiefly banks and building societies, had been founded on a very insecure basis. The inevitable crisis began in 1872; it was postponed for a short time, and there was some hope that the Exhibition, fixed for 1873, would bring fresh prosperity; the hope was not, however, fulfilled, and the final crash, which occurred in May, brought with it the collapse of hundreds of undertakings.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-austria-hungary',
+            loc: { section: 'AUSTRIA-HUNGARY', para: '427' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1873.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Austria-Hungary'
           }
         },
         {

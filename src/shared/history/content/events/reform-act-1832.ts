@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -36,6 +36,9 @@ export default defineEvent({
   prominence: 2,
   places: [
     { ref: 'place:london' }
+  ],
+  polities: [
+    { ref: 'polity:united-kingdom' }
   ],
   sections: [
     {
@@ -110,5 +113,11 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:George_Hayter_(1792-1871)_-_The_First_Reformed_House_of_Commons,_1833_(sketch)_-_WOA_363_-_Parliamentary_Art_Collection.jpg',
     credit: { institution: 'Parliamentary Art Collection', creator: 'George Hayter' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'halevy-1913-histoire-du-peuple-anglais-au-xixe-siecle',
+      perspective: 'european'
+    }
+  ]
 })

@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Bengal famine of 1943', lang: 'en', role: 'primary' },
     { text: 'পঞ্চাশের মন্বন্তর', lang: 'bn', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'famine',
   start: {
     alts: [
@@ -46,7 +46,10 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'event:second-world-war' },
-    { ref: 'period:british-raj' }
+    { ref: 'polity:british-raj' }
+  ],
+  polities: [
+    { ref: 'polity:british-raj' }
   ],
   participants: [
     {
@@ -182,5 +185,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:FatherSonCowRummagingFoodBengalFamine1943.jpg',
     credit: { institution: 'Bengal Speaks (Hind Kitabs, Bombay, 1944)' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'sen-1992-poverty-and-famines', perspective: 'south-asian' },
+    { source: 'mukherjee-2015-hungry-bengal', perspective: 'south-asian' }
+  ]
 })

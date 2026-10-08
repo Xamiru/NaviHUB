@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Republican movement of 1924', lang: 'en', role: 'primary' },
     { text: 'جمهوری‌خواهی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'movement',
   start: {
     alts: [
@@ -49,6 +49,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {

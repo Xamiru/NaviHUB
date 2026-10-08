@@ -69,17 +69,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
           }
-        },
-        {
-          id: 'q2',
-          text: 'Eröffnung der ersten Olympischen Spiele der Neuzeit in Athen.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1896', loc: { section: 'Chronik 1896', para: '30' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1896.html'
-          }
         }
       ]
     },
@@ -127,29 +116,6 @@ export default defineEvent({
       date: {
         alts: [
           {
-            value: { d: '1892-11-25' },
-            cites: [
-              { source: 'lemo-chronik-1892', loc: { section: 'Chronik 1892', para: '55' } }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q5',
-        text: 'Der französische Pädagoge Pierre de Coubertin (1863-1937) ruft in Paris auf der Jahrestagung des französischen Leichtathletikverbandes zur Wiederbelebung der Olympischen Spiele der Antike auf.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1892', loc: { section: 'Chronik 1892', para: '56' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1892.html'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
             value: { d: '1894-06-23' },
             cites: [
               { source: 'lemo-chronik-1894', loc: { section: 'Chronik 1894', para: '22' } }
@@ -158,14 +124,17 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q6',
-        text: 'Der französische Pädagoge und Historiker Pierre Baron de Coubertin (1863-1937) begründet das Internationale Olympische Komitee (IOC).',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1894', loc: { section: 'Chronik 1894', para: '23' } },
+        id: 'q7',
+        text: 'The Olympic Games, which were founded again in 1894 by Coubertin as a celebration of virility, were reserved for male athletes.',
+        lang: 'en',
+        cite: {
+          source: 'ehne-ripa-women-and-olympic-games',
+          loc: { section: 'Women and the Olympic Games', para: '1' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1894.html'
+          at: '2026-10-07',
+          url: 'https://ehne.fr/en/encyclopedia/themes/gender-and-europe/gendered-body/women-and-olympic-games'
         }
       }
     }

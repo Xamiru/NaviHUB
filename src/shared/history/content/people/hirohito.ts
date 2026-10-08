@@ -6,12 +6,33 @@ export default definePerson({
     { text: 'Hirohito', lang: 'en', role: 'primary' },
     { text: '裕仁', lang: 'ja', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1901' },
+        cites: [
+          { source: 'lemo-chronik-1926', loc: { section: 'Chronik 1926' } }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1989' },
+        cites: [
+          { source: 'lemo-chronik-1926', loc: { section: 'Chronik 1926' } }
+        ]
+      }
+    ]
+  },
   regions: ['east-asia'],
   roles: ['monarch'],
   offices: [
     {
       title: 'Emperor of Japan',
+      polity: 'polity:empire-of-japan',
       cites: [
         {
           source: 'loc-japan-country-study-1994',

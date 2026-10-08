@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -49,6 +49,7 @@ export default definePerson({
   offices: [
     {
       title: 'chief of staff and war minister',
+      polity: 'polity:ottoman-empire',
       start: {
         alts: [
           {

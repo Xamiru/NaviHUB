@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Construction of the Panama Canal', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -35,6 +35,29 @@ export default defineEvent({
   },
   regions: ['latin-america', 'north-america'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:panama-city',
+      cites: [
+        {
+          source: 'loc-panama-country-study-1987',
+          loc: { section: 'Building the Canal', para: '1' }
+        }
+      ]
+    },
+    {
+      ref: 'place:colon-panama',
+      cites: [
+        {
+          source: 'loc-panama-country-study-1987',
+          loc: { section: 'Building the Canal', para: '1' }
+        }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
+  ],
   participants: [
     {
       name: 'George Washington Goethals',
@@ -139,5 +162,12 @@ export default defineEvent({
     title: 'Excavation and removal of dirt at the Culebra Cut, Panama Canal',
     credit: { institution: 'Library of Congress', creator: 'H.C. White Co.' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'castillero-pimentel-1953-panama-y-los-estados-unidos',
+      perspective: 'latin-american'
+    },
+    { source: 'arauz-pizzurno-1993-el-panama-colombiano', perspective: 'latin-american' }
+  ]
 })

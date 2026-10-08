@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Einstein’s special theory of relativity', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'discovery',
   start: {
     alts: [
@@ -128,5 +128,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Einstein_patentoffice_full.jpg',
     credit: { institution: 'Bernisches Historisches Museum', creator: 'Lucien Chavan' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'folsing-1993-albert-einstein', perspective: 'european' }
+  ]
 })

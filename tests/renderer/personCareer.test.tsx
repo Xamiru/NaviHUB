@@ -8,7 +8,8 @@ function credit({
   title,
   releaseDate,
   role,
-  character
+  character,
+  roleNote
 }: {
   creditId: number
   mediaId: number
@@ -16,13 +17,17 @@ function credit({
   releaseDate: string | null
   role: PersonCredit['role']
   character?: { id: number; name: string }
+  roleNote?: string | null
 }): PersonCredit {
   return {
     creditId,
     media: { id: mediaId, title, releaseDate } as PersonCredit['media'],
     character: character ? ({ ...character } as PersonCredit['character']) : null,
     role,
-    language: null
+    language: null,
+    roleNote: roleNote ?? null,
+    castPosition: null,
+    castSize: 0
   }
 }
 

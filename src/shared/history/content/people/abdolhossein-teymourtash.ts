@@ -7,7 +7,7 @@ export default definePerson({
     { text: 'عبدالحسین تیمورتاش', lang: 'fa', role: 'native' },
     { text: 'ʿAbd-al-Ḥosayn Teymūrtāš', lang: 'fa-Latn', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   died: {
     alts: [
       {
@@ -26,6 +26,7 @@ export default definePerson({
   offices: [
     {
       title: 'minister of the Pahlavi court',
+      polity: 'polity:pahlavi-iran',
       lang: 'en',
       end: {
         alts: [

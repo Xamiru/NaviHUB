@@ -4,18 +4,18 @@ export default defineInterpretation({
   id: 'murder-of-alexander-griboedov-responsibility',
   about: ['event:murder-of-alexander-griboedov'],
   topic: 'responsibility',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'griboedov-provocation',
-      category: 'contemporary',
+      category: 'scholarly',
       holders: [
-        { kind: 'participant', name: 'Hedāyat' }
+        { kind: 'scholar', name: 'George A. Bournoutian' }
       ],
       statements: [
         {
           id: 'q1',
-          text: 'His behavior, according to Persian sources, was abominable.',
+          text: 'On the way to Tehran, Griboedov stopped in Tbilisi and married Nina Chavchavadze. He arrived in Persia in October. His behavior, according to Persian sources, was abominable.',
           lang: 'en',
           cite: {
             source: 'iranica-bournoutian-griboedov',
@@ -23,7 +23,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-08',
             url: 'https://www.iranicaonline.org/articles/griboedov-alexander-sergeevich/'
           }
         },
@@ -108,10 +108,9 @@ export default defineInterpretation({
     },
     {
       id: 'colleagues-blamed-griboedov',
-      category: 'contemporary',
+      category: 'scholarly',
       holders: [
-        { kind: 'participant', name: 'Ivan Simonich' },
-        { kind: 'participant', name: 'Alexander Diugamel' }
+        { kind: 'scholar', name: 'Elena Andreeva' }
       ],
       statements: [
         {

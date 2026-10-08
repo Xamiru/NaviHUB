@@ -14,14 +14,17 @@ export default defineInterpretation({
       ],
       statements: [
         {
-          id: 'q1',
-          text: 'Mit massivem Materialeinsatz geführte Schlacht bei Verdun soll Frankreich "ausbluten" lassen.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1916', loc: { section: 'Chronik 1916', para: '23' } },
+          id: 'q3',
+          text: 'If they do so the forces of France will bleed to death — as there can be no question of a voluntary withdrawal — whether we reach our goal or not',
+          lang: 'en',
+          cite: {
+            source: 'falkenhayn-1919-general-headquarters',
+            loc: { page: '217', section: 'The Position at the end of 1915' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1916.html'
+            at: '2026-10-07',
+            url: 'https://archive.org/download/generalheadquart00falk/generalheadquart00falk_djvu.txt'
           }
         }
       ]

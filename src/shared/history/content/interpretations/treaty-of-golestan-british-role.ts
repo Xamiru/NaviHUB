@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'treaty-of-golestan-british-role',
   about: ['event:treaty-of-golestan', 'event:battle-of-aslanduz'],
   topic: 'foreign-role',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   framing: {
     id: 'q1',
     text: 'The cost-conscious Foreign Office, and the EIC, preferred mediation for peace both for the Golestān (q.v.) and later the Torkmānčāy treaties, and in both instances the English envoys pressured Persia to comply with the harsh terms imposed by Russia, Britain’s ally in 1813 against Napoleon and by 1819 an awesome contender.',
@@ -51,7 +51,8 @@ export default defineInterpretation({
       category: 'scholarly',
       holders: [
         { kind: 'scholar', name: 'Hassan Javadi' },
-        { kind: 'scholar', name: 'Heribert Busse' }
+        { kind: 'scholar', name: 'Heribert Busse' },
+        { kind: 'scholar', name: 'Jahangir Qāʾem-Maqāmī', discipline: 'historian' }
       ],
       statements: [
         {
@@ -95,16 +96,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/abbas-mirza'
           }
-        }
-      ]
-    },
-    {
-      id: 'anglo-russian-collusion',
-      category: 'scholarly',
-      holders: [
-        { kind: 'scholar', name: 'Jahangir Qāʾem-Maqāmī', discipline: 'historian' }
-      ],
-      statements: [
+        },
         {
           id: 'q6',
           text: 'The attack would not have been made but for the Anglo-Russian reconciliation in Europe and the subsequent collusion of the two powers over Iran',
@@ -137,32 +129,6 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/fath-ali-shah'
-          }
-        }
-      ]
-    },
-    {
-      id: 'tabriz-desperation',
-      category: 'scholarly',
-      holders: [
-        { kind: 'scholar', name: 'Abbas Amanat', discipline: 'historian' }
-      ],
-      statements: [
-        {
-          id: 'q8',
-          text: 'The change in the Tabriz attitude took place mostly out of desperation than choice, while in Tehran, low morale and financial bankruptcy complemented the already existing strong pro-British sentiments',
-          lang: 'en',
-          cite: {
-            source: 'iranica-amanat-great-britain-ii',
-            loc: {
-              section: 'GREAT BRITAIN ii. British influence in Persia in the 19th century',
-              para: '8'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
           }
         }
       ]

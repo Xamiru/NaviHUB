@@ -3,7 +3,8 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'revolt-of-aga-khan-i',
   names: [
-    { text: 'Revolt of Aga Khan I', lang: 'en', role: 'primary' }
+    { text: 'Revolt of Aga Khan I', lang: 'en', role: 'primary' },
+    { text: 'شورش آقاخان محلاتی', lang: 'fa', role: 'native' }
   ],
   researched: '2026-10-07',
   type: 'uprising',

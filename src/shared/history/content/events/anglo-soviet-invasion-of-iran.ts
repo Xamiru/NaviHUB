@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'invasion',
   start: {
     alts: [
@@ -107,6 +107,7 @@ export default defineEvent({
     {
       key: 'ussr',
       name: 'Soviet Union',
+      polity: 'polity:soviet-union',
       cites: [
         {
           source: 'iranica-kuniholm-azerbaijan-1941-1947',
@@ -117,6 +118,7 @@ export default defineEvent({
     {
       key: 'uk',
       name: 'United Kingdom',
+      polity: 'polity:united-kingdom',
       cites: [
         {
           source: 'iranica-kuniholm-azerbaijan-1941-1947',
@@ -127,6 +129,7 @@ export default defineEvent({
     {
       key: 'iran',
       name: 'Iran',
+      polity: 'polity:pahlavi-iran',
       cites: [
         {
           source: 'iranica-kuniholm-azerbaijan-1941-1947',
@@ -163,7 +166,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Moḥammad-ʿAli Foruḡi',
+      ref: 'person:mohammad-ali-foroughi',
       role: 'head-of-government',
       side: 'iran',
       cites: [
@@ -503,5 +506,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Abadan_invasion_of_Iran.jpg',
     credit: { institution: 'Imperial War Museum', creator: 'Geoffrey Keating' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'hasanli-2006-at-the-dawn-of-the-cold-war', perspective: 'central-asian' },
+    { source: 'grechko-1973-istoriia-vtoroi-mirovoi-voiny', perspective: 'russian-soviet' }
+  ]
 })

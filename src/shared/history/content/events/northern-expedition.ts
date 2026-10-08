@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Northern Expedition', lang: 'en', role: 'primary' },
     { text: '北伐', lang: 'zh', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -74,6 +74,9 @@ export default defineEvent({
       ]
     }
   ],
+  polities: [
+    { ref: 'polity:republic-of-china' }
+  ],
   participants: [
     {
       ref: 'person:chiang-kai-shek',
@@ -109,17 +112,6 @@ export default defineEvent({
             loc: { section: 'Nationalism and Communism', para: '5' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/china/21.htm' }
-        },
-        {
-          id: 'q3',
-          text: 'Truppen der chinesischen Regierung unter Chiang Kai-shek (1887-1975) beginnen zur Einigung Chinas einen Feldzug nach Norden.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1926', loc: { section: 'Chronik 1926', para: '143' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1926.html'
-          }
         }
       ]
     },
@@ -129,16 +121,6 @@ export default defineEvent({
         {
           id: 'q4',
           text: 'In early 1927 the Guomindang-CCP rivalry led to a split in the revolutionary ranks.',
-          lang: 'en',
-          cite: {
-            source: 'loc-china-country-study-1987',
-            loc: { section: 'Nationalism and Communism', para: '6' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/china/21.htm' }
-        },
-        {
-          id: 'q5',
-          text: 'But Chiang, whose Northern Expedition was proving successful, set his forces to destroying the Shanghai CCP apparatus and established an anti-Communist government at Nanjing in April 1927.',
           lang: 'en',
           cite: {
             source: 'loc-china-country-study-1987',
@@ -190,15 +172,14 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q8',
-        text: 'In China wird das Bündnis zwischen der Nationalchinesischen Volkspartei (Kuomintang) und der Kommunistischen Partei Chinas (KPCh) offiziell aufgekündigt.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1927', loc: { section: 'Chronik 1927', para: '100' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1927.html'
-        }
+        id: 'q5',
+        text: 'But Chiang, whose Northern Expedition was proving successful, set his forces to destroying the Shanghai CCP apparatus and established an anti-Communist government at Nanjing in April 1927.',
+        lang: 'en',
+        cite: {
+          source: 'loc-china-country-study-1987',
+          loc: { section: 'Nationalism and Communism', para: '6' }
+        },
+        provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/china/21.htm' }
       }
     },
     {
@@ -230,5 +211,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:%E5%8C%97%E4%BC%90%E8%BB%8D%E8%B3%80%E8%80%80%E7%A5%96%E9%83%A8%E8%B6%8A%E9%81%8E%E9%90%B5%E8%B7%AF%E6%94%BB%E5%85%8B%E6%BF%9F%E5%8D%97.png',
     credit: { institution: 'Shandong doran haken-gun kinen shashincho (1928)' },
     license: { id: 'cc0' }
-  }
+  },
+  furtherReading: [
+    { source: 'zeng-1990-beifa-zhanzheng-shi', perspective: 'chinese' }
+  ]
 })

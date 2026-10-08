@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'anglo-russian-convention-motives',
   about: ['event:anglo-russian-convention-of-1907'],
   topic: 'motives',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'kazemzadeh',
@@ -69,6 +69,50 @@ export default defineInterpretation({
             loc: { section: 'The Last Years of the Autocracy', para: '14' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/7.htm' }
+        }
+      ]
+    },
+    {
+      id: 'end-of-persian-independence',
+      category: 'contemporary',
+      holders: [
+        { kind: 'media', name: 'Ḥabl al-Matin (Tehran)' },
+        { kind: 'public', name: 'Persian constitutionalist press' }
+      ],
+      statements: [
+        {
+          id: 'q6',
+          text: 'At all events the Assembly ought to make investigations, and should ask the Minister for Foreign Affairs whether the report is true that while we are living in our house others are arranging its disposal and making compacts and conventions with one another without even informing us of the matter.',
+          lang: 'en',
+          cite: {
+            source: 'browne-1910-persian-revolution',
+            loc: {
+              section: 'Chapter VII. The Anglo-Russian Agreement as seen through Persian eyes (Ḥablu\'l-Matín, No. 113, 10 September 1907, tr. Browne)',
+              page: '180'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://archive.org/download/persianrevolutio00browuoft/persianrevolutio00browuoft_djvu.txt'
+          }
+        },
+        {
+          id: 'q5',
+          text: 'Yes, it is precisely under cover of such words that they will interfere in a thousand ways in our country, as they have already done in Egypt and other lands.',
+          lang: 'en',
+          cite: {
+            source: 'browne-1910-persian-revolution',
+            loc: {
+              section: 'Chapter VII. The Anglo-Russian Agreement as seen through Persian eyes (Ḥablu\'l-Matín, No. 113, 10 September 1907, tr. Browne)',
+              page: '181'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://archive.org/download/persianrevolutio00browuoft/persianrevolutio00browuoft_djvu.txt'
+          }
         }
       ]
     }

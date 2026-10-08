@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Proclamation of the Republic in Brazil', lang: 'en', role: 'primary' },
     { text: 'Proclamação da República', lang: 'pt', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'coup',
   start: {
     alts: [
@@ -21,6 +21,18 @@ export default defineEvent({
   },
   regions: ['latin-america'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:rio-de-janeiro',
+      cites: [
+        { source: 'britannica-1911-brazil', loc: { section: 'BRAZIL', para: '386' } }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:empire-of-brazil' },
+    { ref: 'polity:republic-of-brazil' }
+  ],
   related: [
     {
       ref: 'period:old-republic-brazil',
@@ -71,14 +83,14 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/brazil/13.htm' }
         },
         {
-          id: 'q1',
-          text: 'Kaiser Peter II. von Brasilien (1825-1891) wird durch einen Militärputsch gestürzt. Brasilien wird Republik.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1889', loc: { section: 'Chronik 1889', para: '54' } },
+          id: 'q8',
+          text: 'The rising generation had become honeycombed with republicanism, the prospects of the imperial succession were justly regarded as unsatisfactory, the higher classes had been estranged by the emancipation of the slaves, and all these causes of discontent found expression in a military revolt, which in November 1889 overthrew the seemingly solid edifice of the Brazilian Empire in a few hours.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-pedro-ii', loc: { section: 'PEDRO II.', para: '1' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1889.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Pedro_II.'
           }
         }
       ]
@@ -149,5 +161,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Benedito_Calixto_-_Proclama%C3%A7%C3%A3o_da_Rep%C3%BAblica,_1893.jpg',
     credit: { creator: 'Benedito Calixto' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'carvalho-1987-os-bestializados', perspective: 'latin-american' },
+    { source: 'costa-1977-da-monarquia-a-republica', perspective: 'latin-american' }
+  ]
 })

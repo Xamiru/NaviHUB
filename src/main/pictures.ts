@@ -16,6 +16,7 @@ import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import { probeImageDims } from './imageDims'
 import { fetchBackdrops } from './tmdb'
 import * as settingsRepo from './repos/settingsRepo'
+import * as links from './repos/externalLinkRepo'
 import * as art from './artSources'
 import type {
   ImageKind,
@@ -115,6 +116,10 @@ export async function searchTmdbBackdrops(mediaId: number): Promise<WallpaperSea
 // for anime-style media opens on Danbooru, everything else on Wallhaven.
 const BOORU_TYPES = new Set(['anime', 'manga', 'visual_novel', 'game'])
 
+function steamAppOf(mediaId: number, m: { external_source: string | null; external_id: string | null }): string | null {
+  return m.external_source === 'steam' && m.external_id ? m.external_id : links.linkedId(mediaId, 'steam')
+}
+
 export function listSources(mediaId: number | null, kind: ImageKind): WallpaperSourceInfo[] {
   // Unsorted art has no title to search by or id to bind to, so it gets the
   // two free-text sources with an empty query.
@@ -150,7 +155,8 @@ export function listSources(mediaId: number | null, kind: ImageKind): WallpaperS
   }
   if (type === 'visual_novel' && m.external_source === 'vndb' && id) add('vndb', 'VNDB screenshots', null)
   if (type === 'game') {
-    const steamQuery = m.external_source === 'steam' && id ? null : m.title
+    // A RAWG-era or catalog game may know its Steam app through its links.
+    const steamQuery = steamAppOf(mediaId, m) ? null : m.title
     add('steam', 'Steam', steamQuery)
     add('steamgriddb', 'SteamGridDB', steamQuery, hasKey('steamgriddb.api_key') ? null : 'SteamGridDB')
   }
@@ -169,7 +175,7 @@ export async function searchSource(
     throw new Error('Unsorted pictures can only browse Wallhaven and Danbooru')
   }
   const m = getMedia(mediaId)
-  const steamId = m.external_source === 'steam' ? m.external_id : null
+  const steamId = steamAppOf(mediaId, m)
   switch (source) {
     case 'wallhaven':
       return searchWallhaven(query, page)

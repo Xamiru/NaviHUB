@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'first-treaty-of-erzurum',
   names: [
     { text: 'First Treaty of Erzurum', lang: 'en', role: 'primary' },
+    { text: 'عهدنامه اول ارزروم', lang: 'fa', role: 'native' },
     {
       text: 'Erzurum treaty',
       lang: 'en',
@@ -16,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -53,6 +54,10 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' },
+    { ref: 'polity:ottoman-empire' }
   ],
   participants: [
     {

@@ -4,6 +4,7 @@ export default definePerson({
   id: 'shaka',
   names: [
     { text: 'Shaka', lang: 'en', role: 'primary' },
+    { text: 'Shaka kaSenzangakhona', lang: 'zu', role: 'native' },
     {
       text: 'Shaka Zulu',
       lang: 'en',
@@ -16,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {

@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Pedro II of Brazil', lang: 'en', role: 'primary' },
     { text: 'Dom Pedro II', lang: 'pt', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -38,6 +38,7 @@ export default definePerson({
   offices: [
     {
       title: 'Emperor of Brazil',
+      polity: 'polity:empire-of-brazil',
       start: {
         alts: [
           {

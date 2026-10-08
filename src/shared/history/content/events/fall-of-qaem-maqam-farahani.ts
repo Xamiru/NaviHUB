@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'fall-of-qaem-maqam-farahani',
   names: [
-    { text: 'Fall and killing of Qaem-Maqam Farahani', lang: 'en', role: 'primary' }
+    { text: 'Fall and killing of Qaem-Maqam Farahani', lang: 'en', role: 'primary' },
+    { text: 'قتل قائم‌مقام فراهانی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'assassination',
   start: {
     alts: [
@@ -25,6 +26,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-mohammad-shah-qajar' },
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -182,5 +186,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Muhammad_Shah_Qajar_and_his_Vizier_Haj_Mirza_Aghasi_MET_DP345140.jpg',
     credit: { institution: 'Metropolitan Museum of Art' },
     license: { id: 'cc0' }
-  }
+  },
+  furtherReading: [
+    { source: 'nateq-1988-iran-dar-rahyabi-ye-farhangi', perspective: 'iranian' },
+    { source: 'bamdad-1968-sharh-e-hal-e-rejal-e-iran', perspective: 'iranian' }
+  ]
 })

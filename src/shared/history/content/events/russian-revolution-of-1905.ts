@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Russian Revolution of 1905', lang: 'en', role: 'primary' },
     { text: 'Революция 1905 года', lang: 'ru', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'revolution',
   start: {
     alts: [
@@ -38,6 +38,9 @@ export default defineEvent({
   prominence: 1,
   places: [
     { ref: 'place:saint-petersburg' }
+  ],
+  polities: [
+    { ref: 'polity:russian-empire' }
   ],
   participants: [
     {
@@ -281,5 +284,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Rasstrel_rabochego_shestviya1.jpg',
     credit: { creator: 'Karl Bulla' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'pankratova-1951-pervaia-russkaia-revoliutsiia', perspective: 'russian-soviet' }
+  ]
 })

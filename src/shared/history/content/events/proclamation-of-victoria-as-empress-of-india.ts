@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Proclamation of Victoria as Empress of India', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -28,11 +28,16 @@ export default defineEvent({
     }
   ],
   partOf: [
-    { ref: 'period:british-raj' }
+    { ref: 'polity:british-raj' }
+  ],
+  polities: [
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:british-empire' },
+    { ref: 'polity:british-raj' }
   ],
   participants: [
     {
-      name: 'Queen Victoria',
+      ref: 'person:queen-victoria',
       role: 'head-of-state',
       cites: [
         {
@@ -75,25 +80,17 @@ export default defineEvent({
           }
         },
         {
-          id: 'q1',
-          text: 'Der Vizekönig von Britisch-Indien Robert Bulwer Earl Lytton (1831-1891) proklamiert in Delhi die britische Königin Viktoria zur Kaiserin von Indien.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1877', loc: { section: 'Chronik 1877', para: '3' } },
+          id: 'q7',
+          text: 'Although Queen Victoria did not attend the Delhi Durbar of 1877, her proclamation address as India’s new sovereign was read aloud in English and Urdu to this unprecedented gathering of British and Indian subjects. Lord Lytton then explained the gracious intentions of Her Majesty in assuming the new title of Qaisar-i-Hind and asserted its permanency.',
+          lang: 'en',
+          cite: {
+            source: 'loc-blog-khatoon-2017-delhi-durbar',
+            loc: { section: 'The Delhi Durbar and the Proclamation of Queen Victoria', para: '9' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1877.html'
-          }
-        },
-        {
-          id: 'q2',
-          text: 'Königin Viktoria von Großbritannien und Irland nimmt auf Drängen des britischen Premierministers Benjamin Disraeli (1804-1881) den Titel einer Kaiserin von Indien an. Die offizielle Proklamation in Neu Delhi findet ebenso wie die Erhebung Indiens zum Kaiserreich ein Jahr später statt.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1876', loc: { section: 'Chronik 1876', para: '3' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1876.html'
+            at: '2026-10-07',
+            url: 'https://blogs.loc.gov/international-collections/2017/11/the-delhi-durbar-and-the-proclamation-of-queen-victoria/'
           }
         }
       ]

@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Russo-Turkish War of 1877–1878', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -59,6 +59,7 @@ export default defineEvent({
     {
       key: 'russia',
       name: 'Russia',
+      polity: 'polity:russian-empire',
       cites: [
         {
           source: 'loc-turkey-country-study-1995',
@@ -69,6 +70,7 @@ export default defineEvent({
     {
       key: 'ottoman',
       name: 'the Ottoman Empire',
+      polity: 'polity:ottoman-empire',
       cites: [
         {
           source: 'loc-turkey-country-study-1995',
@@ -173,14 +175,17 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/turkey/10.htm' }
         },
         {
-          id: 'q6',
-          text: 'Russland erklärt als Protektor der Balkanvölker dem Osmanischen Reich den Krieg. Die russischen Truppen dringen über die Donau rasch nach Bulgarien vor und stehen Ende Januar 1878 vor Konstantinopel. Auf die Eroberung der Stadt wird mit Rücksicht auf die drohende Haltung Großbritanniens verzichtet.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1877', loc: { section: 'Chronik 1877', para: '23' } },
+          id: 'q13',
+          text: 'On 24th April 1877, the tsar declared war against Turkey, with the avowed object of righting the wrongs of the Christians in Turkey.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-russo-turkish-wars',
+            loc: { section: 'RUSSO-TURKISH WARS', para: '5' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1877.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Russo-Turkish_Wars'
           }
         },
         {
@@ -224,14 +229,14 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q9',
-        text: 'In Bulgarien beginnt ein von Russland unterstützter Aufstand gegen die osmanische Herrschaft.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1876', loc: { section: 'Chronik 1876', para: '28' } },
+        id: 'q14',
+        text: 'External influences and latent fanaticism were active; a serious insurrection broke out in Bosnia and Herzegovina in 1875, and the efforts to quell it almost exhausted Turkey\'s resources; the example spread to Bulgaria, where abortive outbreaks in September 1875 and May 1876 led to those cruel measures of repression which were known as “the Bulgarian atrocities,”',
+        lang: 'en',
+        cite: { source: 'britannica-1911-turkey', loc: { section: 'TURKEY', para: '1440' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1876.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Turkey'
         }
       }
     },
@@ -264,20 +269,26 @@ export default defineEvent({
           {
             value: { d: '1878-03-03' },
             cites: [
-              { source: 'lemo-chronik-1878', loc: { section: 'Chronik 1878', para: '16' } }
+              {
+                source: 'britannica-1911-russo-turkish-wars',
+                loc: { section: 'RUSSO-TURKISH WARS', para: '59' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q11',
-        text: 'Der Vorfriede von San Stefano beendet den 1877 begonnenen achten russisch-türkischen Krieg.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1878', loc: { section: 'Chronik 1878', para: '17' } },
+        id: 'q15',
+        text: 'On Jan. 31st an armistice was arranged, and on March 3rd the treaty of San Stefano was signed, the terms of which were modified later at the Berlin Conference in June and July 1878.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-russo-turkish-wars',
+          loc: { section: 'RUSSO-TURKISH WARS', para: '59' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1878.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Russo-Turkish_Wars'
         }
       }
     },
@@ -312,5 +323,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Osman_Pasha_brought_to_Skobeleff_at_Plevna_-_J.L.G._Ferrix_pinx._LCCN99405721.tif',
     credit: { institution: 'Library of Congress', creator: 'Jean Leon Gerome Ferris' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'kurat-1970-turkiye-ve-rusya', perspective: 'turkish' },
+    { source: 'uzuncarsili-1947-osmanli-tarihi', perspective: 'turkish' }
+  ]
 })

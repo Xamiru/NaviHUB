@@ -28,12 +28,39 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1877' },
+        cites: [
+          {
+            source: 'iranica-bakhash-naser-al-molk',
+            loc: { section: 'NĀṢER-AL-MOLK, ABU’L-QĀSEM', para: '14' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1960' },
+        cites: [
+          {
+            source: 'iranica-bakhash-naser-al-molk',
+            loc: { section: 'NĀṢER-AL-MOLK, ABU’L-QĀSEM', para: '14' }
+          }
+        ]
+      }
+    ]
+  },
   regions: ['iran', 'north-america'],
   roles: ['other'],
   offices: [
     {
       title: 'Treasurer General',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {

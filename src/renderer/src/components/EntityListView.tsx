@@ -129,6 +129,9 @@ export default function EntityListView({
             onChange={(e) => setSearch(e.target.value)}
           />
         </Field>
+        {/* A role-filtered list only shows people credited in that role, so a
+            bare new name would never appear here; add people from a title. */}
+        {!personRole && (
         <div className="flex gap-2 ml-auto">
           <Field label={`New ${kind} name`} hiddenLabel className="contents">
             <input
@@ -143,6 +146,7 @@ export default function EntityListView({
             Add
           </button>
         </div>
+        )}
       </div>
 
       {isLoading ? (

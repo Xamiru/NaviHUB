@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   regions: ['iran'],
   roles: ['revolutionary', 'journalist', 'politician'],
   sections: [
@@ -126,5 +126,8 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Jafar_Pishevari_and_Bozorg_Alavi_in_Tehran.png',
     credit: { institution: 'Ettela\'at newspaper' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'hasanli-2006-at-the-dawn-of-the-cold-war', perspective: 'central-asian' }
+  ]
 })

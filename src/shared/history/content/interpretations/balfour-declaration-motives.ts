@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'balfour-declaration-motives',
   about: ['event:balfour-declaration'],
   topic: 'motives',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'strategic-and-propaganda',
@@ -98,24 +98,38 @@ export default defineInterpretation({
       ]
     },
     {
-      id: 'hypocrisy-anti-zionist',
+      id: 'anti-semitism-of-the-government',
       category: 'contemporary',
       holders: [
         { kind: 'participant', name: 'Edwin Montagu' }
       ],
       statements: [
         {
-          id: 'q6',
-          text: 'For him, for the government to espouse political Zionism as an admirable and defensible nationalist sentiment, was inherently hypocritical when at the same time that same government jailed Irish and Indian nationalists for championing a similar ideology.',
+          id: 'q8',
+          text: '2. When the Jews are told that Palestine is their national home, every country will immediately desire to get rid of its Jewish citizens, and you will find a population in Palestine driving out its present inhabitants, taking all the best in the country, drawn from all quarters of the globe, speaking every language on the face of the earth, and incapable of communicating with one another except by means of an interpreter.',
           lang: 'en',
           cite: {
-            source: 'eo1418-rhett-balfour-declaration',
-            loc: { section: 'Drafting the Declaration', para: '2' }
+            source: 'montagu-1917-anti-semitism-of-the-present-government',
+            loc: { para: '14' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://encyclopedia.1914-1918-online.net/article/balfour-declaration/'
+            at: '2026-10-07',
+            url: 'https://archive.org/download/the-anti-semitism-of-the-present-government/The%20Anti-Semitism%20of%20the%20Present%20Government_djvu.txt'
+          }
+        },
+        {
+          id: 'q9',
+          text: 'I would say to Lord Rothschild that the Government will be prepared to do everything in their power to obtain for Jews in Palestine complete liberty of settlement and life on an equality with the inhabitants of that country who profess other religious beliefs. I would ask that the Government should go no further.',
+          lang: 'en',
+          cite: {
+            source: 'montagu-1917-anti-semitism-of-the-present-government',
+            loc: { para: '23' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://archive.org/download/the-anti-semitism-of-the-present-government/The%20Anti-Semitism%20of%20the%20Present%20Government_djvu.txt'
           }
         }
       ]
@@ -124,12 +138,12 @@ export default defineInterpretation({
       id: 'national-home-means-state',
       category: 'contemporary',
       holders: [
-        { kind: 'participant', name: 'Lord Curzon' }
+        { kind: 'participant', name: 'Lord Curzon', ref: 'person:george-curzon' }
       ],
       statements: [
         {
           id: 'q7',
-          text: 'Continuing, Curzon stated, “I feel tolerably sure therefore that Weizmann may say one thing to you or while you may mean one thing by a National Home, he is out for something quite different. He contemplates a Jewish State.”',
+          text: 'I feel tolerably sure therefore that Weizmann may say one thing to you or while you may mean one thing by a National Home, he is out for something quite different. He contemplates a Jewish State.',
           lang: 'en',
           cite: {
             source: 'eo1418-rhett-balfour-declaration',
@@ -137,7 +151,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://encyclopedia.1914-1918-online.net/article/balfour-declaration/'
           }
         }

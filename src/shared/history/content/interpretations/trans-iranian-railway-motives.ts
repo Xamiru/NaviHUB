@@ -4,11 +4,11 @@ export default defineInterpretation({
   id: 'trans-iranian-railway-motives',
   about: ['event:trans-iranian-railway'],
   topic: 'motives',
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   positions: [
     {
       id: 'british-design',
-      category: 'popular',
+      category: 'fringe',
       holders: [
         { kind: 'public', name: 'Widely held belief in Persia' }
       ],
@@ -25,6 +25,22 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/conspiracy-theories/'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q3',
+          text: 'The services of Germany, a “neutral” third power that was on good terms with both Britain and the Soviet Union, also helped Persia to overcome the joint British-Soviet opposition to the Trans-Iranian Railway project, in the realization of which German firms would play a key role',
+          lang: 'en',
+          cite: {
+            source: 'iranica-bast-germany-diplomatic-relations',
+            loc: { section: 'GERMANY i. German-Persian diplomatic relations', para: '32' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.iranicaonline.org/articles/germany-i'
           }
         }
       ]

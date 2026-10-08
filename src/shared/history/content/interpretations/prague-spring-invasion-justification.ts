@@ -59,29 +59,6 @@ export default defineInterpretation({
       ]
     },
     {
-      id: 'warsaw-pact-letter',
-      category: 'contemporary',
-      holders: [
-        { kind: 'organization', name: 'Warsaw Pact' }
-      ],
-      statements: [
-        {
-          id: 'q4',
-          text: 'The Warsaw Pact nations drafted a letter to the KSC leadership referring to the manifesto as an "organizational and political platform of counterrevolution."',
-          lang: 'en',
-          cite: {
-            source: 'loc-czechoslovakia-country-study-1987',
-            loc: { section: 'The Prague Spring, 1968', para: '4' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-07',
-            url: 'http://countrystudies.us/czech-republic/40.htm'
-          }
-        }
-      ]
-    },
-    {
       id: 'fear-of-contagion',
       category: 'scholarly',
       holders: [
@@ -111,6 +88,20 @@ export default defineInterpretation({
         { kind: 'organization', name: 'Library of Congress, Federal Research Division' }
       ],
       statements: [
+        {
+          id: 'q4',
+          text: 'The Warsaw Pact nations drafted a letter to the KSC leadership referring to the manifesto as an "organizational and political platform of counterrevolution."',
+          lang: 'en',
+          cite: {
+            source: 'loc-czechoslovakia-country-study-1987',
+            loc: { section: 'The Prague Spring, 1968', para: '4' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'http://countrystudies.us/czech-republic/40.htm'
+          }
+        },
         {
           id: 'q6',
           text: 'The pro-interventionist coalition viewed the situation in Czechoslovakia as "counterrevolutionary" and favored the defeat of Dubcek and his supporters.',

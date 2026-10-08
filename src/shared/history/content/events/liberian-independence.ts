@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Independence of Liberia', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'independence',
   start: {
     alts: [
@@ -182,5 +182,12 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Joseph_Jenkins_Roberts.jpg',
     credit: { institution: 'Library of Congress', creator: 'Augustus Washington' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'cassell-1970-liberia-history-of-the-first-african-republic',
+      perspective: 'african'
+    },
+    { source: 'yancy-1954-historical-lights-of-liberia', perspective: 'african' }
+  ]
 })

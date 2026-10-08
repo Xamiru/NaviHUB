@@ -8,6 +8,12 @@ import { FootballCompetitionMark, FootballCoverageStrip, FootballFlag } from '@/
 import FootballTeamPage from '@/pages/FootballTeamPage'
 import FootballSyncPage from '@/pages/FootballSyncPage'
 import FootballCurrentPage from '@/pages/FootballCurrentPage'
+import FootballTitleTimeline, { footballTitleRuns } from '@/components/football/FootballTitleTimeline'
+import FootballBracket from '@/components/football/FootballBracket'
+import FootballTitleRace from '@/components/football/FootballTitleRace'
+import type { FootballMatchSummary } from '@shared/types'
+import type { FootballSeason, FootballTeamSummary } from '@shared/types'
+import { expectNoAxeViolations } from './accessibility'
 
 const apiMock = vi.hoisted(() => ({
   football: {
@@ -39,6 +45,86 @@ function renderWithQuery(ui: React.ReactNode) {
 }
 
 describe('Football pages', () => {
+
+  it('draws a knockout bracket with legs and a title race with exact values', async () => {
+    const club = (id: number, name: string): FootballTeamSummary => ({
+      id, name, shortName: null, country: null, isNational: false, imagePath: null,
+      colors: { primary: id === 1 ? '#c8102e' : '#ffffff', secondary: '#034694' }, favorite: false
+    })
+    const game = (id: number, home: FootballTeamSummary, away: FootballTeamSummary, score: [number, number]): FootballMatchSummary => ({
+      id, seasonId: 1, competitionId: 1, competitionKey: 'champions-league', competitionName: 'Champions League',
+      seasonLabel: '2020/21', stageId: null, stageName: 'SF', home, away, kickoffAt: null, matchDate: `2021-04-0${id}`,
+      round: null, status: 'finished', homeScore: score[0], awayScore: score[1], homeExtraTime: null, awayExtraTime: null,
+      homePenalties: null, awayPenalties: null, favorite: false, watchedAt: null, rating: null,
+      eventCoverage: 'not_supplied', conflicted: false
+    })
+    const [a, b, c, d] = [club(1, 'Liverpool'), club(2, 'Chelsea'), club(3, 'Ajax'), club(4, 'Porto')]
+    const { container, unmount } = render(
+      <MemoryRouter>
+        <FootballBracket rounds={[
+          { label: 'Semi-finals', ties: [
+            { teams: [a, c], matches: [game(1, a, c, [2, 0]), game(2, c, a, [1, 1])], goals: [3, 1], penalties: null, winnerId: 1 },
+            { teams: [b, d], matches: [game(3, b, d, [0, 0])], goals: [0, 0], penalties: [5, 4], winnerId: 2 }
+          ] },
+          { label: 'Final', ties: [{ teams: [a, b], matches: [game(5, a, b, [1, 0])], goals: [1, 0], penalties: null, winnerId: 1 }] }
+        ]} />
+      </MemoryRouter>
+    )
+    expect(screen.getByRole('region', { name: 'Semi-finals' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Leg 2 1-1' }).getAttribute('href')).toBe('/football/match/2')
+    expect(screen.getByText('(5)')).toBeTruthy()
+    await expectNoAxeViolations(container)
+    unmount()
+
+    const race = render(
+      <MemoryRouter>
+        <FootballTitleRace lines={[{ team: a, points: [3, 4, 7] }, { team: b, points: [1, 4, 5] }]} />
+      </MemoryRouter>
+    )
+    const table = screen.getByRole('table', { name: 'Points after each game' })
+    expect([...table.querySelectorAll('tbody tr')].map((row) => row.textContent)).toEqual(['Liverpool347', 'Chelsea145'])
+    // Chelsea's white primary would vanish on a light theme, so its line takes the secondary.
+    expect([...race.container.querySelectorAll('polyline')].map((line) => line.getAttribute('stroke'))).toEqual(['#c8102e', '#034694'])
+    await expectNoAxeViolations(race.container)
+  })
+
+  it('draws back-to-back titles as one block with the crest and a hover card per season', async () => {
+    const team = (id: number, name: string, imagePath: string | null): FootballTeamSummary => ({
+      id, name, shortName: null, country: 'England', isNational: false, imagePath,
+      colors: { primary: '#ef0107', secondary: '#ffffff' }, favorite: false
+    })
+    const arsenal = team(1, 'Arsenal', 'media/arsenal.png')
+    const leeds = team(2, 'Leeds United', null)
+    const season = (id: number, label: string, champion: FootballTeamSummary | null): FootballSeason => ({
+      id, competitionId: 1, competitionKey: 'premier-league', competitionName: 'Premier League', key: label,
+      label, startDate: null, endDate: null, status: 'complete', editionNumber: null, teamCount: 20,
+      championVerified: !!champion, champion, runnerUp: null, narrative: null, dataRevision: null, matchCount: 380
+    })
+    const seasons = [
+      season(1, '1990/91', arsenal), season(2, '1991/92', leeds), season(3, '1992/93', null),
+      season(4, '1993/94', arsenal), season(5, '1994/95', arsenal)
+    ]
+    expect(footballTitleRuns(seasons).map((run) => [run.champion?.name ?? null, run.seasons.length, run.start]))
+      .toEqual([['Arsenal', 1, 0], ['Leeds United', 1, 1], [null, 1, 2], ['Arsenal', 2, 3]])
+
+    const width = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(100)
+    try {
+      const { container } = render(<MemoryRouter><FootballTitleTimeline seasons={seasons} /></MemoryRouter>)
+      expect(screen.getAllByRole('listitem')).toHaveLength(5)
+      // 20 px a season: only the two-season Arsenal run is wide enough for its crest.
+      expect([...container.querySelectorAll('img')].map((img) => img.getAttribute('src')))
+        .toEqual([expect.stringContaining('thumb/160/media/arsenal.png')])
+
+      fireEvent.mouseEnter(screen.getByRole('link', { name: '1991/92: Leeds United' }))
+      expect(screen.getByText('Leeds United')).toBeTruthy()
+      fireEvent.focus(screen.getByRole('link', { name: '1992/93: no verified champion' }))
+      expect(screen.getByText('No verified champion')).toBeTruthy()
+      expect(screen.getByRole('link', { name: '1994/95: Arsenal' }).getAttribute('href')).toBe('/football/season/5')
+      await expectNoAxeViolations(container)
+    } finally {
+      width.mockRestore()
+    }
+  })
   it('shows a stored competition logo as a thumbnail, then the original, then the code badge', async () => {
     apiMock.football.competitionLogos.mockResolvedValueOnce({ 'premier-league': 'media/dl-pl.png' })
     const { container } = renderWithQuery(

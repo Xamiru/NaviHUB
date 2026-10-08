@@ -16,7 +16,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   died: {
     alts: [
       {
@@ -35,6 +35,7 @@ export default definePerson({
   offices: [
     {
       title: 'Emperor of Mexico',
+      polity: 'polity:second-mexican-empire',
       start: {
         alts: [
           {

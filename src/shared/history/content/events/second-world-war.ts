@@ -67,7 +67,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -138,6 +138,13 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:united-states' },
+    { ref: 'polity:kingdom-of-italy' },
+    { ref: 'polity:french-third-republic' },
+    { ref: 'polity:empire-of-japan' }
   ],
   sides: [
     {
@@ -339,17 +346,6 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-07', url: 'https://history.state.gov/countries/poland' }
         },
         {
-          id: 'q1',
-          text: 'Mit dem Beschuss von polnischen Munitionslagern auf der Westerplatte bei Danzig durch das deutsche Linienschiff "Schleswig-Holstein" beginnt der Überfall auf Polen und damit der Zweite Weltkrieg. Die deutsche Wehrmacht marschiert ohne Kriegserklärung in Polen ein.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1939', loc: { section: 'Chronik 1939', para: '168' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1939.html'
-          }
-        },
-        {
           id: 'q2',
           text: 'His invasion of Poland in September 1939 was the tripwire that set off World War II, the most devastating period in the history of the Polish state.',
           lang: 'en',
@@ -360,15 +356,14 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/poland/15.htm' }
         },
         {
-          id: 'q3',
-          text: 'Unterzeichnung der Kapitulation Japans; Ende des Zweiten Weltkriegs.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1945', loc: { section: 'Chronik 1945', para: '216' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1945.html'
-          }
+          id: 'q26',
+          text: 'The documents of surrender were signed on board the U.S.S. Missouri in Tokyo Bay on September 2, 1945.',
+          lang: 'en',
+          cite: {
+            source: 'loc-japan-country-study-1994',
+            loc: { section: 'WORLD WAR II AND THE OCCUPATION', para: '1' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/japan/33.htm' }
         }
       ]
     },
@@ -376,15 +371,14 @@ export default defineEvent({
       kind: 'course',
       quotes: [
         {
-          id: 'q4',
-          text: 'Die schweren Verluste der Luftwaffe bei der "Battle of Britain" genannten Luftschlacht bedeuten praktisch die deutsche Niederlage im Kampf um die Luftherrschaft über England. Kurz darauf wird die geplante Invasion ohne neuen Termin verschoben.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1940', loc: { section: 'Chronik 1940', para: '192' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1940.html'
-          }
+          id: 'q27',
+          text: 'The Third Reich experienced its first military defeat in the Battle of Britain, in which the Royal Air Force, during the summer and fall of 1940, prevented the German air force from gaining the air superiority necessary for an invasion of Britain. Consequently, Hitler postponed the invasion.',
+          lang: 'en',
+          cite: {
+            source: 'loc-germany-country-study-1995',
+            loc: { section: 'The Outbreak of World War II', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/germany/41.htm' }
         },
         {
           id: 'q5',
@@ -414,18 +408,14 @@ export default defineEvent({
           }
         },
         {
-          id: 'q7',
-          text: 'Die erste für die Wehrmacht vernichtende Niederlage im Krieg gegen die Sowjetunion veränderte die Kriegssituation nachhaltig. Das Gesetz des Handelns ging nunmehr auf die Rote Armee über.',
-          lang: 'de',
+          id: 'q28',
+          text: 'The military turning point of the war in Europe came with the Soviet victory at Stalingrad in the winter of 1942-43; some 300,000 of Germany\'s finest troops were either killed or captured.',
+          lang: 'en',
           cite: {
-            source: 'lemo-kapitel-schlacht-um-stalingrad',
-            loc: { section: 'Die Schlacht um Stalingrad', para: '7' }
+            source: 'loc-germany-country-study-1995',
+            loc: { section: 'The Outbreak of World War II', para: '5' }
           },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/kapitel/der-zweite-weltkrieg/kriegsverlauf/schlacht-um-stalingrad-194243'
-          }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/germany/41.htm' }
         },
         {
           id: 'q8',
@@ -511,21 +501,23 @@ export default defineEvent({
           {
             value: { d: '1939-09-03' },
             cites: [
-              { source: 'lemo-chronik-1939', loc: { section: 'Chronik 1939', para: '172' } }
+              {
+                source: 'loc-germany-country-study-1995',
+                loc: { section: 'The Outbreak of World War II', para: '1' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q14',
-        text: 'Großbritannien und Frankreich erklären Deutschland den Krieg, nachdem ein letzter Vermittlungsversuch Mussolinis von Hitler nicht beantwortet wird. Die USA, Italien und Spanien erklären sich neutral.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1939', loc: { section: 'Chronik 1939', para: '173' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1939.html'
-        }
+        id: 'q29',
+        text: 'On September 1, 1939, German troops invaded Poland. Britain and France declared war on Germany two days later.',
+        lang: 'en',
+        cite: {
+          source: 'loc-germany-country-study-1995',
+          loc: { section: 'The Outbreak of World War II', para: '1' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/germany/41.htm' }
       }
     },
     {
@@ -592,21 +584,24 @@ export default defineEvent({
           {
             value: { d: '1940-06-22' },
             cites: [
-              { source: 'lemo-chronik-1940', loc: { section: 'Chronik 1940', para: '137' } }
+              { source: 'lemo-chronik-1940', loc: { section: 'Chronik 1940', para: '137' } },
+              {
+                source: 'loc-germany-country-study-1995',
+                loc: { section: 'The Outbreak of World War II', para: '1' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q17',
-        text: 'Zur Inszenierung der französischen Kapitulation wird in Compiègne der Eisenbahnwagen benutzt, in dem 1918 die Waffenstillstandsverhandlungen geführt worden sind.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1940', loc: { section: 'Chronik 1940', para: '138' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1940.html'
-        }
+        id: 'q30',
+        text: 'In April 1940, German forces conquered Denmark and Norway, and in May they struck at the Netherlands, Belgium, Luxembourg, and France. French and British troops offered ineffective resistance against the lightning-like strikes, or blitzkrieg, of German tanks and airplanes. A large part of the French army surrendered, and some 300,000 British and French soldiers were trapped at Dunkirk on the coast of northern France. However, because Hitler, for a combination of political and military reasons, had halted the advance of his armored divisions, the British were able to rescue the men at Dunkirk. France, however, surrendered in June.',
+        lang: 'en',
+        cite: {
+          source: 'loc-germany-country-study-1995',
+          loc: { section: 'The Outbreak of World War II', para: '1' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/germany/41.htm' }
       }
     },
     {
@@ -615,7 +610,6 @@ export default defineEvent({
           {
             value: { d: '1941-06-22' },
             cites: [
-              { source: 'lemo-chronik-1941', loc: { section: 'Chronik 1941', para: '146' } },
               {
                 source: 'loc-russia-country-study-1996',
                 loc: { section: 'The War Years', para: '4' }
@@ -625,15 +619,14 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q18',
-        text: 'Ohne Kriegserklärung beginnen die deutschen Truppen auf einer Linie zwischen der Ostsee und den Karpaten mit dem Einmarsch in die Sowjetunion. Den Truppen folgen Einsatzgruppen zur systematischen Ermordung der jüdischen Bevölkerung, KP-Funktionäre, Sinti und Roma und Kriegsgefangenen.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1941', loc: { section: 'Chronik 1941', para: '147' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1941.html'
-        }
+        id: 'q31',
+        text: 'But despite Stalin\'s efforts to mollify Hitler, Germany declared war on the Soviet Union just as 180 German divisions swept across the border early on the morning of June 22, 1941.',
+        lang: 'en',
+        cite: {
+          source: 'loc-russia-country-study-1996',
+          loc: { section: 'The War Years', para: '4' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/russia/11.htm' }
       }
     },
     {
@@ -642,28 +635,30 @@ export default defineEvent({
           {
             value: { d: '1941-12-07' },
             cites: [
-              { source: 'lemo-chronik-1941', loc: { section: 'Chronik 1941', para: '294' } },
               {
                 source: 'state-dept-milestones-road-to-pearl-harbor',
                 loc: {
                   section: 'Japan, China, the United States and the Road to Pearl Harbor, 1937–41',
                   para: '7'
                 }
+              },
+              {
+                source: 'loc-germany-country-study-1995',
+                loc: { section: 'The Outbreak of World War II', para: '4' }
               }
             ]
           }
         ]
       },
       quote: {
-        id: 'q19',
-        text: 'Japan greift ohne Vorwarnung den US-Militärstützpunkt Pearl Harbor auf Hawaii an und versenkt mehrere Schlachtschiffe. Einen Tag darauf folgt die gegenseitige Kriegserklärung.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1941', loc: { section: 'Chronik 1941', para: '295' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1941.html'
-        }
+        id: 'q32',
+        text: 'Japan\'s attack on the United States naval base at Pearl Harbor on December 7, 1941, brought the United States into the war.',
+        lang: 'en',
+        cite: {
+          source: 'loc-germany-country-study-1995',
+          loc: { section: 'The Outbreak of World War II', para: '4' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/germany/41.htm' }
       }
     },
     {
@@ -695,21 +690,24 @@ export default defineEvent({
           {
             value: { d: '1943-02-02' },
             cites: [
-              { source: 'lemo-chronik-1943', loc: { section: 'Chronik 1943', para: '31' } }
+              { source: 'lemo-chronik-1943', loc: { section: 'Chronik 1943', para: '31' } },
+              {
+                source: 'loc-russia-country-study-1996',
+                loc: { section: 'The War Years', para: '8' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q21',
-        text: 'Mit der Kapitulation der letzten Wehrmachtstruppen in Stalingrad gehen über 100.000 Soldaten in sowjetische Gefangenschaft.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1943', loc: { section: 'Chronik 1943', para: '32' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1943.html'
-        }
+        id: 'q33',
+        text: 'Finally, Soviet forces led by General Georgiy Zhukov surrounded the German attackers and forced their surrender in February 1943.',
+        lang: 'en',
+        cite: {
+          source: 'loc-russia-country-study-1996',
+          loc: { section: 'The War Years', para: '8' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/russia/11.htm' }
       }
     },
     {
@@ -718,20 +716,26 @@ export default defineEvent({
           {
             value: { d: '1944-06-06' },
             cites: [
-              { source: 'lemo-chronik-1944', loc: { section: 'Chronik 1944', para: '122' } }
+              {
+                source: 'eisenhower-library-d-day-invasion-of-normandy',
+                loc: { section: 'World War II: D-Day, The Invasion of Normandy' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q22',
-        text: 'Mit 6.000 Schiffen beginnt in der Normandie die Invasion der Alliierten in Westeuropa. Mit der Landung von 150.000 Soldaten werden mehrere Brückenköpfe gebildet.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1944', loc: { section: 'Chronik 1944', para: '123' } },
+        id: 'q34',
+        text: 'The D-Day operation of June 6, 1944, brought together the land, air, and sea forces of the allied armies in what became known as the largest amphibious invasion in military history. The operation, given the codename OVERLORD, delivered five naval assault divisions to the beaches of Normandy, France.',
+        lang: 'en',
+        cite: {
+          source: 'eisenhower-library-d-day-invasion-of-normandy',
+          loc: { section: 'World War II: D-Day, The Invasion of Normandy' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1944.html'
+          at: '2026-10-07',
+          url: 'https://www.eisenhowerlibrary.gov/research/online-documents/world-war-ii-d-day-invasion-normandy'
         }
       }
     },
@@ -814,5 +818,9 @@ export default defineEvent({
       date: { d: '1942' },
       durationSec: 3303
     }
+  ],
+  furtherReading: [
+    { source: 'iml-1960-istoriia-velikoi-otechestvennoi-voiny', perspective: 'russian-soviet' },
+    { source: 'grechko-1973-istoriia-vtoroi-mirovoi-voiny', perspective: 'russian-soviet' }
   ]
 })

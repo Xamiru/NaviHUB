@@ -5,7 +5,33 @@ export default definePerson({
   names: [
     { text: 'Thomas Jefferson', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1743-04-13' },
+        cites: [
+          {
+            source: 'britannica-1911-jefferson-thomas',
+            loc: { section: 'JEFFERSON, THOMAS', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1826-07-04' },
+        cites: [
+          {
+            source: 'britannica-1911-jefferson-thomas',
+            loc: { section: 'JEFFERSON, THOMAS', para: '19' }
+          }
+        ]
+      }
+    ]
+  },
   regions: ['north-america'],
   roles: ['head-of-state', 'politician'],
   sections: [

@@ -33,7 +33,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -50,9 +50,24 @@ export default defineEvent({
   },
   regions: ['north-america', 'latin-america'],
   prominence: 3,
+  places: [
+    {
+      ref: 'place:washington-dc',
+      cites: [
+        {
+          source: 'avalon-adams-onis-treaty',
+          loc: { section: 'Treaty of Amity, Settlement, and Limits, closing clause' }
+        }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:united-states' },
+    { ref: 'polity:kingdom-of-spain' }
+  ],
   participants: [
     {
-      name: 'John Quincy Adams',
+      ref: 'person:john-quincy-adams',
       role: 'negotiator',
       cites: [
         {

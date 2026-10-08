@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Second Opium War', lang: 'en', role: 'primary' },
     { text: '第二次鴉片戰爭', lang: 'zh', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -86,10 +86,14 @@ export default defineEvent({
       ]
     }
   ],
+  polities: [
+    { ref: 'polity:second-french-empire' }
+  ],
   sides: [
     {
       key: 'allies',
       name: 'the British',
+      polity: 'polity:united-kingdom',
       cites: [
         {
           source: 'state-dept-milestones-opening-to-china-2',
@@ -103,6 +107,7 @@ export default defineEvent({
     {
       key: 'china',
       name: 'the Chinese Government',
+      polity: 'polity:qing-empire',
       cites: [
         {
           source: 'state-dept-milestones-opening-to-china-2',
@@ -355,5 +360,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:The_Second_Opium_War,_1856-1860_Q69841.jpg',
     credit: { institution: 'Imperial War Museums', creator: 'Felice Beato' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'qi-1978-di-er-ci-yapian-zhanzheng', perspective: 'chinese' }
+  ]
 })

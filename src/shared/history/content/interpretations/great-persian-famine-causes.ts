@@ -4,14 +4,13 @@ export default defineInterpretation({
   id: 'great-persian-famine-causes',
   about: ['event:great-persian-famine'],
   topic: 'causes',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
-      id: 'climate',
+      id: 'drought-hoarding-and-neglect',
       category: 'scholarly',
       holders: [
-        { kind: 'scholar', name: 'Xavier de Planhol' },
-        { kind: 'scholar', name: 'Charles Melville' }
+        { kind: 'scholar', name: 'Xavier de Planhol' }
       ],
       statements: [
         {
@@ -35,16 +34,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/famines'
           }
-        }
-      ]
-    },
-    {
-      id: 'hoarding-and-speculation',
-      category: 'scholarly',
-      holders: [
-        { kind: 'scholar', name: 'Xavier de Planhol' }
-      ],
-      statements: [
+        },
         {
           id: 'q3',
           text: 'Large land owners in the south and west hoarded their grain.',
@@ -66,16 +56,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/famines'
           }
-        }
-      ]
-    },
-    {
-      id: 'government-indifference',
-      category: 'scholarly',
-      holders: [
-        { kind: 'scholar', name: 'G. Gilbar' }
-      ],
-      statements: [
+        },
         {
           id: 'q5',
           text: 'The fight against famines seems never to have been taken up efficiently; indeed it has been written (Gilbar, p. 136) that until the beginning of the 1960s, the Persian government was completely indifferent to famines and even the establishing of grain reserves in government warehouses was seldom practiced.',
@@ -96,6 +77,49 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/famines'
+          }
+        }
+      ]
+    },
+    {
+      id: 'a-man-made-famine',
+      category: 'contemporary',
+      holders: [
+        { kind: 'participant', name: 'Oliver St. John' }
+      ],
+      statements: [
+        {
+          id: 'q7',
+          text: 'Scarcity and high prices must naturally occur from time to time, but famine should be impossible under the present conditions of commerce.',
+          lang: 'en',
+          cite: {
+            source: 'st-john-1876-journey-through-baluchistan-and-southern-persia',
+            loc: {
+              section: 'Narrative of a Journey through Baluchistan and Southern Persia, 1872',
+              page: '95'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://archive.org/download/easternpersiaan00commgoog/easternpersiaan00commgoog_djvu.txt'
+          }
+        },
+        {
+          id: 'q8',
+          text: 'Still there was plenty of food in the country, the harvests in the south and west having been fairly good: but the great land-owners, who are also the great corn-dealers, instigated by love of filthy lucre, or perhaps, as they declared themselves, by fear of a third year of famine, held for a rise, utterly indifferent to the sufferings around them.',
+          lang: 'en',
+          cite: {
+            source: 'st-john-1876-journey-through-baluchistan-and-southern-persia',
+            loc: {
+              section: 'Narrative of a Journey through Baluchistan and Southern Persia, 1872',
+              page: '96'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://archive.org/download/easternpersiaan00commgoog/easternpersiaan00commgoog_djvu.txt'
           }
         }
       ]

@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Separation of Panama from Colombia', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'independence',
   start: {
     alts: [
@@ -37,6 +37,9 @@ export default defineEvent({
   prominence: 1,
   places: [
     { ref: 'place:panama-city' }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
   ],
   participants: [
     {
@@ -271,5 +274,12 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Junta_Provisional_de_Gobierno_de_Panam%C3%A1_de_1903.jpg',
     credit: { institution: 'Biblioteca Nacional de Panamá (Estudios sobre el Panamá republicano)' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'lemaitre-1972-panama-y-su-separacion-de-colombia',
+      perspective: 'latin-american'
+    },
+    { source: 'arauz-pizzurno-1993-el-panama-colombiano', perspective: 'latin-american' }
+  ]
 })

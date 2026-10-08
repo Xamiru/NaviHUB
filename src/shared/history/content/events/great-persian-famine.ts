@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'great-persian-famine',
   names: [
     { text: 'Great Persian famine', lang: 'en', role: 'primary' },
+    { text: 'قحطی بزرگ ۱۲۸۸', lang: 'fa', role: 'native' },
     {
       text: 'Great Famine',
       lang: 'en',
@@ -16,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'famine',
   start: {
     alts: [
@@ -144,33 +145,6 @@ export default defineEvent({
       ]
     },
     {
-      kind: 'course',
-      quotes: [
-        {
-          id: 'q5',
-          text: 'The winter of 1869-70 had once again had very little snow and rain, especially in the low plains of Fārs, where herds of nomads who where there during that season suffered greatly.',
-          lang: 'en',
-          cite: { source: 'iranica-de-planhol-famines', loc: { section: 'FAMINES', para: '4' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/famines'
-          }
-        },
-        {
-          id: 'q6',
-          text: 'During the winter of 1871-72, rains began earlier and were satisfactory. However the winter was rigorous and prolonged. Heavy snowfall broke down lines of communication. Famine killed thousands of people in the highlands.',
-          lang: 'en',
-          cite: { source: 'iranica-de-planhol-famines', loc: { section: 'FAMINES', para: '4' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/famines'
-          }
-        }
-      ]
-    },
-    {
       kind: 'casualties',
       quotes: [
         {
@@ -258,6 +232,46 @@ export default defineEvent({
       credit: { institution: 'Oxford University (Internet Archive)', creator: 'Henry Walter Bellew' },
       license: { id: 'public-domain' },
       bytes: 15243120
+    }
+  ],
+  course: [
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1869', notAfter: '1870' },
+            cites: [
+              { source: 'iranica-de-planhol-famines', loc: { section: 'FAMINES', para: '4' } }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q5',
+        text: 'The winter of 1869-70 had once again had very little snow and rain, especially in the low plains of Fārs, where herds of nomads who where there during that season suffered greatly.',
+        lang: 'en',
+        cite: { source: 'iranica-de-planhol-famines', loc: { section: 'FAMINES', para: '4' } },
+        provenance: { via: 'web', at: '2026-10-06', url: 'https://www.iranicaonline.org/articles/famines' }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1871', notAfter: '1872' },
+            cites: [
+              { source: 'iranica-de-planhol-famines', loc: { section: 'FAMINES', para: '4' } }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q6',
+        text: 'During the winter of 1871-72, rains began earlier and were satisfactory. However the winter was rigorous and prolonged. Heavy snowfall broke down lines of communication. Famine killed thousands of people in the highlands.',
+        lang: 'en',
+        cite: { source: 'iranica-de-planhol-famines', loc: { section: 'FAMINES', para: '4' } },
+        provenance: { via: 'web', at: '2026-10-06', url: 'https://www.iranicaonline.org/articles/famines' }
+      }
     }
   ]
 })

@@ -22,6 +22,7 @@ export interface ImportSourceCfg {
     | 'igdb'
     | 'steam'
     | 'rawgCatalog'
+    | 'gameCatalog'
     | 'openlibrary'
   label: string // "AniList" / "TMDB" / "VNDB" / "RAWG" / "Open Library"
   placeholder: string
@@ -82,6 +83,11 @@ export interface MediaConfig {
   // crew / staff
   crewTitle: string // "Staff" / "Crew"
   hasCrew?: boolean // false hides the crew section + skips crew on import (TV)
+  // Detail tab label for the cast + crew tab when it differs from the cast
+  // section heading (manga: the tab also holds the mangaka).
+  castTabLabel?: string
+  // Lead the Overview facts with the work's creators (manga: Story & Art).
+  creatorFacts?: boolean
   // companies
   companyTitle: string // "Studios" / "Production"
   companyRoles: { value: MediaCompanyRole; label: string }[]
@@ -235,7 +241,9 @@ export const MANGA: MediaConfig = {
   castPersonLabel: 'Character',
   castShowLanguage: false,
   castLayout: 'character-only',
-  crewTitle: 'Mangaka',
+  castTabLabel: 'Characters & Staff',
+  creatorFacts: true,
+  crewTitle: 'Mangaka & Staff',
   companyTitle: 'Publishers',
   companyRoles: [
     { value: 'publisher', label: 'Publisher' },
@@ -349,14 +357,20 @@ export const GAME: MediaConfig = {
     { to: '/franchises', label: 'Franchises' },
     { to: '/people', label: 'Voice Actors', role: 'voice_actor' }
   ],
-  importSource: { key: 'steam', label: 'Steam', placeholder: 'Search Steam (e.g. Persona 5)…' },
+  importSource: {
+    key: 'gameCatalog',
+    label: 'Catalog',
+    placeholder: 'Search the games catalog (English or Japanese title)…'
+  },
+  // The catalog first: real box art, every platform, and the cast from Bangumi.
+  // Steam stays for releases newer than the catalog.
   importSources: [
-    { key: 'steam', label: 'Steam', placeholder: 'Search Steam (e.g. Persona 5)…' },
     {
-      key: 'rawgCatalog',
-      label: 'Catalog (offline)',
-      placeholder: 'Search the offline catalog (consoles too)…'
-    }
+      key: 'gameCatalog',
+      label: 'Catalog',
+      placeholder: 'Search the games catalog (English or Japanese title)…'
+    },
+    { key: 'steam', label: 'Steam', placeholder: 'Search Steam (e.g. Persona 5)…' }
   ],
   hasPlaytimes: true,
   mediaTabLabel: 'Playtime',

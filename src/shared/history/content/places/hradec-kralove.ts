@@ -6,8 +6,15 @@ export default definePlace({
     { text: 'Königgrätz (Hradec Králové)', lang: 'en', role: 'primary' },
     { text: 'Hradec Králové', lang: 'cs', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   placeType: 'battlefield',
   regions: ['europe'],
+  coords: {
+    lat: 50.2092,
+    lon: 15.8328,
+    cites: [
+      { source: 'geonames-cities500', loc: { section: 'Hradec Králové (geonameid 3074967)' } }
+    ]
+  },
   modernCountry: 'CZ'
 })

@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Trans-Iranian Railway', lang: 'en', role: 'primary' },
     { text: 'راه‌آهن سراسری ایران', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'economic',
   start: {
     alts: [
@@ -44,9 +44,41 @@ export default defineEvent({
   },
   regions: ['iran'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:bandar-e-torkaman',
+      cites: [
+        {
+          source: 'iranica-pesaran-economy-pahlavi',
+          loc: { section: 'ECONOMY ix. IN THE PAHLAVI PERIOD', para: '2' }
+        }
+      ]
+    },
+    {
+      ref: 'place:bandar-e-emam-khomeyni',
+      cites: [
+        {
+          source: 'iranica-pesaran-economy-pahlavi',
+          loc: { section: 'ECONOMY ix. IN THE PAHLAVI PERIOD', para: '2' }
+        }
+      ]
+    },
+    {
+      ref: 'place:tehran',
+      cites: [
+        {
+          source: 'iranica-yarshater-chronology-part-3',
+          loc: { section: 'Chronology of Iranian History Part 3' }
+        }
+      ]
+    }
+  ],
   partOf: [
     { ref: 'period:pahlavi-dynasty' },
     { ref: 'period:reign-of-reza-shah' }
+  ],
+  polities: [
+    { ref: 'polity:pahlavi-iran' }
   ],
   participants: [
     {
@@ -175,5 +207,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:B20_Panorama_of_the_Vresk_valley_-_USACE-p15141coll5-9280.jpeg',
     credit: { institution: 'U.S. Army Corps of Engineers, Stanley Scott Collection' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'makki-1983-tarikh-e-bist-saleh-ye-iran', perspective: 'iranian' }
+  ]
 })

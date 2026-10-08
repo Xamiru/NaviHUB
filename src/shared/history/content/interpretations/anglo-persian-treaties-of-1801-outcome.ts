@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'anglo-persian-treaties-of-1801-outcome',
   about: ['event:anglo-persian-treaties-of-1801'],
   topic: 'outcome',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'british-success',
@@ -67,34 +67,13 @@ export default defineInterpretation({
       ]
     },
     {
-      id: 'company-censure',
-      category: 'contemporary',
+      id: 'censure-and-repudiation',
+      category: 'scholarly',
       holders: [
+        { kind: 'scholar', name: 'Mansour Bonakdarian' },
+        { kind: 'scholar', name: 'Ali Eskandari-Qajar' },
         { kind: 'organization', name: 'East India Company Board of Directors' },
         { kind: 'organization', name: 'Board of Control' }
-      ],
-      statements: [
-        {
-          id: 'q4',
-          text: 'Proud of his achievement, he was censured by the EIC’s Board of Directors and the Board of Control in London for the extraordinary profligacy of his Persian mission and the inexpedience of the mission itself',
-          lang: 'en',
-          cite: {
-            source: 'iranica-bonakdarian-eskandari-qajar-malcolm',
-            loc: { section: 'MALCOLM, SIR JOHN', para: '15' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/malcolm-sir-john/'
-          }
-        }
-      ]
-    },
-    {
-      id: 'calcutta-repudiation',
-      category: 'official',
-      holders: [
-        { kind: 'state', name: 'Government of British India (Calcutta)' }
       ],
       statements: [
         {
@@ -104,6 +83,20 @@ export default defineInterpretation({
           cite: {
             source: 'iranica-bonakdarian-eskandari-qajar-malcolm',
             loc: { section: 'MALCOLM, SIR JOHN', para: '11' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/malcolm-sir-john/'
+          }
+        },
+        {
+          id: 'q4',
+          text: 'Proud of his achievement, he was censured by the EIC’s Board of Directors and the Board of Control in London for the extraordinary profligacy of his Persian mission and the inexpedience of the mission itself',
+          lang: 'en',
+          cite: {
+            source: 'iranica-bonakdarian-eskandari-qajar-malcolm',
+            loc: { section: 'MALCOLM, SIR JOHN', para: '15' }
           },
           provenance: {
             via: 'web',

@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Assassination of John F. Kennedy', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'assassination',
   start: {
     alts: [
@@ -40,6 +40,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
   ],
   participants: [
     {

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'mexican-revolution-meaning',
   about: ['event:mexican-revolution'],
   topic: 'nature',
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   positions: [
     {
       id: 'political-restoration',
@@ -14,14 +14,26 @@ export default defineInterpretation({
       ],
       statements: [
         {
-          id: 'q1',
-          text: 'Although it was mainly a political document with scant reference to redressing Mexico\'s many social ills, the Plan of San Luis Potosí was enthusiastically received among the widespread, but uncoordinated movements that were already on the verge of rebellion against their respective state governments.',
-          lang: 'en',
-          cite: {
-            source: 'loc-mexico-country-study-1996',
-            loc: { section: 'The Revolution, 1910-20', para: '5' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/mexico/26.htm' }
+          id: 'q4',
+          text: 'En México, como república democrática, el Poder Público no puede tener otro origen ni otra base que la voluntad nacional y ésta no puede ser supeditada a fórmulas llevadas a cabo de un modo fraudulento.',
+          lang: 'es',
+          cite: { source: 'madero-1910-plan-de-san-luis', loc: { para: '9' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://es.wikisource.org/wiki/Plan_de_San_Luis'
+          }
+        },
+        {
+          id: 'q5',
+          text: '4.- Además de la Constitución y leyes vigentes, se declara ley suprema de la República el principio de No-Reelección del Presidente y Vice-Presidente de la República, Gobernadores de los Estados y Presidentes Municipales, mientras que se hagan las reformas constitucionales respectivas.',
+          lang: 'es',
+          cite: { source: 'madero-1910-plan-de-san-luis', loc: { para: '25' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://es.wikisource.org/wiki/Plan_de_San_Luis'
+          }
         }
       ]
     },
@@ -33,14 +45,26 @@ export default defineInterpretation({
       ],
       statements: [
         {
-          id: 'q2',
-          text: 'Zapata had come to Mexico City to claim hacienda land for the peasants of Morelos, which to him was the only acceptable result of the overthrow of the Díaz regime.',
-          lang: 'en',
-          cite: {
-            source: 'loc-mexico-country-study-1996',
-            loc: { section: 'Madero\'s Government', para: '1' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/mexico/27.htm' }
+          id: 'q6',
+          text: 'La nación mexicana es demasiado rica. Su riqueza, aunque virgen, es decir todavía no explotada, consiste en la agricultura y la minería; pero esa riqueza, ese caudal de oro inagotable, perteneciendo a más de quince millones de habitantes, se halla en manos de unos cuantos miles de capitalistas y de ellos una gran parte no son mexicanos. Por un refinado y desastroso egoísmo, el hacendado, el terrateniente y el minero, explotan esa pequeña parte de la tierra, del monte y de la vera, aprovechándose ellos de sus cuantiosos productos y conservando la mayor parte de sus propiedades enteramente vírgenes, mientras un cuadro de indescriptible miseria tiene lugar en toda la República.',
+          lang: 'es',
+          cite: { source: 'zapata-1912-manifiesto-a-la-nacion', loc: { para: '16' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://es.wikisource.org/wiki/Manifiesto_de_Zapata_a_la_Naci%C3%B3n_(1912-10-20)'
+          }
+        },
+        {
+          id: 'q7',
+          text: 'Semejante organización económica, tal sistema administrativo que venía a ser un asesinato en masa para el pueblo, un suicidio colectivo para la nación y un insulto, una vergüenza para los hombres honrados y conscientes, no pudieron prolongarse por más tiempo y surgió la revolución, engendrada, como todo movimiento de las colectividades, por la necesidad. Aquí tuvo su origen el Plan de Ayala.',
+          lang: 'es',
+          cite: { source: 'zapata-1912-manifiesto-a-la-nacion', loc: { para: '17' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://es.wikisource.org/wiki/Manifiesto_de_Zapata_a_la_Naci%C3%B3n_(1912-10-20)'
+          }
         }
       ]
     },

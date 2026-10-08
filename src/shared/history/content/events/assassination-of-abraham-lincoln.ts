@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Assassination of Abraham Lincoln', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'assassination',
   start: {
     alts: [
@@ -45,6 +45,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
   ],
   related: [
     { ref: 'event:american-civil-war', rel: 'related' }
@@ -273,5 +276,8 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 52905588
     }
+  ],
+  furtherReading: [
+    { source: 'ivanov-1964-avraam-linkoln', perspective: 'russian-soviet' }
   ]
 })

@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Hungarian Revolution of 1956', lang: 'en', role: 'primary' },
     { text: '1956-os forradalom', lang: 'hu', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'revolution',
   start: {
     alts: [
@@ -81,6 +81,7 @@ export default defineEvent({
     {
       key: 'soviet',
       name: 'Soviets',
+      polity: 'polity:soviet-union',
       cites: [
         {
           source: 'enrs-scieranska-hungarian-revolution-1956',

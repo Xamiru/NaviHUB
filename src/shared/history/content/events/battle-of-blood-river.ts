@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Battle of Blood River', lang: 'en', role: 'primary' },
     { text: 'Slag van Bloedrivier', lang: 'af', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -23,6 +23,17 @@ export default defineEvent({
   },
   regions: ['subsaharan-africa'],
   prominence: 3,
+  places: [
+    {
+      ref: 'place:blood-river',
+      cites: [
+        {
+          source: 'loc-south-africa-country-study-1996',
+          loc: { section: 'The Great Trek', para: '5' }
+        }
+      ]
+    }
+  ],
   partOf: [
     { ref: 'event:great-trek' }
   ],

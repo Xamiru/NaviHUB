@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Treaties of Tilsit', lang: 'en', role: 'primary' },
     { text: 'Peace of Tilsit', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -58,6 +58,10 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:napoleonic-wars' }
+  ],
+  polities: [
+    { ref: 'polity:first-french-empire' },
+    { ref: 'polity:kingdom-of-prussia' }
   ],
   participants: [
     {

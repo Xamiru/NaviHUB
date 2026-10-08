@@ -211,6 +211,37 @@ export function ensureCompetitionCatalog(): void {
   })()
 }
 
+// Reads only need the frozen catalog to exist once per connection; the upsert is a
+// write transaction, too costly to repeat on every page read.
+const catalogEnsured = new WeakSet<Database.Database>()
+function ensureCompetitionCatalogOnce(): void {
+  const db = getSqlite()
+  if (catalogEnsured.has(db)) return
+  ensureCompetitionCatalog()
+  catalogEnsured.add(db)
+}
+
+type SeasonStats = { matches: number; goals: number }
+let seasonStatsCache: { db: Database.Database; key: string; stats: Map<number, SeasonStats> } | null = null
+
+/**
+ * Match and goal totals per season. Summing scores reads every match row (tens of ms on a
+ * full archive), so the result is kept until this connection or another one writes.
+ */
+function seasonStats(): Map<number, SeasonStats> {
+  const db = getSqlite()
+  const changes = (db.prepare('SELECT total_changes() AS n').get() as { n: number }).n
+  const key = `${changes}:${db.pragma('data_version', { simple: true })}`
+  if (seasonStatsCache?.db === db && seasonStatsCache.key === key) return seasonStatsCache.stats
+  const rows = db.prepare(`
+    SELECT season_id AS id, COUNT(*) AS matches, COALESCE(SUM(home_score+away_score),0) AS goals
+    FROM football_match GROUP BY season_id
+  `).all() as Array<{ id: number } & SeasonStats>
+  const stats = new Map(rows.map((row) => [row.id, { matches: row.matches, goals: row.goals }]))
+  seasonStatsCache = { db, key, stats }
+  return stats
+}
+
 export function competitionLogos(): Partial<Record<FootballCompetitionKey, string>> {
   const rows = getSqlite().prepare(`
     SELECT key,image_path AS imagePath FROM football_competition WHERE image_path IS NOT NULL
@@ -218,27 +249,36 @@ export function competitionLogos(): Partial<Record<FootballCompetitionKey, strin
   return Object.fromEntries(rows.map((row) => [row.key, row.imagePath]))
 }
 
-export function listCompetitions(): FootballCompetition[] {
-  ensureCompetitionCatalog()
-  const rows = getSqlite().prepare(`
+export function listCompetitions(key?: FootballCompetitionKey): FootballCompetition[] {
+  ensureCompetitionCatalogOnce()
+  const db = getSqlite()
+  const stats = seasonStats()
+  const totals = new Map<number, SeasonStats>()
+  for (const season of db.prepare(`SELECT id, competition_id AS competitionId FROM football_season`)
+    .all() as Array<{ id: number; competitionId: number }>) {
+    const seasonTotals = stats.get(season.id)
+    if (!seasonTotals) continue
+    const total = totals.get(season.competitionId) ?? { matches: 0, goals: 0 }
+    total.matches += seasonTotals.matches
+    total.goals += seasonTotals.goals
+    totals.set(season.competitionId, total)
+  }
+  const rows = db.prepare(`
     SELECT c.*,
       (SELECT COUNT(*) FROM football_season s WHERE s.competition_id=c.id) AS season_count,
-      (SELECT COUNT(*) FROM football_match m JOIN football_season s ON s.id=m.season_id
-        WHERE s.competition_id=c.id) AS match_count,
       EXISTS(SELECT 1 FROM football_favorite f
         WHERE f.entity_kind='competition' AND f.entity_id=c.id) AS favorite,
       (SELECT label FROM football_season s WHERE s.competition_id=c.id
         ORDER BY COALESCE(start_date, key) DESC LIMIT 1) AS latest_season,
-      (SELECT COALESCE(SUM(m.home_score+m.away_score),0) FROM football_match m
-        JOIN football_season s ON s.id=m.season_id WHERE s.competition_id=c.id) AS goal_count,
       (SELECT h.team_id FROM football_honour h JOIN football_season s ON s.id=h.season_id
         WHERE s.competition_id=c.id AND h.placement='winner' AND h.verified=1 AND h.shared=0
           AND h.team_id IS NOT NULL
         ORDER BY COALESCE(s.start_date, s.key) DESC LIMIT 1) AS holder_id
     FROM football_competition c
+    ${key ? 'WHERE c.key=?' : ''}
     ORDER BY c.id
-  `).all() as Row[]
-  const titles = getSqlite().prepare(`
+  `).all(...(key ? [key] : [])) as Row[]
+  const titles = db.prepare(`
     SELECT h.team_id AS teamId, COUNT(*) AS titles FROM football_honour h
     WHERE h.competition_id=? AND h.placement='winner' AND h.verified=1 AND h.team_id IS NOT NULL
     GROUP BY h.team_id ORDER BY titles DESC
@@ -259,10 +299,10 @@ export function listCompetitions(): FootballCompetition[] {
     summary: (row.summary as string) ?? null,
     currentSeasonId: (row.current_season_id as number) ?? null,
     seasonCount: row.season_count as number,
-    matchCount: row.match_count as number,
+    matchCount: totals.get(row.id as number)?.matches ?? 0,
     favorite: bool(row.favorite),
     latestSeason: (row.latest_season as string) ?? null,
-    goalCount: row.goal_count as number,
+    goalCount: totals.get(row.id as number)?.goals ?? 0,
     imagePath: (row.image_path as string) ?? null,
     holder: teamsById(row.holder_id == null ? [] : [row.holder_id as number])[0] ?? null,
     titleLeaders: most
@@ -366,8 +406,21 @@ function honoursFor(whereSql: string, value: number): FootballHonour[] {
   }))
 }
 
-export function listSeasons(competitionKey?: FootballCompetitionKey | null): FootballSeason[] {
-  ensureCompetitionCatalog()
+export function listSeasons(
+  competitionKey?: FootballCompetitionKey | null,
+  seasonId?: number
+): FootballSeason[] {
+  ensureCompetitionCatalogOnce()
+  const where: string[] = []
+  const args: unknown[] = []
+  if (competitionKey) {
+    where.push('c.key=?')
+    args.push(competitionKey)
+  }
+  if (seasonId != null) {
+    where.push('s.id=?')
+    args.push(seasonId)
+  }
   const rows = getSqlite().prepare(`
     SELECT s.*, c.key AS competition_key, c.name AS competition_name,
       (SELECT COUNT(*) FROM football_match m WHERE m.season_id=s.id) AS match_count,
@@ -393,9 +446,9 @@ export function listSeasons(competitionKey?: FootballCompetitionKey | null): Foo
       SELECT id FROM football_honour WHERE season_id=s.id AND placement='runner-up'
         AND verified=1 ORDER BY id LIMIT 1)
     LEFT JOIN football_team rt ON rt.id=rh.team_id
-    ${competitionKey ? 'WHERE c.key=?' : ''}
+    ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
     ORDER BY COALESCE(s.start_date, s.key) DESC
-  `).all(...(competitionKey ? [competitionKey] : [])) as Row[]
+  `).all(...args) as Row[]
   return rows.map((row) => ({
     id: row.id as number,
     competitionId: row.competition_id as number,
@@ -417,12 +470,10 @@ export function listSeasons(competitionKey?: FootballCompetitionKey | null): Foo
   }))
 }
 
-export function getCompetition(key: FootballCompetitionKey): FootballCompetitionDetail | null {
-  const competition = listCompetitions().find((item) => item.key === key)
-  if (!competition) return null
-  const eras = (getSqlite().prepare(`
+function erasFor(competitionId: number): FootballCompetitionDetail['eras'] {
+  return (getSqlite().prepare(`
     SELECT * FROM football_era WHERE competition_id=? ORDER BY sort_order, id
-  `).all(competition.id) as Row[]).map((row) => ({
+  `).all(competitionId) as Row[]).map((row) => ({
     id: row.id as number,
     competitionId: row.competition_id as number,
     name: row.name as string,
@@ -434,9 +485,14 @@ export function getCompetition(key: FootballCompetitionKey): FootballCompetition
     narrative: (row.narrative as string) ?? null,
     sortOrder: row.sort_order as number
   }))
+}
+
+export function getCompetition(key: FootballCompetitionKey): FootballCompetitionDetail | null {
+  const competition = listCompetitions(key)[0]
+  if (!competition) return null
   return {
     ...competition,
-    eras,
+    eras: erasFor(competition.id),
     seasons: listSeasons(key),
     honours: honoursFor('h.competition_id', competition.id),
     media: derivedMediaForEntity('competition', competition.id),
@@ -501,6 +557,45 @@ function seasonFates(seasonId: number): Map<number, FootballSeasonFate> {
   return fates
 }
 
+/**
+ * `seasonFates` for one team across all its seasons at once, by the same rules: the team must
+ * have played in the season, a UEFA match in the next season's key sends it to Europe (Champions
+ * League first), and absence from a following league season that has matches means relegation.
+ */
+function teamSeasonFates(teamId: number): Map<number, FootballSeasonFate> {
+  const db = getSqlite()
+  const seasons = db.prepare(`
+    SELECT s.id, s.key, s.competition_id AS competitionId, c.key AS competitionKey, c.scope, c.format
+    FROM football_season s JOIN football_competition c ON c.id=s.competition_id
+  `).all() as Array<{
+    id: number
+    key: string
+    competitionId: number
+    competitionKey: FootballCompetitionKey
+    scope: string
+    format: string
+  }>
+  const byCompetitionKey = new Map(seasons.map((season) => [`${season.competitionKey}|${season.key}`, season]))
+  const played = new Set((db.prepare(`
+    SELECT season_id AS id FROM football_match WHERE home_team_id=?
+    UNION SELECT season_id FROM football_match WHERE away_team_id=?
+  `).all(teamId, teamId) as { id: number }[]).map((row) => row.id))
+  const hasMatches = db.prepare(`SELECT 1 FROM football_match WHERE season_id=? LIMIT 1`)
+  const fates = new Map<number, FootballSeasonFate>()
+  for (const season of seasons) {
+    if (season.scope !== 'domestic' || season.format !== 'league' || !played.has(season.id)) continue
+    const nextKey = nextSeasonKey(season.key)
+    if (!nextKey) continue
+    for (const [competitionKey, fate] of [...UEFA_FATES].reverse()) {
+      const uefa = byCompetitionKey.get(`${competitionKey}|${nextKey}`)
+      if (uefa && played.has(uefa.id)) fates.set(season.id, fate)
+    }
+    const next = byCompetitionKey.get(`${season.competitionKey}|${nextKey}`)
+    if (next && !played.has(next.id) && hasMatches.get(next.id)) fates.set(season.id, 'relegated')
+  }
+  return fates
+}
+
 function standingsFor(seasonId: number): FootballStanding[] {
   const rows = getSqlite().prepare(`
     SELECT fs.*, ${TEAM_SELECT}
@@ -530,10 +625,8 @@ function standingsFor(seasonId: number): FootballStanding[] {
 }
 
 export function getSeason(id: number): FootballSeasonDetail | null {
-  const season = listSeasons().find((item) => item.id === id)
+  const season = listSeasons(null, id)[0]
   if (!season) return null
-  const competition = getCompetition(season.competitionKey)
-  if (!competition) return null
   const stages = (getSqlite().prepare(`
     SELECT id,name,kind,sort_order FROM football_stage WHERE season_id=? ORDER BY sort_order,id
   `).all(id) as Row[]).map((row) => ({
@@ -544,7 +637,7 @@ export function getSeason(id: number): FootballSeasonDetail | null {
   }))
   return {
     ...season,
-    eras: competition.eras.filter((era) => {
+    eras: erasFor(season.competitionId).filter((era) => {
       if (!season.startDate) return true
       const label = season.key
       return (!era.startSeason || label >= era.startSeason) && (!era.endSeason || label <= era.endSeason)
@@ -558,6 +651,9 @@ export function getSeason(id: number): FootballSeasonDetail | null {
     article: articleFor('season', id)
   }
 }
+
+const COMPETITION_SEASON_IDS = `SELECT s.id FROM football_season s
+  JOIN football_competition c ON c.id=s.competition_id WHERE c.key=?`
 
 export function listTeams(filter: FootballEntityFilter = {}): FootballTeamSummary[] {
   const where: string[] = []
@@ -573,11 +669,11 @@ export function listTeams(filter: FootballEntityFilter = {}): FootballTeamSummar
   }
   if (filter.favoriteOnly) where.push(`EXISTS(SELECT 1 FROM football_favorite f WHERE f.entity_kind='team' AND f.entity_id=t.id)`)
   if (filter.competitionKey) {
-    where.push(`EXISTS(
-      SELECT 1 FROM football_match m JOIN football_season s ON s.id=m.season_id
-      JOIN football_competition c ON c.id=s.competition_id
-      WHERE c.key=? AND (m.home_team_id=t.id OR m.away_team_id=t.id))`)
-    args.push(filter.competitionKey)
+    // One pass over the competition's matches, not an OR-probe per team.
+    where.push(`t.id IN (
+      SELECT m.home_team_id FROM football_match m WHERE m.season_id IN (${COMPETITION_SEASON_IDS})
+      UNION SELECT m.away_team_id FROM football_match m WHERE m.season_id IN (${COMPETITION_SEASON_IDS}))`)
+    args.push(filter.competitionKey, filter.competitionKey)
   }
   const { limit, offset } = limitOffset(filter)
   const rows = getSqlite().prepare(`
@@ -659,6 +755,7 @@ function headToHeads(teamId: number): FootballHeadToHead[] {
 }
 
 export function getTeam(id: number): FootballTeamDetail | null {
+  const fates = teamSeasonFates(id)
   const row = getSqlite().prepare(`
     SELECT t.*, EXISTS(SELECT 1 FROM football_favorite f
       WHERE f.entity_kind='team' AND f.entity_id=t.id) AS favorite
@@ -709,7 +806,7 @@ export function getTeam(id: number): FootballTeamDetail | null {
       note: (standing.note as string) ?? null,
       position: standing.position as number,
       teamCount: standing.team_count as number,
-      fate: seasonFates(standing.season_id as number).get(id) ?? null
+      fate: fates.get(standing.season_id as number) ?? null
     })),
     scorers: teamScorers(id),
     rivals: headToHeads(id),
@@ -840,7 +937,11 @@ export function listMatches(filter: FootballMatchFilter = {}): FootballMatchSumm
   const args: unknown[] = []
   if (filter.search?.trim()) {
     const q = `%${escapeFootballLike(filter.search.trim())}%`
-    where.push(`(m.title LIKE ? ESCAPE '\\' OR ht.name LIKE ? ESCAPE '\\' OR at.name LIKE ? ESCAPE '\\')`)
+    // Team names resolve against the small team table first, so the match scan tests only
+    // its own columns instead of joining both teams for every row.
+    where.push(`(m.title LIKE ? ESCAPE '\\'
+      OR m.home_team_id IN (SELECT id FROM football_team WHERE name LIKE ? ESCAPE '\\')
+      OR m.away_team_id IN (SELECT id FROM football_team WHERE name LIKE ? ESCAPE '\\'))`)
     args.push(q, q, q)
   }
   if (filter.competitionKey) {
@@ -936,8 +1037,14 @@ function eventsFor(matchId: number): FootballMatchEvent[] {
 function sourceRefs(entityKind: string, entityId: number) {
   return (getSqlite().prepare(`
     SELECT id,source,external_id,source_url,revision,checksum,fetched_at
-    FROM football_source_ref WHERE entity_kind=? AND entity_id=? ORDER BY source,id
-  `).all(entityKind, entityId) as Row[]).map((row) => ({
+    FROM football_source_ref WHERE entity_kind=? AND entity_id=?
+  `).all(entityKind, entityId) as Row[])
+    // Sorted here: an ORDER BY on source makes SQLite walk the unique (kind, source, id)
+    // index across every ref of this kind instead of seeking the entity.
+    .sort((a, b) => (a.source === b.source
+      ? (a.id as number) - (b.id as number)
+      : (a.source as string) < (b.source as string) ? -1 : 1))
+    .map((row) => ({
     id: row.id as number,
     source: row.source as FootballCoverage['source'],
     externalId: row.external_id as string,
@@ -1201,8 +1308,7 @@ export function search(query: string): FootballSearchResults {
     WHERE s.label LIKE ? ESCAPE '\\' OR c.name LIKE ? ESCAPE '\\'
     ORDER BY s.start_date DESC LIMIT 8
   `).all(escaped, escaped) as { id: number }[])
-    .map((row) => listSeasons().find((season) => season.id === row.id))
-    .filter((season): season is FootballSeason => !!season)
+    .flatMap((row) => listSeasons(null, row.id))
   return {
     competitions,
     seasons,

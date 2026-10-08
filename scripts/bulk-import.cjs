@@ -139,6 +139,11 @@ const characterColumns = db.prepare('PRAGMA table_info(character)').all()
 if (!characterColumns.some((column) => column.name === 'gender')) {
   db.exec('ALTER TABLE character ADD COLUMN gender TEXT')
 }
+// Same for the AniList credit text ("Story & Art") stored beside staff roles.
+const creditColumns = db.prepare('PRAGMA table_info(credit)').all()
+if (!creditColumns.some((column) => column.name === 'role_note')) {
+  db.exec('ALTER TABLE credit ADD COLUMN role_note TEXT')
+}
 
 /* ----------------------------- utilities ----------------------------- */
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -346,11 +351,27 @@ function alMapStaffRole(role) {
   if (r.includes('music')) return 'composer'
   return 'staff'
 }
-// Manga staff are mostly the author/artist; surface those as mangaka.
+// Mirrors mapMangaStaffRole in src/main/anilist.ts: edition credits first, the
+// source work's author as a writer, then the manga's own story/art as mangaka.
 function alMapMangaStaffRole(role) {
   const r = (role ?? '').toLowerCase()
+  if (/touch-up|letter|translat|assistant|edit|design|cover|colou?r/.test(r)) return 'staff'
+  if (r.includes('original')) return 'writer'
   if (r.includes('story') || r.includes('art') || r.includes('creator') || r.includes('mangaka')) return 'mangaka'
   return 'staff'
+}
+// Mirrors addStaffCredit in src/main/anilist.ts: a repeat credit merges its text.
+function alAddStaffCredit(mediaId, personId, role, note) {
+  const text = (note ?? '').trim() || null
+  const dup = db.prepare('SELECT id, role_note FROM credit WHERE media_id=? AND person_id=? AND role=? AND character_id IS NULL').get(mediaId, personId, role)
+  if (!dup) {
+    db.prepare('INSERT INTO credit (media_id, person_id, role, role_note) VALUES (?, ?, ?, ?)').run(mediaId, personId, role, text)
+    return
+  }
+  if (!text) return
+  // Role texts can contain ', ' themselves, so compare delimited entries.
+  if (dup.role_note && `, ${dup.role_note}, `.includes(`, ${text}, `)) return
+  db.prepare('UPDATE credit SET role_note=? WHERE id=?').run(dup.role_note ? `${dup.role_note}, ${text}` : text, dup.id)
 }
 
 // AniList relation types surfaced on the detail page: the season chain + the
@@ -534,6 +555,53 @@ async function alUpsertCompany(node) {
       .run(node.name, 'studio', AL_SOURCE, ext).lastInsertRowid
   )
 }
+// Ports repos/personMatch.ts adoptForAniList (with romajiKey/romajiAgrees):
+// a seiyuu a VN or game import met first becomes the AniList person instead
+// of a duplicate. Kanji must match; the romaji may only veto.
+function pmRomajiKey(name) {
+  if (!name) return ''
+  return name
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z]+/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(Boolean)
+    .map((t) =>
+      t
+        .replace(/oh(?=[^aeiou]|$)/g, 'o')
+        .replace(/ou/g, 'o')
+        .replace(/oo/g, 'o')
+        .replace(/uu/g, 'u')
+        .replace(/aa/g, 'a')
+        .replace(/ii/g, 'i')
+        .replace(/ee/g, 'e')
+    )
+    .filter((t, i, all) => all.indexOf(t) === i)
+    .sort()
+    .join(' ')
+}
+function pmAdoptForAniList(anilistId, name, nameNative) {
+  const kanji = String(nameNative ?? '').replace(/[\s\u3000]/g, '')
+  if (!kanji) return null
+  const rows = db
+    .prepare(
+      `SELECT id, name FROM person
+       WHERE external_source IN ('vndb', 'bangumi')
+         AND REPLACE(REPLACE(name_native, ' ', ''), char(12288), '') = ?
+       ORDER BY id ASC`
+    )
+    .all(kanji)
+  const mine = pmRomajiKey(name)
+  const hit = rows.find((r) => {
+    const theirs = pmRomajiKey(r.name)
+    return !mine || !theirs || mine === theirs
+  })
+  if (!hit) return null
+  db.prepare("UPDATE person SET external_source='anilist', external_id=? WHERE id=?").run(anilistId, hit.id)
+  return hit.id
+}
 async function alUpsertPerson(node) {
   const ext = String(node.id)
   const row = db.prepare('SELECT id, photo_path FROM person WHERE external_source=? AND external_id=?').get(AL_SOURCE, ext)
@@ -552,6 +620,13 @@ async function alUpsertPerson(node) {
     return row.id
   }
   const photo = await downloadImage(node.image?.large)
+  const adopted = pmAdoptForAniList(ext, name, nativeName)
+  if (adopted != null) {
+    db.prepare(
+      'UPDATE person SET name=?, name_native=?, photo_path=COALESCE(photo_path, ?), bio=COALESCE(bio, ?), birthday=COALESCE(?, birthday) WHERE id=?'
+    ).run(name, nativeName, photo, bio, birthday, adopted)
+    return adopted
+  }
   return Number(
     db.prepare('INSERT INTO person (name, name_native, photo_path, bio, birthday, external_source, external_id) VALUES (?, ?, ?, ?, ?, ?, ?)')
       .run(name, nativeName, photo, bio, birthday, AL_SOURCE, ext).lastInsertRowid
@@ -702,9 +777,7 @@ async function alImportAnime(anilistId, { full }) {
 
     for (const edge of m.staff?.edges ?? []) {
       const personId = await alUpsertPerson(edge.node)
-      const role = alMapStaffRole(edge.role)
-      const dup = db.prepare('SELECT id FROM credit WHERE media_id=? AND person_id=? AND role=? AND character_id IS NULL').get(mediaId, personId, role)
-      if (!dup) db.prepare('INSERT INTO credit (media_id, person_id, role) VALUES (?, ?, ?)').run(mediaId, personId, role)
+      alAddStaffCredit(mediaId, personId, alMapStaffRole(edge.role), edge.role)
       staff++
     }
   }
@@ -821,9 +894,7 @@ async function alImportManga(anilistId, { full }) {
 
     for (const edge of m.staff?.edges ?? []) {
       const personId = await alUpsertPerson(edge.node)
-      const role = alMapMangaStaffRole(edge.role)
-      const dup = db.prepare('SELECT id FROM credit WHERE media_id=? AND person_id=? AND role=? AND character_id IS NULL').get(mediaId, personId, role)
-      if (!dup) db.prepare('INSERT INTO credit (media_id, person_id, role) VALUES (?, ?, ?)').run(mediaId, personId, role)
+      alAddStaffCredit(mediaId, personId, alMapMangaStaffRole(edge.role), edge.role)
       staff++
     }
   }

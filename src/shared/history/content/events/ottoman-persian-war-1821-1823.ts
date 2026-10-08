@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'ottoman-persian-war-1821-1823',
   names: [
-    { text: 'Ottoman–Persian War of 1821–1823', lang: 'en', role: 'primary' }
+    { text: 'Ottoman–Persian War of 1821–1823', lang: 'en', role: 'primary' },
+    { text: 'جنگ ایران و عثمانی ۱۸۲۱–۱۸۲۳', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -86,6 +87,7 @@ export default defineEvent({
     {
       key: 'persia',
       name: 'Persia',
+      polity: 'polity:qajar-iran',
       cites: [
         {
           source: 'iranica-tucker-iraq-afsharids-to-qajars',
@@ -96,6 +98,7 @@ export default defineEvent({
     {
       key: 'ottomans',
       name: 'the Ottomans',
+      polity: 'polity:ottoman-empire',
       cites: [
         {
           source: 'iranica-tucker-iraq-afsharids-to-qajars',

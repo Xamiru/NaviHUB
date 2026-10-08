@@ -3,7 +3,10 @@
 
 import type {
   ArchiveKind,
+  Claim,
   EntityKind,
+  FurtherReading,
+  HistDate,
   HistoryArticle,
   HistoryEntity,
   HistoryInterpretation,
@@ -387,6 +390,9 @@ export interface CastEntry {
   character: Character | null
   role: CreditRole
   language: string | null
+  // The source's own credit text ("Story & Art", "Original Creator"); null
+  // for hand-added credits and rows imported before it was kept.
+  roleNote: string | null
 }
 
 export interface MediaCompanyLink {
@@ -572,6 +578,20 @@ export type ImageOverrideKind = 'media' | 'person' | 'character' | 'music_album'
 export interface ImageOverrideState {
   manual: boolean
   providerPath: string | null
+}
+
+// Identities a title has besides its own (external_source, external_id) —
+// media_external_link. Frozen strings: they are stored.
+export type ExternalLinkSource = 'launchbox' | 'bangumi' | 'wikidata' | 'steam' | 'rawg'
+// xref = an id chain baked into the games catalog; exact = a unique exact
+// title + date match; manual = the user's choice, never overwritten.
+export type ExternalLinkMethod = 'xref' | 'wikidata' | 'exact' | 'manual'
+
+export interface ExternalLink {
+  source: ExternalLinkSource
+  externalId: string
+  method: ExternalLinkMethod
+  linkedAt: string
 }
 
 // A wallpaper or fan-art image attached to a media item, or to the Pictures
@@ -1558,6 +1578,41 @@ export interface PersonCredit {
   character: Character | null
   role: CreditRole
   language: string | null
+  roleNote: string | null
+  // The character's place in the title's cast list (AniList orders it by role,
+  // then by how many users favourited the character) and that cast's size —
+  // together, how prominent the role is. Null when the cast is unordered.
+  castPosition: number | null
+  castSize: number
+}
+
+// One creator in a role-scoped directory (the Mangaka page): their works of
+// one media type in the library, a few covers, and how many the user has read.
+export type PersonDirectorySort = 'works' | 'read' | 'score' | 'name'
+
+export interface PersonDirectoryQuery {
+  role: CreditRole
+  mediaType: MediaType
+  // Statuses that count a title as read (the type's in-progress and completed
+  // names, which the user can rename); progress or a re-read also counts.
+  readStatuses: string[]
+}
+
+export interface PersonDirectoryWork {
+  id: number
+  title: string
+  coverPath: string | null
+  read: boolean
+}
+
+export interface PersonDirectoryEntry {
+  person: Person
+  works: number
+  readWorks: number
+  // The user's mean score across their scored works; null when none is scored.
+  meanScore: number | null
+  // Read titles first, then the user's highest scored, at most three.
+  covers: PersonDirectoryWork[]
 }
 
 // A character's appearance in one work, with everyone who voiced them there
@@ -1702,6 +1757,76 @@ export interface RefreshRunStatus {
   message: string | null
   // Named so the failed titles can be retried as one run rather than re-running 400.
   failures: { id: number; title: string; error: string }[]
+}
+
+// ---- Games catalog v2: links, upgrade ----
+// One catalog work as the renderer sees it (search hits, review candidates,
+// the Links panel).
+export interface GameWorkSummary {
+  workId: number
+  title: string
+  titleJa: string | null
+  year: number | null
+  platforms: string[]
+  coverUrl: string | null
+}
+
+// A library game whose catalog work the upgrade could not decide.
+export interface GameUpgradeReview {
+  mediaId: number
+  title: string
+  year: number | null
+  candidates: GameWorkSummary[]
+}
+
+// The dry run shown before the upgrade writes anything.
+export interface GameUpgradePlan {
+  snapshot: string | null
+  total: number
+  // Already tied to a work (catalog row or an earlier link).
+  linked: number
+  // Will be linked by an id chain or a unique exact title.
+  autoLinks: number
+  // Needs the user's pick; then the next run includes it.
+  review: GameUpgradeReview[]
+  unmatched: number
+  // Linked games still to enrich in this run (cover, platforms, cast).
+  toUpgrade: number
+}
+
+export interface GameUpgradeStatus {
+  id: number
+  state: 'idle' | 'running' | 'done' | 'cancelled' | 'error'
+  done: number
+  total: number
+  upgraded: number
+  failed: number
+  message: string | null
+  failures: { id: number; title: string; error: string }[]
+}
+
+// The Links panel on a game's detail page.
+export interface GameLinksState {
+  catalogInstalled: boolean
+  links: ExternalLink[]
+  work: GameWorkSummary | null
+  // The user said this game has no such entry (manual unlink).
+  unlinked: ExternalLinkSource[]
+  covers: { url: string; region: string | null; platform: string | null }[]
+}
+
+export interface BangumiCandidate {
+  id: number
+  name: string
+  date: string | null
+  coverUrl: string | null
+}
+
+export interface GameCastResult {
+  linked: boolean
+  cast: number
+  staff: number
+  relations: number
 }
 
 // ---- Japanese learning ----
@@ -3480,6 +3605,7 @@ export type TaskKind =
   | 'import' // any withActivity import (AniList, TMDB, VNDB, Steam, themes, …)
   | 'bulkImport'
   | 'libraryRefresh'
+  | 'gamesUpgrade'
   | 'wrestlingImport'
   | 'footballSync'
   | 'musicDownload'
@@ -5277,7 +5403,7 @@ export interface HistoryRefInfo {
 
 export interface HistoryTimelineItem {
   ref: string
-  kind: 'event' | 'period'
+  kind: 'event' | 'period' | 'polity'
   title: string
   native: string | null
   typeLabel: string
@@ -5301,7 +5427,7 @@ export interface HistoryDecadeSummary {
 
 /** One historical border version (CShapes); its outline is `shapes[shape]`. */
 export interface HistoryMapUnit {
-  set: 'world' | 'europe'
+  set: 'world' | 'europe' | 'early'
   name: string
   code: number
   /** Decimal years, end exclusive. */
@@ -5320,8 +5446,10 @@ export interface HistoryBorders {
   url: string
   /** Degrees per encoded unit. */
   quantum: number
-  /** First year the world set covers; earlier years have Europe only. */
+  /** First year the world set covers; earlier years draw the early layer and Europe. */
   worldFrom: number
+  /** Where the 1800-1885 world layer (Cliopatria) comes from, when present. */
+  earlyUrl?: string
   /** Each shape: rings of delta-encoded [x, y, dx, dy, ...] integers. */
   shapes: number[][][]
   units: HistoryMapUnit[]
@@ -5474,6 +5602,62 @@ export interface HistoryArticleView {
   note: HistoryNote | null
   /** Iran-related entities show Solar Hijri dates. */
   solarHijri: boolean
+  /** State pages: holders of the state's offices, in office order. */
+  rulers: HistoryRuler[]
+  /** State pages: the states that succeeded this one. */
+  successors: string[]
+  /** State pages: colonies, protectorates and other dependencies. */
+  dependencies: string[]
+  /** State pages: events the state took part in, in time order. */
+  events: string[]
+  /** Themes whose thread includes this entity. */
+  themes: string[]
+  /** Further reading: works from other traditions (in `sources`, never footnoted). */
+  furtherReading: FurtherReading[]
+  /** State pages: the state's outline in each border version on the map. */
+  territory: HistoryTerritory[]
+}
+
+export interface HistoryRuler {
+  person: string
+  title: string
+  start: Claim<HistDate> | null
+  end: Claim<HistDate> | null
+}
+
+export interface HistoryTerritory {
+  /** Decimal years, end exclusive. */
+  from: number
+  to: number
+  /** Projected outline (Equal Earth, scale 100) and its bounding box [x, y, w, h]. */
+  path: string
+  box: [number, number, number, number]
+}
+
+/** An event dated to today's month and day, for Home's "On this day". */
+export interface HistoryOnThisDay {
+  info: HistoryRefInfo
+  year: number
+  /** Which of the event's dates falls on the day. */
+  what: 'began' | 'ended' | 'stage'
+}
+
+/** One row of the History themes index. */
+export interface HistoryThemeRow {
+  info: HistoryRefInfo
+  entries: number
+  from: number | null
+  to: number | null
+}
+
+/** A map border unit that has a state page. */
+export interface HistoryMapPolity {
+  set: 'world' | 'europe' | 'early'
+  code: number
+  from: number | null
+  to: number | null
+  ref: string
+  title: string
 }
 
 export interface HistorySourceRow {

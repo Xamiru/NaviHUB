@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'reform',
   start: {
     alts: [
@@ -99,6 +99,10 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-ahmad-shah-qajar' },
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' },
+    { ref: 'polity:russian-empire' }
   ],
   participants: [
     {
@@ -566,5 +570,9 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 17327586
     }
+  ],
+  furtherReading: [
+    { source: 'kasravi-1939-tarikh-e-hejdah-saleh-ye-azarbayjan', perspective: 'iranian' },
+    { source: 'ivanov-1957-iranskaia-revoliutsiia-1905-1911', perspective: 'russian-soviet' }
   ]
 })

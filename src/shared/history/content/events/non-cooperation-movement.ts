@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'movement',
   start: {
     alts: [
@@ -43,6 +43,9 @@ export default defineEvent({
   },
   regions: ['south-asia'],
   prominence: 2,
+  polities: [
+    { ref: 'polity:british-raj' }
+  ],
   participants: [
     {
       ref: 'person:mahatma-gandhi',
@@ -68,17 +71,6 @@ export default defineEvent({
             loc: { section: 'Mahatma Gandhi', para: '2' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/india/20.htm' }
-        },
-        {
-          id: 'q1',
-          text: 'Das Komitee des indischen Nationalkongresses beschließt, das gegen die britische Kolonialmacht gerichtete Konzept zur Erlangung der Unabhängigkeit des Freiheitskämpfers "Mahatma" Gandhi (1869-1948) zu unterstützen.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1920', loc: { section: 'Chronik 1920', para: '227' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1920.html'
-          }
         },
         {
           id: 'q3',
@@ -125,21 +117,24 @@ export default defineEvent({
           {
             value: { d: '1922-03-10' },
             cites: [
-              { source: 'lemo-chronik-1922', loc: { section: 'Chronik 1922', para: '38' } }
+              { source: 'lemo-chronik-1922', loc: { section: 'Chronik 1922', para: '38' } },
+              {
+                source: 'loc-india-country-study-1995',
+                loc: { section: 'Mahatma Gandhi', para: '3' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q6',
-        text: 'Verhaftung des indischen Freiheitskämpfers Mahatma Gandhi (1869-1948) durch die britische Kolonialregierung. Eine Woche später wird er zu sechs Jahren Haft verurteilt.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1922', loc: { section: 'Chronik 1922', para: '40' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1922.html'
-        }
+        id: 'q7',
+        text: 'For his efforts, Gandhi was imprisoned until 1924.',
+        lang: 'en',
+        cite: {
+          source: 'loc-india-country-study-1995',
+          loc: { section: 'Mahatma Gandhi', para: '3' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/india/20.htm' }
       }
     }
   ],
@@ -163,5 +158,9 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 2135652
     }
+  ],
+  furtherReading: [
+    { source: 'chandra-1989-indias-struggle-for-independence', perspective: 'south-asian' },
+    { source: 'sarkar-1983-modern-india', perspective: 'south-asian' }
   ]
 })

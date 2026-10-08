@@ -52,15 +52,14 @@ export default definePerson({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/china/21.htm' }
         },
         {
-          id: 'q2',
-          text: 'Chiang Kai-shek (1887-1975), Oberbefehlshaber der Kuomintang-Truppen in China, verkündet die Bildung einer neuen, allein von der Kuomintang geleiteten nationalchinesischen Zentralregierung in Nanking.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1927', loc: { section: 'Chronik 1927', para: '52' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1927.html'
-          }
+          id: 'q4',
+          text: 'But Chiang, whose Northern Expedition was proving successful, set his forces to destroying the Shanghai CCP apparatus and established an anti-Communist government at Nanjing in April 1927.',
+          lang: 'en',
+          cite: {
+            source: 'loc-china-country-study-1987',
+            loc: { section: 'Nationalism and Communism', para: '6' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/china/21.htm' }
         }
       ]
     },

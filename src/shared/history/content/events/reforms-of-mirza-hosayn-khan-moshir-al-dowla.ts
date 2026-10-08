@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'reforms-of-mirza-hosayn-khan-moshir-al-dowla',
   names: [
-    { text: 'Reforms of Mirza Hosayn Khan Moshir al-Dowla', lang: 'en', role: 'primary' }
+    { text: 'Reforms of Mirza Hosayn Khan Moshir al-Dowla', lang: 'en', role: 'primary' },
+    { text: 'اصلاحات میرزا حسین‌خان سپهسالار', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'reform',
   start: {
     alts: [
@@ -60,6 +61,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-naser-al-din-shah-qajar' },
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -382,5 +386,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Mirza_Hossein_Khan_Moshir_al-Dowleh_-_Unknown_Artist_-_Islamic_Consultative_Assembly_Museum_of_Iran.jpg',
     credit: { institution: 'Islamic Consultative Assembly Museum of Iran' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'adamiyat-1973-andisheh-ye-taraqqi', perspective: 'iranian' }
+  ]
 })

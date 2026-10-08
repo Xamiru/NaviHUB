@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Atomic bombings of Hiroshima and Nagasaki', lang: 'en', role: 'primary' },
     { text: '広島・長崎への原子爆弾投下', lang: 'ja', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -69,6 +69,10 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'event:second-world-war' }
+  ],
+  polities: [
+    { ref: 'polity:united-states' },
+    { ref: 'polity:empire-of-japan' }
   ],
   participants: [
     {
@@ -288,5 +292,8 @@ export default defineEvent({
       date: { d: '1946-03-21' },
       durationSec: 882
     }
+  ],
+  furtherReading: [
+    { source: 'hiroshima-nagasaki-1981-genbaku-saigai', perspective: 'japanese' }
   ]
 })

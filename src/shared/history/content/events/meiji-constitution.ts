@@ -17,7 +17,7 @@ export default defineEvent({
     },
     { text: '大日本帝國憲法', lang: 'ja', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -34,6 +34,9 @@ export default defineEvent({
   prominence: 2,
   partOf: [
     { ref: 'period:meiji-era' }
+  ],
+  polities: [
+    { ref: 'polity:empire-of-japan' }
   ],
   participants: [
     {
@@ -67,17 +70,6 @@ export default defineEvent({
             loc: { section: 'The Development of Representative Government', para: '7' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/japan/25.htm' }
-        },
-        {
-          id: 'q1',
-          text: 'Mit Verkündung der Verfassung durch Kaiser Mutsuhito (1852-1912) wird Japan konstitutionelle Monarchie.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1889', loc: { section: 'Chronik 1889', para: '14' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1889.html'
-          }
         }
       ]
     },
@@ -217,5 +209,9 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 15078675
     }
+  ],
+  furtherReading: [
+    { source: 'inada-1960-meiji-kenpo-seiritsushi', perspective: 'japanese' },
+    { source: 'takii-2003-bunmeishi-no-naka-no-meiji-kenpo', perspective: 'japanese' }
   ]
 })

@@ -656,6 +656,7 @@ export function get(id: number): MediaDetail | null {
     db
       .prepare(
         `SELECT cr.id AS credit_id, cr.role AS credit_role, cr.language AS credit_language,
+              cr.role_note AS credit_role_note,
                 p.id AS p_id, p.name AS p_name, p.name_native AS p_name_native,
                 p.photo_path AS p_photo_path, p.bio AS p_bio, p.birthday AS p_birthday,
                 p.external_source AS p_external_source, p.external_id AS p_external_id,
@@ -673,6 +674,7 @@ export function get(id: number): MediaDetail | null {
     creditId: r.credit_id as number,
     role: r.credit_role as CreditRole,
     language: (r.credit_language as string) ?? null,
+    roleNote: (r.credit_role_note as string | null) ?? null,
     person: mapPerson({
       id: r.p_id,
       name: r.p_name,
@@ -818,9 +820,12 @@ export function get(id: number): MediaDetail | null {
       .prepare(
         `SELECT mr.relation_type, mr.related_type, mr.related_title, m2.*
          FROM media_relation mr
-         LEFT JOIN media_item m2
-           ON m2.external_source = mr.related_source
-          AND m2.external_id = mr.related_external_id
+         LEFT JOIN media_item m2 ON m2.id = COALESCE(
+           (SELECT x.id FROM media_item x
+             WHERE x.external_source = mr.related_source AND x.external_id = mr.related_external_id),
+           -- A game keyed by Steam or RAWG reaches its catalog work this way.
+           (SELECT l.media_id FROM media_external_link l
+             WHERE l.source = mr.related_source AND l.external_id = mr.related_external_id LIMIT 1))
          WHERE mr.media_id = ?
          ORDER BY COALESCE(mr.sort_order, 1000000) ASC`
       )

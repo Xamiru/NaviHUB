@@ -6,12 +6,13 @@ export default definePerson({
     { text: 'Nikita Khrushchev', lang: 'en', role: 'primary' },
     { text: 'Никита Сергеевич Хрущёв', lang: 'ru', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   regions: ['russia-central-asia'],
   roles: ['politician', 'head-of-state'],
   offices: [
     {
       title: 'first secretary',
+      polity: 'polity:soviet-union',
       start: {
         alts: [
           {

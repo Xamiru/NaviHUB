@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -33,6 +33,9 @@ export default defineEvent({
   },
   regions: ['north-america'],
   prominence: 2,
+  polities: [
+    { ref: 'polity:united-states' }
+  ],
   participants: [
     {
       name: 'Stephen Douglas',

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'treaty-of-hunkar-iskelesi-terms',
   about: ['event:treaty-of-hunkar-iskelesi'],
   topic: 'nature',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'straits-closed-on-russian-demand',
@@ -27,9 +27,9 @@ export default defineInterpretation({
     },
     {
       id: 'secret-clause',
-      category: 'contemporary',
+      category: 'scholarly',
       holders: [
-        { kind: 'state', name: 'The major European powers' }
+        { kind: 'organization', name: 'Library of Congress, Federal Research Division' }
       ],
       statements: [
         {

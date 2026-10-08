@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Second Italo-Ethiopian War', lang: 'en', role: 'primary' },
     { text: 'Abessinienkrieg', lang: 'de', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -99,6 +99,7 @@ export default defineEvent({
     {
       key: 'italy',
       name: 'Italy',
+      polity: 'polity:kingdom-of-italy',
       cites: [
         {
           source: 'loc-ethiopia-country-study-1991',
@@ -109,6 +110,7 @@ export default defineEvent({
     {
       key: 'ethiopia',
       name: 'Ethiopia',
+      polity: 'polity:ethiopian-empire',
       cites: [
         {
           source: 'loc-ethiopia-country-study-1991',
@@ -354,22 +356,20 @@ export default defineEvent({
               {
                 source: 'loc-ethiopia-country-study-1991',
                 loc: { section: 'Mussolini\'s Invasion and the Italian Occupation', para: '4' }
-              },
-              { source: 'lemo-chronik-1936', loc: { section: 'Chronik 1936', para: '69' } }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q13',
-        text: 'Mit der Eroberung der Hauptstadt Addis Abeba erklärt Benito Mussolini den Krieg in Abessinien für beendet. Er ruft das "neue italienische Imperium" aus.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1936', loc: { section: 'Chronik 1936', para: '70' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1936.html'
-        }
+        id: 'q14',
+        text: 'The Italian forces entered Addis Ababa on May 5. Four days later, Italy announced the annexation of Ethiopia.',
+        lang: 'en',
+        cite: {
+          source: 'loc-ethiopia-country-study-1991',
+          loc: { section: 'Mussolini\'s Invasion and the Italian Occupation', para: '4' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/ethiopia/19.htm' }
       }
     }
   ],
@@ -378,5 +378,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Military_Parade_of_Italian_Troops_in_Addis_Ababa_(1936).jpg',
     credit: { institution: 'Narodowe Archiwum Cyfrowe' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'bahru-zewde-1991-a-history-of-modern-ethiopia', perspective: 'african' },
+    { source: 'del-boca-1965-la-guerra-dabissinia', perspective: 'european' }
+  ]
 })

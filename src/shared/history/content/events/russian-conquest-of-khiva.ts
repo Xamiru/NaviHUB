@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Russian conquest of Khiva', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'invasion',
   start: {
     alts: [
@@ -55,6 +55,10 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:russian-empire' },
+    { ref: 'polity:khanate-of-khiva' }
   ],
   sections: [
     {

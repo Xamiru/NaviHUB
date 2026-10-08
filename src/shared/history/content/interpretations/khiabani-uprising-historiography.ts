@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'khiabani-uprising-historiography',
   about: ['event:khiabani-uprising', 'person:mohammad-khiabani'],
   topic: 'historiography',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   framing: {
     id: 'q1',
     text: 'Despite general historical approbation of Ḵiābāni’s involvement in the Constitutional Revolution from 1908 to 1911, his post-1917 political activities remain a highly contentious topic, with frequently polemical and ideologically skewed historical accounts.',
@@ -22,9 +22,9 @@ export default defineInterpretation({
   positions: [
     {
       id: 'long-planned-seizure',
-      category: 'contemporary',
+      category: 'scholarly',
       holders: [
-        { kind: 'participant', name: 'Aḥmad Kasravi' }
+        { kind: 'scholar', name: 'Aḥmad Kasravi', ref: 'person:ahmad-kasravi' }
       ],
       statements: [
         {

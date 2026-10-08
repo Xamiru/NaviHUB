@@ -4,11 +4,11 @@ export default defineInterpretation({
   id: 'french-intervention-in-mexico-outcome',
   about: ['event:french-intervention-in-mexico'],
   topic: 'outcome',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'mexican-resistance-us-pressure',
-      category: 'official',
+      category: 'scholarly',
       holders: [
         { kind: 'organization', name: 'Office of the Historian, U.S. Department of State' }
       ],

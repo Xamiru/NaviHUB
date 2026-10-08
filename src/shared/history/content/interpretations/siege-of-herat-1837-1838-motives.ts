@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'siege-of-herat-1837-1838-motives',
   about: ['event:siege-of-herat-1837-1838'],
   topic: 'motives',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   framing: {
     id: 'q1',
     text: 'The Herat campaign (1837-38) illustrates Anglo-Russian rivalry over Persia and Afghanistan, which were considered as buffer-states.',
@@ -96,14 +96,14 @@ export default defineInterpretation({
     },
     {
       id: 'frontier-pacification',
-      category: 'contemporary',
+      category: 'scholarly',
       holders: [
-        { kind: 'participant', name: 'Sayyed Moḥammad-Bāqer Šafti' }
+        { kind: 'scholar', name: 'Abbas Amanat' }
       ],
       statements: [
         {
           id: 'q6',
-          text: 'Yet he refuted McNeill’s charges and defended the shah’s campaign on the grounds that it was aimed to pacify the eastern frontiers against Turkman and Afghan raids and stop the abduction and enslavement of the Shiʿite inhabitants of Khorasan.',
+          text: 'McNeill, who after the break in relations headed towards Tabriz, on the way dispatched a letter to the celebrated senior jurist (mojtahed)of Isfahan, Sayyed Moḥammad-Bāqer Šafti, criticizing the Persian government for bringing about the break in relations and urging that “leader of the community,” as he referred to Šafti, to stay clear of the conflict between the two governments. This was a veiled warning to him not to declare jihad against Britain at the behest of the shah and his premier. The mojtahed’s rejoinder, which reached McNeill in September 1838, was conciliatory and showed his awareness of the futility of declaring jihad as had been done in the 1826 war against Russia. Yet he refuted McNeill’s charges and defended the shah’s campaign on the grounds that it was aimed to pacify the eastern frontiers against Turkman and Afghan raids and stop the abduction and enslavement of the Shiʿite inhabitants of Khorasan.',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-herat-vi',
@@ -111,7 +111,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-08',
             url: 'https://www.iranicaonline.org/articles/herat-vi'
           }
         }
@@ -121,53 +121,38 @@ export default defineInterpretation({
       id: 'russian-instigation',
       category: 'contemporary',
       holders: [
-        { kind: 'participant', name: 'Lord Palmerston' },
-        { kind: 'state', name: 'British Foreign Office' }
+        { kind: 'participant', name: 'Viscount Palmerston' }
       ],
       statements: [
         {
-          id: 'q7',
-          text: 'Palmerston viewed the Persian effort as an expansionist move instigated by Russia.',
+          id: 'q9',
+          text: 'Does the disavowal of Russia—does the recal of her agents—undo the effect that these agents had produced? What had they done with respect to Persia? Had they not negotiated and guaranteed treaties between Candahar and Cabul on the one hand, and Persia on the other—treaties offensive and defensive; and directed specially against the Government of British India? These facts are on record and undeniable.',
           lang: 'en',
           cite: {
-            source: 'iranica-amanat-great-britain-ii',
+            source: 'hansard-commons-1843-03-01-war-with-affghanistan',
+            loc: { section: 'HC Deb 01 March 1843 vol 67 cc119-212', para: '13' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1843/mar/01/war-with-affghanistan'
+          }
+        },
+        {
+          id: 'q7',
+          text: 'But it has not been of their seeking; and has been forced upon them by the conduct of the Shah, and by those evil advisers by whom he has allowed himself to be influenced.',
+          lang: 'en',
+          cite: {
+            source: 'gb-foreign-office-1839-correspondence-relating-to-persia-and-affghanistan',
             loc: {
-              section: 'GREAT BRITAIN ii. British influence in Persia in the 19th century',
-              para: '12'
+              section: 'No. 111. Viscount Palmerston to the Count Pozzo di Borgo, Foreign Office, December 20, 1838',
+              page: '193'
             }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
-          }
-        },
-        {
-          id: 'q8',
-          text: 'Yet the Russophobes in the British establishment, headed by Lord Palmerston, viewed with alarm the growing Russian influence in Tehran.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-amanat-herat-vi',
-            loc: { section: 'HERAT vi. THE HERAT QUESTION', para: '10' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/herat-vi'
-          }
-        },
-        {
-          id: 'q9',
-          text: 'In their eyes, Persian control of Herat was a sure license for Russians to foment tribal anti-British agitation in Afghanistan.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-amanat-herat-vi',
-            loc: { section: 'HERAT vi. THE HERAT QUESTION', para: '10' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/herat-vi'
+            at: '2026-10-08',
+            url: 'https://archive.org/download/india.history.resource.112471/112471_djvu.txt'
           }
         }
       ]

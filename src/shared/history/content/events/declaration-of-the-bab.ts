@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'declaration-of-the-bab',
   names: [
-    { text: 'Declaration of the Báb', lang: 'en', role: 'primary' }
+    { text: 'Declaration of the Báb', lang: 'en', role: 'primary' },
+    { text: 'اظهار امر باب', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'religious',
   start: {
     alts: [
@@ -341,5 +342,12 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Tablet-Bab-to-first-letter-of-the-living.jpg',
     credit: { institution: 'The Dawn-Breakers (bahai-library.com)', creator: 'The Báb' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'ivanov-1939-babidskie-vosstaniia-v-irane', perspective: 'russian-soviet' },
+    {
+      source: 'vahman-2010-yeksad-o-shast-sal-mobarezeh-ba-diyanat-e-bahai',
+      perspective: 'iranian'
+    }
+  ]
 })

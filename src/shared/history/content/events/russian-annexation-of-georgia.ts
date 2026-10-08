@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Russian annexation of Georgia', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'occupation',
   start: {
     alts: [
@@ -65,6 +65,10 @@ export default defineEvent({
   },
   regions: ['russia-central-asia', 'iran'],
   prominence: 2,
+  polities: [
+    { ref: 'polity:russian-empire' },
+    { ref: 'polity:qajar-iran' }
+  ],
   participants: [
     {
       ref: 'person:alexander-i-of-russia',
@@ -184,5 +188,11 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:George_XII_of_Georgia,_copy_by_Grigory_Gagarin.jpg',
     credit: { institution: 'Art Palace of Georgia', creator: 'Grigory Gagarin' },
     license: { id: 'cc0' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'dubrovin-2019-istoriia-voiny-i-vladychestva-russkikh-na-kavkaze',
+      perspective: 'russian-soviet'
+    }
+  ]
 })

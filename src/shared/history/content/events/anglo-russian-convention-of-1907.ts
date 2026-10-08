@@ -4,9 +4,10 @@ export default defineEvent({
   id: 'anglo-russian-convention-of-1907',
   names: [
     { text: 'Anglo-Russian Convention of 1907', lang: 'en', role: 'primary' },
+    { text: 'قرارداد ۱۹۰۷', lang: 'fa', role: 'native' },
     { text: 'Anglo-Russian Agreement of 1907', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -33,6 +34,10 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:russian-empire' }
   ],
   related: [
     {
@@ -185,5 +190,10 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:The_Russo-British_Pact_in_1907.jpg',
     credit: { institution: 'The Strangling of Persia (W. Morgan Shuster, 1912)' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'sheikholeslami-1991-elal-e-afzayesh-e-nofuz', perspective: 'iranian' },
+    { source: 'kasravi-1940-tarikh-e-mashruteh-ye-iran', perspective: 'iranian' },
+    { source: 'ivanov-1957-iranskaia-revoliutsiia-1905-1911', perspective: 'russian-soviet' }
+  ]
 })

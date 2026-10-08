@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'annexation-of-hawaii-motives',
   about: ['event:annexation-of-hawaii'],
   topic: 'motives',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'strategic-value',
@@ -72,7 +72,7 @@ export default defineInterpretation({
     },
     {
       id: 'annexationists-arguments',
-      category: 'official',
+      category: 'scholarly',
       holders: [
         { kind: 'organization', name: 'Office of the Historian, U.S. Department of State' }
       ],

@@ -13,7 +13,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -42,6 +42,44 @@ export default definePerson({
   },
   regions: ['mena', 'europe'],
   roles: ['military', 'head-of-state', 'revolutionary'],
+  offices: [
+    {
+      title: 'president of the Republic of Turkey',
+      polity: 'polity:republic-of-turkey',
+      start: {
+        alts: [
+          {
+            value: { d: '1923-10-29' },
+            cites: [
+              {
+                source: 'loc-turkey-country-study-1995',
+                loc: { section: 'Atatürk and the Turkish Nation', para: '20' }
+              }
+            ]
+          }
+        ]
+      },
+      end: {
+        alts: [
+          {
+            value: { d: '1938-11-10' },
+            cites: [
+              {
+                source: 'loc-turkey-country-study-1995',
+                loc: { section: 'Turkey after Atatürk', para: '1' }
+              }
+            ]
+          }
+        ]
+      },
+      cites: [
+        {
+          source: 'loc-turkey-country-study-1995',
+          loc: { section: 'Atatürk and the Turkish Nation', para: '20' }
+        }
+      ]
+    }
+  ],
   sections: [
     {
       kind: 'overview',

@@ -97,14 +97,7 @@ export interface FootballLedgerRow {
   points: number
 }
 
-export function footballPointsForWin(competitionKey: FootballCompetitionKey, seasonKey: string): number {
-  const start = Number(seasonKey.match(/\d{4}/)?.[0] ?? 0)
-  if (competitionKey === 'premier-league') return start >= 1981 ? 3 : 2
-  if (competitionKey === 'la-liga') return start >= 1995 ? 3 : 2
-  if (competitionKey === 'serie-a') return start >= 1994 ? 3 : 2
-  if (competitionKey === 'bundesliga') return start >= 1995 ? 3 : 2
-  return 3
-}
+export { footballPointsForWin } from '@shared/football'
 
 export function buildFootballLedger(
   matches: Array<{ homeTeamId: number; awayTeamId: number; homeScore: number; awayScore: number }>,

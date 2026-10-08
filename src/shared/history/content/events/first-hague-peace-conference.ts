@@ -104,14 +104,17 @@ export default defineEvent({
           }
         },
         {
-          id: 'q3',
-          text: 'Auf Initiative Zar Nikolaus II. wird die Erste Haager Friedenskonferenz mit 26 teilnehmenden Staaten einberufen.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1899', loc: { section: 'Chronik 1899', para: '29' } },
+          id: 'q10',
+          text: 'PEACE CONFERENCES, the official title of the two international conferences held at the Hague in 1899 and 1907. Both were organized at the instance of the emperor Nicholas II. of Russia. […] The conference, which was attended by representatives of 26 states, sat from the 18th of May to the 29th of July 1899.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-peace-conferences',
+            loc: { section: 'PEACE CONFERENCES', para: '1' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1899.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Peace_Conferences'
           }
         }
       ]
@@ -139,14 +142,17 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
-          id: 'q5',
-          text: 'Die erste internationale Friedenskonferenz in Den Haag endet mit der Annahme von einem Abkommen zur friedlichen Regelung internationaler Streitfälle, der Haager Landkriegsordnung und einem Abkommen über den Seekrieg.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1899', loc: { section: 'Chronik 1899', para: '37' } },
+          id: 'q11',
+          text: 'When the subject of excessive armaments came up for discussion, the objections of the German military delegate led to its abandonment. Other very important matters, however, were dealt with, and three momentous conventions were adopted',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-peace-conferences',
+            loc: { section: 'PEACE CONFERENCES', para: '2' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1899.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Peace_Conferences'
           }
         },
         {

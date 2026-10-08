@@ -29,6 +29,7 @@ import { stopQuizPools } from './quizPools'
 import { finalizeActiveGameSession } from './gameLaunch'
 import { stopAchievementWatcher } from './achievementWatcher'
 import { closeCatalogDb } from './gamesCatalogDb'
+import { closeLaunchboxDb } from './launchboxCatalogDb'
 import { parseArgvFiles, queueOpen } from './openFile'
 import { setMainWindow as setPlayerBridgeWindow } from './playerBridge'
 import { closeWidget } from './widget'
@@ -375,6 +376,7 @@ app.on('before-quit', () => {
   finalizeActiveGameSession()
   closeDatabase()
   closeCatalogDb()
+  closeLaunchboxDb()
   closeDictDb()
   // LAST, and synchronous: every step above can log, and this is the flush that
   // gets those lines onto disk before the process goes away.

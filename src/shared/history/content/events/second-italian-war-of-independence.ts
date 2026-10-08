@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Second Italian War of Independence', lang: 'en', role: 'primary' },
     { text: 'Seconda guerra d\'indipendenza italiana', lang: 'it', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -36,6 +36,29 @@ export default defineEvent({
   },
   regions: ['europe'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:magenta',
+      cites: [
+        {
+          source: 'britannica-1911-napoleon-iii',
+          loc: { section: 'NAPOLEON III.', para: '23' }
+        }
+      ]
+    },
+    {
+      ref: 'place:solferino',
+      cites: [
+        {
+          source: 'loc-hungary-country-study-1989',
+          loc: { section: 'Aftermath of the Revolution', para: '3' }
+        }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:second-french-empire' }
+  ],
   sides: [
     {
       key: 'italians',
@@ -50,6 +73,7 @@ export default defineEvent({
     {
       key: 'austria',
       name: 'Austria',
+      polity: 'polity:austrian-empire',
       cites: [
         {
           source: 'loc-austria-country-study-1994',
@@ -82,7 +106,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Franz Joseph',
+      ref: 'person:franz-joseph-i',
       role: 'head-of-state',
       side: 'austria',
       cites: [
@@ -141,17 +165,17 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
-          id: 'q3',
-          text: 'La politique italienne de l\'Empereur - en faveur de l\'unification et au détriment de l\'Autriche - permet à la France d\'annexer, après plébiscite, Nice et la Savoie.',
-          lang: 'fr',
+          id: 'q6',
+          text: 'His consent to the annexation of the Central Italian states, in exchange for Savoy and Nice (Treaty of Turin, March 24, 1860) exposed him to violent attacks on the part of the ultramontanes, whose slave he had practically been since 1848.',
+          lang: 'en',
           cite: {
-            source: 'elysee-louis-napoleon-bonaparte',
-            loc: { section: 'Louis-Napoléon Bonaparte' }
+            source: 'britannica-1911-napoleon-iii',
+            loc: { section: 'NAPOLEON III.', para: '23' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.elysee.fr/la-presidence/louis-napoleon-bonaparte'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Napoleon_III.'
           }
         },
         {
@@ -172,5 +196,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Bossoli,_Carlo_-_Battle_of_Solferino.jpg',
     credit: { creator: 'Carlo Bossoli' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'romeo-1969-cavour-e-il-suo-tempo', perspective: 'european' }
+  ]
 })

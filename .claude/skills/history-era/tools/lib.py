@@ -153,6 +153,8 @@ DEFINE = {
     'source': ('defineSource', 'sources'),
     'interpretation': ('defineInterpretation', 'interpretations'),
     'media': ('defineMedia', 'media'),
+    'polity': ('definePolity', 'polities'),
+    'theme': ('defineTheme', 'themes'),
 }
 
 def media_id(t):
@@ -176,6 +178,7 @@ def write_all(entities, session_file):
         plan.append((f'{kind}:{eid}', rel, fn, body))
     for ref, rel, fn, body in plan:
         text = f"import {{ {fn} }} from '../../schema'\n\nexport default {fn}({ts(body)})\n"
+        os.makedirs(os.path.dirname(os.path.join(CONTENT, rel)), exist_ok=True)
         open(os.path.join(CONTENT, rel), 'w').write(text)
         created.add(rel)
     json.dump(sorted(created), open(session_file, 'w'), indent=1)

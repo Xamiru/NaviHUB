@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -148,5 +148,9 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Mirza_Malkam_Khan.jpg',
     credit: { institution: 'E. G. Browne, The Press and Poetry of Modern Persia (1914)' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'adamiyat-1973-andisheh-ye-taraqqi', perspective: 'iranian' },
+    { source: 'adamiyat-1961-fekr-e-azadi', perspective: 'iranian' }
+  ]
 })

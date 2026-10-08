@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'New Deal', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'reform',
   start: {
     alts: [
@@ -21,6 +21,9 @@ export default defineEvent({
   prominence: 2,
   places: [
     { ref: 'place:washington-dc' }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
   ],
   participants: [
     {
@@ -73,28 +76,14 @@ export default defineEvent({
           }
         },
         {
-          id: 'q1',
-          text: 'US-Präsident Roosevelt verkündet den "New Deal". Damit sollen vor allem die Arbeitslosigkeit bekämpft und die Bankenkrise überwunden werden.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1933', loc: { section: 'Chronik 1933', para: '62' } },
+          id: 'q14',
+          text: 'Congress meets beginning what is later known as Roosevelt\'s “Hundred Days.” During this period, Congress enacts many of the principal programs of FDR\'s “New Deal.”',
+          lang: 'en',
+          cite: { source: 'millercenter-fdr-key-events', loc: { section: 'Key Events' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1933.html'
-          }
-        },
-        {
-          id: 'q2',
-          text: 'Zur Bekämpfung der wirtschaftlichen Depression infolge der Wirtschaftskrise und zur Dämpfung gesellschaflicher Spannungen propagiert er den "New Deal".',
-          lang: 'de',
-          cite: {
-            source: 'lemo-biografie-franklin-d-roosevelt',
-            loc: { section: 'Franklin D. Roosevelt 1882-1945', para: '39' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/franklin-d-roosevelt'
+            at: '2026-10-07',
+            url: 'https://millercenter.org/president/fdroosevelt/key-events'
           }
         }
       ]
@@ -240,20 +229,21 @@ export default defineEvent({
           {
             value: { d: '1935-01-04' },
             cites: [
-              { source: 'lemo-chronik-1935', loc: { section: 'Chronik 1935', para: '5' } }
+              { source: 'lemo-chronik-1935', loc: { section: 'Chronik 1935', para: '5' } },
+              { source: 'millercenter-fdr-key-events', loc: { section: 'Key Events' } }
             ]
           }
         ]
       },
       quote: {
-        id: 'q10',
-        text: 'US-Präsident Franklin D. Roosevelt kündigt mit umfangreichen Sozialreformen eine Fortführung des "New Deal" an.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1935', loc: { section: 'Chronik 1935', para: '6' } },
+        id: 'q15',
+        text: 'In his third State of the Union Address, FDR effectively announces the beginning of a second stage of his New Deal. This new phase will focus on long-term gains such as a system of social security--for the aged, the unemployed, the ill--and for improved housing and tax reform.',
+        lang: 'en',
+        cite: { source: 'millercenter-fdr-key-events', loc: { section: 'Key Events' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1935.html'
+          at: '2026-10-07',
+          url: 'https://millercenter.org/president/fdroosevelt/key-events'
         }
       }
     },
@@ -295,23 +285,21 @@ export default defineEvent({
               {
                 source: 'lemo-biografie-franklin-d-roosevelt',
                 loc: { section: 'Franklin D. Roosevelt 1882-1945', para: '42' }
-              }
+              },
+              { source: 'millercenter-fdr-key-events', loc: { section: 'Key Events' } }
             ]
           }
         ]
       },
       quote: {
-        id: 'q12',
-        text: 'Er gerät in eine scharfe Auseinandersetzung mit dem Obersten Gerichtshof, der Teile seiner Gesetzgebung für verfassungswidrig erklärt. Roosevelt bemüht sich um eine Ablösung der Richter, scheitert jedoch am Widerstand der Konservativen im Kongress.',
-        lang: 'de',
-        cite: {
-          source: 'lemo-biografie-franklin-d-roosevelt',
-          loc: { section: 'Franklin D. Roosevelt 1882-1945', para: '43' }
-        },
+        id: 'q16',
+        text: 'Emboldened by his sweeping electoral victory, FDR sends his “court packing” scheme to Congress. He does so in a bill calling for the reorganization of the federal judiciary system, allegedly to make it more efficient at all levels. Frustrated by recent Supreme Court decisions against some of his New Deal policies, the bill calls for adding as many as six justices to the Court should any of the current members over age seventy--namely those that oppose his programs--refuse to retire.',
+        lang: 'en',
+        cite: { source: 'millercenter-fdr-key-events', loc: { section: 'Key Events' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/biografie/franklin-d-roosevelt'
+          at: '2026-10-07',
+          url: 'https://millercenter.org/president/fdroosevelt/key-events'
         }
       }
     }
@@ -365,5 +353,8 @@ export default defineEvent({
       date: { d: '1938-02-04' },
       durationSec: 1873
     }
+  ],
+  furtherReading: [
+    { source: 'yakovlev-1965-franklin-ruzvelt', perspective: 'russian-soviet' }
   ]
 })

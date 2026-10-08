@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'genocide',
   start: {
     alts: [
@@ -93,7 +93,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Heinrich Himmler',
+      ref: 'person:heinrich-himmler',
       role: 'perpetrator',
       cites: [
         {
@@ -217,18 +217,14 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/42.htm' }
         },
         {
-          id: 'q2',
-          text: 'Im Verlauf des Jahres 1941 hatte die NS-Führung die Ermordung aller im deutschen Machtbereich lebenden Juden beschlossen.',
-          lang: 'de',
+          id: 'q13',
+          text: 'In the summer of 1941, however, plans were made for the " final solution" of the Jewish question in all of Europe.',
+          lang: 'en',
           cite: {
-            source: 'lemo-kapitel-ns-voelkermord',
-            loc: { section: 'Der NS-Völkermord', para: '10' }
+            source: 'avalon-imt-judgment-war-crimes-and-crimes-against-humanity',
+            loc: { section: 'PERSECUTION OF THE JEWS', para: '11' }
           },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/kapitel/der-zweite-weltkrieg/voelkermord'
-          }
+          provenance: { via: 'web', at: '2026-10-07', url: 'https://avalon.law.yale.edu/imt/judwarcr.asp' }
         }
       ]
     },
@@ -236,18 +232,14 @@ export default defineEvent({
       kind: 'background',
       quotes: [
         {
-          id: 'q3',
-          text: 'Der deutsche Überfall auf Polen im Herbst 1939 war begleitet von Exzessen an der polnischen Bevölkerung. Juden wurden auf offener Straße schikaniert und gequält, Synagogen entweiht und zerstört, jüdische Wohngebiete geräumt und ihre Bewohner insbesondere nach 1940 in Ghettos zusammengepfercht. Morde waren an der Tagesordnung. Diese Maßnahmen bildeten den Auftakt für die 1941 einsetzende systematische Ermordung der jüdischen Bevölkerung in Polen.',
-          lang: 'de',
+          id: 'q14',
+          text: 'The Nazi persecution of Jews in Germany before the war, severe and repressive as it was, cannot compare, however, with the policy pursued during the war in the occupied territories. Originally the policy was similar to that which had been in force inside Germany. Jews were required to register, were forced to live in ghettoes, to wear the yellow star, and were used as slave labourers.',
+          lang: 'en',
           cite: {
-            source: 'lemo-kapitel-ns-voelkermord',
-            loc: { section: 'Der NS-Völkermord', para: '4' }
+            source: 'avalon-imt-judgment-war-crimes-and-crimes-against-humanity',
+            loc: { section: 'PERSECUTION OF THE JEWS', para: '11' }
           },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/kapitel/der-zweite-weltkrieg/voelkermord'
-          }
+          provenance: { via: 'web', at: '2026-10-07', url: 'https://avalon.law.yale.edu/imt/judwarcr.asp' }
         }
       ]
     },
@@ -255,18 +247,14 @@ export default defineEvent({
       kind: 'course',
       quotes: [
         {
-          id: 'q4',
-          text: 'Mit dem am 22. Juni 1941 begonnenen Krieg gegen die Sowjetunion erhielt die NS-Vernichtungspolitik eine neue Dimension. Anders als die militärischen Auseinandersetzungen im Westen war der Feldzug im Osten als rassenideologischer Raub- und Vernichtungskrieg konzipiert worden, und als solcher wurde er von Beginn an geführt.',
-          lang: 'de',
+          id: 'q15',
+          text: 'The plan for exterminating the Jews was developed shortly after the attack on the Soviet Union. Einsatzgruppen of the Security Police and SD, formed for the purpose of breaking the resistance of the population of the areas lying behind the German armies in the East, were given the duty of exterminating the Jews in those areas.',
+          lang: 'en',
           cite: {
-            source: 'lemo-kapitel-ns-voelkermord',
-            loc: { section: 'Der NS-Völkermord', para: '9' }
+            source: 'avalon-imt-judgment-war-crimes-and-crimes-against-humanity',
+            loc: { section: 'PERSECUTION OF THE JEWS', para: '12' }
           },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/kapitel/der-zweite-weltkrieg/voelkermord'
-          }
+          provenance: { via: 'web', at: '2026-10-07', url: 'https://avalon.law.yale.edu/imt/judwarcr.asp' }
         },
         {
           id: 'q5',
@@ -279,18 +267,14 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/42.htm' }
         },
         {
-          id: 'q6',
-          text: 'Über eine Million Menschen fanden den Tod in Auschwitz, das weltweit zu einem Synonym für den Massenmord an den Juden wurde.',
-          lang: 'de',
+          id: 'q16',
+          text: 'All who were fit to work were used as slave labourers in the concentration camps; all who were not fit to work were destroyed in gas chambers and their bodies burnt. Certain concentration camps such as Treblinka and Auschwitz were set aside for this main purpose.',
+          lang: 'en',
           cite: {
-            source: 'lemo-kapitel-ns-voelkermord',
-            loc: { section: 'Der NS-Völkermord', para: '20' }
+            source: 'avalon-imt-judgment-war-crimes-and-crimes-against-humanity',
+            loc: { section: 'PERSECUTION OF THE JEWS', para: '17' }
           },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/kapitel/der-zweite-weltkrieg/voelkermord'
-          }
+          provenance: { via: 'web', at: '2026-10-07', url: 'https://avalon.law.yale.edu/imt/judwarcr.asp' }
         }
       ]
     },
@@ -298,18 +282,14 @@ export default defineEvent({
       kind: 'casualties',
       quotes: [
         {
-          id: 'q7',
-          text: 'Insgesamt fielen der von den Nationalsozialisten in ihrem Rassenwahn angestrebten Vernichtung aller Juden Europas durch Vergasung, Erschießung, Injektionen, medizinische Versuche oder durch gezieltes Verhungernlassen rund 5,6 Millionen Juden zum Opfer, davon etwa 2,7 Millionen in den Vernichtungslagern. Neben der jüdischen Bevölkerung fielen mehr als 250.000 europäische Sinti und Roma den Einsatzgruppen zum Opfer oder wurden in den Vernichtungslagern ermordet.',
-          lang: 'de',
+          id: 'q17',
+          text: 'A large number (about 4.5 million) of those killed came from Poland and the Soviet Union; about 125,000 German Jews were murdered.',
+          lang: 'en',
           cite: {
-            source: 'lemo-kapitel-ns-voelkermord',
-            loc: { section: 'Der NS-Völkermord', para: '23' }
+            source: 'loc-germany-country-study-1995',
+            loc: { section: 'Total Mobilization, Resistance, and the Holocaust', para: '6' }
           },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/kapitel/der-zweite-weltkrieg/voelkermord'
-          }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/germany/42.htm' }
         }
       ]
     },
@@ -340,21 +320,24 @@ export default defineEvent({
               {
                 source: 'lemo-kapitel-ns-voelkermord',
                 loc: { section: 'Der NS-Völkermord', para: '13' }
+              },
+              {
+                source: 'loc-germany-country-study-1995',
+                loc: { section: 'Total Mobilization, Resistance, and the Holocaust', para: '5' }
               }
             ]
           }
         ]
       },
       quote: {
-        id: 'q10',
-        text: 'Auf der Wannsee-Konferenz in Berlin wird unter Vorsitz von Reinhard Heydrich über organisatorische Fragen der Ermordung der europäischen Juden beraten.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1942', loc: { section: 'Chronik 1942', para: '16' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1942.html'
-        }
+        id: 'q18',
+        text: 'Discussions in January 1942 at the Wannsee Conference on the outskirts of Berlin led to the improved organization and coordination of the program of genocide.',
+        lang: 'en',
+        cite: {
+          source: 'loc-germany-country-study-1995',
+          loc: { section: 'Total Mobilization, Resistance, and the Holocaust', para: '5' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/germany/42.htm' }
       }
     },
     {
@@ -363,21 +346,24 @@ export default defineEvent({
           {
             value: { d: '1943-04-19' },
             cites: [
-              { source: 'lemo-chronik-1943', loc: { section: 'Chronik 1943', para: '89' } }
+              { source: 'lemo-chronik-1943', loc: { section: 'Chronik 1943', para: '89' } },
+              {
+                source: 'loc-poland-country-study-1992',
+                loc: { section: 'World War II', para: '13' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q11',
-        text: 'Im Warschauer Ghetto, aus dem bereits 300.000 Juden deportiert worden sind, beginnt ein Aufstand, der bis zur kompletten Auflösung des Ghettos am 16. Mai andauert.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1943', loc: { section: 'Chronik 1943', para: '90' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1943.html'
-        }
+        id: 'q19',
+        text: 'Acting independently of the overall Polish resistance, an underground Jewish network organized the courageous but unsuccessful 1943 risings in the ghettos of Warsaw, Bialystok, and Vilnius.',
+        lang: 'en',
+        cite: {
+          source: 'loc-poland-country-study-1992',
+          loc: { section: 'World War II', para: '13' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/poland/15.htm' }
       }
     },
     {
@@ -386,21 +372,25 @@ export default defineEvent({
           {
             value: { d: '1945-01-27' },
             cites: [
-              { source: 'lemo-chronik-1945', loc: { section: 'Chronik 1945', para: '24' } }
+              {
+                source: 'hdot-irving-v-penguin-books-and-lipstadt-judgment-2000',
+                loc: {
+                  section: 'VIII. JUSTIFICATION: THE CLAIM THAT IRVING IS A "HOLOCAUST DENIER"'
+                }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q12',
-        text: 'Die Rote Armee befreit das Vernichtungslager Auschwitz, in dem noch 7.600 Häftlinge sind.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1945', loc: { section: 'Chronik 1945', para: '25' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1945.html'
-        }
+        id: 'q20',
+        text: 'Auschwitz itself was liberated on 27th January 1945 by the advancing Russian army. The Russians found a total of 7,500 inmates.',
+        lang: 'en',
+        cite: {
+          source: 'hdot-irving-v-penguin-books-and-lipstadt-judgment-2000',
+          loc: { section: 'VIII. JUSTIFICATION: THE CLAIM THAT IRVING IS A "HOLOCAUST DENIER"' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'https://www.hdot.org/judge/' }
       }
     }
   ],
@@ -423,5 +413,9 @@ export default defineEvent({
       date: { d: '1945' },
       durationSec: 3473
     }
+  ],
+  furtherReading: [
+    { source: 'grossman-erenburg-2015-chernaia-kniga', perspective: 'russian-soviet' },
+    { source: 'gutman-1990-encyclopedia-of-the-holocaust', perspective: 'israeli' }
   ]
 })

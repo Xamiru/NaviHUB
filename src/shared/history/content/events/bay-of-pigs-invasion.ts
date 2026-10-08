@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Bay of Pigs Invasion', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'invasion',
   start: {
     alts: [
@@ -32,6 +32,20 @@ export default defineEvent({
   },
   regions: ['latin-america', 'north-america'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:bay-of-pigs',
+      cites: [
+        {
+          source: 'nara-text-message-bay-of-pigs-60th-anniversary',
+          loc: {
+            section: 'The Ex-Men Did It: 60th Anniversary of the Bay of Pigs Invasion',
+            para: '7'
+          }
+        }
+      ]
+    }
+  ],
   partOf: [
     {
       ref: 'period:cold-war',
@@ -45,6 +59,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
   ],
   sides: [
     {
@@ -70,6 +87,7 @@ export default defineEvent({
     {
       key: 'cuba',
       name: 'Cuban armed forces',
+      polity: 'polity:republic-of-cuba',
       cites: [
         {
           source: 'state-dept-milestones-bay-of-pigs',
@@ -580,5 +598,9 @@ export default defineEvent({
       bytes: 12502791,
       durationSec: 129
     }
+  ],
+  furtherReading: [
+    { source: 'otero-1962-playa-giron', perspective: 'latin-american' },
+    { source: 'rodriguez-1996-la-batalla-inevitable', perspective: 'latin-american' }
   ]
 })

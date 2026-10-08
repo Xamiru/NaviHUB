@@ -60,6 +60,9 @@ import * as rawg from './rawg'
 import * as igdb from './igdb'
 import * as steam from './steam'
 import * as gamesCatalog from './gamesCatalog'
+import * as launchboxCatalog from './launchboxCatalog'
+import * as gameLinks from './gameLinks'
+import * as gamesUpgrade from './gamesUpgrade'
 import * as bulkImport from './bulkImport'
 import * as openlibrary from './openlibrary'
 import * as themes from './themes'
@@ -287,6 +290,7 @@ export function registerIpc(): void {
   )
   ipcMain.handle('people:get', (_e, id) => peopleRepo.get(id))
   ipcMain.handle('people:credits', (_e, id) => peopleRepo.credits(id))
+  ipcMain.handle('people:directory', (_e, query) => peopleRepo.directory(query))
   ipcMain.handle('people:upsert', (_e, input) => peopleRepo.upsert(input))
   ipcMain.handle('people:remove', (_e, id) => peopleRepo.remove(id))
 
@@ -725,7 +729,7 @@ export function registerIpc(): void {
     withActivity('Importing from VNDB', () => vndb.importVisualNovel(vndbId))
   )
 
-  // ---- RAWG import (games) ----
+  // ---- Steam import (games) ----
   ipcMain.handle('steam:search', (_e, query) => steam.search(query))
   ipcMain.handle('steam:import', (_e, appId) =>
     withActivity('Importing from Steam', () => steam.importGame(appId))
@@ -742,6 +746,34 @@ export function registerIpc(): void {
   ipcMain.handle('rawgCatalog:install', () =>
     withActivity('Downloading the games catalog', () => gamesCatalog.install())
   )
+  // ---- games catalog v2 (LaunchBox works + Bangumi cast) ----
+  ipcMain.handle('gameCatalog:search', (_e, query) => launchboxCatalog.search(query))
+  ipcMain.handle('gameCatalog:import', (_e, workId) =>
+    withActivity('Importing from the games catalog', () => gameLinks.importWithCast(workId))
+  )
+  ipcMain.handle('gameCatalog:status', () => launchboxCatalog.status())
+  ipcMain.handle('gameCatalog:install', () =>
+    withActivity('Downloading the games catalog', () => launchboxCatalog.install())
+  )
+  ipcMain.handle('gameLinks:get', (_e, mediaId) => gameLinks.get(mediaId))
+  ipcMain.handle('gameLinks:searchWorks', (_e, query) => gameLinks.searchWorks(query))
+  ipcMain.handle('gameLinks:setWork', (_e, mediaId, workId) =>
+    withActivity('Linking the game to the catalog', () => gameLinks.setWork(mediaId, workId))
+  )
+  ipcMain.handle('gameLinks:unlinkWork', (_e, mediaId) => gameLinks.unlinkWork(mediaId))
+  ipcMain.handle('gameLinks:searchBangumi', (_e, query) => gameLinks.searchBangumi(query))
+  ipcMain.handle('gameLinks:setBangumi', (_e, mediaId, subjectId) =>
+    withActivity('Reading the cast from Bangumi', () => gameLinks.setBangumi(mediaId, subjectId))
+  )
+  ipcMain.handle('gameLinks:unlinkBangumi', (_e, mediaId) => gameLinks.unlinkBangumi(mediaId))
+  ipcMain.handle('gameLinks:reset', (_e, mediaId, source) => gameLinks.reset(mediaId, source))
+  ipcMain.handle('gameLinks:refreshCast', (_e, mediaId) =>
+    withActivity('Reading the cast from Bangumi', () => gameLinks.refreshCast(mediaId))
+  )
+  ipcMain.handle('gameUpgrade:plan', () => gamesUpgrade.plan())
+  ipcMain.handle('gameUpgrade:start', () => gamesUpgrade.start())
+  ipcMain.handle('gameUpgrade:status', () => gamesUpgrade.getStatus())
+  ipcMain.handle('gameUpgrade:cancel', () => gamesUpgrade.cancel())
   ipcMain.handle('igdb:search', (_e, query) => igdb.search(query))
   ipcMain.handle('igdb:import', (_e, igdbId) =>
     withActivity('Importing from IGDB', () => igdb.importGame(igdbId))
@@ -855,6 +887,9 @@ export function registerIpc(): void {
   ipcMain.handle('history:overview', async () => (await loadHistory()).overview())
   ipcMain.handle('history:borders', async () => (await loadHistoryMap()).borders())
   ipcMain.handle('history:mapPins', async () => (await loadHistory()).mapPins())
+  ipcMain.handle('history:mapPolities', async () => (await loadHistory()).mapPolities())
+  ipcMain.handle('history:themes', async () => (await loadHistory()).themes())
+  ipcMain.handle('history:onThisDay', async (_e, month: number, day: number) => (await loadHistory()).onThisDay(month, day))
   ipcMain.handle('history:decade', async (_e, start: number) => (await loadHistory()).decade(start))
   ipcMain.handle('history:article', async (_e, ref: string) => (await loadHistory()).article(ref))
   ipcMain.handle('history:sources', async () => (await loadHistory()).sources())

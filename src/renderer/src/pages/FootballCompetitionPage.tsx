@@ -5,6 +5,7 @@ import PageStatus from '../components/PageStatus'
 import FavoriteButton from '../components/FavoriteButton'
 import AddToListMenu from '../components/AddToListMenu'
 import FootballExternalLinks from '../components/football/FootballExternalLinks'
+import FootballTitleTimeline from '../components/football/FootballTitleTimeline'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
@@ -24,40 +25,6 @@ import {
 function inEra(season: FootballSeason, era: FootballEra | null): boolean {
   if (!era) return true
   return (!era.startSeason || season.key >= era.startSeason) && (!era.endSeason || season.key <= era.endSeason)
-}
-
-function TitleTimeline({ seasons }: { seasons: FootballSeason[] }) {
-  if (!seasons.length) return <p className="text-sm text-ink-muted">No seasons in this era.</p>
-  return (
-    <>
-      <div className="flex h-16 gap-px" role="list" aria-label="Champion by season">
-        {seasons.map((season) => {
-          const colors = season.champion ? footballTeamColors(season.champion.name, season.champion.colors) : null
-          const label = `${season.label}: ${season.champion?.name ?? 'no verified champion'}`
-          return (
-            <Link
-              key={season.id}
-              role="listitem"
-              to={`/football/season/${season.id}`}
-              title={label}
-              aria-label={label}
-              className="min-w-[3px] flex-1 rounded-[2px] ring-1 ring-black/20 transition-transform hover:z-10 hover:scale-y-110 hover:ring-2 hover:ring-ink"
-              style={{
-                background: colors
-                  ? `linear-gradient(180deg, ${colors.primary} 0 70%, ${colors.secondary} 70% 100%)`
-                  : 'rgb(var(--surface-raised))'
-              }}
-            />
-          )
-        })}
-      </div>
-      <div className="mt-2 flex justify-between text-[10px] tabular-nums text-ink-muted">
-        <span>{seasons[0].label}</span>
-        {seasons.length > 8 && <span>{seasons[Math.floor(seasons.length / 2)].label}</span>}
-        <span>{seasons[seasons.length - 1].label}</span>
-      </div>
-    </>
-  )
 }
 
 export default function FootballCompetitionPage() {
@@ -137,7 +104,7 @@ export default function FootballCompetitionPage() {
               </span>
             )}
           />
-          <TitleTimeline seasons={timeline} />
+          <FootballTitleTimeline seasons={timeline} />
           {era?.narrative && <p className="mt-3 max-w-4xl text-xs leading-relaxed text-ink-muted">{era.narrative}</p>}
         </section>
 

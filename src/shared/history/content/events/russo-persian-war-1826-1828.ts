@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'russo-persian-war-1826-1828',
   names: [
     { text: 'Russo-Persian War of 1826–1828', lang: 'en', role: 'primary' },
+    { text: 'جنگ دوم ایران و روس', lang: 'fa', role: 'native' },
     {
       text: 'Second Russo-Persian War',
       lang: 'en',
@@ -16,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -113,6 +114,7 @@ export default defineEvent({
     {
       key: 'iran',
       name: 'Iran',
+      polity: 'polity:qajar-iran',
       cites: [
         {
           source: 'iranica-andreeva-russia-relations',
@@ -126,6 +128,7 @@ export default defineEvent({
     {
       key: 'russia',
       name: 'Russia',
+      polity: 'polity:russian-empire',
       cites: [
         {
           source: 'iranica-andreeva-russia-relations',
@@ -530,5 +533,13 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:%D0%A1%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D0%B5_%D0%BF%D0%BE%D0%B4_%D0%95%D0%BB%D0%B8%D1%81%D0%B0%D0%B2%D0%B5%D1%82%D0%BF%D0%BE%D0%BB%D0%B5%D0%BC.jpeg',
     credit: { institution: 'National Museum of History of Azerbaijan', creator: 'Franz Roubaud' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'potto-1885-kavkazskaia-voina', perspective: 'russian-soviet' },
+    { source: 'nafisi-1965-tarikh-e-ejtemai-va-siyasi-ye-iran', perspective: 'iranian' },
+    {
+      source: 'kuznetsova-1983-iran-v-pervoi-polovine-xix-veka',
+      perspective: 'russian-soviet'
+    }
+  ]
 })

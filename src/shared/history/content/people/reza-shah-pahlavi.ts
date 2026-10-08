@@ -18,7 +18,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -69,6 +69,7 @@ export default definePerson({
   offices: [
     {
       title: 'commander of the armed forces',
+      polity: 'polity:qajar-iran',
       cites: [
         {
           source: 'iranica-shambayati-coup-detat-of-1921',
@@ -82,6 +83,7 @@ export default definePerson({
     },
     {
       title: 'minister of war',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {
@@ -105,6 +107,7 @@ export default definePerson({
     },
     {
       title: 'prime minister',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {
@@ -131,6 +134,7 @@ export default definePerson({
     },
     {
       title: 'shah of Iran',
+      polity: 'polity:pahlavi-iran',
       start: {
         alts: [
           {
@@ -325,5 +329,9 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:%D8%B1%D8%B6%D8%A7%D8%B4%D8%A7%D9%87_%D8%AF%D8%B1_%D8%A7%D9%88%D8%A7%DB%8C%D9%84_%D8%B3%D9%84%D8%B7%D9%86%D8%AA_-_%D8%AA%D8%B5%D9%88%DB%8C%D8%B1_%D9%85%D9%86%D8%AA%D8%B4%D8%B1%D8%B4%D8%AF%D9%87_%D8%AF%D8%B1_%DA%A9%D8%AA%D8%A7%D8%A8_%D8%B1%D8%B6%D8%A7%D8%B4%D8%A7%D9%87_%DA%A9%D8%A8%DB%8C%D8%B1_%DB%8C%D8%A7_%D8%A7%DB%8C%D8%B1%D8%A7%D9%86_%D9%86%D9%88.jpg',
     credit: { institution: 'Grand Ayatollah Boroujerdi Library' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'makki-1983-tarikh-e-bist-saleh-ye-iran', perspective: 'iranian' },
+    { source: 'bamdad-1968-sharh-e-hal-e-rejal-e-iran', perspective: 'iranian' }
+  ]
 })

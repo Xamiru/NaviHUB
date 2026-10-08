@@ -24,7 +24,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -51,6 +51,9 @@ export default defineEvent({
         { source: 'lei-aurea-1888', loc: { section: 'Lei nº 3353 de 13 de Maio de 1888' } }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:empire-of-brazil' }
   ],
   participants: [
     {
@@ -91,17 +94,6 @@ export default defineEvent({
             loc: { section: 'The Second Empire, 1840-89', para: '23' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/brazil/13.htm' }
-        },
-        {
-          id: 'q1',
-          text: 'Aufhebung der Sklaverei in Brasilien.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1888', loc: { section: 'Chronik 1888', para: '30' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1888.html'
-          }
         }
       ]
     },
@@ -219,5 +211,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Arquivo_Senado_Lei_%C3%81urea_(52067423182).jpg',
     credit: { institution: 'Senado Federal', creator: 'Agência Senado' },
     license: { id: 'cc-by', version: '2.0' }
-  }
+  },
+  furtherReading: [
+    { source: 'costa-1989-da-senzala-a-colonia', perspective: 'latin-american' },
+    { source: 'nabuco-1883-o-abolicionismo', perspective: 'latin-american' }
+  ]
 })

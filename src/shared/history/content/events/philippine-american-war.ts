@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Philippine-American War', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -55,6 +55,7 @@ export default defineEvent({
     {
       key: 'us',
       name: 'American forces',
+      polity: 'polity:united-states',
       cites: [
         {
           source: 'state-dept-milestones-philippine-american-war',
@@ -97,7 +98,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'William McKinley',
+      ref: 'person:william-mckinley',
       role: 'head-of-state',
       side: 'us',
       cites: [
@@ -473,5 +474,13 @@ export default defineEvent({
     title: 'The Philippine insurrection, 1899',
     credit: { institution: 'Library of Congress', creator: 'Perley Fremont Rockett' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'agoncillo-1960-malolos', perspective: 'southeast-asian' },
+    {
+      source: 'constantino-1975-the-philippines-a-past-revisited',
+      perspective: 'southeast-asian'
+    },
+    { source: 'guerrero-2015-luzon-at-war', perspective: 'southeast-asian' }
+  ]
 })

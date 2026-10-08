@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'berlin-conference-significance',
   about: ['event:berlin-conference'],
   topic: 'significance',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'basis-of-partition',
@@ -59,29 +59,6 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Africa'
-          }
-        }
-      ]
-    },
-    {
-      id: 'humanitarian-guarantee',
-      category: 'official',
-      holders: [
-        { kind: 'state', name: 'House of Commons' }
-      ],
-      statements: [
-        {
-          id: 'q4',
-          text: '“That the government of the Congo Free State having, at its inception, guaranteed to the powers that its native subjects should be governed with humanity, and that no trading monopoly or privilege should be permitted within its dominions, this House request His Majesty’s Government to confer with the other powers, signatories of the Berlin General Act, by virtue of which the Congo Free State exists, in order that measures may be adopted to abate the evils prevalent in that state.”',
-          lang: 'en',
-          cite: {
-            source: 'britannica-1911-congo-free-state',
-            loc: { section: 'CONGO FREE STATE', para: '28' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Congo_Free_State'
           }
         }
       ]

@@ -95,6 +95,7 @@ const api: NaviApi = {
       ipcRenderer.invoke('people:list', search, role, mediaType, limit),
     get: (id) => ipcRenderer.invoke('people:get', id),
     credits: (id) => ipcRenderer.invoke('people:credits', id),
+    directory: (query) => ipcRenderer.invoke('people:directory', query),
     upsert: (input) => ipcRenderer.invoke('people:upsert', input),
     remove: (id) => ipcRenderer.invoke('people:remove', id)
   },
@@ -260,6 +261,29 @@ const api: NaviApi = {
     status: () => ipcRenderer.invoke('rawgCatalog:status'),
     install: () => ipcRenderer.invoke('rawgCatalog:install')
   },
+  gameCatalog: {
+    search: (query) => ipcRenderer.invoke('gameCatalog:search', query),
+    import: (workId) => ipcRenderer.invoke('gameCatalog:import', workId),
+    status: () => ipcRenderer.invoke('gameCatalog:status'),
+    install: () => ipcRenderer.invoke('gameCatalog:install')
+  },
+  gameLinks: {
+    get: (mediaId) => ipcRenderer.invoke('gameLinks:get', mediaId),
+    searchWorks: (query) => ipcRenderer.invoke('gameLinks:searchWorks', query),
+    setWork: (mediaId, workId) => ipcRenderer.invoke('gameLinks:setWork', mediaId, workId),
+    unlinkWork: (mediaId) => ipcRenderer.invoke('gameLinks:unlinkWork', mediaId),
+    searchBangumi: (query) => ipcRenderer.invoke('gameLinks:searchBangumi', query),
+    setBangumi: (mediaId, subjectId) => ipcRenderer.invoke('gameLinks:setBangumi', mediaId, subjectId),
+    unlinkBangumi: (mediaId) => ipcRenderer.invoke('gameLinks:unlinkBangumi', mediaId),
+    reset: (mediaId, source) => ipcRenderer.invoke('gameLinks:reset', mediaId, source),
+    refreshCast: (mediaId) => ipcRenderer.invoke('gameLinks:refreshCast', mediaId)
+  },
+  gameUpgrade: {
+    plan: () => ipcRenderer.invoke('gameUpgrade:plan'),
+    start: () => ipcRenderer.invoke('gameUpgrade:start'),
+    status: () => ipcRenderer.invoke('gameUpgrade:status'),
+    cancel: () => ipcRenderer.invoke('gameUpgrade:cancel')
+  },
   bulk: {
     preview: (params) => ipcRenderer.invoke('bulk:preview', params),
     start: (payload) => ipcRenderer.invoke('bulk:start', payload),
@@ -327,6 +351,9 @@ const api: NaviApi = {
     overview: () => ipcRenderer.invoke('history:overview'),
     borders: () => ipcRenderer.invoke('history:borders'),
     mapPins: () => ipcRenderer.invoke('history:mapPins'),
+    mapPolities: () => ipcRenderer.invoke('history:mapPolities'),
+    themes: () => ipcRenderer.invoke('history:themes'),
+    onThisDay: (month, day) => ipcRenderer.invoke('history:onThisDay', month, day),
     decade: (start) => ipcRenderer.invoke('history:decade', start),
     article: (ref) => ipcRenderer.invoke('history:article', ref),
     sources: () => ipcRenderer.invoke('history:sources'),

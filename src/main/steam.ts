@@ -2,6 +2,7 @@ import { getSqlite } from './db/connection'
 import type { RefreshAspect } from '@shared/refresh'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
+import { currentActivitySignal } from './activityContext'
 import { IMPORTED_TAG_SCOPES_SQL } from './repos/tagRepo'
 import { fetchWithRetry, MAX_API_RESPONSE_BYTES, sleep } from './http'
 import { fetchPlaytimes, hltbLengthHours } from './hltb'
@@ -356,7 +357,10 @@ export async function backfillMetacritic(
     try {
       score = await lookupMetacritic(row.title)
       consecutiveFailures = 0
-    } catch {
+    } catch (err) {
+      // A Stop aborts the request: that is the end of the run, not a title
+      // Steam failed to answer.
+      if (currentActivitySignal()?.aborted) throw err
       failed++
       consecutiveFailures++
       if (consecutiveFailures >= 10) {
@@ -382,7 +386,7 @@ export async function backfillMetacritic(
       missed++
     }
     db.prepare(`UPDATE media_item SET metadata = ? WHERE id = ?`).run(JSON.stringify(meta), row.id)
-    if (i < rows.length - 1 && delayMs > 0) await sleep(delayMs)
+    if (i < rows.length - 1 && delayMs > 0) await sleep(delayMs, currentActivitySignal())
   }
   return { scanned: rows.length, updated, missed, failed }
 }

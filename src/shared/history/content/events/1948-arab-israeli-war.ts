@@ -64,7 +64,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -127,6 +127,11 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:state-of-israel' },
+    { ref: 'polity:kingdom-of-egypt' },
+    { ref: 'polity:kingdom-of-iraq' }
   ],
   sides: [
     {
@@ -533,5 +538,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Israel_Declaration_of_Independence_Kaplan.jpg',
     credit: { institution: 'National Photo Collection of Israel', creator: 'Zoltan Kluger' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'arif-2012-al-nakbah', perspective: 'palestinian' },
+    { source: 'zurayk-1948-mana-al-nakbah', perspective: 'arab' }
+  ]
 })

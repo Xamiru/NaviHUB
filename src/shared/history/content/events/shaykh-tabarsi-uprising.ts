@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'shaykh-tabarsi-uprising',
   names: [
     { text: 'Shaykh Tabarsi uprising', lang: 'en', role: 'primary' },
+    { text: 'واقعه قلعه شیخ طبرسی', lang: 'fa', role: 'native' },
     {
       text: 'Bābi upheaval of Tabarsi',
       lang: 'en',
@@ -13,7 +14,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -115,6 +116,7 @@ export default defineEvent({
     {
       key: 'state',
       name: 'provincial and state troops',
+      polity: 'polity:qajar-iran',
       cites: [
         {
           source: 'iranica-maceoin-babism-ii',
@@ -379,5 +381,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Shaykhtabarsi_2008.jpg',
     credit: { creator: 'NicholasJB' },
     license: { id: 'cc-by-sa', version: '3.0' }
-  }
+  },
+  furtherReading: [
+    { source: 'ivanov-1939-babidskie-vosstaniia-v-irane', perspective: 'russian-soviet' }
+  ]
 })

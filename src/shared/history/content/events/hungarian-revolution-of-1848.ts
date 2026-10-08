@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'revolution',
   start: {
     alts: [
@@ -76,6 +76,7 @@ export default defineEvent({
     {
       key: 'habsburg',
       name: 'the Vienna government',
+      polity: 'polity:austrian-empire',
       cites: [
         {
           source: 'loc-hungary-country-study-1989',
@@ -119,7 +120,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Franz Joseph',
+      ref: 'person:franz-joseph-i',
       role: 'head-of-state',
       side: 'habsburg',
       cites: [
@@ -335,21 +336,20 @@ export default defineEvent({
           {
             value: { d: '1849-04-14' },
             cites: [
-              { source: 'lemo-chronik-1849', loc: { section: 'Chronik 1849', para: '23' } },
-              { source: 'lemo-chronik-1849', loc: { section: 'Chronik 1849', para: '21' } }
+              { source: 'britannica-1911-hungary', loc: { section: 'HUNGARY', para: '533' } }
             ]
           }
         ]
       },
       quote: {
-        id: 'q14',
-        text: 'Der ungarische Reichstag erklärt unter Führung des Freiheitskämpfers Lajos Kossuth (1802-1894) die Unabhängigkeit des Königreichs Ungarn von Österreich.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1849', loc: { section: 'Chronik 1849', para: '23' } },
+        id: 'q17',
+        text: 'The news of this manifesto, arriving as it did simultaneously with that of Görgei’s successes, destroyed the last vestiges of a desire of the Hungarian revolutionists to compromise, and on the 14th of April, on the motion of Kossuth, the diet proclaimed the independence of Hungary, declared the house of Habsburg as false and perjured, for ever excluded from the throne, and elected Kossuth president of the Hungarian Republic.',
+        lang: 'en',
+        cite: { source: 'britannica-1911-hungary', loc: { section: 'HUNGARY', para: '533' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1849.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Hungary'
         }
       }
     },
@@ -384,21 +384,20 @@ export default defineEvent({
           {
             value: { d: '1849-10-06' },
             cites: [
-              { source: 'lemo-chronik-1849', loc: { section: 'Chronik 1849', para: '74' } },
-              { source: 'lemo-chronik-1849', loc: { section: 'Chronik 1849', para: '73' } }
+              { source: 'britannica-1911-hungary', loc: { section: 'HUNGARY', para: '653' } }
             ]
           }
         ]
       },
       quote: {
-        id: 'q16',
-        text: 'Hinrichtung von 13 ungarischen Generälen und Offizieren der ungarischen Revolution.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1849', loc: { section: 'Chronik 1849', para: '74' } },
+        id: 'q18',
+        text: 'On October 6, 1849, thirteen generals who had taken part in the war, including Damjanics and Counts Vécsey and Leiningen, were hanged or shot at Arad.',
+        lang: 'en',
+        cite: { source: 'britannica-1911-hungary', loc: { section: 'HUNGARY', para: '653' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1849.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Hungary'
         }
       }
     }
@@ -408,5 +407,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Transport_of_the_wounded_honv%C3%A9ds,_1848_-_August_von_Pettenkofen.png',
     credit: { institution: 'Hungarian National Museum', creator: 'August von Pettenkofen' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'deak-2001-the-lawful-revolution', perspective: 'european' }
+  ]
 })

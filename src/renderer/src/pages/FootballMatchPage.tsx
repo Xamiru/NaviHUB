@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, memo, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import PageStatus from '../components/PageStatus'
@@ -50,7 +50,8 @@ function PersonLink({ person, fallback }: { person: FootballMatchEvent['person']
     : <span className="text-ink-muted">{fallback}</span>
 }
 
-function Timeline({ match }: { match: FootballMatchDetail }) {
+// Memoized with Pitch and SquadList: typing a journal note must not rebuild the match detail.
+const Timeline = memo(function Timeline({ match }: { match: FootballMatchDetail }) {
   const ordered = [...match.events]
     .filter((event) => event.type !== 'shootout')
     .sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0) || (a.extraMinute ?? 0) - (b.extraMinute ?? 0) || a.sortOrder - b.sortOrder)
@@ -144,9 +145,9 @@ function Timeline({ match }: { match: FootballMatchDetail }) {
       )}
     </div>
   )
-}
+})
 
-function Pitch({ match }: { match: FootballMatchDetail }) {
+const Pitch = memo(function Pitch({ match }: { match: FootballMatchDetail }) {
   const starters = (team: FootballTeamSummary) => match.lineups.filter((entry) => entry.teamId === team.id && entry.role === 'player' && entry.starter)
   const home = footballPitchLayout(starters(match.home), 'home')
   const away = footballPitchLayout(starters(match.away), 'away')
@@ -166,9 +167,9 @@ function Pitch({ match }: { match: FootballMatchDetail }) {
       {away.map((spot) => dot(spot.entry, spot.x, spot.y, match.away))}
     </div>
   )
-}
+})
 
-function SquadList({ match, team, formation, manager }: { match: FootballMatchDetail; team: FootballTeamSummary; formation: string | null; manager: string | null }) {
+const SquadList = memo(function SquadList({ match, team, formation, manager }: { match: FootballMatchDetail; team: FootballTeamSummary; formation: string | null; manager: string | null }) {
   const entries = match.lineups.filter((entry) => entry.teamId === team.id)
   const group = (label: string, list: FootballLineupEntry[]) => list.length > 0 && (
     <div className="mb-3">
@@ -194,7 +195,7 @@ function SquadList({ match, team, formation, manager }: { match: FootballMatchDe
       {group('Manager', entries.filter((entry) => entry.role === 'manager'))}
     </div>
   )
-}
+})
 
 export default function FootballMatchPage() {
   const id = Number(useParams().id)

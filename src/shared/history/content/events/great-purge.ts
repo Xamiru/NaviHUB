@@ -28,7 +28,7 @@ export default defineEvent({
     },
     { text: 'Большой террор', lang: 'ru', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -71,7 +71,7 @@ export default defineEvent({
     }
   ],
   partOf: [
-    { ref: 'period:soviet-union' }
+    { ref: 'polity:soviet-union' }
   ],
   participants: [
     {
@@ -279,20 +279,26 @@ export default defineEvent({
           {
             value: { d: '1934-12-01' },
             cites: [
-              { source: 'lemo-chronik-1934', loc: { section: 'Chronik 1934', para: '207' } }
+              {
+                source: 'loc-revelations-russian-archives-internal-workings',
+                loc: { section: 'Internal Workings of the Soviet Union' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q10',
-        text: 'Der sowjetische Politiker Sergej Kirow (1886-1934) wird in Leningrad ermordet. Dies führt zur ersten Welle von Schauprozessen und zur Auflösung der innerparteilichen Opposition der KPdSU.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1934', loc: { section: 'Chronik 1934', para: '208' } },
+        id: 'q14',
+        text: 'The murder of Sergei Kirov on December 1, 1934, set off a chain of events that culminated in the Great Terror of the 1930s.',
+        lang: 'en',
+        cite: {
+          source: 'loc-revelations-russian-archives-internal-workings',
+          loc: { section: 'Internal Workings of the Soviet Union' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1934.html'
+          at: '2026-10-07',
+          url: 'https://www.loc.gov/exhibits/archives/intn.html'
         }
       }
     },
@@ -348,21 +354,24 @@ export default defineEvent({
           {
             value: { d: '1937-06-11' },
             cites: [
-              { source: 'lemo-chronik-1937', loc: { section: 'Chronik 1937', para: '88' } }
+              { source: 'lemo-chronik-1937', loc: { section: 'Chronik 1937', para: '88' } },
+              {
+                source: 'loc-russia-country-study-1996',
+                loc: { section: 'The War Years', para: '3' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q13',
-        text: 'Nach den politischen Gegnern Stalins werden nun innerhalb eines Tages hochrangige Militärs der Roten Armee wegen Hochverrats angeklagt, verurteilt und hingerichtet.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1937', loc: { section: 'Chronik 1937', para: '89' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1937.html'
-        }
+        id: 'q15',
+        text: 'More important, eight of the nation\'s top military leaders, including Marshal Mikhail Tukhachevskiy, had been executed in 1937 in the course of Stalin\'s purges; thus the armed forces\' morale and effectiveness were diminished.',
+        lang: 'en',
+        cite: {
+          source: 'loc-russia-country-study-1996',
+          loc: { section: 'The War Years', para: '3' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/russia/11.htm' }
       }
     }
   ],
@@ -371,5 +380,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:RykovBucharin.JPG',
     credit: { creator: 'TASS' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'medvedev-1974-k-sudu-istorii', perspective: 'russian-soviet' }
+  ]
 })

@@ -19,7 +19,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -53,9 +53,13 @@ export default defineEvent({
       ]
     }
   ],
+  polities: [
+    { ref: 'polity:united-states' },
+    { ref: 'polity:united-kingdom' }
+  ],
   participants: [
     {
-      name: 'James Polk',
+      ref: 'person:james-k-polk',
       role: 'head-of-state',
       cites: [
         {

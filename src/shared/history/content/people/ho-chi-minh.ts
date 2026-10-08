@@ -6,7 +6,40 @@ export default definePerson({
     { text: 'Ho Chi Minh', lang: 'en', role: 'primary' },
     { text: 'Hồ Chí Minh', lang: 'vi', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1890' },
+        cites: [
+          {
+            source: 'fordham-internet-east-asian-history-sourcebook',
+            loc: { section: 'Internet East Asian History Sourcebook' }
+          },
+          { source: 'lemo-chronik-1930', loc: { section: 'Chronik 1930', para: '27' } }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1969' },
+        cites: [
+          { source: 'lemo-chronik-1930', loc: { section: 'Chronik 1930', para: '27' } }
+        ]
+      },
+      {
+        value: { d: '1968' },
+        cites: [
+          {
+            source: 'fordham-internet-east-asian-history-sourcebook',
+            loc: { section: 'Internet East Asian History Sourcebook' }
+          }
+        ]
+      }
+    ]
+  },
   regions: ['southeast-asia'],
   roles: ['revolutionary', 'head-of-state'],
   portrait: {

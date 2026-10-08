@@ -76,7 +76,11 @@ export default function FootballMediaPage() {
   }, [diary])
   const [filterKind, setFilterKind] = usePersistedState<FootballMediaKind | null>('footballMediaKind', null)
   const [filterSearch, setFilterSearch] = usePersistedState('footballMediaSearch', '')
-  const filter = useMemo(() => ({ kind: filterKind, search: filterSearch || null }), [filterKind, filterSearch])
+  const debouncedFilterSearch = useDebouncedValue(filterSearch, 200)
+  const filter = useMemo(
+    () => ({ kind: filterKind, search: debouncedFilterSearch || null }),
+    [filterKind, debouncedFilterSearch]
+  )
   const mediaQuery = useInfiniteQuery({
     queryKey: qk.football.media(filter),
     queryFn: ({ pageParam }) => api.football.media({ ...filter, limit: 100, offset: pageParam }),

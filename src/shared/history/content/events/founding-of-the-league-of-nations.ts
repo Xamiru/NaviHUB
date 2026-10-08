@@ -153,20 +153,26 @@ export default defineEvent({
           {
             value: { d: '1920-01-16' },
             cites: [
-              { source: 'lemo-chronik-1920', loc: { section: 'Chronik 1920', para: '13' } }
+              {
+                source: 'eo1418-ziegerhofer-league-of-nations',
+                loc: { section: 'Functioning of the League', para: '1' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q7',
-        text: 'Konstituierende Sitzung des Völkerbundrats in Paris.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1920', loc: { section: 'Chronik 1920', para: '14' } },
+        id: 'q12',
+        text: 'The League of Nations launched its activities as of 16 January 1920',
+        lang: 'en',
+        cite: {
+          source: 'eo1418-ziegerhofer-league-of-nations',
+          loc: { section: 'Functioning of the League', para: '1' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1920.html'
+          at: '2026-10-07',
+          url: 'https://encyclopedia.1914-1918-online.net/article/league-of-nations/'
         }
       }
     },
@@ -251,20 +257,26 @@ export default defineEvent({
           {
             value: { d: '1926-09-08' },
             cites: [
-              { source: 'lemo-chronik-1926', loc: { section: 'Chronik 1926', para: '170' } }
+              {
+                source: 'eo1418-ziegerhofer-league-of-nations',
+                loc: { section: 'Challenges Stemming from the First World War', para: '2' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q11',
-        text: 'Einstimmige Aufnahme Deutschlands in den Völkerbund mit einem ständigen Ratssitz.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1926', loc: { section: 'Chronik 1926', para: '171' } },
+        id: 'q13',
+        text: 'France and Germany made their signing of the Locarno Treaties conditional on Germany’s admission to the League of Nations. The German Empire was allowed to join on 8 September 1926',
+        lang: 'en',
+        cite: {
+          source: 'eo1418-ziegerhofer-league-of-nations',
+          loc: { section: 'Challenges Stemming from the First World War', para: '2' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1926.html'
+          at: '2026-10-07',
+          url: 'https://encyclopedia.1914-1918-online.net/article/league-of-nations/'
         }
       }
     }

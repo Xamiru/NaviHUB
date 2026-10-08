@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'massacre',
   start: {
     alts: [
@@ -43,6 +43,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:united-kingdom' }
   ],
   participants: [
     {
@@ -223,6 +226,12 @@ export default defineEvent({
       },
       license: { id: 'public-domain' },
       bytes: 697281
+    }
+  ],
+  furtherReading: [
+    {
+      source: 'halevy-1913-histoire-du-peuple-anglais-au-xixe-siecle',
+      perspective: 'european'
     }
   ]
 })

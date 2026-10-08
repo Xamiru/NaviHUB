@@ -3,6 +3,7 @@ import type { VnDiscoverFilter, VnDiscoverPage, VnTagResult, VnEditionDetail } f
 import type { VnCaptureInput, VnCapture, VnCaptureSummary } from './types'
 import type { WrestlingJourneySummary, WrestlingJourneyInput, WrestlingJourneyDetail, WrestlingJourneyStepInput, WrestlingJourneyTarget } from './types'
 import type { VnReadingOverview, VnReadingNodeInput, VnReadingResume, VnNoteInput, VnNotePage } from './types'
+import type { BangumiCandidate, ExternalLinkSource, GameCastResult, GameLinksState, GameUpgradePlan, GameUpgradeStatus, GameWorkSummary } from './types'
 // The typed surface exposed on window.api. Both preload (which implements the
 // bridge) and the renderer (which consumes it) import this so they never drift.
 
@@ -27,6 +28,8 @@ import type {
   LibraryTimeStats,
   Person,
   PersonCredit,
+  PersonDirectoryQuery,
+  PersonDirectoryEntry,
   Company,
   Character,
   Tag,
@@ -49,6 +52,9 @@ import type {
   HistoryOverview,
   HistoryBorders,
   HistoryMapPin,
+  HistoryMapPolity,
+  HistoryThemeRow,
+  HistoryOnThisDay,
   HistorySaveResult,
   HistorySearchHit,
   HistorySourceRow,
@@ -460,6 +466,8 @@ export interface NaviApi {
     ): Promise<Person[]>
     get(id: number): Promise<Person | null>
     credits(id: number): Promise<PersonCredit[]>
+    // Everyone with `role` on titles of one media type, with their works there.
+    directory(query: PersonDirectoryQuery): Promise<PersonDirectoryEntry[]>
     upsert(input: Partial<Person> & { name: string }): Promise<number>
     remove(id: number): Promise<void>
   }
@@ -713,6 +721,36 @@ export interface NaviApi {
     status(): Promise<GamesCatalogStatus>
     install(): Promise<GamesCatalogStatus>
   }
+  gameCatalog: {
+    // The games catalog v2 (games-catalog-2 prerelease): LaunchBox works with
+    // real box art (Japanese first), Bangumi links and the RAWG/Steam id
+    // bridge. import also reads the game's cast from Bangumi when linked.
+    search(query: string): Promise<ImportSearchResult[]>
+    import(workId: number): Promise<ImportSummary>
+    status(): Promise<GamesCatalogStatus>
+    install(): Promise<GamesCatalogStatus>
+  }
+  gameLinks: {
+    // A game's catalog work and Bangumi subject, and the user's corrections
+    // (manual links and unlinks, never overridden by automatic passes).
+    get(mediaId: number): Promise<GameLinksState>
+    searchWorks(query: string): Promise<GameWorkSummary[]>
+    setWork(mediaId: number, workId: number): Promise<ImportSummary>
+    unlinkWork(mediaId: number): Promise<void>
+    searchBangumi(query: string): Promise<BangumiCandidate[]>
+    setBangumi(mediaId: number, subjectId: number): Promise<GameCastResult>
+    unlinkBangumi(mediaId: number): Promise<void>
+    reset(mediaId: number, source: ExternalLinkSource): Promise<void>
+    refreshCast(mediaId: number): Promise<GameCastResult>
+  }
+  gameUpgrade: {
+    // Brings existing games up to the catalog: plan is the dry run (nothing
+    // written), start runs it in the background (poll status), resumable.
+    plan(): Promise<GameUpgradePlan>
+    start(): Promise<GameUpgradeStatus>
+    status(): Promise<GameUpgradeStatus>
+    cancel(): Promise<void>
+  }
   bulk: {
     // The /bulk page: top-N lists per media type (vocabulary in
     // @shared/bulkImport.ts). preview resolves the list EXCLUDING titles
@@ -831,6 +869,12 @@ export interface NaviApi {
     overview(): Promise<HistoryOverview>
     borders(): Promise<HistoryBorders>
     mapPins(): Promise<HistoryMapPin[]>
+    /** Map border units that have a state page (the map's click-through). */
+    mapPolities(): Promise<HistoryMapPolity[]>
+    /** Every theme across time, for the themes index. */
+    themes(): Promise<HistoryThemeRow[]>
+    /** Events dated to this month and day (Home's "On this day"). */
+    onThisDay(month: number, day: number): Promise<HistoryOnThisDay[]>
     decade(start: number): Promise<HistoryDecade>
     // ref = `event:<slug>`, `person:<slug>`, `period:<slug>` or `place:<slug>`.
     article(ref: string): Promise<HistoryArticleView | null>

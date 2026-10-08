@@ -19,7 +19,7 @@ export default defineEvent({
     },
     { text: 'Groot Trek', lang: 'af', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'migration',
   start: {
     alts: [
@@ -36,6 +36,17 @@ export default defineEvent({
   },
   regions: ['subsaharan-africa'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:highveld',
+      cites: [
+        {
+          source: 'loc-south-africa-country-study-1996',
+          loc: { section: 'The Great Trek', para: '2' }
+        }
+      ]
+    }
+  ],
   participants: [
     {
       name: 'Piet Retief',
@@ -310,5 +321,9 @@ export default defineEvent({
       creator: 'G. S. Smithard and J. R. Skelton'
     },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'muller-1974-die-oorsprong-van-die-groot-trek', perspective: 'african' },
+    { source: 'giliomee-2003-the-afrikaners', perspective: 'african' }
+  ]
 })

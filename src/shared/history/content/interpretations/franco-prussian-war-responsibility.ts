@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'franco-prussian-war-responsibility',
   about: ['event:franco-prussian-war'],
   topic: 'responsibility',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'bismarck-engineered',
@@ -36,41 +36,81 @@ export default defineInterpretation({
       ]
     },
     {
-      id: 'affront-and-declaration',
-      category: 'scholarly',
+      id: 'ems-telegram-to-be-attacked',
+      category: 'contemporary',
       holders: [
-        { kind: 'organization', name: 'Deutsches Historisches Museum' }
+        { kind: 'participant', name: 'Otto von Bismarck', ref: 'person:otto-von-bismarck' }
       ],
       statements: [
         {
           id: 'q3',
-          text: 'Die französische Regierung ist empört über diesen erneuten Affront Bismarcks.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1870', loc: { section: 'Chronik 1870', para: '24' } },
+          text: 'After I had read out the concentrated edition to my two guests, Moltke remarked : \' Now it has a different ring; it sounded before like a parley; now it is like a flourish in answer to a challenge.\'',
+          lang: 'en',
+          cite: {
+            source: 'bismarck-1898-man-and-statesman-vol-2',
+            loc: { section: 'Chapter XXII. The Ems Telegram' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1870.html'
+            at: '2026-10-08',
+            url: 'https://archive.org/download/bismarckmanstate02bismuoft/bismarckmanstate02bismuoft_djvu.txt'
+          }
+        },
+        {
+          id: 'q4',
+          text: 'Fight we must if we do not want to act the part of the vanquished without a battle. Success, however, essentially depends upon the impression which the origination of the war makes upon us and others ; it is important that we should be the party attacked',
+          lang: 'en',
+          cite: {
+            source: 'bismarck-1898-man-and-statesman-vol-2',
+            loc: { section: 'Chapter XXII. The Ems Telegram' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://archive.org/download/bismarckmanstate02bismuoft/bismarckmanstate02bismuoft_djvu.txt'
           }
         }
       ]
     },
     {
-      id: 'thiers-for-peace',
-      category: 'official',
+      id: 'war-forced-on-france',
+      category: 'contemporary',
       holders: [
-        { kind: 'organization', name: 'Présidence de la République' }
+        { kind: 'participant', name: 'Émile Ollivier' }
       ],
       statements: [
         {
-          id: 'q4',
-          text: 'Hostile à la guerre contre la Prusse, il milite pour la paix.',
+          id: 'q5',
+          text: '« Oui, d’un cœur léger, et n’équivoquez pas sur cette parole, et ne croyez pas que je veuille dire avec joie ; je vous ai dit moi-même mon chagrin d’être condamné à la guerre, je veux dire d’un cœur que le remords n’alourdit pas, d’un cœur confiant, parce que la guerre que nous ferons, nous la subissons, parce que nous avons fait tout ce qu’il était humainement et honorablement possible de tenter pour l’éviter ; et enfin parce que notre cause est juste et qu’elle est confiée à l’armée française. »',
           lang: 'fr',
-          cite: { source: 'elysee-adolphe-thiers', loc: { section: 'Adolphe Thiers' } },
+          cite: {
+            source: 'ollivier-1909-notre-reponse-au-soufflet-de-bismarck',
+            loc: {
+              section: 'Notre réponse au soufflet de Bismarck. Déclaration du 15 juillet',
+              para: '12'
+            }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.elysee.fr/la-presidence/adolphe-thiers'
+            at: '2026-10-08',
+            url: 'https://fr.wikisource.org/wiki/Notre_R%C3%A9ponse_au_soufflet_de_Bismarck_-_D%C3%A9claration_du_15_juillet'
+          }
+        },
+        {
+          id: 'q6',
+          text: 'D’où la guerre est-elle sortie ? De la candidature Hohenzollern, d’abord, puis de la divulgation faite par Bismarck du refus du Roi de recevoir notre ambassadeur. Pas de candidature Hohenzollern, pas de guerre. Même après la candidature Hohenzollern, pas de divulgation du refus du Roi, pas de guerre. Or, est-ce le gouvernement de l’Empereur qui a suscité la candidature Hohenzollern ? Est-ce le gouvernement de l’Empereur qui a divulgué le refus d’Ems ?',
+          lang: 'fr',
+          cite: {
+            source: 'ollivier-1909-notre-reponse-au-soufflet-de-bismarck',
+            loc: {
+              section: 'Notre réponse au soufflet de Bismarck. Déclaration du 15 juillet',
+              para: '62'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://fr.wikisource.org/wiki/Notre_R%C3%A9ponse_au_soufflet_de_Bismarck_-_D%C3%A9claration_du_15_juillet'
           }
         }
       ]

@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Accession of Queen Victoria', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -29,9 +29,12 @@ export default defineEvent({
   places: [
     { ref: 'place:london' }
   ],
+  polities: [
+    { ref: 'polity:united-kingdom' }
+  ],
   participants: [
     {
-      name: 'Queen Victoria',
+      ref: 'person:queen-victoria',
       role: 'head-of-state',
       cites: [
         {
@@ -105,5 +108,11 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Henry_Tanworth_Wells_(1828-1903)_-_Queen_Victoria_receiving_the_news_of_her_Accession_-_RCIN_406996_-_Royal_Collection.jpg',
     credit: { institution: 'Royal Collection', creator: 'Henry Tanworth Wells' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'halevy-1913-histoire-du-peuple-anglais-au-xixe-siecle',
+      perspective: 'european'
+    }
+  ]
 })

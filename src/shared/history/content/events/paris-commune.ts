@@ -14,7 +14,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -52,6 +52,9 @@ export default defineEvent({
       ]
     }
   ],
+  polities: [
+    { ref: 'polity:french-third-republic' }
+  ],
   participants: [
     {
       ref: 'person:adolphe-thiers',
@@ -83,25 +86,14 @@ export default defineEvent({
           }
         },
         {
-          id: 'q1',
-          text: 'Aufstand in Paris: Die französische Regierung flieht nach Versailles.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1871', loc: { section: 'Chronik 1871', para: '25' } },
+          id: 'q7',
+          text: 'President Thiers, appreciating the danger, attempted on the 18th of March to remove the ordnance; his action was the signal of an insurrection which, successful from the first, initiated a series of terrible outrages by the murder of the two generals, Lecomte and Thomas. The government, afraid of the defection of the troops, who were demoralized by failure and suffering, had evacuated the forts on the left side of the river and concentrated the army at Versailles',
+          lang: 'en',
+          cite: { source: 'britannica-1911-paris', loc: { section: 'PARIS', para: '369' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1871.html'
-          }
-        },
-        {
-          id: 'q2',
-          text: 'Der aus allgemeinen Wahlen hervorgegangene Rat der Kommune vereinigt exekutive und legislative Gewalt und organisiert die Verteidigung von Paris gegen die Regierungstruppen.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1871', loc: { section: 'Chronik 1871', para: '29' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1871.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Paris'
           }
         }
       ]
@@ -129,14 +121,14 @@ export default defineEvent({
       kind: 'aftermath',
       quotes: [
         {
-          id: 'q4',
-          text: 'Die französische Regierung lässt den Aufstand der Pariser Kommune blutig niederwerfen und verhängt anschließend ein Strafgericht.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1871', loc: { section: 'Chronik 1871', para: '40' } },
+          id: 'q8',
+          text: 'Besides the large number of insurgents who, taken in arms, were pitilessly shot, others were afterwards condemned to death, to penal servitude, to transportation; and the survivors only obtained their liberty by the decree of 1879.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-paris', loc: { section: 'PARIS', para: '369' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1871.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Paris'
           }
         }
       ]
@@ -155,14 +147,17 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q5',
-        text: 'In Paris wird offiziell die "Kommune" proklamiert.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1871', loc: { section: 'Chronik 1871', para: '29' } },
+        id: 'q9',
+        text: 'The Commune was proclaimed on the 18th of March, and Paris was declared to be a free town, which recognized no government but that chosen by the people within its walls,',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-france-history',
+          loc: { section: 'FRANCE: History', para: '540' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1871.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/France/History'
         }
       }
     }
@@ -175,5 +170,8 @@ export default defineEvent({
       creator: 'Bruno Braquehais'
     },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'rougerie-1971-paris-libre-1871', perspective: 'european' }
+  ]
 })

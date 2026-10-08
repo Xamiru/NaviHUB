@@ -2,7 +2,7 @@ import { defineInterpretation } from '../../schema'
 
 export default defineInterpretation({
   id: 'american-civil-war-causes',
-  about: ['event:american-civil-war', 'period:confederate-states-of-america'],
+  about: ['event:american-civil-war', 'polity:confederate-states-of-america'],
   topic: 'causes',
   researched: '2026-10-06',
   framing: {

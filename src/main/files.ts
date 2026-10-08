@@ -1,4 +1,4 @@
-import { app, dialog, BrowserWindow } from 'electron'
+import { app, dialog, BrowserWindow, nativeImage } from 'electron'
 import { join, extname, basename, dirname } from 'path'
 import {
   closeSync,
@@ -358,6 +358,22 @@ export async function downloadAudio(
 export async function downloadImages(
   urls: (string | null | undefined)[]
 ): Promise<Map<string, string | null>> {
+  return downloadPool(urls, (url) => downloadImage(url))
+}
+
+// downloadImages for box art: each image is stored downscaled to `maxEdge`
+// pixels on its long side (see downloadScaledImage).
+export async function downloadScaledImages(
+  urls: (string | null | undefined)[],
+  maxEdge: number
+): Promise<Map<string, string | null>> {
+  return downloadPool(urls, (url) => downloadScaledImage(url, maxEdge))
+}
+
+async function downloadPool(
+  urls: (string | null | undefined)[],
+  fetchOne: (url: string) => Promise<string | null>
+): Promise<Map<string, string | null>> {
   const unique = [...new Set(urls.filter((u): u is string => !!u))]
   const map = new Map<string, string | null>()
   let next = 0
@@ -367,13 +383,73 @@ export async function downloadImages(
   const worker = async (): Promise<void> => {
     while (next < unique.length) {
       const url = unique[next++]
-      map.set(url, await downloadImage(url))
+      map.set(url, await fetchOne(url))
       done += 1
       imageProgress(done, unique.length) // no-op unless an activity is running
     }
   }
   await Promise.all(Array.from({ length: Math.min(5, unique.length) }, worker))
   return map
+}
+
+// A downscaled copy is its own content-addressed file — the URL hash plus the
+// edge — so it never collides with a full-size download of the same URL.
+export function dlScaledFileName(url: string, maxEdge: number): string {
+  return dlFileName(url).replace(/\.[^.]+$/, `-e${maxEdge}.jpg`)
+}
+
+// Box art arrives at up to ~1600x2200 and ~1 MB; a library of thousands of
+// games keeps it at `maxEdge` on the long side as JPEG (~150 KB). Covers only:
+// re-encoding drops transparency, which logos and crests need.
+export async function downloadScaledImage(
+  url: string | null | undefined,
+  maxEdge: number
+): Promise<string | null> {
+  if (!url) return null
+  try {
+    const fileName = dlScaledFileName(url, maxEdge)
+    const dir = mediaDir()
+    const dest = join(dir, fileName)
+    const relPath = join('media', fileName)
+    if (existsSync(dest)) return relPath
+    const res = await fetchWithRetry(url)
+    if (!res.ok) return null
+    counter += 1
+    const raw = join(dir, `sc-${process.pid}-${counter}.part`)
+    const encoded = `${raw}.jpg`
+    try {
+      await streamResponseToFile(res, raw, {
+        label: 'Image',
+        maxInputBytes: MAX_MEDIA_IMAGE_BYTES,
+        replace: true
+      })
+      const img = nativeImage.createFromPath(raw)
+      if (img.isEmpty()) return null
+      const { width, height } = img.getSize()
+      const scale = Math.min(1, maxEdge / Math.max(width, height))
+      const out =
+        scale < 1
+          ? img.resize({
+              width: Math.max(1, Math.round(width * scale)),
+              height: Math.max(1, Math.round(height * scale)),
+              quality: 'best'
+            })
+          : img
+      writeFileSync(encoded, out.toJPEG(85))
+      renameSync(encoded, dest)
+      return relPath
+    } finally {
+      for (const f of [raw, encoded]) {
+        try {
+          unlinkSync(f)
+        } catch {
+          // Already moved or never written.
+        }
+      }
+    }
+  } catch {
+    return null
+  }
 }
 
 // downloadImage's deterministic content-addressed filename, extracted so the

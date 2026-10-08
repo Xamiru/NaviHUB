@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Cancellation of the D’Arcy concession', lang: 'en', role: 'primary' },
     { text: 'لغو امتیاز دارسی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'crisis',
   start: {
     alts: [
@@ -72,6 +72,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-reza-shah' }
   ],
+  polities: [
+    { ref: 'polity:pahlavi-iran' }
+  ],
   participants: [
     {
       ref: 'person:reza-shah-pahlavi',
@@ -108,7 +111,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Sayyed Ḥasan Taqizādeh',
+      ref: 'person:hasan-taqizadeh',
       role: 'negotiator',
       cites: [
         {
@@ -122,7 +125,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Moḥammad-ʿAli Foruḡi',
+      ref: 'person:mohammad-ali-foroughi',
       role: 'negotiator',
       cites: [
         {
@@ -524,5 +527,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Abdolhossein_Teymourtash.jpg',
     credit: { institution: 'Institute for Iranian Contemporary Historical Studies' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'fateh-1979-panjah-sal-naft-e-iran', perspective: 'iranian' },
+    { source: 'makki-1983-tarikh-e-bist-saleh-ye-iran', perspective: 'iranian' }
+  ]
 })

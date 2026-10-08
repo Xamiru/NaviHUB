@@ -13,7 +13,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -50,6 +50,7 @@ export default defineEvent({
     {
       key: 'ottoman',
       name: 'Ottoman Empire',
+      polity: 'polity:ottoman-empire',
       cites: [
         {
           source: 'loc-turkey-country-study-1995',
@@ -60,6 +61,7 @@ export default defineEvent({
     {
       key: 'greece',
       name: 'Greece',
+      polity: 'polity:kingdom-of-greece',
       cites: [
         {
           source: 'loc-turkey-country-study-1995',
@@ -76,14 +78,14 @@ export default defineEvent({
       kind: 'background',
       quotes: [
         {
-          id: 'q1',
-          text: 'Im Zuge eines erneuten Aufstands gegen die osmanische Herrschaft auf der Insel Kreta landen griechische Truppen bei Platania im Nordwesten der Insel und versuchen die Insel zu annektieren.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1897', loc: { section: 'Chronik 1897', para: '6' } },
+          id: 'q8',
+          text: 'The neglect of the Porte to carry out all the stipulations of the Cretan arrangement of 1896 led to a renewal of the disturbances, […] and Greece began to take steps for the invasion of the island; in February 1897 Colonel Vassos sailed from the Piraeus with an armed force, intending to proclaim the annexation of Crete to Greece, and Greek troops were massed on the Thessalian frontier.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-turkey', loc: { section: 'TURKEY', para: '1449' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1897.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Turkey'
           }
         }
       ]
@@ -117,25 +119,28 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
-          id: 'q4',
-          text: 'Griechenland verpflichtet sich zur Zahlung einer Kriegsentschädigung in Höhe von 4 Millionen Osmanischen Pfund, das Osmanische Reich räumt Thessalien.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1897', loc: { section: 'Chronik 1897', para: '53' } },
+          id: 'q9',
+          text: 'Under the terms of the treaty of peace, signed on 20th September, and arranged by the European powers, Turkey obtained an indemnity of £T4,000,000, and a rectification of the Thessalian frontier, carrying with it some strategic advantage.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-greco-turkish-war-1897',
+            loc: { section: 'GRECO-TURKISH WAR, 1897', para: '4' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1897.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Greco-Turkish_War,_1897'
           }
         },
         {
-          id: 'q5',
-          text: 'Die Insel Kreta erhält 1898 den Status einer autonomen osmanischen Provinz.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1897', loc: { section: 'Chronik 1897', para: '53' } },
+          id: 'q10',
+          text: 'But Europe was determined that the Cretan question should be definitely settled, at least for a period of some years, and, after an outbreak at Candia, in which the lives of British troops were sacrificed, the four powers (Germany and Austria having withdrawn from the concert) who had taken over the island en dépôt handed it over in October 1898 to Prince George of Greece as high commissioner (see Crete: History).',
+          lang: 'en',
+          cite: { source: 'britannica-1911-turkey', loc: { section: 'TURKEY', para: '1449' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1897.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Turkey'
           }
         }
       ]
@@ -154,14 +159,14 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q6',
-        text: 'Nach der Weigerung Griechenlands, einem Ultimatum zur Räumung der Insel nachzugeben, beginnt am 7. April der türkisch-griechische Krieg.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1897', loc: { section: 'Chronik 1897', para: '6' } },
+        id: 'q11',
+        text: 'Diplomacy busied itself with fruitless attempts to avert hostilities; on the 17th of April 1897 war was declared by Turkey.',
+        lang: 'en',
+        cite: { source: 'britannica-1911-turkey', loc: { section: 'TURKEY', para: '1449' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1897.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Turkey'
         }
       }
     },

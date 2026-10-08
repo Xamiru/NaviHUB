@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Cuban Missile Crisis', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'crisis',
   start: {
     alts: [
@@ -35,6 +35,17 @@ export default defineEvent({
   },
   regions: ['latin-america', 'north-america', 'global'],
   prominence: 1,
+  places: [
+    {
+      ref: 'place:san-cristobal-cuba',
+      cites: [
+        {
+          source: 'state-dept-milestones-cuban-missile-crisis',
+          loc: { section: 'The Cuban Missile Crisis, October 1962', para: '2' }
+        }
+      ]
+    }
+  ],
   partOf: [
     {
       ref: 'period:cold-war',
@@ -46,10 +57,14 @@ export default defineEvent({
       ]
     }
   ],
+  polities: [
+    { ref: 'polity:republic-of-cuba' }
+  ],
   sides: [
     {
       key: 'us',
       name: 'United States',
+      polity: 'polity:united-states',
       cites: [
         {
           source: 'state-dept-milestones-cuban-missile-crisis',
@@ -60,6 +75,7 @@ export default defineEvent({
     {
       key: 'soviet',
       name: 'Soviet Union',
+      polity: 'polity:soviet-union',
       cites: [
         {
           source: 'state-dept-milestones-cuban-missile-crisis',
@@ -539,5 +555,10 @@ export default defineEvent({
       bytes: 8111461,
       durationSec: 112
     }
+  ],
+  furtherReading: [
+    { source: 'diez-acosta-2002-october-1962', perspective: 'latin-american' },
+    { source: 'mikoyan-2006-anatomiya-karibskogo-krizisa', perspective: 'russian-soviet' },
+    { source: 'yazov-2015-karibskii-krizis', perspective: 'russian-soviet' }
   ]
 })

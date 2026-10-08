@@ -6,7 +6,7 @@ export default defineEvent({
     { text: '30 Tir uprising', lang: 'en', role: 'primary' },
     { text: 'قیام سی تیر', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -52,6 +52,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:premiership-of-mohammad-mosaddegh' }
+  ],
+  polities: [
+    { ref: 'polity:pahlavi-iran' }
   ],
   participants: [
     {
@@ -186,20 +189,6 @@ export default defineEvent({
             at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/kasani-abul-qasem/'
           }
-        },
-        {
-          id: 'q5',
-          text: 'Immediately the Tudeh party, joined by Mossadegh’s people, launched riots and demonstrations. Mob rule prevailed, and Qavam’s government seemed powerless to cope with it.',
-          lang: 'en',
-          cite: {
-            source: 'pahlavi-1961-mission-for-my-country',
-            loc: { section: 'Mission for My Country' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-07',
-            url: 'https://archive.org/download/mission-for-my-country-mohammad-reza-pahlavi_202605/Mission%20For%20My%20Country%20-%20Mohammad%20Reza%20Pahlavi_djvu.txt'
-          }
         }
       ]
     },
@@ -246,6 +235,25 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/coup-detat-1953/'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q5',
+          text: 'Immediately the Tudeh party, joined by Mossadegh’s people, launched riots and demonstrations. Mob rule prevailed, and Qavam’s government seemed powerless to cope with it.',
+          lang: 'en',
+          cite: {
+            source: 'pahlavi-1961-mission-for-my-country',
+            loc: { section: 'Mission for My Country' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://archive.org/download/mission-for-my-country-mohammad-reza-pahlavi_202605/Mission%20For%20My%20Country%20-%20Mohammad%20Reza%20Pahlavi_djvu.txt'
           }
         }
       ]
@@ -349,5 +357,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Dr_Mohammad_Mosaddeq.jpg',
     credit: { institution: 'International News Photos' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'makki-1983-ketab-e-siyah', perspective: 'iranian' },
+    { source: 'showkat-2007-dar-tirras-e-hadeseh', perspective: 'iranian' }
+  ]
 })

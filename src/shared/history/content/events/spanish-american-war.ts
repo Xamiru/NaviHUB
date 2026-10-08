@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Spanish–American War', lang: 'en', role: 'primary' },
     { text: 'Guerra hispano-estadounidense', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -70,6 +70,7 @@ export default defineEvent({
     {
       key: 'us',
       name: 'United States',
+      polity: 'polity:united-states',
       cites: [
         {
           source: 'state-dept-milestones-spanish-american-war',
@@ -80,6 +81,7 @@ export default defineEvent({
     {
       key: 'spain',
       name: 'Spain',
+      polity: 'polity:kingdom-of-spain',
       cites: [
         {
           source: 'state-dept-milestones-spanish-american-war',
@@ -90,7 +92,7 @@ export default defineEvent({
   ],
   participants: [
     {
-      name: 'William McKinley',
+      ref: 'person:william-mckinley',
       role: 'head-of-state',
       side: 'us',
       cites: [
@@ -305,17 +307,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1866-1898/spanish-american-war'
           }
-        },
-        {
-          id: 'q10',
-          text: 'Der Friede von Paris beendet den spanisch-amerikanischen Krieg.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1898', loc: { section: 'Chronik 1898', para: '59' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1898.html'
-          }
         }
       ]
     }
@@ -331,7 +322,6 @@ export default defineEvent({
                 source: 'state-dept-milestones-spanish-american-war',
                 loc: { section: 'The Spanish-American War, 1898', para: '3' }
               },
-              { source: 'lemo-chronik-1898', loc: { section: 'Chronik 1898', para: '5' } },
               {
                 source: 'state-dept-milestones-yellow-journalism',
                 loc: { section: 'U.S. Diplomacy and Yellow Journalism, 1895–1898', para: '5' }
@@ -341,14 +331,17 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q11',
-        text: 'Der amerikanische Panzerkreuzer Maine wird im Hafen von Havanna durch eine Explosion zerstört, 260 Menschen kommen ums Leben.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1898', loc: { section: 'Chronik 1898', para: '6' } },
+        id: 'q19',
+        text: 'After the U.S. battleship Maine exploded and sank in Havana harbor under mysterious circumstances on February 15, 1898, U.S. military intervention in Cuba became likely.',
+        lang: 'en',
+        cite: {
+          source: 'state-dept-milestones-spanish-american-war',
+          loc: { section: 'The Spanish-American War, 1898', para: '3' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1898.html'
+          at: '2026-10-07',
+          url: 'https://history.state.gov/milestones/1866-1898/spanish-american-war'
         }
       }
     },
@@ -557,5 +550,15 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:San_Juan_Hill_by_Kurz_and_Allison.JPG',
     credit: { creator: 'Kurz and Allison' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'roig-de-leuchsenring-1975-cuba-no-debe-su-independencia',
+      perspective: 'latin-american'
+    },
+    {
+      source: 'gomez-nunez-1900-la-guerra-hispano-americana-la-habana',
+      perspective: 'european'
+    }
+  ]
 })

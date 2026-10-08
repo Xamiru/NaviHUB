@@ -4,13 +4,13 @@ export default defineInterpretation({
   id: 'imprisonment-of-the-bab-motives',
   about: ['event:imprisonment-of-the-bab', 'person:haji-mirza-aqasi'],
   topic: 'motives',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'aqasi-feared-rival',
-      category: 'contemporary',
+      category: 'scholarly',
       holders: [
-        { kind: 'participant', name: 'Mollā Moḥammad Nabīl Zarandī' }
+        { kind: 'scholar', name: 'Denis M. MacEoin' }
       ],
       statements: [
         {

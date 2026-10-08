@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'second-treaty-of-erzurum',
   names: [
     { text: 'Second Treaty of Erzurum', lang: 'en', role: 'primary' },
+    { text: 'عهدنامه دوم ارزروم', lang: 'fa', role: 'native' },
     {
       text: 'second treaty of Erzerum',
       lang: 'en',
@@ -16,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -54,6 +55,10 @@ export default defineEvent({
   ],
   related: [
     { ref: 'event:first-treaty-of-erzurum', rel: 'related' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' },
+    { ref: 'polity:ottoman-empire' }
   ],
   participants: [
     {

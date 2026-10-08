@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -62,6 +62,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:german-democratic-republic' }
   ],
   participants: [
     {
@@ -277,5 +280,8 @@ export default defineEvent({
       bytes: 10786730,
       durationSec: 113
     }
+  ],
+  furtherReading: [
+    { source: 'hertle-2014-die-berliner-mauer', perspective: 'european' }
   ]
 })

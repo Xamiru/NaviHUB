@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'anglo-persian-oil-company-formation',
   names: [
-    { text: 'Formation of the Anglo-Persian Oil Company', lang: 'en', role: 'primary' }
+    { text: 'Formation of the Anglo-Persian Oil Company', lang: 'en', role: 'primary' },
+    { text: 'تأسیس شرکت نفت ایران و انگلیس', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'founding',
   start: {
     alts: [
@@ -76,5 +77,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Anglo-Persian_Oil_Company_workers_(1).jpg',
     credit: { institution: 'Institute for Iranian Contemporary Historical Studies' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'fateh-1979-panjah-sal-naft-e-iran', perspective: 'iranian' }
+  ]
 })

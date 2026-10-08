@@ -27,7 +27,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -64,6 +64,10 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:united-states' },
+    { ref: 'polity:united-kingdom' }
   ],
   participants: [
     {
@@ -191,17 +195,6 @@ export default defineEvent({
       kind: 'background',
       quotes: [
         {
-          id: 'q3',
-          text: 'Abkommen der Vier Mächte in London über die Strafverfolgung der Hauptkriegsverbrecher und Einsetzung eines Internationalen Militärgerichtshofes in Nürnberg.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1945', loc: { section: 'Chronik 1945', para: '205' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1945.html'
-          }
-        },
-        {
           id: 'q4',
           text: '(c) Crimes Against Humanity: namely, murder, extermination, enslavement, deportation, and other inhumane acts committed against any civilian population, before or during the war, or persecutions on political, racial, or religious grounds in execution of or in connection with any crime within the jurisdiction of the Tribunal, whether or not in violation of domestic law of the country where perpetrated.',
           lang: 'en',
@@ -238,17 +231,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1945-1952/nuremberg'
-          }
-        },
-        {
-          id: 'q6',
-          text: 'Urteilsverkündung im Nürnberger Hauptkriegsverbrecherprozess. Zwölf der Angeklagten werden zu Tode verurteilt, sieben erhalten langjährige oder lebenslange Haftstrafen, drei werden freigesprochen.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1946', loc: { section: 'Jahreschronik 1946', para: '121' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.hdg.de/lemo/jahreschronik/1946.html'
           }
         }
       ]
@@ -381,5 +363,8 @@ export default defineEvent({
       date: { d: '1946-03-21' },
       durationSec: 726
     }
+  ],
+  furtherReading: [
+    { source: 'poltorak-1965-nyurnbergskii-epilog', perspective: 'russian-soviet' }
   ]
 })

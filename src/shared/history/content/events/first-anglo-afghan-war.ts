@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -507,5 +507,8 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 35637461
     }
+  ],
+  furtherReading: [
+    { source: 'ghubar-1996-afghanistan-dar-masir-i-tarikh', perspective: 'central-asian' }
   ]
 })

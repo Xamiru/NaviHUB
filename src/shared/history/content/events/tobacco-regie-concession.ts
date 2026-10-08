@@ -28,7 +28,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'economic',
   start: {
     alts: [
@@ -138,6 +138,9 @@ export default defineEvent({
     { ref: 'period:reign-of-naser-al-din-shah-qajar' },
     { ref: 'period:qajar-dynasty' }
   ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
+  ],
   participants: [
     {
       ref: 'person:naser-al-din-shah-qajar',
@@ -206,28 +209,6 @@ export default defineEvent({
   ],
   sections: [
     {
-      kind: 'background',
-      quotes: [
-        {
-          id: 'q1',
-          text: 'During the latter half of the 1880s, the British and Russian governments, together with private European companies, intensified pressure on Tehran to open the Iranian economy to foreign investment. These efforts did not yield very much until October 1888 when Nāṣer-al-Din Shah succumbed to British pressure and permitted “commercial steamers of all nations” to navigate the Kārun river (Gilbar, 2008, p. 608; Kazemzadeh, p.195; Amanat, pp. 420-21; see KARUN iii). At that point, the door to granting concessions to foreign investors opened wide.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-gilbar-qajar-big-merchants',
-            loc: {
-              section: 'QAJAR DYNASTY viii. “Big Merchants” in the Late Qajar Period',
-              para: '21'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/qajar-big-merchants'
-          }
-        }
-      ]
-    },
-    {
       kind: 'overview',
       quotes: [
         {
@@ -278,6 +259,28 @@ export default defineEvent({
       ]
     },
     {
+      kind: 'background',
+      quotes: [
+        {
+          id: 'q1',
+          text: 'During the latter half of the 1880s, the British and Russian governments, together with private European companies, intensified pressure on Tehran to open the Iranian economy to foreign investment. These efforts did not yield very much until October 1888 when Nāṣer-al-Din Shah succumbed to British pressure and permitted “commercial steamers of all nations” to navigate the Kārun river (Gilbar, 2008, p. 608; Kazemzadeh, p.195; Amanat, pp. 420-21; see KARUN iii). At that point, the door to granting concessions to foreign investors opened wide.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-gilbar-qajar-big-merchants',
+            loc: {
+              section: 'QAJAR DYNASTY viii. “Big Merchants” in the Late Qajar Period',
+              para: '21'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/qajar-big-merchants'
+          }
+        }
+      ]
+    },
+    {
       kind: 'course',
       quotes: [
         {
@@ -312,17 +315,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
-          }
-        },
-        {
-          id: 'q7',
-          text: 'The Tobacco Concession was granted on March 8, 1890, and registered at the British Legation on May 9 of the same year.',
-          lang: 'en',
-          cite: { source: 'browne-1910-persian-revolution', loc: { page: '19' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://archive.org/download/persianrevolutio00browuoft/persianrevolutio00browuoft_djvu.txt'
           }
         }
       ]
@@ -369,5 +361,34 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:The_Young_Nasir_Al-Din_Shah_Qajar.jpg',
     credit: { creator: 'Mirza Abolhassan Khan Ghaffari' },
     license: { id: 'public-domain' }
-  }
+  },
+  course: [
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1890-03-08' },
+            cites: [
+              { source: 'browne-1910-persian-revolution', loc: { page: '19' } }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q7',
+        text: 'The Tobacco Concession was granted on March 8, 1890, and registered at the British Legation on May 9 of the same year.',
+        lang: 'en',
+        cite: { source: 'browne-1910-persian-revolution', loc: { page: '19' } },
+        provenance: {
+          via: 'web',
+          at: '2026-10-06',
+          url: 'https://archive.org/download/persianrevolutio00browuoft/persianrevolutio00browuoft_djvu.txt'
+        }
+      }
+    }
+  ],
+  furtherReading: [
+    { source: 'adamiyat-1981-shuresh-bar-emtiyaznameh-ye-rezhi', perspective: 'iranian' },
+    { source: 'nateq-1994-bazarganan-dar-dad-o-setad', perspective: 'iranian' }
+  ]
 })

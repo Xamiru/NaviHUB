@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Act Prohibiting Importation of Slaves (1807)', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -22,6 +22,9 @@ export default defineEvent({
   },
   regions: ['north-america', 'subsaharan-africa'],
   prominence: 3,
+  polities: [
+    { ref: 'polity:united-states' }
+  ],
   sections: [
     {
       kind: 'overview',

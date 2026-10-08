@@ -27,6 +27,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { configFor, pathForMedia } from '../lib/mediaConfig'
 import { qk } from '../lib/queryKeys'
+import { historyImageSrc, historyPath } from '../lib/historyUi'
 import CoverImage from '../components/CoverImage'
 import Section from '../components/Section'
 import EmptyState from '../components/EmptyState'
@@ -150,7 +151,8 @@ export default function HomePage() {
     ),
     favorites:
       favorites.length > 0 ? <Strip title="Favorites" items={favorites.slice(0, 12)} /> : null,
-    pictures: <PictureCard />
+    pictures: <PictureCard />,
+    historyToday: <OnThisDayCard />
   }
 
   return (
@@ -1160,6 +1162,63 @@ function PictureCard() {
           onClose={() => setViewing(false)}
         />
       )}
+    </div>
+  )
+}
+
+// History events dated to today's month and day. The History catalog loads in
+// the main process on first use, so the query waits until Home has settled
+// instead of competing with launch.
+function OnThisDayCard() {
+  const now = new Date()
+  const month = now.getMonth() + 1
+  const day = now.getDate()
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 2500)
+    return () => clearTimeout(t)
+  }, [])
+  const { data, isPending, isError, refetch } = useQuery({
+    queryKey: qk.history.onThisDay(`${month}-${day}`),
+    queryFn: () => api.history.onThisDay(month, day),
+    enabled: ready,
+    staleTime: 60 * 60_000
+  })
+  if (isPending || isError) {
+    return <HomeReadState title="On this day" pending={isPending} retry={() => void refetch()} />
+  }
+  const label = now.toLocaleDateString(undefined, { month: 'long', day: 'numeric' })
+  return (
+    <div className="card p-4">
+      <div className="mb-3 flex items-baseline justify-between gap-3">
+        <h2 className="text-sm font-semibold text-ink">On this day</h2>
+        <span className="text-xs text-gray-500">{label}</span>
+      </div>
+      {data.length === 0 ? (
+        <p className="text-sm text-gray-400">Nothing recorded on this day.</p>
+      ) : (
+        <ul className="space-y-2">
+          {data.map((h) => (
+            <li key={h.info.ref}>
+              <Link to={historyPath(h.info.ref) ?? '/history'} className="group flex items-center gap-3">
+                {historyImageSrc(h.info.image, 160) ? (
+                  <img src={historyImageSrc(h.info.image, 160)!} alt="" className="h-10 w-10 shrink-0 rounded-md object-cover" />
+                ) : (
+                  <span aria-hidden="true" className="h-10 w-10 shrink-0 rounded-md bg-base-800" />
+                )}
+                <span className="min-w-0 flex-1 truncate text-sm text-gray-200 group-hover:text-accent">{h.info.title}</span>
+                <span className="shrink-0 text-xs tabular-nums text-gray-400">
+                  {h.what === 'began' ? '' : h.what === 'ended' ? 'ended ' : 'stage, '}
+                  {h.year}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Link to="/history" className="mt-3 inline-block text-xs text-gray-500 hover:text-accent">
+        History →
+      </Link>
     </div>
   )
 }

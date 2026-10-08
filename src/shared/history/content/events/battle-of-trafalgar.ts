@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Battle of Trafalgar', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -32,6 +32,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:napoleonic-wars' }
   ],
+  polities: [
+    { ref: 'polity:united-kingdom' }
+  ],
   sides: [
     {
       key: 'britain',
@@ -46,6 +49,7 @@ export default defineEvent({
     {
       key: 'france',
       name: 'French',
+      polity: 'polity:first-french-empire',
       cites: [
         {
           source: 'fondation-napoleon-close-up-trafalgar',
@@ -56,6 +60,7 @@ export default defineEvent({
     {
       key: 'spain',
       name: 'Spanish',
+      polity: 'polity:kingdom-of-spain',
       cites: [
         {
           source: 'fondation-napoleon-close-up-trafalgar',
@@ -95,6 +100,39 @@ export default defineEvent({
         {
           source: 'fondation-napoleon-close-up-trafalgar',
           loc: { section: 'A close-up on: Trafalgar, 21 October, 1805' }
+        }
+      ]
+    },
+    {
+      name: 'Vice-Admiral Cuthbert Collingwood',
+      role: 'commander',
+      side: 'britain',
+      cites: [
+        {
+          source: 'britannica-1911-trafalgar-battle-of',
+          loc: { section: 'TRAFALGAR, BATTLE OF', para: '1' }
+        }
+      ]
+    },
+    {
+      name: 'Admiral Dumanoir',
+      role: 'commander',
+      side: 'france',
+      cites: [
+        {
+          source: 'britannica-1911-trafalgar-battle-of',
+          loc: { section: 'TRAFALGAR, BATTLE OF', para: '3' }
+        }
+      ]
+    },
+    {
+      name: 'Alava',
+      role: 'commander',
+      side: 'spain',
+      cites: [
+        {
+          source: 'britannica-1911-trafalgar-battle-of',
+          loc: { section: 'TRAFALGAR, BATTLE OF', para: '3' }
         }
       ]
     }
@@ -218,12 +256,43 @@ export default defineEvent({
           }
         ]
       }
+    },
+    {
+      key: 'casualties',
+      side: 'britain',
+      value: {
+        alts: [
+          {
+            value: { min: 1690 },
+            cites: [
+              {
+                source: 'britannica-1911-trafalgar-battle-of',
+                loc: { section: 'TRAFALGAR, BATTLE OF', para: '6' }
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   sections: [
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q3',
+          text: 'The British victory over the French off Cape Trafalgar, fought on the 21st of October 1805, was a sequel of the breakdown of Napoleon\'s great scheme for the invasion of the British Isles',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-trafalgar-battle-of',
+            loc: { section: 'TRAFALGAR, BATTLE OF', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Trafalgar,_Battle_of'
+          }
+        },
         {
           id: 'q1',
           text: 'On 21 October, 1805, the allied Franco-Spanish fleet under Admiral Villeneuve was ‘annihilated’ by the British fleet under Admiral Nelson.',
@@ -256,6 +325,20 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.napoleon.org/en/history-of-the-two-empires/close-up/a-close-up-on-trafalgar-21-october-1805/'
           }
+        },
+        {
+          id: 'q11',
+          text: 'The loss of life of the allies cannot be stated with precision. In the British fleet the reported loss in killed and wounded was 1690, of whom 1452 belonged to 14 out of the 27 ships of the line present—the inequality of loss being mainly due to the fact that it was as a rule these vessels which came earliest into action.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-trafalgar-battle-of',
+            loc: { section: 'TRAFALGAR, BATTLE OF', para: '6' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Trafalgar,_Battle_of'
+          }
         }
       ]
     }
@@ -266,5 +349,213 @@ export default defineEvent({
     title: 'The Battle of Trafalgar, 21 October 1805',
     credit: { institution: 'National Maritime Museum, Greenwich', creator: 'J. M. W. Turner' },
     license: { id: 'public-domain' }
-  }
+  },
+  course: [
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1805-08-20' },
+            cites: [
+              {
+                source: 'britannica-1911-trafalgar-battle-of',
+                loc: { section: 'TRAFALGAR, BATTLE OF', para: '1' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q4',
+        text: 'When Villeneuve gave up in despair the attempt to enter the Channel, he steered for Cadiz, and anchored in that port on the 20th of August 1805.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-trafalgar-battle-of',
+          loc: { section: 'TRAFALGAR, BATTLE OF', para: '1' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Trafalgar,_Battle_of'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1805-09-28' },
+            cites: [
+              {
+                source: 'britannica-1911-trafalgar-battle-of',
+                loc: { section: 'TRAFALGAR, BATTLE OF', para: '1' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q5',
+        text: 'Nelson left Portsmouth on the 15th of September, and reached Cadiz on the 28th, bringing three ships of the line with him.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-trafalgar-battle-of',
+          loc: { section: 'TRAFALGAR, BATTLE OF', para: '1' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Trafalgar,_Battle_of'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1805-10-18' },
+            cites: [
+              {
+                source: 'britannica-1911-trafalgar-battle-of',
+                loc: { section: 'TRAFALGAR, BATTLE OF', para: '1' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q6',
+        text: 'On the 18th of October Villeneuve heard that Rosily had reached Madrid, and of his own supersession. Stung by the prospect of being disgraced before the fleet, he resolved to go to sea before his successor could reach Cadiz.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-trafalgar-battle-of',
+          loc: { section: 'TRAFALGAR, BATTLE OF', para: '1' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Trafalgar,_Battle_of'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1805-10-20' },
+            cites: [
+              {
+                source: 'britannica-1911-trafalgar-battle-of',
+                loc: { section: 'TRAFALGAR, BATTLE OF', para: '3' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q7',
+        text: 'The allies, having left Cadiz on the 20th of October, were 33 sail of the line strong, one of the fleet having been left behind.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-trafalgar-battle-of',
+          loc: { section: 'TRAFALGAR, BATTLE OF', para: '3' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Trafalgar,_Battle_of'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1805-10-21' },
+            cites: [
+              {
+                source: 'britannica-1911-trafalgar-battle-of',
+                loc: { section: 'TRAFALGAR, BATTLE OF', para: '3' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q8',
+        text: 'The “Royal Sovereign” was the first British ship to break into the enemy\'s line, which she did about midday and astern of Alava\'s flagship the “Santa Ana.”',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-trafalgar-battle-of',
+          loc: { section: 'TRAFALGAR, BATTLE OF', para: '4' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Trafalgar,_Battle_of'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1805-10-21' },
+            cites: [
+              {
+                source: 'britannica-1911-trafalgar-battle-of',
+                loc: { section: 'TRAFALGAR, BATTLE OF', para: '3' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q9',
+        text: 'Nelson\'s division was headed by himself to cut through the enemy between his van and centre, and to bar his road to Cadiz. It was certainly in a nearer approach to a line ahead than Collingwood\'s. After making a demonstration at the allied van, he broke into their line astern of the “Bucentaure” (100), the flagship of Villeneuve.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-trafalgar-battle-of',
+          loc: { section: 'TRAFALGAR, BATTLE OF', para: '4' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Trafalgar,_Battle_of'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1805-10-21' },
+            cites: [
+              {
+                source: 'britannica-1911-trafalgar-battle-of',
+                loc: { section: 'TRAFALGAR, BATTLE OF', para: '3' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q10',
+        text: 'The battle, which began at midday, was terminated about five. Eighteen of the allies were taken.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-trafalgar-battle-of',
+          loc: { section: 'TRAFALGAR, BATTLE OF', para: '6' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Trafalgar,_Battle_of'
+        }
+      }
+    }
+  ],
+  furtherReading: [
+    { source: 'marliani-1850-combate-de-trafalgar', perspective: 'european' }
+  ]
 })

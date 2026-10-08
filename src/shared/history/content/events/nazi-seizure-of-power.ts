@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Nazi seizure of power', lang: 'en', role: 'primary' },
     { text: 'Machtergreifung', lang: 'de', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -52,7 +52,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Paul von Hindenburg',
+      ref: 'person:paul-von-hindenburg',
       role: 'head-of-state',
       cites: [
         {
@@ -119,17 +119,6 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/38.htm' }
         },
         {
-          id: 'q2',
-          text: 'Hindenburg ernennt Hitler zum Reichskanzler. Im neugebildeten Kabinett wird Papen Vizekanzler und Reichskommissar für Preußen, Hugenberg erhält das Wirtschaftsministerium. Von der NSDAP treten Hermann Göring und Wilhelm Frick in die Regierung ein.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1933', loc: { section: 'Chronik 1933', para: '21' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1933.html'
-          }
-        },
-        {
           id: 'q3',
           text: 'Within two months, Hitler had dictatorial control over Germany.',
           lang: 'en',
@@ -178,16 +167,6 @@ export default defineEvent({
             loc: { section: 'The Third Reich, 1933-45: The Consolidation of Power', para: '4' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/39.htm' }
-        },
-        {
-          id: 'q7',
-          text: 'After Hindenburg\'s death in early August 1934, Hitler combined the offices of the president and the chancellor.',
-          lang: 'en',
-          cite: {
-            source: 'loc-germany-country-study-1995',
-            loc: { section: 'The Third Reich, 1933-45: The Consolidation of Power', para: '4' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/39.htm' }
         }
       ]
     }
@@ -199,21 +178,24 @@ export default defineEvent({
           {
             value: { d: '1933-02-27' },
             cites: [
-              { source: 'lemo-chronik-1933', loc: { section: 'Chronik 1933', para: '51' } }
+              { source: 'lemo-chronik-1933', loc: { section: 'Chronik 1933', para: '51' } },
+              {
+                source: 'loc-germany-country-study-1995',
+                loc: { section: 'The Third Reich, 1933-45: The Consolidation of Power', para: '2' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q8',
-        text: 'Abends bricht im Reichstagsgebäude ein Brand aus, der fast den gesamten Mittelteil des Gebäudes und den Plenarsaal zerstört. Direkt nach dem Brand erklärt Göring, der festgenommene Niederländer Marinus van der Lubbe habe im Auftrag der KPD das Feuer gelegt. Es folgen zahlreiche politisch motivierte Verhaftungen.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1933', loc: { section: 'Chronik 1933', para: '52' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1933.html'
-        }
+        id: 'q17',
+        text: 'A week before election day, the Reichstag building was destroyed by fire.',
+        lang: 'en',
+        cite: {
+          source: 'loc-germany-country-study-1995',
+          loc: { section: 'The Third Reich, 1933-45: The Consolidation of Power', para: '2' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/germany/39.htm' }
       }
     },
     {
@@ -276,22 +258,20 @@ export default defineEvent({
               {
                 source: 'loc-germany-country-study-1995',
                 loc: { section: 'The Third Reich, 1933-45: The Consolidation of Power', para: '3' }
-              },
-              { source: 'lemo-chronik-1933', loc: { section: 'Chronik 1933', para: '77' } }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q11',
-        text: 'Der Reichstag billigt in namentlicher Abstimmung mit 441 Stimmen das Ermächtigungsgesetz und verzichtet damit auf seine Gesetzgebungskompetenz. Nur 94 Abgeordnete der SPD stimmen dagegen.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1933', loc: { section: 'Chronik 1933', para: '78' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1933.html'
-        }
+        id: 'q18',
+        text: 'Nonetheless, with the help of political allies, Hitler presented the Reichstag with the proposal for an Enabling Act that, if passed by a two-thirds majority, would allow him to govern without parliament for four years. On March 23, the proposal was passed with the support of the Center Party and others. All Communists and some Social Democrats were prevented from voting.',
+        lang: 'en',
+        cite: {
+          source: 'loc-germany-country-study-1995',
+          loc: { section: 'The Third Reich, 1933-45: The Consolidation of Power', para: '3' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/germany/39.htm' }
       }
     },
     {
@@ -325,21 +305,24 @@ export default defineEvent({
           {
             value: { d: '1934-06-30' },
             cites: [
-              { source: 'lemo-chronik-1934', loc: { section: 'Chronik 1934', para: '123' } }
+              { source: 'lemo-chronik-1934', loc: { section: 'Chronik 1934', para: '123' } },
+              {
+                source: 'loc-germany-country-study-1995',
+                loc: { section: 'The Third Reich, 1933-45: The Consolidation of Power', para: '4' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q13',
-        text: 'Hitler lässt seinen SA-Stabschef und langjährigen Freund Ernst Röhm sowie andere hochstehende SA-Führer in einer vorbereiteten Aktion verhaften und ermorden.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1934', loc: { section: 'Chronik 1934', para: '124' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1934.html'
-        }
+        id: 'q19',
+        text: 'The enormous and unruly SA was brought under control by a massacre of its leadership at the end of June 1934 in the "night of the long knives." Other opponents were also killed during this purge, among them Schleicher.',
+        lang: 'en',
+        cite: {
+          source: 'loc-germany-country-study-1995',
+          loc: { section: 'The Third Reich, 1933-45: The Consolidation of Power', para: '4' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/germany/39.htm' }
       }
     },
     {
@@ -348,21 +331,24 @@ export default defineEvent({
           {
             value: { d: '1934-08-02' },
             cites: [
-              { source: 'lemo-chronik-1934', loc: { section: 'Chronik 1934', para: '145' } }
+              { source: 'lemo-chronik-1934', loc: { section: 'Chronik 1934', para: '145' } },
+              {
+                source: 'loc-germany-country-study-1995',
+                loc: { section: 'The Third Reich, 1933-45: The Consolidation of Power', para: '4' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q14',
-        text: 'Hindenburg stirbt mit 86 Jahren auf seinem Gut Neudeck. Hitler übernimmt nun auch das Amt des Reichspräsidenten. Er nennt sich fortan "Führer und Reichskanzler". Die Reichswehr wird von nun an nicht mehr auf die Verfassung, sondern auf die Person Hitlers vereidigt.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1934', loc: { section: 'Chronik 1934', para: '146' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1934.html'
-        }
+        id: 'q7',
+        text: 'After Hindenburg\'s death in early August 1934, Hitler combined the offices of the president and the chancellor.',
+        lang: 'en',
+        cite: {
+          source: 'loc-germany-country-study-1995',
+          loc: { section: 'The Third Reich, 1933-45: The Consolidation of Power', para: '4' }
+        },
+        provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/39.htm' }
       }
     }
   ],
@@ -385,6 +371,13 @@ export default defineEvent({
       bytes: 4691321,
       date: { d: '1933-03-16' },
       durationSec: 55
+    }
+  ],
+  furtherReading: [
+    { source: 'bracher-1960-die-auflosung-der-weimarer-republik', perspective: 'european' },
+    {
+      source: 'bracher-sauer-schulz-1974-die-nationalsozialistische-machtergreifung',
+      perspective: 'european'
     }
   ]
 })

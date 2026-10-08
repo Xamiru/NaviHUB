@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Plessy v. Ferguson', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -22,6 +22,20 @@ export default defineEvent({
   },
   regions: ['north-america'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:new-orleans',
+      cites: [
+        {
+          source: 'nara-milestone-plessy-v-ferguson',
+          loc: { section: 'Plessy v. Ferguson (1896)', para: '4' }
+        }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
+  ],
   participants: [
     {
       name: 'Homer Plessy',

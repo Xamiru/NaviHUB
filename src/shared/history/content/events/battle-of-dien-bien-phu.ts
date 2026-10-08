@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Battle of Dien Bien Phu', lang: 'en', role: 'primary' },
     { text: 'Chiến dịch Điện Biên Phủ', lang: 'vi', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -76,6 +76,7 @@ export default defineEvent({
     {
       key: 'france',
       name: 'French garrison',
+      polity: 'polity:french-fourth-republic',
       cites: [
         {
           source: 'loc-vietnam-country-study-1987',
@@ -368,5 +369,10 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Victory_in_Battle_of_Dien_Bien_Phu.jpg',
     credit: { institution: 'Vietnam People\'s Army Museum System' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'vo-nguyen-giap-1998-dien-bien-phu', perspective: 'southeast-asian' },
+    { source: 'rocolle-1968-pourquoi-dien-bien-phu', perspective: 'european' },
+    { source: 'roy-1963-la-bataille-de-dien-bien-phu', perspective: 'european' }
+  ]
 })

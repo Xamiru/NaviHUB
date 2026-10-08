@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Mohammad Tabatabai', lang: 'en', role: 'primary' },
     { text: 'محمد طباطبایی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   died: {
     alts: [
       {
@@ -79,5 +79,9 @@ export default definePerson({
       creator: 'Ali Mahmudi'
     },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'safai-1963-rahbaran-e-mashruteh', perspective: 'iranian' },
+    { source: 'malekzadeh-1949-tarikh-e-enqelab-e-mashrutiyat', perspective: 'iranian' }
+  ]
 })

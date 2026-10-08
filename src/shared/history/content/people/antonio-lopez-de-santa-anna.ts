@@ -3,9 +3,45 @@ import { definePerson } from '../../schema'
 export default definePerson({
   id: 'antonio-lopez-de-santa-anna',
   names: [
-    { text: 'Antonio López de Santa Anna', lang: 'en', role: 'primary' }
+    { text: 'Antonio López de Santa Anna', lang: 'en', role: 'primary' },
+    { text: 'Antonio López de Santa Anna', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1795-02-21' },
+        cites: [
+          {
+            source: 'britannica-1911-santa-anna-antonio-lopez-de',
+            loc: { section: 'SANTA-ANNA, ANTONIO LOPEZ DE', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1876-06-20' },
+        cites: [
+          {
+            source: 'britannica-1911-santa-anna-antonio-lopez-de',
+            loc: { section: 'SANTA-ANNA, ANTONIO LOPEZ DE', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  diedIn: {
+    ref: 'place:mexico-city',
+    cites: [
+      {
+        source: 'britannica-1911-santa-anna-antonio-lopez-de',
+        loc: { section: 'SANTA-ANNA, ANTONIO LOPEZ DE', para: '1' }
+      }
+    ]
+  },
   regions: ['latin-america'],
   roles: ['military', 'politician'],
   sections: [

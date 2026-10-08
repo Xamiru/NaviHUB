@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'herat-crisis-of-1851-1853',
   names: [
-    { text: 'Herat crisis of 1851–1853', lang: 'en', role: 'primary' }
+    { text: 'Herat crisis of 1851–1853', lang: 'en', role: 'primary' },
+    { text: 'بحران هرات ۱۸۵۱–۱۸۵۳', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'crisis',
   start: {
     alts: [
@@ -64,6 +65,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-naser-al-din-shah-qajar' },
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {

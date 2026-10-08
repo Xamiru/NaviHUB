@@ -53,27 +53,37 @@ const ANILIST_GENRES = [
   'Thriller'
 ]
 
-// RAWG's genre vocabulary as it appears in the offline catalog's `genres` JSON.
+// LaunchBox's genre vocabulary as it appears in the games catalog's `genres`
+// JSON: every genre on at least ~500 works in the 2026-10 pack.
 const CATALOG_GENRES = [
   'Action',
   'Adventure',
-  'Arcade',
-  'Board Games',
-  'Card',
-  'Casual',
-  'Educational',
-  'Family',
+  "Beat 'em Up",
+  'Board Game',
+  'Casino',
+  'Compilation',
+  'Construction and Management Simulation',
+  'Education',
   'Fighting',
-  'Indie',
-  'Massively Multiplayer',
-  'Platformer',
+  'Flight Simulator',
+  'Horror',
+  'Life Simulation',
+  'MMO',
+  'Music',
+  'Party',
+  'Pinball',
+  'Platform',
   'Puzzle',
-  'RPG',
+  'Quiz',
   'Racing',
+  'Role-Playing',
+  'Sandbox',
   'Shooter',
-  'Simulation',
   'Sports',
-  'Strategy'
+  'Stealth',
+  'Strategy',
+  'Vehicle Simulation',
+  'Visual Novel'
 ]
 
 // TMDB's official genre-id maps. Movie and TV differ (TV merges Action into

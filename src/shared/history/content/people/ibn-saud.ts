@@ -17,7 +17,20 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1876' },
+        cites: [
+          {
+            source: 'loc-saudi-arabia-country-study-1992',
+            loc: { section: 'The King', para: '3' }
+          }
+        ]
+      }
+    ]
+  },
   died: {
     alts: [
       {
@@ -36,6 +49,7 @@ export default definePerson({
   offices: [
     {
       title: 'King of Saudi Arabia',
+      polity: 'polity:saudi-arabia',
       cites: [
         {
           source: 'loc-saudi-arabia-country-study-1992',

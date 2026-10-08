@@ -17,9 +17,51 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   regions: ['south-asia'],
   roles: ['monarch'],
+  offices: [
+    {
+      title: 'amir',
+      polity: 'polity:emirate-of-afghanistan',
+      start: {
+        alts: [
+          {
+            value: { d: '1826' },
+            cites: [
+              {
+                source: 'loc-afghanistan-country-study-2001',
+                loc: { section: 'The Rise of Dost Mohammad', para: '2' }
+              }
+            ]
+          }
+        ]
+      },
+      end: {
+        alts: [
+          {
+            value: { d: '1863' },
+            cites: [
+              {
+                source: 'iranica-balland-afghanistan-political-history',
+                loc: { section: 'AFGHANISTAN x. Political History', para: '5' }
+              }
+            ]
+          }
+        ]
+      },
+      cites: [
+        {
+          source: 'loc-afghanistan-country-study-2001',
+          loc: { section: 'The Rise of Dost Mohammad', para: '2' }
+        },
+        {
+          source: 'iranica-balland-afghanistan-political-history',
+          loc: { section: 'AFGHANISTAN x. Political History', para: '5' }
+        }
+      ]
+    }
+  ],
   sections: [
     {
       kind: 'career',

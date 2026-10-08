@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Second Anglo-Afghan War', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -55,6 +55,7 @@ export default defineEvent({
     {
       key: 'britain',
       name: 'the British',
+      polity: 'polity:united-kingdom',
       cites: [
         {
           source: 'iranica-balland-afghanistan-political-history',
@@ -65,6 +66,7 @@ export default defineEvent({
     {
       key: 'afghanistan',
       name: 'the Afghans',
+      polity: 'polity:emirate-of-afghanistan',
       cites: [
         {
           source: 'iranica-balland-afghanistan-political-history',
@@ -384,5 +386,11 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Upper_Bala_Hissar_from_west_Kabul_in_1879.jpg',
     credit: { institution: 'The British Library', creator: 'John Burke' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'kakar-2005-political-and-diplomatic-history-of-afghanistan',
+      perspective: 'central-asian'
+    }
+  ]
 })

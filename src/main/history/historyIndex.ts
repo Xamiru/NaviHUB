@@ -11,6 +11,7 @@ import {
   PERIOD_TYPES,
   PERSON_ROLES,
   PLACE_TYPES,
+  POLITY_TYPES,
   SOURCE_TYPES,
   nativeName,
   parseRef,
@@ -29,7 +30,7 @@ import type { HistoryImage, HistoryParticipation, HistoryRefInfo, HistoryUserEnt
 
 export interface TimelineEntry {
   ref: string
-  kind: 'event' | 'period'
+  kind: 'event' | 'period' | 'polity'
   title: string
   native: string | null
   typeLabel: string
@@ -58,6 +59,16 @@ export interface HistoryIndex {
   interpretationsAbout: Map<string, string[]>
   mediaByTarget: Map<string, MediaLinkPointer[]>
   mediaByPortrayed: Map<string, MediaLinkPointer[]>
+  /** polity ref -> events naming it as a state involved or as a side, in start order. */
+  polityEvents: Map<string, string[]>
+  /** polity ref -> people holding one of its offices (person ref + office index). */
+  rulersOf: Map<string, Array<{ ref: string; office: number }>>
+  /** polity ref -> the states that list it as a predecessor. */
+  successors: Map<string, string[]>
+  /** polity ref -> colonies and dependencies (states whose partOf names it). */
+  dependencies: Map<string, string[]>
+  /** entity ref -> themes whose thread includes it. */
+  themesOf: Map<string, string[]>
   /** source id -> citing ref -> number of quotes and claims citing it. */
   citedBy: Map<string, Map<string, number>>
   quoteCount: number
@@ -89,7 +100,8 @@ function yearOfDate(h: HistDate | undefined, short = true): string | null {
 export function yearsLabel(e: HistoryEntity): string | null {
   switch (e.kind) {
     case 'event':
-    case 'period': {
+    case 'period':
+    case 'polity': {
       const a = yearOfDate(firstValue(e.start))
       const b = yearOfDate(firstValue(e.end))
       if (!a) return null
@@ -116,6 +128,10 @@ export function subLabel(e: HistoryEntity): string | null {
       return EVENT_TYPES[e.type] ?? null
     case 'period':
       return PERIOD_TYPES[e.periodType] ?? null
+    case 'polity':
+      return POLITY_TYPES[e.polityType] ?? null
+    case 'theme':
+      return 'Theme'
     case 'person':
       return e.roles.map((r) => PERSON_ROLES[r]).filter(Boolean).join(', ') || null
     case 'place':
@@ -143,7 +159,7 @@ export function titleOf(e: HistoryEntity): string {
 }
 
 export function imageOfEntity(e: HistoryEntity): ImageRef | undefined {
-  if (e.kind === 'event' || e.kind === 'period') return e.hero
+  if (e.kind === 'event' || e.kind === 'period' || e.kind === 'polity' || e.kind === 'theme') return e.hero
   if (e.kind === 'person') return e.portrait
   return undefined
 }
@@ -222,7 +238,7 @@ function push<K, V>(m: Map<K, V[]>, k: K, v: V): void {
 }
 
 function timelineEntry(e: HistoryArticle, personal: boolean): TimelineEntry | null {
-  if (e.kind !== 'event' && e.kind !== 'period') return null
+  if (e.kind !== 'event' && e.kind !== 'period' && e.kind !== 'polity') return null
   const s = startYear(e.start)
   if (s === null) return null
   const endVal = endYear(e.end)
@@ -234,7 +250,7 @@ function timelineEntry(e: HistoryArticle, personal: boolean): TimelineEntry | nu
     kind: e.kind,
     title: primaryName(e),
     native: nativeName(e)?.text ?? null,
-    typeLabel: e.kind === 'event' ? EVENT_TYPES[e.type] : PERIOD_TYPES[e.periodType],
+    typeLabel: e.kind === 'event' ? EVENT_TYPES[e.type] : e.kind === 'polity' ? POLITY_TYPES[e.polityType] : PERIOD_TYPES[e.periodType],
     s,
     e: e2,
     lane: e.regions[0],
@@ -277,6 +293,11 @@ export function buildIndex(entries: CatalogEntry[], personal: HistoryUserEntity[
     interpretationsAbout: new Map(),
     mediaByTarget: new Map(),
     mediaByPortrayed: new Map(),
+    polityEvents: new Map(),
+    rulersOf: new Map(),
+    successors: new Map(),
+    dependencies: new Map(),
+    themesOf: new Map(),
     citedBy: new Map(),
     quoteCount: 0,
     docs: []
@@ -284,7 +305,15 @@ export function buildIndex(entries: CatalogEntry[], personal: HistoryUserEntity[
   const c = index.catalog
   const docs: Parameters<typeof prepareDocs>[0] = []
 
-  for (const e of [...c.events.values(), ...c.periods.values(), ...c.people.values(), ...c.places.values()]) {
+  const articles = [
+    ...c.events.values(),
+    ...c.periods.values(),
+    ...c.people.values(),
+    ...c.places.values(),
+    ...c.polities.values(),
+    ...c.themes.values()
+  ]
+  for (const e of articles) {
     const ref = refOf(e.kind, e.id)
     const isPersonal = index.personal.has(ref)
     const t = timelineEntry(e, isPersonal)
@@ -295,8 +324,16 @@ export function buildIndex(entries: CatalogEntry[], personal: HistoryUserEntity[
       e.participants?.forEach((p) => {
         if (p.ref) push(index.personEvents, p.ref, { ref, role: p.role, side: p.side ?? null })
       })
+      const states = new Set([...(e.polities ?? []).map((p) => p.ref), ...(e.sides ?? []).flatMap((s) => (s.polity ? [s.polity] : []))])
+      states.forEach((p) => push(index.polityEvents, p, ref))
     }
     if (e.kind === 'period' && e.parent) push(index.childrenOf, e.parent, ref)
+    if (e.kind === 'person') e.offices?.forEach((o, office) => o.polity && push(index.rulersOf, o.polity, { ref, office }))
+    if (e.kind === 'polity') {
+      e.predecessors?.forEach((p) => push(index.successors, p.ref, ref))
+      new Set((e.partOf ?? []).map((p) => p.ref)).forEach((p) => push(index.dependencies, p, ref))
+    }
+    if (e.kind === 'theme') e.thread.forEach((t) => push(index.themesOf, t.ref, ref))
     countCites(index, ref, e)
     docs.push({
       ref,
@@ -307,6 +344,12 @@ export function buildIndex(entries: CatalogEntry[], personal: HistoryUserEntity[
       text: ('sections' in e ? e.sections ?? [] : []).flatMap((s) => s.quotes.map((q) => q.text))
     })
   }
+  // State events read in time order whatever order the files load in.
+  const startOf = (ref: string): number => {
+    const e = lookup(c, ref)
+    return (e && e.kind === 'event' && startYear(e.start)) || 0
+  }
+  for (const list of index.polityEvents.values()) list.sort((a, b) => startOf(a) - startOf(b))
   for (const s of c.sources.values()) {
     docs.push({
       ref: refOf('source', s.id),
@@ -348,7 +391,7 @@ export function lifespan(e: HistoryEntity): { s: number; e: number | null } | nu
     if (s === null) return null
     return { s, e: endYear(e.died) }
   }
-  if (e.kind === 'event' || e.kind === 'period') {
+  if (e.kind === 'event' || e.kind === 'period' || e.kind === 'polity') {
     const s = startYear(e.start)
     if (s === null) return null
     return { s, e: endYear(e.end) }

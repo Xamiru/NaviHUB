@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'crisis',
   start: {
     alts: [
@@ -88,6 +88,10 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-mohammad-reza-shah' }
   ],
+  polities: [
+    { ref: 'polity:pahlavi-iran' },
+    { ref: 'polity:soviet-union' }
+  ],
   participants: [
     {
       ref: 'person:ahmad-qavam',
@@ -128,7 +132,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Sayyed Ḥasan Taqizādeh',
+      ref: 'person:hasan-taqizadeh',
       role: 'diplomat',
       cites: [
         {
@@ -148,7 +152,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Moḥammad Moṣaddeq',
+      ref: 'person:mohammad-mosaddegh',
       role: 'participant',
       cites: [
         {
@@ -531,5 +535,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Repros,_Bestanddeelnr_901-5673.jpg',
     credit: { institution: 'Nationaal Archief' },
     license: { id: 'cc0' }
-  }
+  },
+  furtherReading: [
+    { source: 'hasanli-2006-at-the-dawn-of-the-cold-war', perspective: 'central-asian' },
+    { source: 'showkat-2007-dar-tirras-e-hadeseh', perspective: 'iranian' }
+  ]
 })

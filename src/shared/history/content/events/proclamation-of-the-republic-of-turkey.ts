@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Proclamation of the Republic of Turkey', lang: 'en', role: 'primary' },
     { text: 'Cumhuriyetin ilanı', lang: 'tr', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'founding',
   start: {
     alts: [
@@ -34,6 +34,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:republic-of-turkey' }
   ],
   participants: [
     {
@@ -273,5 +276,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:1923_11_03_Resimli_Gazete_Cumhuriyetin_Ilani.jpg',
     credit: { institution: 'İBB Atatürk Kitaplığı', creator: 'Resimli Gazete' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'ataturk-1999-nutuk', perspective: 'turkish' },
+    { source: 'bayur-1940-turk-inkilabi-tarihi', perspective: 'turkish' }
+  ]
 })

@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'russo-persian-war-1804-1813',
   names: [
     { text: 'Russo-Persian War of 1804–1813', lang: 'en', role: 'primary' },
+    { text: 'جنگ اول ایران و روس', lang: 'fa', role: 'native' },
     {
       text: 'First Russo-Iranian war',
       lang: 'en',
@@ -19,7 +20,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -91,6 +92,7 @@ export default defineEvent({
     {
       key: 'iran',
       name: 'Iran',
+      polity: 'polity:qajar-iran',
       cites: [
         {
           source: 'iranica-andreeva-russia-relations',
@@ -104,6 +106,7 @@ export default defineEvent({
     {
       key: 'russia',
       name: 'Russia',
+      polity: 'polity:russian-empire',
       cites: [
         {
           source: 'iranica-andreeva-russia-relations',
@@ -569,5 +572,17 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Abbas_Mirza_in_battle.jpg',
     credit: { institution: 'Brown University Library', creator: 'Hippolyte Bellangé' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'dubrovin-2019-istoriia-voiny-i-vladychestva-russkikh-na-kavkaze',
+      perspective: 'russian-soviet'
+    },
+    { source: 'potto-1885-kavkazskaia-voina', perspective: 'russian-soviet' },
+    { source: 'nafisi-1965-tarikh-e-ejtemai-va-siyasi-ye-iran', perspective: 'iranian' },
+    {
+      source: 'kuznetsova-1983-iran-v-pervoi-polovine-xix-veka',
+      perspective: 'russian-soviet'
+    }
+  ]
 })

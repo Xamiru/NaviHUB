@@ -33,7 +33,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'massacre',
   start: {
     alts: [
@@ -70,6 +70,10 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'event:second-sino-japanese-war' }
+  ],
+  polities: [
+    { ref: 'polity:empire-of-japan' },
+    { ref: 'polity:republic-of-china' }
   ],
   participants: [
     {
@@ -135,18 +139,6 @@ export default defineEvent({
             ],
             heldBy: [
               { kind: 'school', name: 'Middle-of-the-Road School (chūkan-ha)' }
-            ]
-          },
-          {
-            value: { min: 0, max: 50 },
-            cites: [
-              {
-                source: 'askew-2002-nanjing-incident-recent-research',
-                loc: { section: 'The Nanjing Incident: Recent Research and Trends', para: '24' }
-              }
-            ],
-            heldBy: [
-              { kind: 'school', name: 'Illusion School (maboroshi-ha)' }
             ]
           }
         ]
@@ -237,5 +229,10 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  furtherReading: [
+    { source: 'sun-2005-chengqing-lishi', perspective: 'chinese' },
+    { source: 'hata-2007-nankin-jiken', perspective: 'japanese' },
+    { source: 'kasahara-2017-nitchu-senso-zenshi', perspective: 'japanese' }
   ]
 })

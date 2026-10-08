@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'indian-national-congress-representation',
   about: ['event:founding-of-the-indian-national-congress'],
   topic: 'nature',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'national-all-india-forum',
@@ -56,20 +56,20 @@ export default defineInterpretation({
     },
     {
       id: 'hindu-dominated',
-      category: 'contemporary',
+      category: 'scholarly',
       holders: [
-        { kind: 'participant', name: 'Sir Syed Ahmad Khan' }
+        { kind: 'organization', name: 'Library of Congress, Federal Research Division' }
       ],
       statements: [
         {
           id: 'q4',
-          text: 'he remained aloof when Congress was founded and advised his followers not to join Congress, because he thought the organization would be dominated by Hindus and would inevitably become antigovernment.',
+          text: 'Although Sir Syed often voiced demands similar to those made by the founders of Congress--local self-government, Indian representation on the viceroy\'s and the governors\' councils, and equal duties for Indian members of the Indian Civil Service and the judicial service--he remained aloof when Congress was founded and advised his followers not to join Congress, because he thought the organization would be dominated by Hindus and would inevitably become antigovernment.',
           lang: 'en',
           cite: {
             source: 'loc-pakistan-country-study-1994',
             loc: { section: 'The Seeds of Muslim Nationalism', para: '7' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/pakistan/10.htm' }
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/pakistan/10.htm' }
         }
       ]
     }

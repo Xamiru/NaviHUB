@@ -18,7 +18,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -32,6 +32,9 @@ export default defineEvent({
   },
   regions: ['global', 'europe'],
   prominence: 2,
+  places: [
+    { ref: 'place:the-hague' }
+  ],
   sections: [
     {
       kind: 'overview',

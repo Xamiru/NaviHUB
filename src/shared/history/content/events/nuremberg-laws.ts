@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Nuremberg Laws', lang: 'en', role: 'primary' },
     { text: 'Nürnberger Gesetze', lang: 'de', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -103,6 +103,17 @@ export default defineEvent({
             loc: { section: 'Total Mobilization, Resistance, and the Holocaust', para: '4' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/42.htm' }
+        },
+        {
+          id: 'q7',
+          text: 'Die Standesämter in Deutschland dürfen keine Ehen mehr zwischen Juden und Nichtjuden schließen.',
+          lang: 'de',
+          cite: { source: 'lemo-chronik-1935', loc: { section: 'Chronik 1935', para: '149' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.dhm.de/lemo/jahreschronik/1935.html'
+          }
         }
       ]
     },
@@ -120,15 +131,14 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/42.htm' }
         },
         {
-          id: 'q4',
-          text: 'Auf dem Reichsparteitag verkündet Hitler die "Nürnberger Gesetze". Die Diskriminierung von Juden wird auf eine rechtliche Grundlage nach biologistischen Kriterien gestellt.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1935', loc: { section: 'Chronik 1935', para: '165' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1935.html'
-          }
+          id: 'q9',
+          text: 'With the seizure of power, the persecution of the Jews was intensified. A series of discriminatory laws were passed, which limited the offices and professions permitted to Jews; and restrictions were placed on their family life and their rights of citizenship.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-imt-judgment-war-crimes-and-crimes-against-humanity',
+            loc: { section: 'PERSECUTION OF THE JEWS', para: '7' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'https://avalon.law.yale.edu/imt/judwarcr.asp' }
         },
         {
           id: 'q5',
@@ -158,23 +168,29 @@ export default defineEvent({
       date: {
         alts: [
           {
-            value: { d: '1935-08-10' },
+            value: { d: '1935-09-15' },
             cites: [
-              { source: 'lemo-chronik-1935', loc: { section: 'Chronik 1935', para: '148' } }
+              {
+                source: 'avalon-nca-2000-ps-law-for-the-protection-of-german-blood',
+                loc: {
+                  section: 'Law for the Protection of German Blood and German Honor of 15 September 1935'
+                }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q7',
-        text: 'Die Standesämter in Deutschland dürfen keine Ehen mehr zwischen Juden und Nichtjuden schließen.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1935', loc: { section: 'Chronik 1935', para: '149' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1935.html'
-        }
+        id: 'q10',
+        text: '1. Marriages between Jews and nationals of German or kindred blood are forbidden.',
+        lang: 'en',
+        cite: {
+          source: 'avalon-nca-2000-ps-law-for-the-protection-of-german-blood',
+          loc: {
+            section: 'Law for the Protection of German Blood and German Honor of 15 September 1935'
+          }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'https://avalon.law.yale.edu/imt/2000-ps.asp' }
       }
     },
     {
@@ -209,5 +225,8 @@ export default defineEvent({
       creator: 'Reichsministerium des Innern'
     },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'essner-2002-die-nurnberger-gesetze', perspective: 'european' }
+  ]
 })

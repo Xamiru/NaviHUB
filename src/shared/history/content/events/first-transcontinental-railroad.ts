@@ -27,7 +27,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'economic',
   start: {
     alts: [
@@ -67,6 +67,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
   ],
   participants: [
     {

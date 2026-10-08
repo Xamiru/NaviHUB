@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Mexican War of Independence', lang: 'en', role: 'primary' },
     { text: 'Guerra de Independencia de México', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -46,6 +46,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:kingdom-of-spain' }
   ],
   participants: [
     {
@@ -236,5 +239,9 @@ export default defineEvent({
       creator: 'Joaquín Ramírez'
     },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'alaman-1968-historia-de-mejico', perspective: 'latin-american' },
+    { source: 'villoro-1967-el-proceso-ideologico', perspective: 'latin-american' }
+  ]
 })

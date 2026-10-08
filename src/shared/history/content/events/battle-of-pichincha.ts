@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Battle of Pichincha', lang: 'en', role: 'primary' },
     { text: 'Batalla de Pichincha', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -33,6 +33,10 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:gran-colombia' },
+    { ref: 'polity:kingdom-of-spain' }
   ],
   participants: [
     {

@@ -27,7 +27,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'expedition',
   start: {
     alts: [
@@ -67,6 +67,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
   ],
   participants: [
     {
@@ -318,5 +321,9 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 46374778
     }
+  ],
+  furtherReading: [
+    { source: 'kato-1985-kurofune-zengo-no-sekai', perspective: 'japanese' },
+    { source: 'mitani-2003-perii-raiko', perspective: 'japanese' }
   ]
 })

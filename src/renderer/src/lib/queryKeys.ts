@@ -103,7 +103,9 @@ export const qk = {
   people: {
     ...entity('people'),
     homeTop: ['people', 'homeTop'] as const,
-    credits: (personId: number) => ['people', 'credits', personId] as const
+    credits: (personId: number) => ['people', 'credits', personId] as const,
+    directory: (query: import('@shared/types').PersonDirectoryQuery) =>
+      ['people', 'directory', query] as const
   },
   companies: {
     ...entity('companies'),
@@ -305,6 +307,9 @@ export const qk = {
     imageStatus: ['history', 'imageStatus'] as const,
     borders: ['history', 'borders'] as const,
     mapPins: ['history', 'mapPins'] as const,
+    mapPolities: ['history', 'mapPolities'] as const,
+    themes: ['history', 'themes'] as const,
+    onThisDay: (monthDay: string) => ['history', 'onThisDay', monthDay] as const,
     archiveJobs: ['history', 'archiveJobs'] as const,
     search: (q: string) => ['history', 'search', q] as const
   },
@@ -481,9 +486,22 @@ export const qk = {
       ['achievements', 'raSearch', query, consoleId] as const
   },
   gamesCatalog: {
-    // The offline RAWG catalog's install state (ImportDialog's catalog pill).
+    // The games catalog's install state (ImportDialog's catalog pill, /bulk).
     all: ['gamesCatalog'] as const,
     status: ['gamesCatalog', 'status'] as const
+  },
+  gameLinks: {
+    // A game's catalog work / Bangumi subject (the Links panel) and the
+    // searches that re-link it.
+    all: ['gameLinks'] as const,
+    get: (mediaId: number) => ['gameLinks', 'get', mediaId] as const,
+    works: (query: string) => ['gameLinks', 'works', query] as const,
+    bangumi: (query: string) => ['gameLinks', 'bangumi', query] as const
+  },
+  gameUpgrade: {
+    // The "Upgrade games" run on /bulk; the dry-run plan is a plain await.
+    all: ['gameUpgrade'] as const,
+    status: ['gameUpgrade', 'status'] as const
   },
   refresh: {
     // Library Refresh run status. Like bulk, the preview is a plain await in the

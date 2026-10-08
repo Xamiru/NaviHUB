@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Emancipation Proclamation', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -26,6 +26,20 @@ export default defineEvent({
   },
   regions: ['north-america'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:washington-dc',
+      cites: [
+        {
+          source: 'nara-milestone-emancipation-proclamation',
+          loc: { section: 'Emancipation Proclamation (1863)', para: '24' }
+        }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
+  ],
   related: [
     { ref: 'event:american-civil-war', rel: 'related' }
   ],
@@ -335,5 +349,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Emancipation_Proclamation,_01-01-1863_(Page_1_of_5)_(3695343876).jpg',
     credit: { institution: 'U.S. National Archives' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'ivanov-1964-avraam-linkoln', perspective: 'russian-soviet' }
+  ]
 })

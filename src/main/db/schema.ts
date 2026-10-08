@@ -151,7 +151,12 @@ export const person = sqliteTable(
     externalSource: text('external_source'),
     externalId: text('external_id')
   },
-  (t) => ({ byName: index('idx_person_name').on(t.name) })
+  (t) => ({
+    byName: index('idx_person_name').on(t.name),
+    byNativeKey: index('idx_person_native_key').on(
+      sql`REPLACE(REPLACE(${t.nameNative}, ' ', ''), char(12288), '')`
+    )
+  })
 )
 
 // ---------------------------------------------------------------------------
@@ -209,7 +214,12 @@ export const credit = sqliteTable(
     role: text('role').notNull().default('voice_actor'),
     language: text('language'),
     // Character importance for this credit (0=main, 1=supporting, 2=background).
-    importance: integer('importance')
+    importance: integer('importance'),
+    // The source's own credit text ("Story & Art", "Original Creator").
+    roleNote: text('role_note'),
+    // The importer that wrote it where imported and hand-made credits mix
+    // ('bangumi' on games); NULL otherwise.
+    origin: text('origin')
   },
   (t) => ({
     byMedia: index('idx_credit_media').on(t.mediaId),
@@ -501,6 +511,25 @@ export const mediaRelation = sqliteTable(
     byMedia: index('idx_media_relation_media').on(t.mediaId),
     byRelated: index('idx_media_relation_related').on(t.relatedSource, t.relatedExternalId),
     uniq: unique('uniq_media_relation').on(t.mediaId, t.relatedSource, t.relatedExternalId)
+  })
+)
+
+// Identities a title has besides its own key (games: LaunchBox work, Bangumi
+// subject, Wikidata item, Steam app) — see init.sql.
+export const mediaExternalLink = sqliteTable(
+  'media_external_link',
+  {
+    mediaId: integer('media_id')
+      .notNull()
+      .references(() => mediaItem.id, { onDelete: 'cascade' }),
+    source: text('source').notNull(),
+    externalId: text('external_id').notNull(),
+    method: text('method').notNull(), // 'xref' | 'wikidata' | 'exact' | 'manual'
+    linkedAt: text('linked_at').notNull()
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.mediaId, t.source] }),
+    byExternal: index('idx_media_external_link_ext').on(t.source, t.externalId)
   })
 )
 

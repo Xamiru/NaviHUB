@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'revolution',
   start: {
     alts: [
@@ -160,5 +160,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Eug%C3%A8ne_Delacroix_-_Liberty_Leading_the_People_(28th_July_1830)_-_WGA6177.jpg',
     credit: { institution: 'Musée du Louvre', creator: 'Eugène Delacroix' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'bertier-de-sauvigny-1955-la-restauration', perspective: 'european' }
+  ]
 })

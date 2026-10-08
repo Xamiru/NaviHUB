@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'azerbaijan-peoples-government',
   names: [
     { text: 'Azerbaijan People’s Government', lang: 'en', role: 'primary' },
+    { text: 'آذربایجان میللی حؤکومتی', lang: 'azb', role: 'native' },
     { text: 'حکومت ملی آذربایجان', lang: 'fa', role: 'native' },
     {
       text: 'Autonomous Government of Azarbaijan',
@@ -28,7 +29,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'movement',
   start: {
     alts: [
@@ -80,6 +81,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:reign-of-mohammad-reza-shah' }
+  ],
+  polities: [
+    { ref: 'polity:pahlavi-iran' }
   ],
   participants: [
     {
@@ -365,5 +369,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Jafar_Pishevari_in_Tehran_guarded_by_armed_members_of_his_party.png',
     credit: { institution: 'Ettela\'at newspaper' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'hasanli-2006-at-the-dawn-of-the-cold-war', perspective: 'central-asian' },
+    { source: 'showkat-2007-dar-tirras-e-hadeseh', perspective: 'iranian' }
+  ]
 })

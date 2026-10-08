@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Treaty of Paris (1856)', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -28,6 +28,14 @@ export default defineEvent({
   prominence: 2,
   places: [
     { ref: 'place:paris' }
+  ],
+  polities: [
+    { ref: 'polity:second-french-empire' },
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:austrian-empire' },
+    { ref: 'polity:kingdom-of-prussia' },
+    { ref: 'polity:russian-empire' },
+    { ref: 'polity:ottoman-empire' }
   ],
   participants: [
     {

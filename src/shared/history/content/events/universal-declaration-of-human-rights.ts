@@ -36,15 +36,14 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'Die Vollversammlung der Vereinten Nationen verabschiedet die 30 Artikel umfassende Allgemeine Erklärung der Menschenrechte.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1948', loc: { section: 'Jahreschronik 1948', para: '152' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.hdg.de/lemo/jahreschronik/1948.html'
-          }
+          id: 'q5',
+          text: 'The United Nations General Assembly adopted the Universal Declaration of Human Rights on December 10, 1948 in the midst of an especially bitter phase of the Cold War.',
+          lang: 'en',
+          cite: {
+            source: 'fdr-library-universal-declaration-of-human-rights',
+            loc: { section: 'Universal Declaration of Human Rights' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'https://www.fdrlibrary.org/human-rights' }
         }
       ]
     },

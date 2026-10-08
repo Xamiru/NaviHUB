@@ -6,7 +6,20 @@ export default definePerson({
     { text: 'Miguel Hidalgo', lang: 'en', role: 'primary' },
     { text: 'Miguel Hidalgo y Costilla', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1753-05-08' },
+        cites: [
+          {
+            source: 'britannica-1911-hidalgo-y-costilla-miguel',
+            loc: { section: 'HIDALGO Y COSTILLA, MIGUEL', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
   died: {
     alts: [
       {

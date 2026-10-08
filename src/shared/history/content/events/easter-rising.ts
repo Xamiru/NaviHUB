@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Easter Rising', lang: 'en', role: 'primary' },
     { text: 'Éirí Amach na Cásca', lang: 'ga', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -55,6 +55,7 @@ export default defineEvent({
     {
       key: 'british',
       name: 'British troops',
+      polity: 'polity:united-kingdom',
       cites: [
         { source: 'eo1418-mcgarry-easter-rising', loc: { section: 'Introduction', para: '1' } }
       ]
@@ -298,5 +299,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Sackville_Street_in_Ruins_P6129.jpg',
     credit: { institution: 'National Gallery of Ireland', creator: 'Edmond Delrenne' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'martin-1967-leaders-and-men-of-the-easter-rising', perspective: 'european' },
+    { source: 'mcgarry-2010-the-rising', perspective: 'european' }
+  ]
 })

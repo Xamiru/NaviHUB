@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'British purchase of the Suez Canal shares', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'economic',
   start: {
     alts: [
@@ -25,6 +25,10 @@ export default defineEvent({
   places: [
     { ref: 'place:cairo' },
     { ref: 'place:london' }
+  ],
+  polities: [
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:khedivate-of-egypt' }
   ],
   participants: [
     {

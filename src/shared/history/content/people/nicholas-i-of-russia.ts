@@ -6,12 +6,13 @@ export default definePerson({
     { text: 'Nicholas I of Russia', lang: 'en', role: 'primary' },
     { text: 'Николай I', lang: 'ru', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   regions: ['russia-central-asia'],
   roles: ['monarch'],
   offices: [
     {
       title: 'tsar',
+      polity: 'polity:russian-empire',
       start: {
         alts: [
           {

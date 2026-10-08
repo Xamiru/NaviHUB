@@ -6,7 +6,17 @@ export default definePerson({
     { text: 'Muhammad Ali of Egypt', lang: 'en', role: 'primary' },
     { text: 'محمد علي باشا', lang: 'ar', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1769' },
+        cites: [
+          { source: 'britannica-1911-mehemet-ali', loc: { section: 'MEHEMET ALI', para: '1' } }
+        ]
+      }
+    ]
+  },
   died: {
     alts: [
       {
@@ -25,6 +35,7 @@ export default definePerson({
   offices: [
     {
       title: 'governor of Egypt',
+      polity: 'polity:ottoman-empire',
       start: {
         alts: [
           {

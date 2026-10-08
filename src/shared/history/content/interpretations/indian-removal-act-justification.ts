@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'indian-removal-act-justification',
   about: ['event:indian-removal-act'],
   topic: 'legitimacy',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'benevolent-policy',
@@ -109,9 +109,9 @@ export default defineInterpretation({
     },
     {
       id: 'appeasement-and-resistance',
-      category: 'contemporary',
+      category: 'scholarly',
       holders: [
-        { kind: 'public', name: 'Creek, Cherokee, Chickasaw and Choctaw nations' }
+        { kind: 'organization', name: 'Office of the Historian, U.S. Department of State' }
       ],
       statements: [
         {

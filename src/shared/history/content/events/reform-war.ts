@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -66,6 +66,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:mexico' }
   ],
   sides: [
     {
@@ -281,5 +284,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Batalla_de_San_Miguel_Calpulalpan.jpg',
     credit: { institution: 'University of Texas Libraries', creator: 'Casimiro Castro' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'reyes-heroles-1982-el-liberalismo-mexicano', perspective: 'latin-american' }
+  ]
 })

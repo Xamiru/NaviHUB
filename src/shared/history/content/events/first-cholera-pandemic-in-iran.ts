@@ -3,7 +3,8 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'first-cholera-pandemic-in-iran',
   names: [
-    { text: 'First cholera pandemic in Iran', lang: 'en', role: 'primary' }
+    { text: 'First cholera pandemic in Iran', lang: 'en', role: 'primary' },
+    { text: 'وبای ۱۸۲۱ در ایران', lang: 'fa', role: 'native' }
   ],
   researched: '2026-10-07',
   type: 'epidemic',

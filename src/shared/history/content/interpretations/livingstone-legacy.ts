@@ -4,11 +4,11 @@ export default defineInterpretation({
   id: 'livingstone-legacy',
   about: ['person:david-livingstone', 'event:livingstone-crossing-of-africa'],
   topic: 'legacy',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'imperial-mandate',
-      category: 'popular',
+      category: 'contemporary',
       holders: [
         { kind: 'participant', name: 'Sir Harry H. Johnston' }
       ],
@@ -84,9 +84,9 @@ export default defineInterpretation({
     },
     {
       id: 'postcolonial-critique',
-      category: 'popular',
+      category: 'scholarly',
       holders: [
-        { kind: 'participant', name: 'Marlene NourbeSe Philip' }
+        { kind: 'scholar', name: 'Justin D. Livingstone' }
       ],
       statements: [
         {

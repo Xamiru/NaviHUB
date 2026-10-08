@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'revolution',
   start: {
     alts: [
@@ -78,6 +78,11 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:austrian-empire' },
+    { ref: 'polity:kingdom-of-prussia' },
+    { ref: 'polity:french-second-republic' }
   ],
   related: [
     { ref: 'event:french-revolution-of-1848', rel: 'related' },
@@ -288,21 +293,24 @@ export default defineEvent({
             value: { d: '1848-03-13', notAfter: '1848-03-15' },
             cites: [
               { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '19' } },
-              { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '18' } }
+              { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '18' } },
+              {
+                source: 'britannica-1911-kossuth',
+                loc: { section: 'KOSSUTH, LAJOS', para: '3' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q14',
-        text: 'Auch in Wien kommt es zu Aufständen.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '19' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1848.html'
-        }
+        id: 'q22',
+        text: 'In March 1848, revolution erupted in Vienna, forcing Austria\'s Chancellor Klemens von Metternich to flee the capital.',
+        lang: 'en',
+        cite: {
+          source: 'loc-hungary-country-study-1989',
+          loc: { section: 'The Revolution of March 1848', para: '1' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/hungary/21.htm' }
       }
     },
     {
@@ -318,14 +326,14 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q15',
-        text: 'In Venedig beginnt ein Aufstand gegen die österreichische Regierung.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '23' } },
+        id: 'q23',
+        text: 'In Venice the people, under the leadership of Manin, rose in arms and forced the military and civil governors (Counts Zichy and Palffy) to sign a capitulation on the 22nd of March, after which the republic was proclaimed.',
+        lang: 'en',
+        cite: { source: 'britannica-1911-italy', loc: { section: 'ITALY', para: '1529' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1848.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Italy'
         }
       }
     },
@@ -336,20 +344,27 @@ export default defineEvent({
             value: { d: '1848-03-18', notAfter: '1848-03-19' },
             cites: [
               { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '25' } },
-              { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '24' } }
+              { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '24' } },
+              {
+                source: 'britannica-1911-germany-history',
+                loc: { section: 'GERMANY: History', para: '224' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q16',
-        text: 'Bei Barrikadenkämpfen in Berlin sterben mehr als 250 Menschen.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '25' } },
+        id: 'q24',
+        text: 'though the riot which broke out in Berlin on the 15th of March was suppressed by the troops with but little bloodshed, the king shrank with horror from the thought of fighting his “beloved Berliners,” and when on the night of the 18th the fighting was renewed, he entered into negotiation with the insurgents, negotiations that resulted in the withdrawal of the troops from Berlin.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-germany-history',
+          loc: { section: 'GERMANY: History', para: '224' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1848.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
         }
       }
     },
@@ -390,15 +405,14 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q18',
-        text: 'In Österreich erobern kaisertreue Truppen unter der Führung von Fürst Windischgrätz (1787-1862) Wien zurück.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '100' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1848.html'
-        }
+        id: 'q25',
+        text: 'On October 30, 1848, imperial troops entered Vienna and suppressed a workers\' uprising, effectively ending the revolution everywhere in the empire except Hungary, where Kossuth\'s army had overcome Jelacic\'s forces.',
+        lang: 'en',
+        cite: {
+          source: 'loc-hungary-country-study-1989',
+          loc: { section: 'The Revolution of March 1848', para: '2' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/hungary/21.htm' }
       }
     },
     {
@@ -407,21 +421,20 @@ export default defineEvent({
           {
             value: { d: '1849-02-09' },
             cites: [
-              { source: 'lemo-chronik-1849', loc: { section: 'Chronik 1849', para: '3' } },
-              { source: 'lemo-chronik-1849', loc: { section: 'Chronik 1849', para: '2' } }
+              { source: 'britannica-1911-italy', loc: { section: 'ITALY', para: '1531' } }
             ]
           }
         ]
       },
       quote: {
-        id: 'q19',
-        text: 'Revolutionäre rufen in Rom die Republik aus.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1849', loc: { section: 'Chronik 1849', para: '3' } },
+        id: 'q26',
+        text: 'This meant a complete rupture; on the 5th of February 1849 a constituent assembly was summoned, and on the 9th it voted the downfall of the temporal […] power and proclaimed the republic.',
+        lang: 'en',
+        cite: { source: 'britannica-1911-italy', loc: { section: 'ITALY', para: '1531' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1849.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Italy'
         }
       }
     },
@@ -438,14 +451,14 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q20',
-        text: 'Kaisertreffen in Warschau: Zar Nikolaus I. (1796-1855) sagt dem österreichischen Kaiser Franz Joseph I. militärische Unterstützung gegen die Aufständischen zu.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1849', loc: { section: 'Chronik 1849', para: '40' } },
+        id: 'q27',
+        text: 'Meanwhile the humiliating defeats of the imperial army and the course of events in Hungary had compelled the court of Vienna to accept the assistance which the emperor Nicholas I. of Russia had proffered in the loftiest spirit of the Holy Alliance.',
+        lang: 'en',
+        cite: { source: 'britannica-1911-hungary', loc: { section: 'HUNGARY', para: '534' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1849.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Hungary'
         }
       }
     },
@@ -479,5 +492,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Barrikadenkampf_Alexanderplatz_1848.jpg',
     credit: { creator: 'A. Klaus' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'agulhon-1973-1848-ou-lapprentissage-de-la-republique', perspective: 'european' },
+    { source: 'siemann-1985-die-deutsche-revolution-von-1848-49', perspective: 'european' }
+  ]
 })

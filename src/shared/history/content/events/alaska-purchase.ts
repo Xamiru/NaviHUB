@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Alaska Purchase', lang: 'en', role: 'primary' },
     { text: 'Purchase of Alaska', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -36,8 +36,23 @@ export default defineEvent({
   },
   regions: ['north-america', 'russia-central-asia'],
   prominence: 3,
+  places: [
+    {
+      ref: 'place:washington-dc',
+      cites: [
+        {
+          source: 'state-dept-milestones-purchase-of-alaska',
+          loc: { section: 'Purchase of Alaska, 1867', para: '3' }
+        }
+      ]
+    }
+  ],
   partOf: [
     { ref: 'period:reign-of-alexander-ii' }
+  ],
+  polities: [
+    { ref: 'polity:united-states' },
+    { ref: 'polity:russian-empire' }
   ],
   participants: [
     {

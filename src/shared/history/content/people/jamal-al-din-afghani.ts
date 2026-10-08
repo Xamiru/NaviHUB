@@ -28,7 +28,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -218,5 +218,8 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Al_afghani.jpg',
     credit: { institution: 'E. G. Browne, The Persian Revolution (Cambridge University Press, 1910)' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'rafii-1967-jamal-al-din-al-afghani', perspective: 'arab' }
+  ]
 })

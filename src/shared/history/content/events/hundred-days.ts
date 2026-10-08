@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Hundred Days', lang: 'en', role: 'primary' },
     { text: 'Cent-Jours', lang: 'fr', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -42,6 +42,22 @@ export default defineEvent({
   },
   regions: ['europe'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:waterloo',
+      cites: [
+        {
+          source: 'fondation-napoleon-timeline-consulate-first-empire',
+          loc: {
+            section: 'Timeline: Consulate/1st French Empire, 1821 – THE DEATH OF NAPOLEON AT ST HELENA'
+          }
+        }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:first-french-empire' }
+  ],
   participants: [
     {
       ref: 'person:napoleon-bonaparte',
@@ -136,5 +152,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Retour_de_l%27Ile_d%27Elbe_(7_Mars_1815)_-_(estampe)_(%C3%89tat_avec_la_lettre)_-_Grav%C3%A9_par_Jazet_;_Peint_par_Steuben_-_btv1b532931736.jpg',
     credit: { institution: 'Bibliothèque nationale de France', creator: 'Jean-Pierre-Marie Jazet' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'lentz-2002-nouvelle-histoire-du-premier-empire', perspective: 'european' },
+    { source: 'tulard-1986-napoleon-ou-le-mythe-du-sauveur', perspective: 'european' }
+  ]
 })

@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'founding',
   start: {
     alts: [
@@ -48,6 +48,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-naser-al-din-shah-qajar' },
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -295,5 +298,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Dar_ul-Funun,_Tehran,_Iran.jpg',
     credit: { creator: 'Armin Abbasi' },
     license: { id: 'cc-by-sa', version: '4.0' }
-  }
+  },
+  furtherReading: [
+    { source: 'adamiyat-1982-amir-kabir-va-iran', perspective: 'iranian' },
+    { source: 'eqbal-1962-mirza-taqi-khan-amir-kabir', perspective: 'iranian' }
+  ]
 })

@@ -3,9 +3,10 @@ import { definePerson } from '../../schema'
 export default definePerson({
   id: 'simon-bolivar',
   names: [
-    { text: 'Simón Bolívar', lang: 'en', role: 'primary' }
+    { text: 'Simón Bolívar', lang: 'en', role: 'primary' },
+    { text: 'Simón Bolívar', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -43,6 +44,31 @@ export default definePerson({
   },
   regions: ['latin-america'],
   roles: ['revolutionary', 'military', 'head-of-state'],
+  offices: [
+    {
+      title: 'President of Gran Colombia',
+      polity: 'polity:gran-colombia',
+      start: {
+        alts: [
+          {
+            value: { d: '1819-08' },
+            cites: [
+              {
+                source: 'loc-colombia-country-study-1988',
+                loc: { section: 'Gran Colombia', para: '1' }
+              }
+            ]
+          }
+        ]
+      },
+      cites: [
+        {
+          source: 'loc-colombia-country-study-1988',
+          loc: { section: 'Gran Colombia', para: '1' }
+        }
+      ]
+    }
+  ],
   sections: [
     {
       kind: 'early-life',

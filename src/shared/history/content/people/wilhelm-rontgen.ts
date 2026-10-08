@@ -3,9 +3,10 @@ import { definePerson } from '../../schema'
 export default definePerson({
   id: 'wilhelm-rontgen',
   names: [
-    { text: 'Wilhelm Conrad Röntgen', lang: 'en', role: 'primary' }
+    { text: 'Wilhelm Conrad Röntgen', lang: 'en', role: 'primary' },
+    { text: 'Wilhelm Conrad Röntgen', lang: 'de', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {

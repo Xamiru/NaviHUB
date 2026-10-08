@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -67,6 +67,7 @@ export default definePerson({
   offices: [
     {
       title: 'crown prince (Nāyeb-al-salṭana)',
+      polity: 'polity:qajar-iran',
       lang: 'en',
       start: {
         alts: [
@@ -112,6 +113,7 @@ export default definePerson({
     },
     {
       title: 'governor of Azarbaijan',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {
@@ -285,5 +287,9 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Abbas_Mirza_in_battle.jpg',
     credit: { institution: 'Brown University Library', creator: 'Hippolyte Bellangé' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'nafisi-1965-tarikh-e-ejtemai-va-siyasi-ye-iran', perspective: 'iranian' },
+    { source: 'potto-1885-kavkazskaia-voina', perspective: 'russian-soviet' }
+  ]
 })

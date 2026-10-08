@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Wright brothers’ first powered flight', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'invention',
   start: {
     alts: [
@@ -177,5 +177,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:First_flight3.jpg',
     credit: { institution: 'Library of Congress', creator: 'John T. Daniels' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'barros-2003-santos-dumont-e-a-invencao-do-voo', perspective: 'latin-american' }
+  ]
 })

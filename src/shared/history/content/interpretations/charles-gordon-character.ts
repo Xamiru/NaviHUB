@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'charles-gordon-character',
   about: ['person:charles-gordon', 'event:siege-of-khartoum'],
   topic: 'character',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'truly-religious-man',
@@ -52,7 +52,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q3',
-          text: 'admiration of these qualities is no sufficient plea against a condemnation of his conduct on the ground that it was quixotic.',
+          text: 'We may admire, and for my own part I do very much admire General Gordon’s personal courage, his disinterestedness and his chivalrous feeling in favour of the beleaguered garrisons, but admiration of these qualities is no sufficient plea against a condemnation of his conduct on the ground that it was quixotic.',
           lang: 'en',
           cite: {
             source: 'britannica-1911-gordon-charles-george',
@@ -60,7 +60,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Gordon,_Charles_George'
           }
         },
@@ -117,7 +117,7 @@ export default defineInterpretation({
         },
         {
           id: 'q7',
-          text: 'The answer is that Gordon seized the imagination of England, and seized it on its higher side.',
+          text: 'Mr Gladstone always professed perplexity in understanding why the violent end of the gallant Cavagnari in Afghanistan stirred the world so little in comparison with the fate of Gordon. The answer is that Gordon seized the imagination of England, and seized it on its higher side.',
           lang: 'en',
           cite: {
             source: 'britannica-1911-gordon-charles-george',
@@ -125,7 +125,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Gordon,_Charles_George'
           }
         }

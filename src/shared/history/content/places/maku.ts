@@ -6,8 +6,15 @@ export default definePlace({
     { text: 'Maku', lang: 'en', role: 'primary' },
     { text: 'ماکو', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   placeType: 'city',
   regions: ['iran'],
+  coords: {
+    lat: 39.2899,
+    lon: 44.4603,
+    cites: [
+      { source: 'geonames-cities500', loc: { section: 'Maku (geonameid 125205)' } }
+    ]
+  },
   modernCountry: 'IR'
 })

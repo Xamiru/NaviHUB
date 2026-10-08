@@ -66,24 +66,32 @@ export default definePerson({
           provenance: { via: 'web', at: '2026-10-06', url: 'https://www.dhm.de/lemo/biografie/karl-marx' }
         },
         {
-          id: 'q2',
-          text: 'Während der Revolutionsjahre nach Köln zurückgekehrt, gibt er dort die "Neue Rheinische Zeitung" heraus, die dem linken Flügel der Demokraten nahe steht und in der er eine einheitliche deutsche Republik und den gemeinsamen Kampf der deutschen Staaten gegen das reaktionäre Russland fordert.',
-          lang: 'de',
+          id: 'q5',
+          text: 'After a short stay in France, Marx and Engels went to Cologne in May 1848, and there with some friends they founded the Neue rheinische Zeitung, with the sub-title “An Organ of Democracy,” a political daily paper on a large scale, of which Marx was the chief editor.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-karl-marx',
-            loc: { section: 'Karl Marx 1818-1883', para: '37' }
+            source: 'britannica-1911-marx',
+            loc: { section: 'MARX, HEINRICH KARL', para: '5' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'https://www.dhm.de/lemo/biografie/karl-marx' }
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Marx,_Heinrich_Karl'
+          }
         },
         {
-          id: 'q3',
-          text: '24. August: Ankunft in London, wo er bis zu seinem Tod seinen Wohnsitz behält.',
-          lang: 'de',
+          id: 'q6',
+          text: 'He went to Paris, but was soon given the option of either leaving France or settling at a small provincial place. He preferred the former, and went to England. He settled in London, and remained there for the rest of his life.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-karl-marx',
-            loc: { section: 'Karl Marx 1818-1883', para: '40' }
+            source: 'britannica-1911-marx',
+            loc: { section: 'MARX, HEINRICH KARL', para: '5' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'https://www.dhm.de/lemo/biografie/karl-marx' }
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Marx,_Heinrich_Karl'
+          }
         }
       ]
     },
@@ -91,14 +99,18 @@ export default definePerson({
       kind: 'death',
       quotes: [
         {
-          id: 'q4',
-          text: '14. März: Karl Marx stirbt in London.',
-          lang: 'de',
+          id: 'q7',
+          text: 'The dissolution of the International gave Marx an opportunity of returning to his scientific work. He did not, however, succeed in publishing further volumes of Das Kapital. In order to make it—and especially the part dealing with property in land—as complete as possible, he took up, as Engels tells us, a number of new studies, but repeated illness interrupted his researches, and on the 14th of March 1883 he passed quietly away.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-karl-marx',
-            loc: { section: 'Karl Marx 1818-1883', para: '81' }
+            source: 'britannica-1911-marx',
+            loc: { section: 'MARX, HEINRICH KARL', para: '8' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'https://www.dhm.de/lemo/biografie/karl-marx' }
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Marx,_Heinrich_Karl'
+          }
         }
       ]
     }

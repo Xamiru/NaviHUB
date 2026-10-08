@@ -4,11 +4,32 @@ export default defineInterpretation({
   id: 'treaty-of-paris-1898-payment',
   about: ['event:spanish-american-war'],
   topic: 'nature',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
-      id: 'a-sale',
+      id: 'treaty-text',
       category: 'official',
+      holders: [
+        { kind: 'state', name: 'United States' },
+        { kind: 'state', name: 'Kingdom of Spain' }
+      ],
+      statements: [
+        {
+          id: 'q5',
+          text: 'The United States will pay to Spain the sum of twenty million dollars ($20,000,000) within three months after the exchange of the ratifications of the present treaty.',
+          lang: 'en',
+          cite: { source: 'avalon-treaty-of-paris-1898', loc: { section: 'Article III' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://avalon.law.yale.edu/19th_century/sp1898.asp'
+          }
+        }
+      ]
+    },
+    {
+      id: 'a-sale',
+      category: 'scholarly',
       holders: [
         { kind: 'organization', name: 'Office of the Historian, U.S. Department of State' }
       ],

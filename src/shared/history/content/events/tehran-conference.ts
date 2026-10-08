@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Tehran Conference', lang: 'en', role: 'primary' },
     { text: 'کنفرانس تهران', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'conference',
   start: {
     alts: [
@@ -58,6 +58,10 @@ export default defineEvent({
   partOf: [
     { ref: 'event:second-world-war' },
     { ref: 'period:reign-of-mohammad-reza-shah' }
+  ],
+  polities: [
+    { ref: 'polity:united-states' },
+    { ref: 'polity:united-kingdom' }
   ],
   participants: [
     {

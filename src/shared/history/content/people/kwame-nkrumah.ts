@@ -5,7 +5,33 @@ export default definePerson({
   names: [
     { text: 'Kwame Nkrumah', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1909' },
+        cites: [
+          {
+            source: 'fordham-internet-african-history-sourcebook',
+            loc: { section: 'Internet African History Sourcebook' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1972' },
+        cites: [
+          {
+            source: 'fordham-internet-african-history-sourcebook',
+            loc: { section: 'Internet African History Sourcebook' }
+          }
+        ]
+      }
+    ]
+  },
   regions: ['subsaharan-africa'],
   roles: ['politician', 'head-of-state'],
   offices: [

@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Mohammad Khiabani', lang: 'en', role: 'primary' },
     { text: 'شیخ محمد خیابانی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -121,5 +121,8 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:MohammadKhiabaniAndOthers.jpg',
     credit: { institution: 'Digital Library of India (Internet Archive)' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'azari-1951-qiyam-e-sheikh-mohammad-khiabani', perspective: 'iranian' }
+  ]
 })

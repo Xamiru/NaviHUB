@@ -6,12 +6,13 @@ export default definePerson({
     { text: 'Lázaro Cárdenas', lang: 'en', role: 'primary' },
     { text: 'Lázaro Cárdenas del Río', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   regions: ['latin-america'],
   roles: ['head-of-state', 'politician', 'military'],
   offices: [
     {
       title: 'President of Mexico',
+      polity: 'polity:mexico',
       start: {
         alts: [
           {

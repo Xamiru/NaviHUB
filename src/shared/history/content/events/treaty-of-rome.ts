@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -47,6 +47,11 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:federal-republic-of-germany' },
+    { ref: 'polity:french-fourth-republic' },
+    { ref: 'polity:kingdom-of-italy' }
   ],
   sections: [
     {
@@ -203,5 +208,8 @@ export default defineEvent({
       version: '3.0 de',
       url: 'https://creativecommons.org/licenses/by-sa/3.0/de/deed.en'
     }
-  }
+  },
+  furtherReading: [
+    { source: 'loth-1990-der-weg-nach-europa', perspective: 'european' }
+  ]
 })

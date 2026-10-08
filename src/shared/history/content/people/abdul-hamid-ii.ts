@@ -6,9 +6,71 @@ export default definePerson({
     { text: 'Abdul Hamid II', lang: 'en', role: 'primary' },
     { text: 'Abdül Hamid II', lang: 'tr', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1842-09-21' },
+        cites: [
+          {
+            source: 'britannica-1911-abd-ul-hamid-ii',
+            loc: { section: 'ABD-UL-HAMID II.', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1918-02-10' },
+        cites: [
+          {
+            source: 'britannica-1922-abdul-hamid-ii',
+            loc: { section: '‛ABDUL HAMID II.', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
   regions: ['mena', 'europe'],
   roles: ['monarch'],
+  offices: [
+    {
+      title: 'sultan',
+      polity: 'polity:ottoman-empire',
+      start: {
+        alts: [
+          {
+            value: { d: '1876-08-31' },
+            cites: [
+              { source: 'lemo-chronik-1876', loc: { section: 'Chronik 1876', para: '72' } }
+            ]
+          }
+        ]
+      },
+      end: {
+        alts: [
+          {
+            value: { d: '1909' },
+            cites: [
+              {
+                source: 'loc-turkey-country-study-1995',
+                loc: { section: 'External Threats and Internal Transformations', para: '10' }
+              }
+            ]
+          }
+        ]
+      },
+      cites: [
+        { source: 'lemo-chronik-1876', loc: { section: 'Chronik 1876', para: '72' } },
+        {
+          source: 'loc-turkey-country-study-1995',
+          loc: { section: 'External Threats and Internal Transformations', para: '10' }
+        }
+      ]
+    }
+  ],
   sections: [
     {
       kind: 'overview',

@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Deposition of the Qajar dynasty', lang: 'en', role: 'primary' },
     { text: 'انقراض قاجاریه', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'dissolution',
   start: {
     alts: [
@@ -39,6 +39,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:qajar-dynasty' }
   ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
+  ],
   participants: [
     {
       ref: 'person:reza-shah-pahlavi',
@@ -61,7 +64,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Sayyed Ḥasan Taqizādeh',
+      ref: 'person:hasan-taqizadeh',
       role: 'participant',
       cites: [
         {
@@ -71,7 +74,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Moḥammad Moṣaddeq',
+      ref: 'person:mohammad-mosaddegh',
       role: 'participant',
       cites: [
         {
@@ -143,17 +146,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/ahmad-shah-qajar-1909-1925-the-seventh-and-last-ruler-of-the-qajar-dynasty/'
-          }
-        },
-        {
-          id: 'q3',
-          text: 'In Teheran, der Hauptstadt Persiens (seit 1935: Iran), beschließt das Parlament die Absetzung des Staatsoberhaupts Ahmad Schah (1898-1930) und überträgt die Macht an Resa Khan (1878-1944).',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1925', loc: { section: 'Chronik 1925', para: '181' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1925.html'
           }
         }
       ]
@@ -282,5 +274,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:19-3-22,_arriv%C3%A9e_du_Shah_de_Perse_%C3%A0_Paris_(gare_de_Lyon)_-_btv1b53076790t.jpg',
     credit: { institution: 'Bibliothèque nationale de France', creator: 'Agence Rol' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'makki-1983-tarikh-e-bist-saleh-ye-iran', perspective: 'iranian' },
+    { source: 'sheikholeslami-1989-sima-ye-ahmad-shah-qajar', perspective: 'iranian' }
+  ]
 })

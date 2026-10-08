@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Battle of Aslanduz', lang: 'en', role: 'primary' },
     { text: 'نبرد اصلاندوز', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -49,6 +49,7 @@ export default defineEvent({
     {
       key: 'persia',
       name: 'the Iranian force under the crown prince ʿAbbās Mīrzā',
+      polity: 'polity:qajar-iran',
       cites: [
         { source: 'iranica-qaem-maqami-aslanduz', loc: { section: 'ĀṢLĀNDŪZ', para: '3' } }
       ]
@@ -56,6 +57,7 @@ export default defineEvent({
     {
       key: 'russia',
       name: 'Russian',
+      polity: 'polity:russian-empire',
       cites: [
         { source: 'iranica-qaem-maqami-aslanduz', loc: { section: 'ĀṢLĀNDŪZ', para: '3' } }
       ]
@@ -223,5 +225,12 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:%D0%90%D1%81%D0%BB%D0%B0%D0%BD%D0%B4%D1%83%D0%B7%D1%81%D0%BA%D0%B0%D1%8F_%D0%B1%D0%B8%D1%82%D0%B2%D0%B0.jpg',
     credit: { institution: 'Pokorennyi Kavkaz (St Petersburg, 1904)', creator: 'M. Andreev' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'dubrovin-2019-istoriia-voiny-i-vladychestva-russkikh-na-kavkaze',
+      perspective: 'russian-soviet'
+    },
+    { source: 'nafisi-1965-tarikh-e-ejtemai-va-siyasi-ye-iran', perspective: 'iranian' }
+  ]
 })

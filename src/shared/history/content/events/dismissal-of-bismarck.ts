@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Dismissal of Bismarck', lang: 'en', role: 'primary' },
     { text: 'Entlassung Bismarcks', lang: 'de', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'crisis',
   start: {
     alts: [
@@ -20,6 +20,9 @@ export default defineEvent({
   },
   regions: ['europe'],
   prominence: 2,
+  polities: [
+    { ref: 'polity:german-empire' }
+  ],
   participants: [
     {
       ref: 'person:otto-von-bismarck',
@@ -51,14 +54,17 @@ export default defineEvent({
       kind: 'background',
       quotes: [
         {
-          id: 'q1',
-          text: 'Januar: Reichskanzler Otto von Bismarck scheitert im Reichstag mit seinem Wunsch, das gegen die Sozialdemokratie und die Arbeiterbewegung gerichtete Sozialistengesetz auf unbestimmte Zeit zu verlängern. Er löst daraufhin den Reichstag auf.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1890', loc: { section: 'Chronik 1890', para: '5' } },
+          id: 'q9',
+          text: 'The final division took place on the 25th of February 1890. An amendment had been carried omitting this clause, and the National Liberals therefore voted for the bill in its amended form. The Conservatives were ready to vote as the government wished; if Bismarck was content with the amended bill, they would vote for it, and it would be carried; no instructions were sent to the party; they therefore voted against the bill, and it was lost. The House was immediately dissolved.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-germany-history',
+            loc: { section: 'GERMANY: History', para: '362' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1890.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
           }
         }
       ]
@@ -77,25 +83,31 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/russia/6.htm' }
         },
         {
-          id: 'q2',
-          text: 'Entlassung Bismarcks als Reichskanzler und preußischer Ministerpräsident.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1890', loc: { section: 'Chronik 1890', para: '23' } },
+          id: 'q10',
+          text: 'A few days after the election Bismarck was dismissed from office. The difference of opinion between him and the emperor was not confined to social reform; beyond this was the more serious question as to whether the chancellor or the emperor was to direct the course of the government.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-germany-history',
+            loc: { section: 'GERMANY: History', para: '362' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1890.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
           }
         },
         {
-          id: 'q3',
-          text: 'Er erhält den Titel eines Herzogs von Lauenburg. Zum Nachfolger in beiden Ämtern ernennt der Kaiser General Leo von Caprivi.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1890', loc: { section: 'Chronik 1890', para: '23' } },
+          id: 'q11',
+          text: 'Bismarck’s successor, General von Caprivi, held a similar combination of offices, but the chief control passed now into the hands of the emperor himself.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-germany-history',
+            loc: { section: 'GERMANY: History', para: '363' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1890.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
           }
         }
       ]
@@ -114,14 +126,17 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/29.htm' }
         },
         {
-          id: 'q5',
-          text: 'Die neue deutsche Regierung lehnt die von russischer Seite gewünschte Verlängerung des 1887 von Bismarck ausgehandelten Rückversicherungsvertrags mit Russland ab. Die Regierung kehrt damit bewusst von Bismarcks Bündnissystem ab.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1890', loc: { section: 'Chronik 1890', para: '25' } },
+          id: 'q12',
+          text: 'The treaty lapsed in 1890, and owing to Bismarck’s dismissal was not renewed. Caprivi refused to renew it because it was doubtful whether by increasing the number of treaties the value of them was not diminished.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-germany-history',
+            loc: { section: 'GERMANY: History', para: '359' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1890.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
           }
         }
       ]
@@ -167,14 +182,17 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q6',
-        text: 'Wilhelm II. fordert Bismarck zum Rücktritt auf.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1890', loc: { section: 'Chronik 1890', para: '21' } },
+        id: 'q13',
+        text: 'The emperor, who, as Bismarck said, intended to be his own chancellor, required Bismarck to draw up a decree reversing a cabinet order of Frederick William IV., which gave the Prussian minister-president the right of being the sole means of communication between the other ministers and the king. This Bismarck refused to do, and he was therefore ordered to send in his resignation.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-germany-history',
+          loc: { section: 'GERMANY: History', para: '362' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1890.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
         }
       }
     },
@@ -229,5 +247,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Dropping_the_Pilot.jpg',
     credit: { creator: 'John Tenniel' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'gall-1995-bismarck', perspective: 'european' }
+  ]
 })

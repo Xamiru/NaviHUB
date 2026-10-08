@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Ali Razmara', lang: 'en', role: 'primary' },
     { text: 'حاجعلی رزم‌آرا', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -42,6 +42,7 @@ export default definePerson({
   offices: [
     {
       title: 'prime minister',
+      polity: 'polity:pahlavi-iran',
       start: {
         alts: [
           {

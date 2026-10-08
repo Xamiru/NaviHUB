@@ -13,7 +13,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'crisis',
   start: {
     alts: [
@@ -36,6 +36,10 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:cold-war' }
+  ],
+  polities: [
+    { ref: 'polity:peoples-republic-of-china' },
+    { ref: 'polity:soviet-union' }
   ],
   participants: [
     {

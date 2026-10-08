@@ -25,7 +25,7 @@ export default defineEvent({
     },
     { text: 'Erster Weltkrieg', lang: 'de', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -70,6 +70,18 @@ export default defineEvent({
         { source: 'lemo-chronik-1918', loc: { section: 'Chronik 1918', para: '186' } }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:german-empire' },
+    { ref: 'polity:austria-hungary' },
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:french-third-republic' },
+    { ref: 'polity:kingdom-of-italy' },
+    { ref: 'polity:united-states' },
+    { ref: 'polity:kingdom-of-serbia' },
+    { ref: 'polity:ottoman-empire' },
+    { ref: 'polity:russian-empire' },
+    { ref: 'polity:empire-of-japan' }
   ],
   sides: [
     {
@@ -421,20 +433,26 @@ export default defineEvent({
           {
             value: { d: '1914-08-01' },
             cites: [
-              { source: 'lemo-chronik-1914', loc: { section: 'Chronik 1914', para: '99' } }
+              {
+                source: 'eo1418-mombauer-july-crisis-1914',
+                loc: { section: 'The Ultimatum and Mediation Attempts', para: '11' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q12',
-        text: 'Deutsche Generalmobilmachung und Kriegserklärung an Russland.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1914', loc: { section: 'Chronik 1914', para: '100' } },
+        id: 'q18',
+        text: 'By 1 August, any attempts to localise the conflict had failed, and Germany found itself at war with Russia, as predicted as far back as Hoyos’ visit to Berlin.',
+        lang: 'en',
+        cite: {
+          source: 'eo1418-mombauer-july-crisis-1914',
+          loc: { section: 'The Ultimatum and Mediation Attempts', para: '11' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1914.html'
+          at: '2026-10-07',
+          url: 'https://encyclopedia.1914-1918-online.net/article/july-crisis-1914/'
         }
       }
     },
@@ -444,21 +462,24 @@ export default defineEvent({
           {
             value: { d: '1914-08-03' },
             cites: [
-              { source: 'lemo-chronik-1914', loc: { section: 'Chronik 1914', para: '103' } }
+              { source: 'lemo-chronik-1914', loc: { section: 'Chronik 1914', para: '103' } },
+              {
+                source: 'loc-austria-country-study-1994',
+                loc: { section: 'The World War I', para: '3' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q13',
-        text: 'Deutsche Kriegserklärung an Frankreich. Einmarsch deutscher Truppen in Belgien.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1914', loc: { section: 'Chronik 1914', para: '104' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1914.html'
-        }
+        id: 'q19',
+        text: 'Because German war strategy depended on avoiding a two-front war, Germany had to defeat France before Russia could fully mobilize. Thus, Germany responded to Russia\'s mobilization by immediately declaring war on France and Russia.',
+        lang: 'en',
+        cite: {
+          source: 'loc-austria-country-study-1994',
+          loc: { section: 'The World War I', para: '3' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/austria/31.htm' }
       }
     },
     {
@@ -519,21 +540,23 @@ export default defineEvent({
           {
             value: { d: '1918-03-03' },
             cites: [
-              { source: 'lemo-chronik-1918', loc: { section: 'Chronik 1918', para: '31' } }
+              {
+                source: 'loc-russia-country-study-1996',
+                loc: { section: 'Revolutions and Civil War', para: '17' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q16',
-        text: 'Unterzeichnung des Friedens von Brest-Litowsk: Russland verliert über 25 Prozent seiner Bevölkerung und 27 Prozent seines wirtschaftlich nutzbaren Bodens. Es muss die Unabhängigkeit von Finnland, Estland, Livland, Kurland, Litauen, Polen, Georgien, der Ukraine und von Teilen Armeniens anerkennen.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1918', loc: { section: 'Chronik 1918', para: '32' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1918.html'
-        }
+        id: 'q20',
+        text: 'On March 3, Soviet government officials signed the Treaty of Brest-Litovsk, relinquishing Poland, the Baltic lands, Finland, and Ukraine to German control and giving up a portion of the Caucasus region to Turkey.',
+        lang: 'en',
+        cite: {
+          source: 'loc-russia-country-study-1996',
+          loc: { section: 'Revolutions and Civil War', para: '17' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/russia/8.htm' }
       }
     },
     {
@@ -600,5 +623,12 @@ export default defineEvent({
       bytes: 111078132,
       durationSec: 1068
     }
+  ],
+  furtherReading: [
+    {
+      source: 'harp-tarihi-baskanligi-1970-birinci-dunya-harbinde-turk-harbi',
+      perspective: 'turkish'
+    },
+    { source: 'sepehr-1957-iran-dar-jang-e-bozorg', perspective: 'iranian' }
   ]
 })

@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Battle of Austerlitz', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -32,10 +32,14 @@ export default defineEvent({
   partOf: [
     { ref: 'period:napoleonic-wars' }
   ],
+  polities: [
+    { ref: 'polity:austrian-empire' }
+  ],
   sides: [
     {
       key: 'france',
       name: 'French',
+      polity: 'polity:first-french-empire',
       cites: [
         {
           source: 'loc-germany-country-study-1995',
@@ -181,5 +185,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:La_bataille_d%27Austerlitz._2_decembre_1805_(Fran%C3%A7ois_G%C3%A9rard).jpg',
     credit: { creator: 'François Gérard' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'garnier-2005-austerlitz', perspective: 'european' },
+    { source: 'tulard-1986-napoleon-ou-le-mythe-du-sauveur', perspective: 'european' }
+  ]
 })

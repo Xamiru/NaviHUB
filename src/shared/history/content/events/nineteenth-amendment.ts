@@ -10,7 +10,7 @@ export default defineEvent({
     },
     { text: '19th Amendment', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -39,6 +39,9 @@ export default defineEvent({
   prominence: 2,
   places: [
     { ref: 'place:washington-dc' }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
   ],
   participants: [
     {

@@ -4,27 +4,41 @@ export default defineInterpretation({
   id: 'opening-of-the-karun-river-significance',
   about: ['event:opening-of-the-karun-river'],
   topic: 'significance',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'enlightened-policy',
       category: 'contemporary',
       holders: [
-        { kind: 'participant', name: 'Lord Salisbury' }
+        { kind: 'participant', name: 'Marquess of Salisbury' }
       ],
       statements: [
         {
-          id: 'q1',
-          text: 'Salisbury instructed Wolff to express to the shah “cordial appreciation” by Her Majesty’s Government of this “spontaneous and enlightened policy” on his part',
+          id: 'q5',
+          text: 'I believe the result of the negotiations is due to a very great extent to the spontaneous act of the Shah of Persia himself.',
           lang: 'en',
           cite: {
-            source: 'iranica-shahnavaz-karun-river-opening',
-            loc: { section: 'KARUN RIVER iii. The Opening of the Karun', para: '27' }
+            source: 'hansard-lords-1888-12-11-persia-opening-of-the-karun-river',
+            loc: { section: 'HL Deb 11 December 1888 vol 331 cc1738-9', para: '3' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/karun-river/karun_3'
+            at: '2026-10-08',
+            url: 'https://api.parliament.uk/historic-hansard/lords/1888/dec/11/question-observations-1'
+          }
+        },
+        {
+          id: 'q6',
+          text: 'To a very great extent, quite spontaneously, he has resolved upon this act of wisdom, which benefits not England only, but all the commercial nations of the globe; and I heartily hope that it will be the beginning of measures which will be beneficial not specially to England alone, but above all to the Persian people themselves.',
+          lang: 'en',
+          cite: {
+            source: 'hansard-lords-1888-12-11-persia-opening-of-the-karun-river',
+            loc: { section: 'HL Deb 11 December 1888 vol 331 cc1738-9', para: '3' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://api.parliament.uk/historic-hansard/lords/1888/dec/11/question-observations-1'
           }
         }
       ]
@@ -33,7 +47,8 @@ export default defineInterpretation({
       id: 'minimal-impact',
       category: 'scholarly',
       holders: [
-        { kind: 'scholar', name: 'Abbas Amanat' }
+        { kind: 'scholar', name: 'Abbas Amanat' },
+        { kind: 'scholar', name: 'Shahbaz Shahnavaz' }
       ],
       statements: [
         {
@@ -52,6 +67,20 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
           }
+        },
+        {
+          id: 'q4',
+          text: 'In the long run, however, this optimism proved to be unfounded.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-shahnavaz-karun-river-opening',
+            loc: { section: 'KARUN RIVER iii. The Opening of the Karun', para: '27' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/karun-river/karun_3'
+          }
         }
       ]
     },
@@ -69,20 +98,6 @@ export default defineInterpretation({
           cite: {
             source: 'iranica-shahnavaz-karun-river-opening',
             loc: { section: 'KARUN RIVER iii. The Opening of the Karun', para: '38' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/karun-river/karun_3'
-          }
-        },
-        {
-          id: 'q4',
-          text: 'In the long run, however, this optimism proved to be unfounded.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-shahnavaz-karun-river-opening',
-            loc: { section: 'KARUN RIVER iii. The Opening of the Karun', para: '27' }
           },
           provenance: {
             via: 'web',

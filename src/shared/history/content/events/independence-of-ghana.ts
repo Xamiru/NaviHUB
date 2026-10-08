@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Independence of Ghana', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'independence',
   start: {
     alts: [
@@ -22,6 +22,10 @@ export default defineEvent({
   },
   regions: ['subsaharan-africa', 'europe'],
   prominence: 2,
+  polities: [
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:british-empire' }
+  ],
   participants: [
     {
       ref: 'person:kwame-nkrumah',
@@ -155,5 +159,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Bespreking_Nhrumah-Nasser_over_Vietnam_te_Cairo,_Bestanddeelnr_918-8345.jpg',
     credit: { institution: 'Nationaal Archief' },
     license: { id: 'cc0', url: 'https://creativecommons.org/publicdomain/zero/1.0/deed.en' }
-  }
+  },
+  furtherReading: [
+    { source: 'nkrumah-1957-ghana', perspective: 'african' }
+  ]
 })

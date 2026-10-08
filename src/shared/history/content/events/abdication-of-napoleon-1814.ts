@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'First abdication of Napoleon', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -32,6 +32,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:first-french-empire' }
   ],
   participants: [
     {
@@ -149,5 +152,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Adieux_de_Fontainebleau_-_estampe_-_btv1b69540860.jpg',
     credit: { institution: 'Bibliothèque nationale de France', creator: 'Jean-Pierre-Marie Jazet' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'lentz-2002-nouvelle-histoire-du-premier-empire', perspective: 'european' },
+    { source: 'tulard-1986-napoleon-ou-le-mythe-du-sauveur', perspective: 'european' }
+  ]
 })

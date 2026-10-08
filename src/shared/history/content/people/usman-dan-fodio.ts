@@ -3,9 +3,10 @@ import { definePerson } from '../../schema'
 export default definePerson({
   id: 'usman-dan-fodio',
   names: [
-    { text: 'Usman dan Fodio', lang: 'en', role: 'primary' }
+    { text: 'Usman dan Fodio', lang: 'en', role: 'primary' },
+    { text: 'عثمان بن فودي', lang: 'ar', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   died: {
     alts: [
       {

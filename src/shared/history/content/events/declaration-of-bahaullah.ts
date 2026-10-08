@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'declaration-of-bahaullah',
   names: [
-    { text: 'Declaration of Baháʼu\'lláh', lang: 'en', role: 'primary' }
+    { text: 'Declaration of Baháʼu\'lláh', lang: 'en', role: 'primary' },
+    { text: 'اظهار امر بهاءالله', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'religious',
   start: {
     alts: [
@@ -73,20 +74,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/baha-allah'
           }
-        },
-        {
-          id: 'q2',
-          text: 'The Bāb had also spoken of the advent of another messianic figure, “he whom God shall make manifest (man yoẓheroh Allāh),” and in 1863 in the garden of Necip Paşa in Baghdad Bahāʾ-Allāh informed a handful of close followers that he was the messianic figure promised by the Bāb (Ostād Moḥammad-ʿAlī Salmānī, Ḵāṭerāt, ms., International Bahāʾi Archives, Haifa; Eng tr. M. Gail, My Memories of Bahāδu’llāh, Los Angeles, 1982, p. 22).',
-          lang: 'en',
-          cite: {
-            source: 'iranica-cole-bahaism-i',
-            loc: { section: 'BAHAISM i. The Faith', para: '2' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/bahaism-index/bahaism-i'
-          }
         }
       ]
     },
@@ -118,22 +105,6 @@ export default defineEvent({
       ]
     },
     {
-      kind: 'course',
-      quotes: [
-        {
-          id: 'q5',
-          text: 'Before he left Baghdad, Bahāʾ-Allāh camped for twelve days at the Garden of Necip Paşa, where a large number of friends came to bid him farewell. During these days, to intimates, “he would speak of the Bāb’s Cause and declare his own” (Salmānī, Ḵāṭerāt, tr. p. 22; see also Dahajī, “Resāla,” pp. 65-70, 153-54; Qazvīnī, “Resāla,” p. 16).',
-          lang: 'en',
-          cite: { source: 'iranica-cole-baha-allah', loc: { section: 'BAHĀʾ-ALLĀH', para: '13' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/baha-allah'
-          }
-        }
-      ]
-    },
-    {
       kind: 'consequences',
       quotes: [
         {
@@ -141,17 +112,6 @@ export default defineEvent({
           text: 'Perhaps because the year 1280 had not yet begun, he delayed any written declaration for almost a year.',
           lang: 'en',
           cite: { source: 'iranica-cole-baha-allah', loc: { section: 'BAHĀʾ-ALLĀH', para: '13' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/baha-allah'
-          }
-        },
-        {
-          id: 'q7',
-          text: 'In the winter and spring of 1864/1280, Bahāʾ-Allāh gradually began announcing himself to friends in Iran.',
-          lang: 'en',
-          cite: { source: 'iranica-cole-baha-allah', loc: { section: 'BAHĀʾ-ALLĀH', para: '14' } },
           provenance: {
             via: 'web',
             at: '2026-10-06',
@@ -206,6 +166,58 @@ export default defineEvent({
           url: 'https://www.iranicaonline.org/articles/baha-allah'
         }
       }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1863-04' },
+            cites: [
+              {
+                source: 'iranica-cole-baha-allah',
+                loc: { section: 'BAHĀʾ-ALLĀH', para: '13' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q5',
+        text: 'Before he left Baghdad, Bahāʾ-Allāh camped for twelve days at the Garden of Necip Paşa, where a large number of friends came to bid him farewell. During these days, to intimates, “he would speak of the Bāb’s Cause and declare his own” (Salmānī, Ḵāṭerāt, tr. p. 22; see also Dahajī, “Resāla,” pp. 65-70, 153-54; Qazvīnī, “Resāla,” p. 16).',
+        lang: 'en',
+        cite: { source: 'iranica-cole-baha-allah', loc: { section: 'BAHĀʾ-ALLĀH', para: '13' } },
+        provenance: {
+          via: 'web',
+          at: '2026-10-06',
+          url: 'https://www.iranicaonline.org/articles/baha-allah'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1864' },
+            cites: [
+              {
+                source: 'iranica-cole-baha-allah',
+                loc: { section: 'BAHĀʾ-ALLĀH', para: '14' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q7',
+        text: 'In the winter and spring of 1864/1280, Bahāʾ-Allāh gradually began announcing himself to friends in Iran.',
+        lang: 'en',
+        cite: { source: 'iranica-cole-baha-allah', loc: { section: 'BAHĀʾ-ALLĀH', para: '14' } },
+        provenance: {
+          via: 'web',
+          at: '2026-10-06',
+          url: 'https://www.iranicaonline.org/articles/baha-allah'
+        }
+      }
     }
   ],
   hero: {
@@ -213,5 +225,11 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Unloading_boats_at_river_in_Baghdad_LOC_matpc.13209.jpg',
     credit: { institution: 'Library of Congress, Matson Collection' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'vahman-2010-yeksad-o-shast-sal-mobarezeh-ba-diyanat-e-bahai',
+      perspective: 'iranian'
+    }
+  ]
 })

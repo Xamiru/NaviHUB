@@ -4,8 +4,46 @@ export default defineInterpretation({
   id: 'iran-crisis-of-1946-soviet-motives',
   about: ['event:iran-crisis-of-1946'],
   topic: 'motives',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
+    {
+      id: 'soviet-stated-grounds',
+      category: 'official',
+      holders: [
+        { kind: 'state', name: 'Soviet Union' },
+        { kind: 'participant', name: 'Andrey Vyshinsky' }
+      ],
+      statements: [
+        {
+          id: 'q6',
+          text: 'The events in Iranian Azerbaijan have no connexion with the presence there of Soviet troops, as the indisputable and entirely objective facts bear witness. These events are of an exclusively Iranian and internal nature.',
+          lang: 'en',
+          cite: {
+            source: 'frus-1946-v07-vyshinsky-to-security-council-1946-01-24',
+            loc: { para: '5', page: '311' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://history.state.gov/historicaldocuments/frus1946v07/d224'
+          }
+        },
+        {
+          id: 'q7',
+          text: 'The anti-democratic and pogrom activity, hostile to the Soviet Union, on the part of the reactionary forces in Iran which are supported by certain influential Iranian groups drawn from the ruling circles and the police authorities, creates for the Azerbaijan Soviet Socialist Republic and for Baku a danger of organized hostile actions, diversions and so forth.',
+          lang: 'en',
+          cite: {
+            source: 'frus-1946-v07-vyshinsky-to-security-council-1946-01-24',
+            loc: { para: '8', page: '311' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://history.state.gov/historicaldocuments/frus1946v07/d224'
+          }
+        }
+      ]
+    },
     {
       id: 'security-and-sphere-of-influence',
       category: 'scholarly',

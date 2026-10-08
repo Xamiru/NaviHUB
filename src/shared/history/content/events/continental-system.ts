@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'economic',
   start: {
     alts: [
@@ -39,8 +39,23 @@ export default defineEvent({
   },
   regions: ['europe', 'global'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:berlin',
+      cites: [
+        {
+          source: 'britannica-1911-germany-history',
+          loc: { section: 'GERMANY: History', para: '207' }
+        }
+      ]
+    }
+  ],
   partOf: [
     { ref: 'period:napoleonic-wars' }
+  ],
+  polities: [
+    { ref: 'polity:first-french-empire' },
+    { ref: 'polity:united-kingdom' }
   ],
   participants: [
     {
@@ -153,5 +168,11 @@ export default defineEvent({
       creator: 'George Moutard Woodward; etched by Charles Williams'
     },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'crouzet-1958-leconomie-britannique-et-le-blocus-continental',
+      perspective: 'european'
+    }
+  ]
 })

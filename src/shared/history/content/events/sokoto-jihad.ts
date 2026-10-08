@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Sokoto jihad', lang: 'en', role: 'primary' },
     { text: 'Fulani jihad', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'religious',
   start: {
     alts: [
@@ -25,6 +25,9 @@ export default defineEvent({
   prominence: 2,
   places: [
     { ref: 'place:sokoto' }
+  ],
+  polities: [
+    { ref: 'polity:sokoto-caliphate' }
   ],
   participants: [
     {
@@ -60,7 +63,7 @@ export default defineEvent({
   ],
   related: [
     {
-      ref: 'period:sokoto-caliphate',
+      ref: 'polity:sokoto-caliphate',
       rel: 'led-to',
       cites: [
         {
@@ -117,5 +120,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:The_States_of_the_Nigerian_Region_in_the_19th_Century.png',
     credit: { institution: 'United States government' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'sulaiman-1986-a-revolution-in-history', perspective: 'african' },
+    { source: 'adeleye-1971-power-and-diplomacy-in-northern-nigeria', perspective: 'african' }
+  ]
 })

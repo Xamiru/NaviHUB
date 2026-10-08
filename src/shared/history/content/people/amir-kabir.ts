@@ -18,7 +18,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -74,6 +74,7 @@ export default definePerson({
   offices: [
     {
       title: 'chief minister (šaḵṣ-e awwal-e Īrān)',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {
@@ -263,5 +264,10 @@ export default definePerson({
       creator: 'Mirza Abolhassan Khan Ghaffari (Sani al-Molk)'
     },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'adamiyat-1982-amir-kabir-va-iran', perspective: 'iranian' },
+    { source: 'eqbal-1962-mirza-taqi-khan-amir-kabir', perspective: 'iranian' },
+    { source: 'makki-1944-zendegani-ye-mirza-taqi-khan-amir-kabir', perspective: 'iranian' }
+  ]
 })

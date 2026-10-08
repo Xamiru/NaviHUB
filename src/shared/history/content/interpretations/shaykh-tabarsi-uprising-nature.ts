@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'shaykh-tabarsi-uprising-nature',
   about: ['event:shaykh-tabarsi-uprising'],
   topic: 'nature',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'messianic-struggle',
@@ -61,7 +61,10 @@ export default defineInterpretation({
       id: 'social-discontent',
       category: 'scholarly',
       holders: [
-        { kind: 'school', name: 'some commentators' }
+        {
+          kind: 'school',
+          name: 'Commentators reading the Babi uprisings as social and political protest (as reported by Denis M. MacEoin)'
+        }
       ],
       statements: [
         {
@@ -78,15 +81,8 @@ export default defineInterpretation({
             url: 'https://www.iranicaonline.org/articles/babism-index/babism-ii-babi-executions-and-uprisings'
           }
         }
-      ]
-    },
-    {
-      id: 'composition-unclear',
-      category: 'scholarly',
-      holders: [
-        { kind: 'scholar', name: 'Moojan Momen' }
       ],
-      statements: [
+      reception: [
         {
           id: 'q5',
           text: 'Nevertheless, in a recent study (“The Social Basis of the Bābī Upheavals”), Momen has shown that it is difficult to reach clear conclusions as to the social composition of these outbreaks or of the Babi movement as a whole.',

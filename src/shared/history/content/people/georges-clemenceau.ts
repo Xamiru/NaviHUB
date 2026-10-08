@@ -21,7 +21,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -53,6 +53,7 @@ export default definePerson({
   offices: [
     {
       title: 'president of the council',
+      polity: 'polity:french-third-republic',
       start: {
         alts: [
           {

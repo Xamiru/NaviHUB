@@ -28,7 +28,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'coup',
   start: {
     alts: [
@@ -96,6 +96,11 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-mohammad-reza-shah' },
     { ref: 'period:cold-war' }
+  ],
+  polities: [
+    { ref: 'polity:united-states' },
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:pahlavi-iran' }
   ],
   sides: [
     {
@@ -177,7 +182,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Kermit Roosevelt',
+      ref: 'person:kermit-roosevelt',
       role: 'organizer',
       side: 'royalists',
       cites: [
@@ -499,6 +504,39 @@ export default defineEvent({
           }
         }
       ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q19',
+          text: 'On 13 August, 1953, at Ramsar, I signed decrees dismissing Mossadegh as Prime Minister and naming General Fazlollah Zahedi in his place.',
+          lang: 'en',
+          cite: {
+            source: 'pahlavi-1961-mission-for-my-country',
+            loc: { section: 'Mission for My Country' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://archive.org/download/mission-for-my-country-mohammad-reza-pahlavi_202605/Mission%20For%20My%20Country%20-%20Mohammad%20Reza%20Pahlavi_djvu.txt'
+          }
+        },
+        {
+          id: 'q21',
+          text: 'On 22 August, 1953, three days after General Zahedi had assumed control, I returned to Teheran and to a heart-warming, tumultuous welcome.',
+          lang: 'en',
+          cite: {
+            source: 'pahlavi-1961-mission-for-my-country',
+            loc: { section: 'Mission for My Country' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://archive.org/download/mission-for-my-country-mohammad-reza-pahlavi_202605/Mission%20For%20My%20Country%20-%20Mohammad%20Reza%20Pahlavi_djvu.txt'
+          }
+        }
+      ]
     }
   ],
   course: [
@@ -564,39 +602,6 @@ export default defineEvent({
       date: {
         alts: [
           {
-            value: { d: '1953-08-13' },
-            cites: [
-              {
-                source: 'pahlavi-1961-mission-for-my-country',
-                loc: { section: 'Mission for My Country' }
-              },
-              {
-                source: 'loc-iran-country-study-1987',
-                loc: { section: 'MOSSADEQ AND OIL NATIONALIZATION', para: '7' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q19',
-        text: 'On 13 August, 1953, at Ramsar, I signed decrees dismissing Mossadegh as Prime Minister and naming General Fazlollah Zahedi in his place.',
-        lang: 'en',
-        cite: {
-          source: 'pahlavi-1961-mission-for-my-country',
-          loc: { section: 'Mission for My Country' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-07',
-          url: 'https://archive.org/download/mission-for-my-country-mohammad-reza-pahlavi_202605/Mission%20For%20My%20Country%20-%20Mohammad%20Reza%20Pahlavi_djvu.txt'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
             value: { d: '1953-08-19' },
             cites: [
               {
@@ -617,35 +622,6 @@ export default defineEvent({
         },
         provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/iran/17.htm' }
       }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1953-08-22' },
-            cites: [
-              {
-                source: 'pahlavi-1961-mission-for-my-country',
-                loc: { section: 'Mission for My Country' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q21',
-        text: 'On 22 August, 1953, three days after General Zahedi had assumed control, I returned to Teheran and to a heart-warming, tumultuous welcome.',
-        lang: 'en',
-        cite: {
-          source: 'pahlavi-1961-mission-for-my-country',
-          loc: { section: 'Mission for My Country' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-07',
-          url: 'https://archive.org/download/mission-for-my-country-mohammad-reza-pahlavi_202605/Mission%20For%20My%20Country%20-%20Mohammad%20Reza%20Pahlavi_djvu.txt'
-        }
-      }
     }
   ],
   hero: {
@@ -653,5 +629,10 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Fazlollah_Zahedi_-_19_August_1953.jpg',
     credit: { institution: 'Institute for Iranian Contemporary Historical Studies' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'makki-1983-ketab-e-siyah', perspective: 'iranian' },
+    { source: 'movahhed-1999-khvab-e-ashofteh-ye-naft', perspective: 'iranian' },
+    { source: 'mosaddegh-1986-khaterat-va-taallomat', perspective: 'iranian' }
+  ]
 })

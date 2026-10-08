@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'California Gold Rush', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'migration',
   start: {
     alts: [
@@ -22,6 +22,17 @@ export default defineEvent({
   },
   regions: ['north-america'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:american-river',
+      cites: [
+        {
+          source: 'nps-cali-california-gold-rush',
+          loc: { section: 'The California Gold Rush', para: '3' }
+        }
+      ]
+    }
+  ],
   participants: [
     {
       name: 'James Marshall',
@@ -48,7 +59,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'James Polk',
+      ref: 'person:james-k-polk',
       role: 'head-of-state',
       cites: [
         {

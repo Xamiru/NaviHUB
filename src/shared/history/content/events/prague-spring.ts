@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Prague Spring', lang: 'en', role: 'primary' },
     { text: 'Pražské jaro', lang: 'cs', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'reform',
   start: {
     alts: [
@@ -241,5 +241,8 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  furtherReading: [
+    { source: 'mlynar-1978-mraz-prichazi-z-kremlu', perspective: 'european' }
   ]
 })

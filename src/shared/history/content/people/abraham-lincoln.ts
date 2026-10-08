@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Abraham Lincoln', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -46,6 +46,7 @@ export default definePerson({
   offices: [
     {
       title: 'President of the United States',
+      polity: 'polity:united-states',
       end: {
         alts: [
           {

@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'founding-of-the-persian-cossack-brigade',
   names: [
     { text: 'Founding of the Persian Cossack Brigade', lang: 'en', role: 'primary' },
+    { text: 'تأسیس بریگاد قزاق', lang: 'fa', role: 'native' },
     {
       text: 'Berīgād-e qazzāq',
       lang: 'fa-Latn',
@@ -16,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'founding',
   start: {
     alts: [
@@ -75,6 +76,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-naser-al-din-shah-qajar' },
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -298,5 +302,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Brooklyn_Museum_-_Persian_Cossacks_One_of_274_Vintage_Photographs.jpg',
     credit: { institution: 'Brooklyn Museum' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'sheikholeslami-1991-elal-e-afzayesh-e-nofuz', perspective: 'iranian' }
+  ]
 })

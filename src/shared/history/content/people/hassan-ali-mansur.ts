@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Hassan Ali Mansur', lang: 'en', role: 'primary' },
     { text: 'حسنعلی منصور', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -38,6 +38,7 @@ export default definePerson({
   offices: [
     {
       title: 'prime minister',
+      polity: 'polity:pahlavi-iran',
       start: {
         alts: [
           {

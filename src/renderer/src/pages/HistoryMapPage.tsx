@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { regionLabel } from '@shared/history/schema'
-import { EQUAL_EARTH_BOUNDS, bordersRange, clampYear, decodeRing, equalEarth, layersAt, shapePath, stateHue } from '@shared/history/mapGeometry'
-import type { HistoryMapPin, HistoryMapUnit } from '@shared/types'
+import { EQUAL_EARTH_BOUNDS, EUROPE_FROM, bordersRange, clampYear, decodeRing, equalEarth, layersAt, shapePath, stateHue } from '@shared/history/mapGeometry'
+import type { HistoryMapPin, HistoryMapPolity, HistoryMapUnit } from '@shared/types'
 import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import { PauseIcon, PlayIcon } from '../components/PlayerIcons'
@@ -47,6 +47,7 @@ export default function HistoryMapPage() {
   const navigate = useNavigate()
   const borders = useQuery({ queryKey: qk.history.borders, queryFn: () => api.history.borders(), staleTime: Infinity })
   const pinsQuery = useQuery({ queryKey: qk.history.mapPins, queryFn: () => api.history.mapPins() })
+  const politiesQuery = useQuery({ queryKey: qk.history.mapPolities, queryFn: () => api.history.mapPolities() })
   useHistoryImageRefresh(pinsQuery.dataUpdatedAt)
   const [year, setYear] = usePersistedState('history.map.year', 1905)
   const [playing, setPlaying] = useState(false)
@@ -59,13 +60,23 @@ export default function HistoryMapPage() {
   const [params] = useSearchParams()
   const focus = params.get('focus')
   const focused = useRef<string | null>(null)
+  const yearParam = params.get('year')
+  useEffect(() => {
+    if (yearParam && /^\d{4}$/.test(yearParam)) setYear(Number(yearParam))
+  }, [yearParam, setYear])
 
   const data = borders.data
-  const range = useMemo(() => (data ? bordersRange(data) : { min: 1806, max: 2019 }), [data])
+  // The slider reaches back to the earliest pinned event (the 1800s), before the
+  // borders begin: those years show the land without borders, and say so.
+  const range = useMemo(() => {
+    const r = data ? bordersRange(data) : { min: EUROPE_FROM, max: 2019 }
+    const first = Math.min(...(pinsQuery.data ?? []).map((p) => Math.floor(p.s)))
+    return { min: Number.isFinite(first) ? Math.min(r.min, first) : r.min, max: r.max }
+  }, [data, pinsQuery.data])
   // A remembered year or a focused event can fall outside the borders' span.
   useEffect(() => {
-    if (data && clampYear(year, range) !== year) setYear(clampYear(year, range))
-  }, [data, year, range, setYear])
+    if (data && !pinsQuery.isPending && clampYear(year, range) !== year) setYear(clampYear(year, range))
+  }, [data, pinsQuery.isPending, year, range, setYear])
   // State versions can share set, code and start year, so React keys use the unit's position.
   const unitKey = useMemo(() => new Map((data?.units ?? []).map((u, i) => [u, i])), [data])
   const paths = useMemo(() => (data ? data.shapes.map((s) => shapePath(s, data.quantum, K)) : []), [data])
@@ -103,6 +114,21 @@ export default function HistoryMapPage() {
   }
 
   const layers = useMemo(() => (data ? layersAt(data, year + 0.5) : null), [data, year])
+  // A border unit's state page in this year, when one links to it.
+  const polityOf = useMemo(() => {
+    const t = year + 0.5
+    const list = politiesQuery.data ?? []
+    return (u: HistoryMapUnit): HistoryMapPolity | undefined =>
+      list.find((p) => p.set === u.set && p.code === u.code && (p.from === null || t >= p.from) && (p.to === null || t < p.to))
+  }, [politiesQuery.data, year])
+  const linkedStates = useMemo(() => {
+    const seen = new Map<string, HistoryMapPolity>()
+    for (const u of layers?.states ?? []) {
+      const p = polityOf(u)
+      if (p && !seen.has(p.ref)) seen.set(p.ref, p)
+    }
+    return [...seen.values()].sort((a, b) => a.title.localeCompare(b.title))
+  }, [layers, polityOf])
   // A hover card belongs to the year it was read in; a pin leaving the window
   // unmounts without a mouseleave.
   useEffect(() => {
@@ -175,13 +201,20 @@ export default function HistoryMapPage() {
     return () => el.removeEventListener('wheel', onWheel)
   })
   const drag = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null)
+  // A drag that moved is not a click on the state under the pointer.
+  const moved = useRef(false)
+  // A single click opens a state's page, but only once a double-click (zoom) is ruled out.
+  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => {
+    if (openTimer.current) clearTimeout(openTimer.current)
+  }, [])
 
   if (borders.isLoading) return <PageStatus>Loading the map…</PageStatus>
   if (!data || !layers) return <PageStatus>The map could not be loaded.</PageStatus>
 
   const showLabel = (u: HistoryMapUnit): boolean => {
     const b = boxes[u.shape]
-    return !!b && b.w * scale > Math.max(56, u.name.length * 6.5) && b.h * scale > 18
+    return !!b && b.w * scale > Math.max(56, (polityOf(u)?.title ?? u.name).length * 6.5) && b.h * scale > 18
   }
   const pinSize = (p: HistoryMapPin): number => (p.prominence === 1 ? 12 : p.prominence === 2 ? 9 : 7)
 
@@ -248,17 +281,34 @@ export default function HistoryMapPage() {
           onPointerDown={(e) => {
             if ((e.target as HTMLElement).closest('[data-pin]')) return
             drag.current = { x: e.clientX, y: e.clientY, tx: v.tx, ty: v.ty }
+            moved.current = false
             e.currentTarget.setPointerCapture(e.pointerId)
           }}
           onPointerMove={(e) => {
             const d = drag.current
             if (!d) return
+            if (Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 4) moved.current = true
+            else return
             setHoverState(null)
             setView({ k: v.k, tx: d.tx + e.clientX - d.x, ty: d.ty + e.clientY - d.y })
           }}
-          onPointerUp={() => (drag.current = null)}
+          onPointerUp={(e) => {
+            const wasDrag = moved.current
+            drag.current = null
+            moved.current = false
+            if (wasDrag || (e.target as HTMLElement).closest('[data-pin]')) return
+            // Pointer capture retargets events to the stage, so find the state under the pointer.
+            const hit = document.elementsFromPoint(e.clientX, e.clientY).find((el) => el instanceof SVGPathElement && el.dataset.state)
+            const ref = (hit as SVGPathElement | undefined)?.dataset.state
+            const to = ref ? historyPath(ref) : null
+            if (!to) return
+            if (openTimer.current) clearTimeout(openTimer.current)
+            openTimer.current = setTimeout(() => navigate(to), 280)
+          }}
           onPointerLeave={() => setHoverState(null)}
           onDoubleClick={(e) => {
+            if (openTimer.current) clearTimeout(openTimer.current)
+            openTimer.current = null
             if ((e.target as HTMLElement).closest('[data-pin]')) return
             const r = e.currentTarget.getBoundingClientRect()
             zoomAt(e.clientX - r.left, e.clientY - r.top, 2.2)
@@ -272,12 +322,15 @@ export default function HistoryMapPage() {
                   <path key={`s${unitKey.get(u)}`} d={paths[u.shape]} fill="rgb(255 255 255 / 0.1)" />
                 ))}
                 {layers.states.map((u) => {
-                  const iran = u.code === IRAN_CODE && u.set === 'world'
+                  const iran = u.code === IRAN_CODE && u.set !== 'europe'
                   const hovered = hoverState?.unit === u
+                  const polity = polityOf(u)
                   return (
                     <path
                       key={unitKey.get(u)}
                       d={paths[u.shape]}
+                      data-state={polity?.ref}
+                      style={polity ? { cursor: 'pointer' } : undefined}
                       fill={iran ? 'rgb(var(--hist-iran) / 0.55)' : `hsl(${stateHue(u.code)} 28% ${hovered ? 40 : 27}%)`}
                       stroke={hovered ? 'rgb(255 255 255 / 0.9)' : 'rgb(255 255 255 / 0.22)'}
                       strokeWidth={hovered ? 1.4 : 0.6}
@@ -297,7 +350,7 @@ export default function HistoryMapPage() {
 
           {/* state names where there is room */}
           {width > 0 &&
-            labelled(layers.states.filter(showLabel), (u) => [...toScreen(u.label[0], u.label[1]), u.name.length * 7 + 8], (u) => boxes[u.shape]?.w ?? 0).map((u) => {
+            labelled(layers.states.filter(showLabel), (u) => [...toScreen(u.label[0], u.label[1]), (polityOf(u)?.title ?? u.name).length * 7 + 8], (u) => boxes[u.shape]?.w ?? 0).map((u) => {
               const [x, y] = toScreen(u.label[0], u.label[1])
               return (
                 <span
@@ -306,7 +359,7 @@ export default function HistoryMapPage() {
                   className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.14em] text-white/55"
                   style={{ left: x, top: y, textShadow: '0 1px 4px rgb(0 0 0 / 0.9)' }}
                 >
-                  {u.name}
+                  {polityOf(u)?.title ?? u.name}
                 </span>
               )
             })}
@@ -373,22 +426,43 @@ export default function HistoryMapPage() {
               className="pointer-events-none absolute z-30 rounded-lg border border-white/10 bg-[rgb(var(--stage-bg-2)/0.95)] px-3 py-2 shadow-xl"
               style={{ left: Math.min(hoverState.x + 14, width - 220), top: hoverState.y + 14 }}
             >
-              <p className="text-sm font-semibold text-ink">{hoverState.unit.name}</p>
+              <p className="text-sm font-semibold text-ink">{polityOf(hoverState.unit)?.title ?? hoverState.unit.name}</p>
               <p className="text-[11px] tabular-nums text-ink-secondary">
                 These borders {yearsOf(hoverState.unit.from, hoverState.unit.to)}
               </p>
               {hoverState.unit.capital && <p className="text-[11px] text-ink-muted">Capital: {hoverState.unit.capital}</p>}
+              {polityOf(hoverState.unit) && <p className="mt-1 text-[11px] text-accent">Click to open its page</p>}
             </div>
           )}
 
           {hoverPin && <PinCard pin={hoverPin.pin} x={hoverPin.x} y={hoverPin.y} stageWidth={width} />}
 
-          {layers.europeOnly && (
+          {layers.noBorders && (
             <p className="pointer-events-none absolute bottom-3 left-4 z-20 max-w-md rounded-lg bg-black/50 px-3 py-1.5 text-xs text-ink-secondary">
-              Before {data.worldFrom}, borders are drawn for Europe only; elsewhere the land is shown without them.
+              No border data for this year; the land is shown without borders.
+            </p>
+          )}
+          {layers.approximate && (
+            <p className="pointer-events-none absolute bottom-3 left-4 z-20 max-w-md rounded-lg bg-black/50 px-3 py-1.5 text-xs text-ink-secondary">
+              Before {data.worldFrom}, borders outside Europe{year < EUROPE_FROM ? ' and, before ' + EUROPE_FROM + ', within it' : ''} are approximate atlas outlines
+              (Cliopatria); from {data.worldFrom} they follow CShapes.
             </p>
           )}
         </div>
+
+        {linkedStates.length > 0 && (
+          <nav aria-label={`States with a page in ${year}`} className="border-t border-white/[0.07] px-5 py-2 text-xs text-ink-secondary">
+            <span className="mr-2 text-[10px] uppercase tracking-[0.18em] text-ink-muted">States with a page</span>
+            {linkedStates.map((p, i) => (
+              <span key={p.ref}>
+                {i > 0 && ', '}
+                <Link to={historyPath(p.ref) ?? '/history'} className="hover:text-accent">
+                  {p.title}
+                </Link>
+              </span>
+            ))}
+          </nav>
+        )}
 
         {/* year control */}
         <div className="border-t border-white/[0.07] bg-black/30 px-5 pb-3 pt-3">
@@ -437,11 +511,19 @@ export default function HistoryMapPage() {
             </div>
           </div>
           <p className="mt-2 text-xs text-ink-muted">
-            Scroll to zoom · drag to move · double-click to dive in · click a pin to open the event.{' '}
+            Scroll to zoom · drag to move · double-click to dive in · click a pin to open the event, or a state to open its page.{' '}
             <button type="button" className="underline decoration-dotted hover:text-ink" onClick={() => void api.app.openExternal(data.url)}>
               Borders: CShapes 2.0 and CShapes-Europe (ETH Zürich), CC BY-NC-SA 4.0
             </button>
-            {' · '}place positions: Natural Earth (public domain).
+            {data.earlyUrl && (
+              <>
+                {' · '}
+                <button type="button" className="underline decoration-dotted hover:text-ink" onClick={() => void api.app.openExternal(data.earlyUrl!)}>
+                  before 1886: Cliopatria (Seshat Global History Databank, Bennett et al. 2025), CC BY 4.0, simplified
+                </button>
+              </>
+            )}
+            {' · '}place positions: Natural Earth (public domain) and GeoNames (CC BY 4.0).
           </p>
         </div>
       </div>

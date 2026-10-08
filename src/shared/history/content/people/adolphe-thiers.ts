@@ -13,7 +13,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -39,6 +39,7 @@ export default definePerson({
   offices: [
     {
       title: 'chef du pouvoir exécutif',
+      polity: 'polity:french-third-republic',
       lang: 'fr',
       start: {
         alts: [
@@ -67,6 +68,7 @@ export default definePerson({
     },
     {
       title: 'Président de la République',
+      polity: 'polity:french-third-republic',
       lang: 'fr',
       start: {
         alts: [
@@ -99,14 +101,17 @@ export default definePerson({
       kind: 'early-life',
       quotes: [
         {
-          id: 'q1',
-          text: 'Après des études au lycée de Marseille puis à Aix, où il obtient une licence en droit, il devient avocat.',
-          lang: 'fr',
-          cite: { source: 'elysee-adolphe-thiers', loc: { section: 'Adolphe Thiers' } },
+          id: 'q6',
+          text: 'His mother belonged to the family of the Chéniers, and he was well educated, first at the lycée of Marseilles, and then in the faculty of law at Aix.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-thiers',
+            loc: { section: 'THIERS, LOUIS ADOLPHE', para: '1' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.elysee.fr/la-presidence/adolphe-thiers'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Thiers,_Louis_Adolphe'
           }
         }
       ]
@@ -115,36 +120,45 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
-          id: 'q2',
-          text: 'Hostile à la guerre contre la Prusse, il milite pour la paix.',
-          lang: 'fr',
-          cite: { source: 'elysee-adolphe-thiers', loc: { section: 'Adolphe Thiers' } },
+          id: 'q7',
+          text: 'He succeeded in convincing the deputies that the peace was necessary, and it was (March 1, 1871) voted by more than five to one.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-thiers',
+            loc: { section: 'THIERS, LOUIS ADOLPHE', para: '4' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.elysee.fr/la-presidence/adolphe-thiers'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Thiers,_Louis_Adolphe'
           }
         },
         {
-          id: 'q3',
-          text: 'L\'Assemblée nationale, réunie à Bordeaux, le nomme « chef du pouvoir exécutif ».',
-          lang: 'fr',
-          cite: { source: 'elysee-adolphe-thiers', loc: { section: 'Adolphe Thiers' } },
+          id: 'q8',
+          text: 'The armistice having been arranged, and the opportunity having been thus obtained of electing a National Assembly, Thiers was chosen deputy by more than twenty constituencies (of which he preferred Paris), and was at once elected by the Assembly itself practically president, nominally chef du pouvoir exécutif.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-thiers',
+            loc: { section: 'THIERS, LOUIS ADOLPHE', para: '4' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.elysee.fr/la-presidence/adolphe-thiers'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Thiers,_Louis_Adolphe'
           }
         },
         {
-          id: 'q4',
-          text: 'Après les troubles des années 1870-1871, il s\'emploie à redresser le pays : il met fin à l\'occupation allemande en finançant le paiement de l\'indemnité par deux emprunts, augmente les impôts et réorganise le service militaire.',
-          lang: 'fr',
-          cite: { source: 'elysee-adolphe-thiers', loc: { section: 'Adolphe Thiers' } },
+          id: 'q9',
+          text: 'Thiers composed a ministry, and announced that the first duty of the government ​before examining constitutional questions, would be to reorganize the forces of the nation in order to provide for the enormous war indemnity which had to be paid to Germany before the territory could be liberated from the presence of the invader.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-france-history',
+            loc: { section: 'FRANCE: History', para: '539' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.elysee.fr/la-presidence/adolphe-thiers'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/France/History'
           }
         }
       ]
@@ -153,14 +167,17 @@ export default definePerson({
       kind: 'later-life',
       quotes: [
         {
-          id: 'q5',
-          text: 'Il quitte le pouvoir, renversé par une Assemblée à majorité monarchique, hostile à sa conception de la République conservatrice.',
-          lang: 'fr',
-          cite: { source: 'elysee-adolphe-thiers', loc: { section: 'Adolphe Thiers' } },
+          id: 'q10',
+          text: 'The president declared that he should take this as a vote of want of confidence; and in the debates which followed a vote of this character (though on a different formal issue, and proposed by M. Ernoul) was carried by 16 votes in a house of 704. Thiers at once resigned (May 24th).',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-thiers',
+            loc: { section: 'THIERS, LOUIS ADOLPHE', para: '7' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.elysee.fr/la-presidence/adolphe-thiers'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Thiers,_Louis_Adolphe'
           }
         }
       ]

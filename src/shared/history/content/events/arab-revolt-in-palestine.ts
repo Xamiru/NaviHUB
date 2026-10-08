@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -34,6 +34,17 @@ export default defineEvent({
   },
   regions: ['mena'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:palestine',
+      cites: [
+        {
+          source: 'loc-israel-country-study-1988',
+          loc: { section: 'The Palestinian Revolt', para: '2' }
+        }
+      ]
+    }
+  ],
   participants: [
     {
       name: 'Hajj Amin al Husayni',
@@ -226,5 +237,9 @@ export default defineEvent({
       bytes: 47698315,
       date: { d: '1937-07' }
     }
+  ],
+  furtherReading: [
+    { source: 'khalidi-2006-the-iron-cage', perspective: 'palestinian' },
+    { source: 'w-khalidi-1984-before-their-diaspora', perspective: 'palestinian' }
   ]
 })

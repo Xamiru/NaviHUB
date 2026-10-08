@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Haitian independence', lang: 'en', role: 'primary' },
     { text: 'Declaration of Haitian independence', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'independence',
   start: {
     alts: [
@@ -263,5 +263,10 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 47660064
     }
+  ],
+  furtherReading: [
+    { source: 'madiou-1987-histoire-dhaiti', perspective: 'latin-american' },
+    { source: 'fouchard-1988-les-marrons-de-la-liberte', perspective: 'latin-american' },
+    { source: 'trouillot-1995-silencing-the-past', perspective: 'latin-american' }
   ]
 })

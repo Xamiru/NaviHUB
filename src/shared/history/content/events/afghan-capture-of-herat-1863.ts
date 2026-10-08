@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'afghan-capture-of-herat-1863',
   names: [
-    { text: 'Afghan capture of Herat (1863)', lang: 'en', role: 'primary' }
+    { text: 'Afghan capture of Herat (1863)', lang: 'en', role: 'primary' },
+    { text: 'تصرف هرات به دست دوست محمدخان', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -40,6 +41,9 @@ export default defineEvent({
   related: [
     { ref: 'event:treaty-of-paris-1857', rel: 'preceded-by' },
     { ref: 'event:herat-crisis-of-1851-1853', rel: 'related' }
+  ],
+  polities: [
+    { ref: 'polity:emirate-of-afghanistan' }
   ],
   participants: [
     {

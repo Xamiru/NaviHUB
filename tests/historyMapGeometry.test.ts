@@ -57,15 +57,35 @@ describe('layers for a year', () => {
   it('draws the world set from 1886, one version per state', () => {
     expect(layersAt(data, 1900).states.map((u) => u.name)).toEqual(['Persia'])
     expect(layersAt(data, 1930).states.map((u) => u.name)).toEqual(['Iran'])
-    expect(layersAt(data, 1930).europeOnly).toBe(false)
+    expect(layersAt(data, 1930).approximate).toBe(false)
   })
 
   it('draws Europe only before 1886, over the 1886 world as a silhouette', () => {
     const l = layersAt(data, 1850)
     expect(l.states.map((u) => u.name)).toEqual(['Bavaria'])
     expect(l.silhouette.map((u) => u.name)).toEqual(['Persia'])
-    expect(l.europeOnly).toBe(true)
+    expect(l.approximate).toBe(false)
     expect(layersAt(data, 1880).states.map((u) => u.name)).toEqual(['Germany'])
+  })
+
+  it('draws no borders before CShapes-Europe is complete', () => {
+    const early = layersAt({ units: [...units, unit({ set: 'europe', name: 'Liechtenstein', code: 223, from: 1806, to: 2020 })], worldFrom: 1886 }, 1810)
+    expect(early.states).toEqual([])
+    expect(early.noBorders).toBe(true)
+    expect(early.silhouette.map((u) => u.name)).toEqual(['Persia'])
+    expect(layersAt(data, 1850).noBorders).toBe(false)
+  })
+
+  it('draws the early world layer beneath Europe before 1886', () => {
+    const withEarly = {
+      units: [...units, unit({ set: 'early', name: 'Qajar Dynasty', code: 630, from: 1800, to: 1886 })],
+      worldFrom: 1886
+    }
+    const l = layersAt(withEarly, 1850)
+    expect(l.states.map((u) => u.name)).toEqual(['Qajar Dynasty', 'Bavaria'])
+    expect(l.approximate).toBe(true)
+    expect(layersAt(withEarly, 1810).states.map((u) => u.name)).toEqual(['Qajar Dynasty'])
+    expect(layersAt(withEarly, 1900).states.map((u) => u.name)).toEqual(['Persia'])
   })
 
   it('reports the span of years covered', () => {

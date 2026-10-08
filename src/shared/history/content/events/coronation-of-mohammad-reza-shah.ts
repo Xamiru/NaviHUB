@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'coronation-of-mohammad-reza-shah',
   names: [
-    { text: 'Coronation of Mohammad Reza Shah', lang: 'en', role: 'primary' }
+    { text: 'Coronation of Mohammad Reza Shah', lang: 'en', role: 'primary' },
+    { text: 'تاجگذاری محمدرضا شاه', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -27,6 +28,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:reign-of-mohammad-reza-shah' }
+  ],
+  polities: [
+    { ref: 'polity:pahlavi-iran' }
   ],
   participants: [
     {

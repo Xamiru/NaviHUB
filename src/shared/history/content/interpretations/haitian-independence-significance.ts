@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'haitian-independence-significance',
   about: ['event:haitian-independence'],
   topic: 'significance',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'symbol-and-nonintervention',
@@ -64,16 +64,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1784-1800/haitian-rev'
           }
-        }
-      ]
-    },
-    {
-      id: 'us-isolation',
-      category: 'contemporary',
-      holders: [
-        { kind: 'participant', name: 'Thomas Jefferson', ref: 'person:thomas-jefferson' }
-      ],
-      statements: [
+        },
         {
           id: 'q4',
           text: 'Under President Thomas Jefferson’s presidency, the United States cut off aid to L’Ouverture and instead pursued a policy to isolate Haiti, fearing that the Haitian revolution would spread to the United States.',
@@ -87,9 +78,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1784-1800/haitian-rev'
           }
-        }
-      ],
-      reception: [
+        },
         {
           id: 'q5',
           text: 'These concerns were in fact unfounded, as the fledgling Haitian state was more concerned with its own survival than with exporting revolution.',

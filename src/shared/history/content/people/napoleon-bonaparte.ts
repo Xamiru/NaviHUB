@@ -7,7 +7,7 @@ export default definePerson({
     { text: 'Napoléon Bonaparte', lang: 'fr', role: 'native' },
     { text: 'Napoleon I', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -43,6 +43,7 @@ export default definePerson({
   offices: [
     {
       title: 'Emperor of the French',
+      polity: 'polity:first-french-empire',
       start: {
         alts: [
           {

@@ -4,9 +4,10 @@ export default defineEvent({
   id: 'badasht-conference',
   names: [
     { text: 'Conference of Badasht', lang: 'en', role: 'primary' },
+    { text: 'اجتماع بدشت', lang: 'fa', role: 'native' },
     { text: 'Badašt', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'religious',
   start: {
     alts: [
@@ -66,7 +67,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Mīrzā Ḥosayn-ʿAlī Nūrī (Bahāʾ-Allāh)',
+      ref: 'person:bahaullah',
       role: 'organizer',
       cites: [
         { source: 'iranica-momen-badasht', loc: { section: 'BADAŠT', para: '1' } }
@@ -257,5 +258,8 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  furtherReading: [
+    { source: 'ivanov-1939-babidskie-vosstaniia-v-irane', perspective: 'russian-soviet' }
   ]
 })

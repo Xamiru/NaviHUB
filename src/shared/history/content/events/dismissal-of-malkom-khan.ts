@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'dismissal-of-malkom-khan',
   names: [
-    { text: 'Dismissal of Malkom Khan', lang: 'en', role: 'primary' }
+    { text: 'Dismissal of Malkom Khan', lang: 'en', role: 'primary' },
+    { text: 'عزل میرزا ملکم خان', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'crisis',
   start: {
     alts: [
@@ -36,6 +37,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:qajar-dynasty' },
     { ref: 'period:reign-of-naser-al-din-shah-qajar' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {

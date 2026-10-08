@@ -13,6 +13,7 @@ import EditorialDetailFrame, { RelationshipTrail } from '../components/Editorial
 import { pathForMedia, MEDIA_CONFIGS } from '../lib/mediaConfig'
 import { chronologicalYear, formatBirthday } from '../lib/archiveDisplay'
 import { buildCareerTimeline } from '../lib/personCareer'
+import { crewRoleLabel } from '../lib/creatorCredits'
 import { usePlayerControls } from '../lib/player'
 import { useLeaveDeleted, usePersistedState } from '../lib/navState'
 import { themeSongToTrack } from '../lib/themeTracks'
@@ -116,17 +117,34 @@ export default function PersonDetailPage() {
   const shownChronology =
     activeType === 'all' ? chronology : chronology.filter(({ media }) => media.mediaType === activeType)
   const libraryBreakdown = chronologyTypes
-    .map((t) => `${chronology.filter(({ media }) => media.mediaType === t).length} ${typeLabel(t).toLowerCase()}`)
+    .map((t) => {
+      const n = chronology.filter(({ media }) => media.mediaType === t).length
+      // "1 game", not "1 games"; anime reads the same either way.
+      const cfg = MEDIA_CONFIGS.find((c) => c.key === t)
+      const label = n === 1 && cfg ? cfg.singular : typeLabel(t)
+      return `${n} ${label.toLowerCase()}`
+    })
     .join(' · ')
 
   // Known for: the user's own highest-scored titles this person worked on, so
   // the strip reflects their library rather than a global popularity rank.
-  const knownFor = [...new Map(credits.filter((c) => c.media.score != null).map((c) => [c.media.id, c])).values()]
+  // One card per title and per character: a role played across several
+  // seasons shows once, from its highest-scored title.
+  const seenTitles = new Set<number>()
+  const seenCharacters = new Set<number>()
+  const knownFor = credits
+    .filter((c) => c.media.score != null && prominentRole(c))
     .sort(
       (a, b) =>
         (b.media.score ?? 0) - (a.media.score ?? 0) ||
         (b.media.releaseDate ?? '').localeCompare(a.media.releaseDate ?? '')
     )
+    .filter((c) => {
+      if (seenTitles.has(c.media.id) || (c.character && seenCharacters.has(c.character.id))) return false
+      seenTitles.add(c.media.id)
+      if (c.character) seenCharacters.add(c.character.id)
+      return true
+    })
     .slice(0, 6)
 
   const songsByMedia = new Map<number, ThemeSongEntry[]>()
@@ -263,8 +281,8 @@ export default function PersonDetailPage() {
                     />
                   )}
                   <p className="mt-1.5 truncate text-sm text-white group-hover:text-accent">{c.media.title}</p>
-                  <p className={`truncate text-xs text-gray-400 ${c.character ? '' : 'capitalize'}`}>
-                    {c.character ? `as ${c.character.name}` : c.role.replace(/_/g, ' ')}
+                  <p className={`truncate text-xs text-gray-400 ${c.character || c.roleNote ? '' : 'capitalize'}`}>
+                    {c.character ? `as ${c.character.name}` : crewRoleLabel(c)}
                   </p>
                 </Link>
               ))}
@@ -380,6 +398,14 @@ function ArtistSongRow({ song, onPlay }: { song: ThemeSongEntry; onPlay: () => v
       </span>
     </li>
   )
+}
+
+// Known for skips minor roles: a voiced character counts only when it sits in
+// the top third of its title's cast (top ten for a small cast). Crew credits
+// and casts with no order always count. castPosition is 0-based.
+function prominentRole(c: PersonCredit): boolean {
+  if (!c.character || c.castPosition == null) return true
+  return c.castPosition < Math.max(10, Math.ceil(c.castSize / 3))
 }
 
 const RoleCard = memo(function RoleCard({ c, titles = 1 }: { c: PersonCredit; titles?: number }) {

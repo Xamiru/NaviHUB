@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Launch of Sputnik 1', lang: 'en', role: 'primary' },
     { text: 'Спутник-1', lang: 'ru', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'discovery',
   start: {
     alts: [
@@ -31,8 +31,19 @@ export default defineEvent({
   },
   regions: ['russia-central-asia', 'global'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:kazakhstan',
+      cites: [
+        {
+          source: 'eisenhower-library-sputnik-and-the-space-race',
+          loc: { section: 'Sputnik and the Space Race', para: '1' }
+        }
+      ]
+    }
+  ],
   partOf: [
-    { ref: 'period:soviet-union' },
+    { ref: 'polity:soviet-union' },
     { ref: 'period:cold-war' }
   ],
   participants: [

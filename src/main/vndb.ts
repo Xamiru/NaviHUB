@@ -1,4 +1,5 @@
 import { getSqlite } from './db/connection'
+import { upsertSharedPerson as sharedPerson } from './repos/personMatch'
 import type { RefreshAspect } from '@shared/refresh'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
@@ -72,7 +73,6 @@ function yearOf(r: string | null | undefined): number | null {
 // surname-first WITH a space ("宮野 真守"), while AniList stores them unspaced
 // ("宮野真守"), so only a space-normalized comparison reunites the two. Verified
 // against the live library: 13/14 Steins;Gate VAs matched this way vs 1/14 exact.
-const stripSpaces = (s: string | null | undefined): string => (s ?? '').replace(/[\s　]/g, '')
 
 // VN character role (for THIS vn) -> the same importance ranks the anime cast uses.
 function rankFromVnRole(role: string | null): number {
@@ -152,47 +152,14 @@ function upsertCharacter(db: any, ch: any, img: string | null): number {
 
 // THE VA-SHARING STEP. Reuse an existing person (usually an anime voice actor
 // imported from AniList) instead of creating a duplicate, so one seiyuu spans
-// anime + VN. VNDB staff ids differ from AniList's, so we match by NAME:
-//   1. same VNDB staff already imported            -> reuse
-//   2. space-normalized kanji (name_native) match  -> reuse (prefer the anilist
-//      row so credits consolidate onto the canonical anime VA)
-//   3. exact romaji name                           -> reuse
-//   4. otherwise                                   -> create a new vndb person
-// A reused row keeps its original external_source; it simply gains VN credits.
-// Persons are never pruned, so this stays safe across re-imports.
+// anime + VN — repos/personMatch.ts, shared with the Bangumi game cast.
 function upsertSharedPerson(db: any, staff: any): number {
-  const ext = String(staff.id)
-  const byId = db
-    .prepare('SELECT id FROM person WHERE external_source=? AND external_id=?')
-    .get(SOURCE, ext) as { id: number } | undefined
-  if (byId) return byId.id
-
-  const kanji = stripSpaces(staff.original)
-  if (kanji) {
-    const byKanji = db
-      .prepare(
-        `SELECT id FROM person
-         WHERE REPLACE(REPLACE(name_native, ' ', ''), char(12288), '') = ?
-         ORDER BY (external_source = 'anilist') DESC, id ASC LIMIT 1`
-      )
-      .get(kanji) as { id: number } | undefined
-    if (byKanji) return byKanji.id
-  }
-
-  if (staff.name) {
-    const byName = db
-      .prepare(
-        `SELECT id FROM person WHERE name = ? COLLATE NOCASE
-         ORDER BY (external_source = 'anilist') DESC, id ASC LIMIT 1`
-      )
-      .get(staff.name) as { id: number } | undefined
-    if (byName) return byName.id
-  }
-
-  const info = db
-    .prepare('INSERT INTO person (name, name_native, external_source, external_id) VALUES (?, ?, ?, ?)')
-    .run(staff.name ?? 'Unknown', staff.original ?? null, SOURCE, ext)
-  return Number(info.lastInsertRowid)
+  return sharedPerson(db, {
+    source: SOURCE,
+    externalId: String(staff.id),
+    name: staff.name ?? null,
+    nameNative: staff.original ?? null
+  })
 }
 
 // Authoritative prune (same shape as anilist.pruneCharacters), scoped to the VN

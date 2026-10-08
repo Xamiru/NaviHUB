@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'subjugation-of-sheikh-khazal',
   names: [
-    { text: 'Subjugation of Sheikh Khazal', lang: 'en', role: 'primary' }
+    { text: 'Subjugation of Sheikh Khazal', lang: 'en', role: 'primary' },
+    { text: 'سرکوب شیخ خزعل', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -61,6 +62,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:qajar-dynasty' }
   ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
+  ],
   participants: [
     {
       ref: 'person:reza-shah-pahlavi',
@@ -77,7 +81,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Fażl-Allāh Zāhedi',
+      ref: 'person:fazlollah-zahedi',
       role: 'commander',
       cites: [
         { source: 'iranica-shahnavaz-kazal-khan', loc: { section: 'ḴAZʿAL KHAN', para: '36' } }

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'shuster-mission-failure',
   about: ['event:shuster-mission'],
   topic: 'responsibility',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'russian-pressure-with-british-complicity',
@@ -104,7 +104,7 @@ export default defineInterpretation({
       ]
     },
     {
-      id: 'shuster-as-pro-british',
+      id: 'second-russian-ultimatum',
       category: 'contemporary',
       holders: [
         { kind: 'state', name: 'Russian Empire' }
@@ -112,16 +112,50 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q6',
-          text: 'he enjoys the support of the Social Democrats but is opposed by the Russians who view him as pro-British.',
+          text: '1. The dismissal of Mr. Shuster and Mr. Lecoffre ;',
           lang: 'en',
           cite: {
-            source: 'iranica-yarshater-chronology-part-2',
-            loc: { section: 'Chronology of Iranian History Part 2, 1911' }
+            source: 'shuster-1912-strangling-of-persia',
+            loc: { section: 'Translation of the text of the second Russian ultimatum' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
+            at: '2026-10-08',
+            url: 'https://archive.org/download/stranglingofpers00shusuoft/stranglingofpers00shusuoft_djvu.txt'
+          }
+        },
+        {
+          id: 'q7',
+          text: '2. An undertaking by the Persian Government not to engage in the service of Persia foreign subjects without first obtaining the consent of the Russian and British Legations.',
+          lang: 'en',
+          cite: {
+            source: 'shuster-1912-strangling-of-persia',
+            loc: { section: 'Translation of the text of the second Russian ultimatum' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://archive.org/download/stranglingofpers00shusuoft/stranglingofpers00shusuoft_djvu.txt'
+          }
+        }
+      ]
+    },
+    {
+      id: 'britain-failed-its-duty',
+      category: 'contemporary',
+      holders: [
+        { kind: 'participant', name: 'W. Morgan Shuster' }
+      ],
+      statements: [
+        {
+          id: 'q8',
+          text: 'When, therefore, it became clear last July that Russia was openly seeking to violate the Anglo-Russian Convention by interfering with Persia\'s independence, which both England and Russia had mutually engaged to respect, it was England\'s obvious right and duty to protest against such a step,',
+          lang: 'en',
+          cite: { source: 'shuster-1912-strangling-of-persia', loc: { page: '234' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://archive.org/download/stranglingofpers00shusuoft/stranglingofpers00shusuoft_djvu.txt'
           }
         }
       ]

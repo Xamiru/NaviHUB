@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Satsuma Rebellion', lang: 'en', role: 'primary' },
     { text: '西南戦争', lang: 'ja', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -25,6 +25,9 @@ export default defineEvent({
   prominence: 2,
   partOf: [
     { ref: 'period:meiji-era' }
+  ],
+  polities: [
+    { ref: 'polity:empire-of-japan' }
   ],
   participants: [
     {
@@ -123,5 +126,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Saig%C5%8D,_Shiroyama_uchijini-zu_by_Toshimitsu.jpg',
     credit: { institution: 'Freer Gallery of Art', creator: 'Toshimitsu' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'ogawara-2007-seinan-senso', perspective: 'japanese' },
+    { source: 'ikai-1992-saigo-takamori', perspective: 'japanese' }
+  ]
 })

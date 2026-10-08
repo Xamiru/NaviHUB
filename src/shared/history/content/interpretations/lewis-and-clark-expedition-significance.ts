@@ -4,11 +4,11 @@ export default defineInterpretation({
   id: 'lewis-and-clark-expedition-significance',
   about: ['event:lewis-and-clark-expedition'],
   topic: 'significance',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'scientific-success',
-      category: 'official',
+      category: 'scholarly',
       holders: [
         { kind: 'organization', name: 'National Park Service' }
       ],

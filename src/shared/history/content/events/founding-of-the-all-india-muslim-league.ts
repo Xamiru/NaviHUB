@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Founding of the All-India Muslim League', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'founding',
   start: {
     alts: [
@@ -78,5 +78,13 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:All_India_Muslim_League_Dhaka_1906.jpg',
     credit: { institution: 'Dawn' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'pirzada-1969-foundations-of-pakistan', perspective: 'south-asian' },
+    {
+      source: 'ikram-1977-modern-muslim-india-and-the-birth-of-pakistan',
+      perspective: 'south-asian'
+    },
+    { source: 'qureshi-1969-the-struggle-for-pakistan', perspective: 'south-asian' }
+  ]
 })

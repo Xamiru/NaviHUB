@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'first-opium-war-causes',
   about: ['event:first-opium-war'],
   topic: 'causes',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'poison-trade',
@@ -113,6 +113,71 @@ export default defineInterpretation({
             loc: { section: 'The Opium War, 1839-42', para: '1' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/china/15.htm' }
+        }
+      ]
+    },
+    {
+      id: 'protection-of-british-subjects',
+      category: 'official',
+      holders: [
+        { kind: 'state', name: 'British government' },
+        { kind: 'participant', name: 'Thomas Babington Macaulay' }
+      ],
+      statements: [
+        {
+          id: 'q7',
+          text: 'It would not have been worthy of us to take arms upon a small provocation, referring to rites and ceremonies merely; but every one in the scale of civilized nations should know that Englishmen were ever living under the protecting eye of their own country.',
+          lang: 'en',
+          cite: {
+            source: 'hansard-commons-1840-04-07-war-with-china',
+            loc: { section: 'HC Deb 07 April 1840 vol 53 cc669-748', para: '3' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1840/apr/07/war-with-china'
+          }
+        }
+      ]
+    },
+    {
+      id: 'unjust-war-for-opium',
+      category: 'contemporary',
+      holders: [
+        {
+          kind: 'participant',
+          name: 'William Ewart Gladstone',
+          ref: 'person:william-gladstone'
+        }
+      ],
+      statements: [
+        {
+          id: 'q8',
+          text: 'They gave you notice to abandon your contraband trade. When they found that you would not, they had a right to drive you from their coasts on account of your obstinacy in persisting in this infamous and atrocious traffic.',
+          lang: 'en',
+          cite: {
+            source: 'hansard-commons-1840-04-08-war-with-china-adjourned-debate',
+            loc: { section: 'HC Deb 08 April 1840 vol 53 cc749-837', para: '10' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1840/apr/08/war-with-china-adjourned-debate'
+          }
+        },
+        {
+          id: 'q9',
+          text: 'I am not competent to judge how long this war may last, or how protracted may be its operations, but this I can say, that a war more unjust in its origin, a war more calculated in its progress to cover this country with permanent disgrace, I do not know, and I have not read of.',
+          lang: 'en',
+          cite: {
+            source: 'hansard-commons-1840-04-08-war-with-china-adjourned-debate',
+            loc: { section: 'HC Deb 08 April 1840 vol 53 cc749-837', para: '10' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1840/apr/08/war-with-china-adjourned-debate'
+          }
         }
       ]
     }

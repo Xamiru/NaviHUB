@@ -239,6 +239,7 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
       items: [
         { to: '/history', label: 'Timeline' },
         { to: '/history/map', label: 'Map' },
+        { to: '/history/themes', label: 'Themes' },
         { to: '/history/sources', label: 'Sources' },
         { to: '/history/my', label: 'My additions' },
         { to: '/history/corrections', label: 'Corrections' }

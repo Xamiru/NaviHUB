@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Conscription law of 1925', lang: 'en', role: 'primary' },
     { text: 'قانون نظام وظیفه عمومی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -36,6 +36,9 @@ export default defineEvent({
   prominence: 3,
   partOf: [
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {

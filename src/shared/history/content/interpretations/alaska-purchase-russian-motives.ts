@@ -4,11 +4,11 @@ export default defineInterpretation({
   id: 'alaska-purchase-russian-motives',
   about: ['event:alaska-purchase'],
   topic: 'motives',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'offset-britain',
-      category: 'official',
+      category: 'scholarly',
       holders: [
         { kind: 'organization', name: 'Office of the Historian, U.S. Department of State' }
       ],

@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Apollo 11', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'expedition',
   start: {
     alts: [
@@ -35,6 +35,20 @@ export default defineEvent({
   },
   regions: ['north-america', 'global'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:cape-canaveral',
+      cites: [
+        {
+          source: 'nasa-loff-2015-apollo-11-mission-overview',
+          loc: { section: 'Apollo 11 Mission Overview', para: '4' }
+        }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
+  ],
   participants: [
     {
       ref: 'person:neil-armstrong',

@@ -13,7 +13,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -40,6 +40,7 @@ export default defineEvent({
     {
       key: 'germany',
       name: 'Germany',
+      polity: 'polity:german-empire',
       cites: [
         {
           source: 'loc-austria-country-study-1994',
@@ -50,6 +51,7 @@ export default defineEvent({
     {
       key: 'italy',
       name: 'Italy',
+      polity: 'polity:kingdom-of-italy',
       cites: [
         {
           source: 'loc-austria-country-study-1994',
@@ -60,6 +62,7 @@ export default defineEvent({
     {
       key: 'austria-hungary',
       name: 'Austria-Hungary',
+      polity: 'polity:austria-hungary',
       cites: [
         {
           source: 'loc-austria-country-study-1994',
@@ -93,28 +96,6 @@ export default defineEvent({
             loc: { section: 'The Eastern Question', para: '3' }
           },
           provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/austria/28.htm' }
-        },
-        {
-          id: 'q1',
-          text: 'In Wien wird zwischen Deutschland, Österreich-Ungarn und Italien ein Dreibund geschlossen.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1882', loc: { section: 'Chronik 1882', para: '32' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1882.html'
-          }
-        },
-        {
-          id: 'q2',
-          text: 'Das geheime Verteidigungsabkommen richtet sich primär gegen Frankreich.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1882', loc: { section: 'Chronik 1882', para: '32' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1882.html'
-          }
         }
       ]
     },
@@ -154,5 +135,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:BASA-600K-1-1866-9-Otto_von_Bismarck,_Versailles.jpeg',
     credit: { institution: 'Bulgarian Archives State Agency', creator: 'Anton von Werner' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'salvatorelli-1939-la-triplice-alleanza', perspective: 'european' }
+  ]
 })

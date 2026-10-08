@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Lyndon B. Johnson', lang: 'en', role: 'primary' },
     { text: 'Lyndon Baines Johnson', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -46,6 +46,7 @@ export default definePerson({
   offices: [
     {
       title: 'President of the United States',
+      polity: 'polity:united-states',
       start: {
         alts: [
           {
@@ -81,6 +82,7 @@ export default definePerson({
     },
     {
       title: 'Vice President of the United States',
+      polity: 'polity:united-states',
       start: {
         alts: [
           {
@@ -116,6 +118,7 @@ export default definePerson({
     },
     {
       title: 'United States Senator from Texas',
+      polity: 'polity:united-states',
       start: {
         alts: [
           {

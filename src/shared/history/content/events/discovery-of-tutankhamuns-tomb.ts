@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Discovery of Tutankhamun’s tomb', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'discovery',
   start: {
     alts: [
@@ -32,7 +32,11 @@ export default defineEvent({
       name: 'Howard Carter',
       role: 'leader',
       cites: [
-        { source: 'lemo-chronik-1922', loc: { section: 'Chronik 1922', para: '197' } }
+        { source: 'lemo-chronik-1922', loc: { section: 'Chronik 1922', para: '197' } },
+        {
+          source: 'nara-unwritten-record-discovery-of-king-tutankhamun-2023',
+          loc: { section: 'Spotlight: The Discovery of King Tutankhamun', para: '1' }
+        }
       ]
     },
     {
@@ -51,14 +55,17 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'Der britische Archäologe Howard Carter (1873-1939) entdeckt das Grab Tutanchamuns im Tal der Könige in Luxor (Ägypten).',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1922', loc: { section: 'Chronik 1922', para: '197' } },
+          id: 'q5',
+          text: 'The tomb was discovered in November 1922 by English archaeologist Howard Carter and his team, who had been searching for it for five years. The tomb, located in Thebes, Egypt, was found virtually intact after 3,000 years.',
+          lang: 'en',
+          cite: {
+            source: 'nara-unwritten-record-discovery-of-king-tutankhamun-2023',
+            loc: { section: 'Spotlight: The Discovery of King Tutankhamun', para: '1' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1922.html'
+            at: '2026-10-08',
+            url: 'https://unwritten-record.blogs.archives.gov/2023/02/16/spotlight-the-discovery-of-king-tutankhamun/'
           }
         }
       ]
@@ -109,6 +116,39 @@ export default defineEvent({
           }
         }
       ]
+    },
+    {
+      kind: 'consequences',
+      quotes: [
+        {
+          id: 'q7',
+          text: 'The tomb’s contents were cataloged and displayed at the Egyptian Museum in Cairo, Egypt where they are still on display today.',
+          lang: 'en',
+          cite: {
+            source: 'nara-unwritten-record-discovery-of-king-tutankhamun-2023',
+            loc: { section: 'Spotlight: The Discovery of King Tutankhamun', para: '2' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://unwritten-record.blogs.archives.gov/2023/02/16/spotlight-the-discovery-of-king-tutankhamun/'
+          }
+        },
+        {
+          id: 'q8',
+          text: 'The artifacts from King Tut’s tomb were exhibited outside of Egypt starting in the 1960s. A popular traveling exhibit titled Treasures of Tutankhamun made its way to the United States in 1976. The exhibit traveled to Washington, D.C., Chicago, New Orleans, Los Angeles, Seattle, New York City, and San Francisco and attracted more than eight million people.',
+          lang: 'en',
+          cite: {
+            source: 'nara-unwritten-record-discovery-of-king-tutankhamun-2023',
+            loc: { section: 'Spotlight: The Discovery of King Tutankhamun', para: '7' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://unwritten-record.blogs.archives.gov/2023/02/16/spotlight-the-discovery-of-king-tutankhamun/'
+          }
+        }
+      ]
     }
   ],
   hero: {
@@ -116,5 +156,36 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Burton_Tutankhamun_tomb_photographs_1_015.jpg',
     credit: { creator: 'Harry Burton' },
     license: { id: 'public-domain' }
-  }
+  },
+  course: [
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1923-02-16' },
+            cites: [
+              {
+                source: 'nara-unwritten-record-discovery-of-king-tutankhamun-2023',
+                loc: { section: 'Spotlight: The Discovery of King Tutankhamun', para: '2' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q6',
+        text: 'On February 16, 1923, Carter and his team entered the last chamber in the tomb, where they located a sarcophagus with three coffins inside one another. The last coffin, made of solid gold, contained the mummified body of King Tutankhamun.',
+        lang: 'en',
+        cite: {
+          source: 'nara-unwritten-record-discovery-of-king-tutankhamun-2023',
+          loc: { section: 'Spotlight: The Discovery of King Tutankhamun', para: '2' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://unwritten-record.blogs.archives.gov/2023/02/16/spotlight-the-discovery-of-king-tutankhamun/'
+        }
+      }
+    }
+  ]
 })

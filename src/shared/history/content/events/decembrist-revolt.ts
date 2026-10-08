@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Decembrist revolt', lang: 'en', role: 'primary' },
     { text: 'Восстание декабристов', lang: 'ru', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -25,6 +25,9 @@ export default defineEvent({
   prominence: 2,
   places: [
     { ref: 'place:saint-petersburg' }
+  ],
+  polities: [
+    { ref: 'polity:russian-empire' }
   ],
   participants: [
     {
@@ -183,5 +186,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Peterburg,_Senate_Square,_1825,_dec._14.jpg',
     credit: { institution: 'Literaturnye mesta Rossii (Moscow)', creator: 'Karl Kollmann' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'nechkina-1955-dvizhenie-dekabristov', perspective: 'russian-soviet' }
+  ]
 })

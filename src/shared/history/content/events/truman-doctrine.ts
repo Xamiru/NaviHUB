@@ -13,7 +13,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -39,6 +39,9 @@ export default defineEvent({
   prominence: 2,
   partOf: [
     { ref: 'period:cold-war' }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
   ],
   participants: [
     {
@@ -103,14 +106,17 @@ export default defineEvent({
           }
         },
         {
-          id: 'q2',
-          text: 'Verkündung der "Truman-Doktrin" zur Eindämmung (Containment) der kommunistischen Gefahr.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1947', loc: { section: 'Jahreschronik 1947', para: '39' } },
+          id: 'q8',
+          text: 'The Truman Doctrine arose from a speech delivered by President Truman before a joint session of Congress on March 12, 1947.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-truman-doctrine',
+            loc: { section: 'The Truman Doctrine, 1947', para: '3' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.hdg.de/lemo/jahreschronik/1947.html'
+            at: '2026-10-07',
+            url: 'https://history.state.gov/milestones/1945-1952/truman-doctrine'
           }
         }
       ]

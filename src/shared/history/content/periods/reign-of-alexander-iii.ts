@@ -5,7 +5,7 @@ export default definePeriod({
   names: [
     { text: 'Reign of Alexander III', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   periodType: 'reign',
   start: {
     alts: [
@@ -35,6 +35,7 @@ export default definePeriod({
   },
   regions: ['russia-central-asia', 'europe'],
   prominence: 2,
+  parent: 'polity:russian-empire',
   sections: [
     {
       kind: 'overview',

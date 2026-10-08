@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'status-of-forces-agreement-of-1964',
   names: [
     { text: 'Status of Forces Agreement of 1964', lang: 'en', role: 'primary' },
+    { text: 'لایحه کاپیتولاسیون', lang: 'fa', role: 'native' },
     {
       text: 'Capitulations Agreement',
       lang: 'en',
@@ -30,7 +31,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -55,6 +56,10 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:reign-of-mohammad-reza-shah' }
+  ],
+  polities: [
+    { ref: 'polity:united-states' },
+    { ref: 'polity:pahlavi-iran' }
   ],
   participants: [
     {

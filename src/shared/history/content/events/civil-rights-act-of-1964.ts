@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Civil Rights Act of 1964', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -32,6 +32,9 @@ export default defineEvent({
   prominence: 2,
   places: [
     { ref: 'place:washington-dc' }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
   ],
   participants: [
     {

@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'salar-revolt',
   names: [
     { text: 'Salar revolt', lang: 'en', role: 'primary' },
+    { text: 'فتنه سالار', lang: 'fa', role: 'native' },
     {
       text: 'revolt in Khorasan',
       lang: 'en',
@@ -16,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -82,6 +83,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -196,20 +200,6 @@ export default defineEvent({
       kind: 'course',
       quotes: [
         {
-          id: 'q4',
-          text: 'Toward the end of the reign of Moḥammad Shah, Ḥamza Mīrzā Hešmat-al-dawla had been appointed governor of Khorasan, but he found his authority disputed by Ḥasan Khan Sālār, who, with the help of some local chieftains, had rebelled against the central government (1262/1846).',
-          lang: 'en',
-          cite: {
-            source: 'iranica-algar-amir-kabir',
-            loc: { section: 'AMĪR KABĪR, MĪRZĀ TAQĪ KHAN', para: '4' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/amir-e-kabir-mirza-taqi-khan'
-          }
-        },
-        {
           id: 'q5',
           text: 'Ḥamza Mīrzā abandoned Mašhad to Ḥasan Khan and fled to Herat.',
           lang: 'en',
@@ -236,53 +226,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/amir-e-kabir-mirza-taqi-khan'
           }
-        },
-        {
-          id: 'q7',
-          text: 'He first sent Solṭān Morād Mirzā Ḥosām-al-Salṭana to suppress the revolt of Sālār, who surrendered and was executed in 1850, and then he addressed the problem of regaining control of Herat with a plan of his own (Motavalli Ḥaqiqi, 2004, pp. 235-44; Noelle-Karimi, pp. 231-32).',
-          lang: 'en',
-          cite: {
-            source: 'iranica-motavalli-haghighi-khorasan-qajar-pahlavi',
-            loc: { section: 'KHORASAN xi. History in the Qajar and Pahlavi Periods', para: '14' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/khorasan-xi-history-in-the-qajar-and-pahlavi-periods'
-          }
-        }
-      ]
-    },
-    {
-      kind: 'aftermath',
-      quotes: [
-        {
-          id: 'q8',
-          text: 'Amīr Kabīr had him executed (1266/1850), together with one of his sons and one of his brothers, a punishment of unprecedented severity for such provincial resistance to central authority, and a clear sign of Amīr Kabīr’s intention to assert the prerogatives of the state (ibid., pp. 232-41).',
-          lang: 'en',
-          cite: {
-            source: 'iranica-algar-amir-kabir',
-            loc: { section: 'AMĪR KABĪR, MĪRZĀ TAQĪ KHAN', para: '4' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/amir-e-kabir-mirza-taqi-khan'
-          }
-        },
-        {
-          id: 'q9',
-          text: 'This secessionist insurrection was bloodily repressed by Amir Kabir in 1850 (Amanat, 1997, pp. 50 ff., 114 ff.; Ādamiyat, pp. 233 ff.).',
-          lang: 'en',
-          cite: {
-            source: 'iranica-calmard-mohammad-shah',
-            loc: { section: 'MOḤAMMAD SHAH QĀJĀR', para: '23' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/mohammad-shah'
-          }
         }
       ]
     }
@@ -292,5 +235,65 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Hamzeh_Mirza_Heshmat_od-Dowleh_by_Sani_ol-Molk.jpg',
     credit: { institution: 'Dowlat-e Elliye-ye Iran, no. 552 (1863)', creator: 'Sani ol-Molk' },
     license: { id: 'public-domain' }
-  }
+  },
+  course: [
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1846' },
+            cites: [
+              {
+                source: 'iranica-algar-amir-kabir',
+                loc: { section: 'AMĪR KABĪR, MĪRZĀ TAQĪ KHAN', para: '4' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q4',
+        text: 'Toward the end of the reign of Moḥammad Shah, Ḥamza Mīrzā Hešmat-al-dawla had been appointed governor of Khorasan, but he found his authority disputed by Ḥasan Khan Sālār, who, with the help of some local chieftains, had rebelled against the central government (1262/1846).',
+        lang: 'en',
+        cite: {
+          source: 'iranica-algar-amir-kabir',
+          loc: { section: 'AMĪR KABĪR, MĪRZĀ TAQĪ KHAN', para: '4' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-06',
+          url: 'https://www.iranicaonline.org/articles/amir-e-kabir-mirza-taqi-khan'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1850' },
+            cites: [
+              {
+                source: 'iranica-algar-amir-kabir',
+                loc: { section: 'AMĪR KABĪR, MĪRZĀ TAQĪ KHAN', para: '4' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q8',
+        text: 'Amīr Kabīr had him executed (1266/1850), together with one of his sons and one of his brothers, a punishment of unprecedented severity for such provincial resistance to central authority, and a clear sign of Amīr Kabīr’s intention to assert the prerogatives of the state (ibid., pp. 232-41).',
+        lang: 'en',
+        cite: {
+          source: 'iranica-algar-amir-kabir',
+          loc: { section: 'AMĪR KABĪR, MĪRZĀ TAQĪ KHAN', para: '4' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-06',
+          url: 'https://www.iranicaonline.org/articles/amir-e-kabir-mirza-taqi-khan'
+        }
+      }
+    }
+  ]
 })

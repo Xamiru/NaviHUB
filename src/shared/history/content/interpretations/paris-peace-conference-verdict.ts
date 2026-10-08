@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'paris-peace-conference-verdict',
   about: ['event:paris-peace-conference'],
   topic: 'legacy',
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   positions: [
     {
       id: 'carthaginian-peace',
@@ -13,6 +13,36 @@ export default defineInterpretation({
         { kind: 'participant', name: 'John Maynard Keynes' }
       ],
       statements: [
+        {
+          id: 'q9',
+          text: 'My purpose in this book is to show that the Carthaginian Peace is not practically right or possible. Although the school of thought from which it springs is aware of the economic factor, it overlooks, nevertheless, the deeper economic tendencies which are to govern the future. The clock cannot be set back. You cannot restore Central Europe to 1870 without setting up such strains in the European structure and letting loose such human and spiritual forces as, pushing beyond frontiers and races, will overwhelm not only you and your "guarantees," but your institutions, and the existing order of your Society.',
+          lang: 'en',
+          cite: {
+            source: 'keynes-1919-economic-consequences-of-the-peace',
+            loc: { section: 'Chapter III. The Conference', para: '13' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.gutenberg.org/cache/epub/15776/pg15776-images.html'
+          }
+        },
+        {
+          id: 'q10',
+          text: 'The policy of reducing Germany to servitude for a generation, of degrading the lives of millions of human beings, and of depriving a whole nation of happiness should be abhorrent and detestable,—abhorrent and detestable, even if it were possible, even if it enriched ourselves, even if it did not sow the decay of the whole civilized life of Europe.',
+          lang: 'en',
+          cite: {
+            source: 'keynes-1919-economic-consequences-of-the-peace',
+            loc: { section: 'Chapter V. Reparation', para: '565' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.gutenberg.org/cache/epub/15776/pg15776-images.html'
+          }
+        }
+      ],
+      reception: [
         {
           id: 'q1',
           text: 'He portrayed Wilson as a ponderous Presbyterian bamboozled by Lloyd George, the “Welsh Wizard”, and bullied by Clemenceau, the formidable “Tiger”, into betraying his principles and creating a “Carthaginian peace”, intent on ruining Germany as effectively as Rome had destroyed Carthage in 146 BC.',
@@ -26,9 +56,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://encyclopedia.1914-1918-online.net/article/the-paris-peace-conference-and-its-consequences/'
           }
-        }
-      ],
-      reception: [
+        },
         {
           id: 'q2',
           text: 'While neither true, nor certainly a full account of how the settlement was reached – much of which was determined by the Council of Five – nonetheless the “Big Four” did confront the contentious issues.',
@@ -54,7 +82,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q3',
-          text: 'Nicolson was typical of many Anglo-American participants when he declared, “We came to Paris convinced that the new order was about to be established; we left it convinced that the new order had merely fouled the old.”',
+          text: 'We came to Paris convinced that the new order was about to be established; we left it convinced that the new order had merely fouled the old.',
           lang: 'en',
           cite: {
             source: 'eo1418-sharp-paris-peace-conference',
@@ -62,7 +90,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://encyclopedia.1914-1918-online.net/article/the-paris-peace-conference-and-its-consequences/'
           }
         }
@@ -70,7 +98,7 @@ export default defineInterpretation({
     },
     {
       id: 'harsh-and-resented',
-      category: 'official',
+      category: 'scholarly',
       holders: [
         { kind: 'organization', name: 'Office of the Historian, U.S. Department of State' }
       ],
@@ -143,24 +171,24 @@ export default defineInterpretation({
       ]
     },
     {
-      id: 'next-world-war',
+      id: 'peace-of-oppression',
       category: 'contemporary',
       holders: [
         { kind: 'participant', name: 'Vladimir Lenin', ref: 'person:vladimir-lenin' }
       ],
       statements: [
         {
-          id: 'q8',
-          text: 'Finally, he predicted that the treaty conditions prescribing the new European order would lead to the next world war.',
+          id: 'q11',
+          text: 'Today, after this “peaceful” period, we see a monstrous intensification of oppression, the reversion to a colonial and military oppression that is far worse than before. The Treaty of Versailles has placed Germany and the other defeated countries in a position that makes their economic existence physically impossible, deprives them of all rights, and humiliates them.',
           lang: 'en',
           cite: {
-            source: 'eo1418-ennker-lenin',
-            loc: { section: 'Lenin and the Peace Treaties', para: '2' }
+            source: 'lenin-1920-report-on-the-international-situation',
+            loc: { section: 'Report on the International Situation' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://encyclopedia.1914-1918-online.net/article/lenin-vladimir-ilich/'
+            at: '2026-10-07',
+            url: 'https://www.marxists.org/archive/lenin/works/1920/jul/x03.htm'
           }
         }
       ]

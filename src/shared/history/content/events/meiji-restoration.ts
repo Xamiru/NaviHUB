@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Meiji Restoration', lang: 'en', role: 'primary' },
     { text: '明治維新', lang: 'ja', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'revolution',
   start: {
     alts: [
@@ -43,6 +43,9 @@ export default defineEvent({
       ]
     }
   ],
+  polities: [
+    { ref: 'polity:empire-of-japan' }
+  ],
   participants: [
     {
       ref: 'person:emperor-meiji',
@@ -75,7 +78,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Saigo Takamori',
+      ref: 'person:saigo-takamori',
       role: 'leader',
       cites: [
         {
@@ -289,5 +292,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Mutsuhito,_The_Meiji_Emperor_MET_DT8575.jpg',
     credit: { institution: 'Metropolitan Museum of Art', creator: 'Uchida Kuichi' },
     license: { id: 'cc0' }
-  }
+  },
+  furtherReading: [
+    { source: 'inoue-1951-nihon-gendaishi-meiji-ishin', perspective: 'japanese' },
+    { source: 'mitani-2017-ishinshi-saiko', perspective: 'japanese' }
+  ]
 })

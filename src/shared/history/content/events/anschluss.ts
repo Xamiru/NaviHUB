@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Anschluss', lang: 'en', role: 'primary' },
     { text: 'Anschluss Österreichs', lang: 'de', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'occupation',
   start: {
     alts: [
@@ -128,15 +128,17 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/austria/37.htm' }
         },
         {
-          id: 'q4',
-          text: 'Hitler lässt ein Gesetz zum "Anschluss" Österreichs an das Deutsche Reich verkünden. Die staatlichen Einrichtungen Österreichs werden durch deutsche Behörden übernommen.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1938', loc: { section: 'Chronik 1938', para: '53' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1938.html'
-          }
+          id: 'q13',
+          text: 'Hitler moved quickly to suppress what little independent identity and national unity Austria had. The name Austria was banned, provinces were freed of central administration from Vienna, and provincial loyalty and identification were cultivated.',
+          lang: 'en',
+          cite: {
+            source: 'loc-austria-country-study-1994',
+            loc: {
+              section: 'THE ANSCHLUSS AND WORLD WAR II: Absorption of Austria into the Third Reich',
+              para: '5'
+            }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/austria/38.htm' }
         },
         {
           id: 'q5',
@@ -230,21 +232,24 @@ export default defineEvent({
           {
             value: { d: '1938-03-11' },
             cites: [
-              { source: 'lemo-chronik-1938', loc: { section: 'Chronik 1938', para: '48' } }
+              { source: 'lemo-chronik-1938', loc: { section: 'Chronik 1938', para: '48' } },
+              {
+                source: 'loc-austria-country-study-1994',
+                loc: { section: 'Growing German Pressure on Austria', para: '7' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q10',
-        text: 'Mit der Drohung einer sofortigen Okkupation zwingt Hitler den österreichischen Bundeskanzler Schuschnigg zum Rücktritt. Sein Amt übernimmt Seyß-Inquart.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1938', loc: { section: 'Chronik 1938', para: '49' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1938.html'
-        }
+        id: 'q14',
+        text: 'The German army began preparing for an invasion on March 10, and Nazi sympathizers in the Austrian cabinet demanded that the plebiscite be postponed. Schuschnigg agreed to cancel it altogether and then acceded to demands for his resignation.',
+        lang: 'en',
+        cite: {
+          source: 'loc-austria-country-study-1994',
+          loc: { section: 'Growing German Pressure on Austria', para: '7' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/austria/37.htm' }
       }
     },
     {
@@ -288,5 +293,8 @@ export default defineEvent({
       creator: 'Heinrich Hoffmann'
     },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'botz-1972-die-eingliederung-osterreichs', perspective: 'european' }
+  ]
 })

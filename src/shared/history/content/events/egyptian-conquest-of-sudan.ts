@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Egyptian conquest of Sudan', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'invasion',
   start: {
     alts: [
@@ -235,5 +235,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:John_Frederick_Lewis_-_Study_for_Mehmet_Ali_Pasha_-_1986.78_-_Cleveland_Museum_of_Art.tif',
     credit: { institution: 'Cleveland Museum of Art', creator: 'John Frederick Lewis' },
     license: { id: 'cc0' }
-  }
+  },
+  furtherReading: [
+    { source: 'rafii-1982-asr-muhammad-ali', perspective: 'arab' },
+    { source: 'shuqayr-1981-tarikh-al-sudan', perspective: 'arab' }
+  ]
 })

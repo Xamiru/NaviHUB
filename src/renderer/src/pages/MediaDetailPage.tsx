@@ -34,6 +34,7 @@ import AddToListMenu from '../components/AddToListMenu'
 import MangaChaptersSection from '../components/MangaChaptersSection'
 import TvSeasonsSection from '../components/TvSeasonsSection'
 import GameLaunchSection from '../components/GameLaunchSection'
+import GameLinksPanel from '../components/GameLinksPanel'
 import AchievementsSection from '../components/AchievementsSection'
 import GameLaunchButton, { useHasLaunchTarget } from '../components/GameLaunchButton'
 import { PlayIcon, PauseIcon } from '../components/PlayerIcons'
@@ -56,6 +57,7 @@ import type {
   HltbTimes
 } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
+import { crewRoleLabel, mangaCreatorFacts } from '../lib/creatorCredits'
 import { useLogProgress } from '../lib/logProgress'
 import SynopsisText from '../components/theme/SynopsisText'
 import StandStats from '../components/theme/StandStats'
@@ -84,7 +86,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   // reader chapter still restores where you were.
   const tabs: TabDef<DetailTab>[] = [
     { key: 'overview', label: 'Overview' },
-    { key: 'cast', label: cfg.castSectionTitle },
+    { key: 'cast', label: cfg.castTabLabel ?? cfg.castSectionTitle },
     ...(cfg.hasVideoLibrary
       ? [{ key: 'video' as DetailTab, label: cfg.videoTabLabel ?? 'Video' }]
       : []),
@@ -103,6 +105,16 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
     queryKey: qk.media.detail(mediaId),
     queryFn: () => api.media.get(mediaId)
   })
+  // A game's box art per region from the games catalog, offered in the cover picker.
+  const { data: gameLinks } = useQuery({
+    queryKey: qk.gameLinks.get(mediaId),
+    queryFn: () => api.gameLinks.get(mediaId),
+    enabled: coverOpen && m?.mediaType === 'game'
+  })
+  const boxArt = (gameLinks?.covers ?? []).map((c) => ({
+    url: c.url,
+    label: [c.region ?? 'Unmarked', c.platform].filter(Boolean).join(' · ')
+  }))
 
   const refresh = () => qc.invalidateQueries({ queryKey: qk.media.detail(mediaId) })
 
@@ -310,6 +322,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
 
         {tab === 'cast' && (
           <>
+          {m.mediaType === 'game' && <GameLinksPanel mediaId={m.id} title={m.title} />}
           <CastSection cfg={cfg} m={m} onChange={refresh} />
           {cfg.hasCrew !== false && <StaffSection cfg={cfg} m={m} onChange={refresh} />}
           </>
@@ -360,6 +373,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           override={{ kind: 'media', id: m.id }}
           artMediaId={m.id}
           allowRemove
+          suggestions={boxArt}
           onPick={async (path) => {
             await api.images.setManual('media', m.id, path)
             await qc.invalidateQueries({ queryKey: qk.media.all })
@@ -738,8 +752,24 @@ function FactsColumn({
   }
 
   const fact = 'text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500'
+  const creators = cfg.creatorFacts ? mangaCreatorFacts(m.cast) : []
   return (
     <aside className="space-y-5 text-sm" aria-label="Facts">
+      {creators.map(({ label, people }) => (
+        <div key={label}>
+          <p className={fact}>{label}</p>
+          <ul className="mt-1 space-y-1">
+            {people.map((p) => (
+              <li key={p.id}>
+                <Link to={`/people/${p.id}?role=${label === 'Original work' ? 'writer' : 'mangaka'}`} className="text-signal-link hover:underline">
+                  {p.name}
+                </Link>
+                {p.nameNative && <span className="ml-2 text-xs text-gray-500">{p.nameNative}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
       <div>
         <p className={fact}>Released</p>
         <p className="mt-1 text-white">{m.releaseDate ?? '—'}</p>
@@ -1261,7 +1291,12 @@ const RELATION_LABELS: Record<string, string> = {
   ALTERNATIVE: 'Alternative',
   SPIN_OFF: 'Spin-off',
   SOURCE: 'Source',
-  ADAPTATION: 'Adaptation'
+  ADAPTATION: 'Adaptation',
+  // Games (Bangumi relations between catalog works).
+  EXPANSION: 'Expansion',
+  COMPILATION: 'Compilation',
+  SAME_SERIES: 'Same series',
+  SAME_SETTING: 'Same setting'
 }
 
 // Logical reading order for the season chain, then side material, then source.
@@ -1272,8 +1307,12 @@ const RELATION_ORDER = [
   'SIDE_STORY',
   'SPIN_OFF',
   'ALTERNATIVE',
+  'EXPANSION',
   'SOURCE',
-  'ADAPTATION'
+  'ADAPTATION',
+  'COMPILATION',
+  'SAME_SERIES',
+  'SAME_SETTING'
 ]
 
 // Un-imported relations are only hints, so cap them — big franchises (One Piece
@@ -1413,7 +1452,7 @@ function StaffSection({
             className="flex items-center gap-2 text-sm bg-base-800 rounded-md px-3 py-2"
           >
             <span className="flex-1">
-              <span className="text-gray-500 capitalize">{c.role}</span>
+              <span className={c.roleNote ? 'text-gray-500' : 'text-gray-500 capitalize'}>{crewRoleLabel(c)}</span>
               {' · '}
               {/* ?role= makes the person page lead with crew work, not acting */}
               <Link

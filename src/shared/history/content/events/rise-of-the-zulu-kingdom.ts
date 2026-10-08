@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'founding',
   start: {
     alts: [
@@ -33,6 +33,14 @@ export default defineEvent({
   },
   regions: ['subsaharan-africa'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:zululand',
+      cites: [
+        { source: 'britannica-1911-zululand', loc: { section: 'ZULULAND', para: '16' } }
+      ]
+    }
+  ],
   participants: [
     {
       ref: 'person:shaka',
@@ -174,5 +182,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:KingShaka.jpg',
     credit: { creator: 'James King' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'hamilton-1998-terrific-majesty', perspective: 'african' }
+  ]
 })

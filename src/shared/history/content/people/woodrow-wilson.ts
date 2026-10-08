@@ -13,7 +13,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -45,6 +45,7 @@ export default definePerson({
   offices: [
     {
       title: 'twenty-eighth president of the United States',
+      polity: 'polity:united-states',
       start: {
         alts: [
           {

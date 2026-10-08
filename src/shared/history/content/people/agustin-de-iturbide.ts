@@ -16,12 +16,39 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1783-09-27' },
+        cites: [
+          {
+            source: 'britannica-1911-iturbide-augustin-de',
+            loc: { section: 'ITURBIDE, AUGUSTIN DE', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1824' },
+        cites: [
+          {
+            source: 'britannica-1911-iturbide-augustin-de',
+            loc: { section: 'ITURBIDE, AUGUSTIN DE', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
   regions: ['latin-america'],
   roles: ['monarch', 'military'],
   offices: [
     {
       title: 'constitutional emperor of Mexico',
+      polity: 'polity:first-mexican-empire',
       start: {
         alts: [
           {

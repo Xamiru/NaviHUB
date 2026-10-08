@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'treaty-of-finkenstein',
   names: [
-    { text: 'Treaty of Finkenstein', lang: 'en', role: 'primary' }
+    { text: 'Treaty of Finkenstein', lang: 'en', role: 'primary' },
+    { text: 'عهدنامه فین‌کن‌اشتاین', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -34,8 +35,23 @@ export default defineEvent({
   },
   regions: ['iran', 'europe'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:finckenstein-palace',
+      cites: [
+        {
+          source: 'iranica-calmard-gardane-mission',
+          loc: { section: 'GARDANE MISSION', para: '2' }
+        }
+      ]
+    }
+  ],
   partOf: [
     { ref: 'period:reign-of-fath-ali-shah' }
+  ],
+  polities: [
+    { ref: 'polity:first-french-empire' },
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -187,5 +203,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:The_Persian_Envoy_Mirza_Mohammed_Reza_Qazvini_Finkenstein_Castle_27_Avril_1807_by_Francois_Mulard.jpg',
     credit: { creator: 'François-Henri Mulard' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'nafisi-1965-tarikh-e-ejtemai-va-siyasi-ye-iran', perspective: 'iranian' }
+  ]
 })

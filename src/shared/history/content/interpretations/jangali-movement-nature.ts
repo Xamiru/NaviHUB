@@ -18,8 +18,34 @@ export default defineInterpretation({
       url: 'https://www.iranicaonline.org/articles/jangali-movement'
     }
   },
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
+    {
+      id: 'red-revolution-declaration',
+      category: 'contemporary',
+      holders: [
+        {
+          kind: 'organization',
+          name: 'Red Revolutionary Committee of Iran (Jamʿiyat-e enqelāb-e sorḵ-e Irān)'
+        }
+      ],
+      statements: [
+        {
+          id: 'q9',
+          text: '1- جمعیت انقلاب سرخ ایران اصول سلطنت را ملغی کرده، جمهوریت شوروی را رسما اعلان می‌کند./ 2- تشکیل حکومت موقتی جمهوری و حفاظت جان و مال عموم اهالی را بشارت می‌دهد. / 3- هر نوع قرارداد و معاهده را که دولت ایران قدیما و جدیدا با هر دولتی منعقد کرده لغو و باطل می‌داند. / 4- حکومت جمهوری همه‌ی اقوام بشری را بلاتفاوت با این آمال شریک دانسته، و درباره‌ی آنها به تساوی رفتار کرده، و حفظ شعائر اسلامی را نیز از فرائض می‌داند.',
+          lang: 'fa',
+          cite: {
+            source: 'gilan-1920-declaration-of-the-soviet-republic-of-iran',
+            loc: { para: '10' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://fa.wikisource.org/wiki/%D8%A8%DB%8C%D8%A7%D9%86%DB%8C%D9%87_%D8%AA%D8%A7%D8%B3%DB%8C%D8%B3_%D8%AC%D9%85%D9%87%D9%88%D8%B1%DB%8C_%D8%B4%D9%88%D8%B1%D9%88%DB%8C_%D8%A7%DB%8C%D8%B1%D8%A7%D9%86'
+          }
+        }
+      ]
+    },
     {
       id: 'anti-imperialist-agrarian-movement',
       category: 'scholarly',

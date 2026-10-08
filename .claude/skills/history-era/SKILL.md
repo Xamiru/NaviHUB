@@ -47,7 +47,7 @@ available as EPUB/PDF on the laptop; ask where.
 generative AI (OpenStax pages state it since at least 2026-10; found 2026-10-06). Read a new site's
 reuse or attribution notice before quoting it, and skip it when it restricts copying or compiling.
 Excluded so far: un.org, USHMM, news.stanford.edu, Sciences Po's Mass Violence & Resistance, BAILII,
-habsburger.net, the Griffith Institute, and the robots-closed NYRB, Washington Post, Foreign Policy and
+habsburger.net, the Griffith Institute, federalreservehistory.org, olympics.com, the Wiener Library, and the robots-closed NYRB, Washington Post, Foreign Policy and
 JFK Library.
 
 - **Fetch or open the text and copy from it.** Never type a quote from memory. If a page cannot be
@@ -94,7 +94,12 @@ took every 1800s-1940s spec with it.
 - `commons.py "words"` and `ia.py 'query'` look up Commons images and Internet Archive items with
   their license, creator, holding institution, size and files.
 - `gazetteer.py`: `coords(name, iso_country, today)` gives a place its Natural Earth position as cited
-  data (by name and country, never by name alone). The decade builds apply it to every place without
+  data (by name and country, never by name alone); `geonames_coords(name, iso_country)` falls back to
+  GeoNames cities500 (CC BY 4.0, alternate names included; download once into
+  `~/.cache/navihub-history/geonames/cities500.txt`) for towns and villages, and `build_spec.py` uses
+  it for any non-region place. A battlefield or site gets the position of the town it is named
+  after, and the citation names that town. Check every new match by eye: an alternate name can
+  belong to another town (Harpers Ferry matched an Athens). The decade builds apply it to every place without
   coordinates, so the map can pin its events; give a place `modernCountry` so it can be found.
 
 ### The overview's first quote
@@ -105,14 +110,80 @@ not seen). An encyclopedia or institution lede is ideal. Chronology lines (inclu
 ones), treaty articles, Hansard procedure, headwords with dates and citation walls are evidence:
 they go further down the page, never first (user, 2026-10-07).
 
+### Quality bar (from the 2026-10-07 review of 1800–1969; backlog in docs/review/history-content.md)
+
+- **English sources first.** A German/French chronology (LeMO, napoleon.org) is never the opener,
+  the course of events or a side's name; use it only as a second citation when no English source
+  states the fact. Persian is welcome in the original (the user reads it).
+- **A dated course** for every event with more than one stage; **background → course →
+  consequences** all present on prominence-1 and -2 events; one overview quote is too thin.
+- **Disputes are only the same fact, at the same precision, from different sources.** A value that
+  belongs to a different event (an earlier war, a different treaty) is not an alternative.
+- **Never quote a passage that states a different subject's fact** (an act's date for another
+  act, "His" pointing at the wrong man): quotes cannot be corrected, so pick another.
+- **End quotes before citation parentheses and avoid OCR-damaged text** ("toobtain", "β" for £,
+  hyphen-space breaks); re-fetch a clean copy or choose another passage.
+- **Participants link to their person page** whenever it exists; every person page has a lede,
+  birth and death when any source states them, offices, and a portrait.
+- **Native-script names** for every non-English subject (Persian for Iran events, Kurdish,
+  Azerbaijani, Arabic, Chinese… as the subject's own).
+- **Memoirs and state sites are positions, not narration**: the Shah's books, Khamenei.ir, party
+  resolutions go in `official` positions or `in-their-words`.
+- **No repetition**: one quote per fact on a page.
+
 ## 3. Interpretations
 
 For contested events (causes, responsibility, foreign roles, naming, casualties...), write an
-`Interpretation` with every notable position: scholarly, official or national narratives, popular,
-revisionist, fringe. Each position: holders, their own quoted statements, a `category`.
+`Interpretation` with every notable position — **including the people the event happened to**
+(the Mexican view of 1846, the Japanese of Perry, the African of Berlin 1884, Soviet and Chinese
+official narratives) and the classic historiographic debates. A position's statements are its
+holders' own words (`official`/`contemporary` never carry a historian's paraphrase); one article
+is not sliced into several positions; reception goes on the position it answers; a conspiracy view
+is `fringe`, not `popular`; denial ranges stay in the interpretation, never in the infobox figures.
+Categories: scholarly, official or national narratives, contemporary, popular, revisionist,
+fringe. Each position: holders, their own quoted statements, a `category`.
 `standing` only with a supporting quote. **Fringe and revisionist positions need `reception`
 quotes** showing how scholars received them. Contested names go on the entity as name variants
 with `usedBy` and citations.
+
+### States and themes
+
+- **A state** (`definePolity`, folder `polities/`) is a polity, not a span of time: empire, kingdom,
+  republic, colony, protectorate, mandate… (`POLITY_TYPES`). Give it an encyclopedia lede, cited
+  founding and end, dated `capitals`, `predecessors`, `partOf` (the empire a colony belonged to),
+  `dynasties` (the ruling house periods), dated `area`/`population` figures, an image (flag, emblem,
+  a period map) and **`cshapes`** links to the map: list `src/main/history/data/borders.json` units
+  by name to find the `set` and `code`, and give a year span when one code covers several states
+  (365 is Russia and the Soviet Union). Its native official name goes in `names`.
+- **Rulers come from people**: tag each relevant `Office` with `polity: 'polity:<slug>'` (with its
+  dated start and end); never list rulers on the state. Events name the states involved in
+  `polities`, and a side that is a state gets `polity`.
+- **A theme** (`defineTheme`, folder `themes/`) is a thread across decades: framing sections and an
+  ordered `thread` of events, people, states and periods, each optionally with a quote saying why
+  it belongs and a dated claim. Themes are written after their entries exist.
+- Dynasties stay periods (the Qajar dynasty), regimes and eras too (Weimar, Nazi Germany, a reign);
+  a period inside a state may name it as `parent`.
+
+### Further reading (other traditions)
+
+A page's quoted sources are mostly US and UK institutions and Iranica; that is the agreed core
+(user, 2026-10-08). `furtherReading` on events, people, states, periods and themes lists works
+from other traditions so the reader can go further: `{ source: '<source id>', perspective }`,
+`PERSPECTIVES` in schema.ts (iranian, arab, turkish, russian-soviet, chinese, japanese,
+south-asian, southeast-asian, african, latin-american, caribbean, pacific, central-asian, israeli,
+palestinian, european, american, other). These works are **listed, never quoted**: bibliography only, no summary or description.
+
+- Only real works you have verified: a library catalogue record (Open Library, a national library,
+  a university catalogue), the publisher's page or a journal's article page, fetched and read.
+  Never list a work from memory or from a citation you could not confirm.
+- Take the bibliographic fields from that record: title in the original script (Persian, Arabic,
+  Russian, Chinese…), author with `nameNative`, publisher, place, year, ISBN/DOI/OCLC in `ids`, and
+  `url` + `accessed` for the record you checked. `lang` is the work's language.
+- Prefer scholarship by historians of the region and works in its languages (Persian above all
+  for Iran); a published English translation is its own source with `translationOf`.
+- The perspective is the tradition the work comes from (an Iranian historian writing in Persian
+  is `iranian`; a Soviet official history is `russian-soviet`), not its topic.
+- Two to five works per leading event, people and states are enough; quality over count.
 
 ## 4. Media and archive
 
@@ -153,9 +224,13 @@ with `usedBy` and citations.
 ```bash
 npm run typecheck
 npm run test:main -- tests/historyContent.test.ts
+node_modules/.bin/vite-node -c vitest.config.ts .claude/skills/history-era/tools/lint_report.ts
 ```
 
-Both must pass. Read the printed warnings (orphan sources, events without quotes yet).
+Both must pass. Read the printed warnings (orphan sources, events without quotes yet). The content
+test includes the **quality lint ratchet**: new content must add no lint issue (the report shows
+what is new). Fix what you can of the old baseline as you touch pages, then rerun the report with
+`--write-baseline` (it only ever shrinks; never add new issues to it).
 
 ## 7. Report
 

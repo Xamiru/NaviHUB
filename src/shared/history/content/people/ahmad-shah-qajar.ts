@@ -6,12 +6,13 @@ export default definePerson({
     { text: 'Ahmad Shah Qajar', lang: 'en', role: 'primary' },
     { text: 'احمدشاه قاجار', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   regions: ['iran'],
   roles: ['monarch'],
   offices: [
     {
       title: 'shah of Iran',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {
@@ -103,5 +104,9 @@ export default definePerson({
       creator: 'Gholamreza Akkas'
     },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'sheikholeslami-1989-sima-ye-ahmad-shah-qajar', perspective: 'iranian' },
+    { source: 'makki-1983-tarikh-e-bist-saleh-ye-iran', perspective: 'iranian' }
+  ]
 })

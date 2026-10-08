@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Fazlollah Nuri', lang: 'en', role: 'primary' },
     { text: 'فضل‌الله نوری', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -110,5 +110,9 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:AyatFazlollahNouriAndAyatBehbahani.jpg',
     credit: { institution: 'Internet Archive, Digital Library of India' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'safai-1963-rahbaran-e-mashruteh', perspective: 'iranian' },
+    { source: 'kasravi-1940-tarikh-e-mashruteh-ye-iran', perspective: 'iranian' }
+  ]
 })

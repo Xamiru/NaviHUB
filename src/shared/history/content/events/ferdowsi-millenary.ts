@@ -7,7 +7,7 @@ export default defineEvent({
     { text: 'جشن هزاره فردوسی', lang: 'fa', role: 'native' },
     { text: 'jašn-e hazāra', lang: 'fa-Latn', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'cultural',
   start: {
     alts: [
@@ -64,6 +64,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-reza-shah' }
   ],
+  polities: [
+    { ref: 'polity:pahlavi-iran' }
+  ],
   participants: [
     {
       ref: 'person:reza-shah-pahlavi',
@@ -76,7 +79,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Moḥammad-ʿAlī Forūḡī',
+      ref: 'person:mohammad-ali-foroughi',
       role: 'organizer',
       cites: [
         {

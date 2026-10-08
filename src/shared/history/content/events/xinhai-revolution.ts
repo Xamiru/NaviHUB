@@ -28,7 +28,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'revolution',
   start: {
     alts: [
@@ -86,6 +86,10 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:qing-empire' },
+    { ref: 'polity:republic-of-china' }
   ],
   participants: [
     {
@@ -348,5 +352,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Marshal_Li_recovering_Nanjing_during_the_Xinhai_Revolution_of_1911_LCCN2008661174.jpg',
     credit: { institution: 'Library of Congress' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'jin-hu-1980-xinhai-geming-shigao', perspective: 'chinese' },
+    { source: 'zhang-lin-1980-xinhai-geming-shi', perspective: 'chinese' }
+  ]
 })

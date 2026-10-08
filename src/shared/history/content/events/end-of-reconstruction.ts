@@ -19,7 +19,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -33,6 +33,9 @@ export default defineEvent({
   },
   regions: ['north-america'],
   prominence: 2,
+  polities: [
+    { ref: 'polity:united-states' }
+  ],
   participants: [
     {
       name: 'Rutherford B. Hayes',
@@ -122,17 +125,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://history.house.gov/Exhibitions-and-Publications/BAIC/Historical-Essays/Fifteenth-Amendment/Demise/'
-          }
-        },
-        {
-          id: 'q5',
-          text: 'Die US-amerikanischen Bundestruppen ziehen sich aus New Orleans zurück. Damit erlangt elf Jahre nach dem Ende des Amerikanischen Bürgerkrieges auch der letzte Südstaat seine Autonomie zurück.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1877', loc: { section: 'Chronik 1877', para: '25' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1877.html'
           }
         }
       ]

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'persian-coup-of-1921-british-role',
   about: ['event:persian-coup-of-1921'],
   topic: 'foreign-role',
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   framing: {
     id: 'q1',
     text: 'The role played by each individual in the planning phase of the coup remains uncertain.',
@@ -22,7 +22,7 @@ export default defineInterpretation({
   positions: [
     {
       id: 'widely-believed-british-plot',
-      category: 'contemporary',
+      category: 'popular',
       holders: [
         { kind: 'public', name: 'Contemporary observers in Persia' }
       ],
@@ -72,14 +72,10 @@ export default defineInterpretation({
       ]
     },
     {
-      id: 'british-deceived',
-      category: 'contemporary',
+      id: 'british-military-not-foreign-office',
+      category: 'scholarly',
       holders: [
-        {
-          kind: 'participant',
-          name: 'Sayyed Żīāʾ-al-Dīn Ṭabāṭabāʾī',
-          ref: 'person:seyyed-zia-al-din-tabatabai'
-        }
+        { kind: 'scholar', name: 'Niloofar Shambayati' }
       ],
       statements: [
         {
@@ -95,9 +91,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/coup-detat-of-1299-1921/'
           }
-        }
-      ],
-      reception: [
+        },
         {
           id: 'q6',
           text: 'Indeed, none of the accounts in which British involvement in the coup is denied can be substantiated',
@@ -111,16 +105,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/coup-detat-of-1299-1921/'
           }
-        }
-      ]
-    },
-    {
-      id: 'british-military-not-foreign-office',
-      category: 'scholarly',
-      holders: [
-        { kind: 'scholar', name: 'Niloofar Shambayati' }
-      ],
-      statements: [
+        },
         {
           id: 'q7',
           text: 'Ironside had probably encouraged the move, without having been involved in the details of the plan.',
@@ -242,7 +227,7 @@ export default defineInterpretation({
     },
     {
       id: 'everything-british-controlled',
-      category: 'popular',
+      category: 'fringe',
       holders: [
         { kind: 'public', name: 'Conspiracy theorists in Persia' }
       ],

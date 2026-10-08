@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'treaty-of-tehran-1881',
   names: [
     { text: 'Treaty of Tehran (1881)', lang: 'en', role: 'primary' },
+    { text: 'عهدنامه آخال', lang: 'fa', role: 'native' },
     {
       text: 'Convention of 1881',
       lang: 'en',
@@ -20,7 +21,7 @@ export default defineEvent({
     },
     { text: 'Akhal-Khorasan boundary convention', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -66,6 +67,7 @@ export default defineEvent({
     {
       key: 'persia',
       name: 'Iran',
+      polity: 'polity:qajar-iran',
       cites: [
         {
           source: 'iranica-andreeva-russia-relations',
@@ -79,6 +81,7 @@ export default defineEvent({
     {
       key: 'russia',
       name: 'Russia',
+      polity: 'polity:russian-empire',
       cites: [
         {
           source: 'iranica-andreeva-russia-relations',
@@ -352,9 +355,15 @@ export default defineEvent({
     }
   ],
   hero: {
-    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f3/The_Young_Nasir_Al-Din_Shah_Qajar.jpg/1280px-The_Young_Nasir_Al-Din_Shah_Qajar.jpg',
-    page: 'https://commons.wikimedia.org/wiki/File:The_Young_Nasir_Al-Din_Shah_Qajar.jpg',
-    credit: { creator: 'Mirza Abolhassan Khan Ghaffari' },
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/60/Antoin_Sevruguin_51_8_SI.jpg/1280px-Antoin_Sevruguin_51_8_SI.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Antoin_Sevruguin_51_8_SI.jpg',
+    credit: {
+      institution: 'Freer Gallery of Art and Arthur M. Sackler Gallery Archives, Smithsonian Institution',
+      creator: 'Antoin Sevruguin'
+    },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'sheikholeslami-1991-elal-e-afzayesh-e-nofuz', perspective: 'iranian' }
+  ]
 })

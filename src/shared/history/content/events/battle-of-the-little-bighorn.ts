@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Battle of the Little Bighorn', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -46,6 +46,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
   ],
   sides: [
     {
@@ -152,25 +155,6 @@ export default defineEvent({
   ],
   sections: [
     {
-      kind: 'background',
-      quotes: [
-        {
-          id: 'q1',
-          text: 'Tension between the United States and the Lakota escalated in 1874, when Lt. Col. George Armstrong Custer was ordered to make an exploration of the Black Hills inside the boundary of the Great Sioux Reservation. Custer was to map the area, locate a suitable site for a future military post, and to make note of the natural resources. During the expedition, professional geologists discovered deposits of gold. Word of its discovery caused an invasion of miners and entrepreneurs to the Black Hills in direct violation of the 1868 Treaty of Fort Laramie.',
-          lang: 'en',
-          cite: {
-            source: 'nps-libi-story-of-the-battle',
-            loc: { section: 'Story of the Battle', para: '5' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.nps.gov/libi/learn/historyculture/battle-story.htm'
-          }
-        }
-      ]
-    },
-    {
       kind: 'overview',
       quotes: [
         {
@@ -186,25 +170,33 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.nps.gov/libi/learn/historyculture/battle-story.htm'
           }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'background',
+      quotes: [
         {
-          id: 'q3',
-          text: 'In der Schlacht am Little Bighorn River in Montana besiegen die Indianerstämme der Cheyennes und Sioux unter ihren Häuptlingen Sitting Bull (1831-1890), Crazy Horse (um 1840-1877) und Two Moon (1847-1917) eine US-Kavallerieabteilung unter George Armstrong Custer (1839-1876).',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1876', loc: { section: 'Chronik 1876', para: '41' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1876.html'
-          }
-        },
-        {
-          id: 'q4',
-          text: 'About 40 men of the original 210 were cornered on the hill where the stone monument now stands.',
+          id: 'q7',
+          text: 'However, Lakota leaders such as Sitting Bull and Crazy Horse rejected the reservation system. Likewise, many roving bands of hunters and warriors did not sign the 1868 treaty. They felt no obligation to conform to its restrictions, or to limit their hunting to the unceded hunting land assigned by the treaty. Their forays off the set aside lands brought them into conflict with settlers and enemy tribes outside the treaty boundaries.',
           lang: 'en',
           cite: {
             source: 'nps-libi-story-of-the-battle',
-            loc: { section: 'Story of the Battle', para: '24' }
+            loc: { section: 'Story of the Battle', para: '3' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.nps.gov/libi/learn/historyculture/battle-story.htm'
+          }
+        },
+        {
+          id: 'q1',
+          text: 'Tension between the United States and the Lakota escalated in 1874, when Lt. Col. George Armstrong Custer was ordered to make an exploration of the Black Hills inside the boundary of the Great Sioux Reservation. Custer was to map the area, locate a suitable site for a future military post, and to make note of the natural resources. During the expedition, professional geologists discovered deposits of gold. Word of its discovery caused an invasion of miners and entrepreneurs to the Black Hills in direct violation of the 1868 Treaty of Fort Laramie.',
+          lang: 'en',
+          cite: {
+            source: 'nps-libi-story-of-the-battle',
+            loc: { section: 'Story of the Battle', para: '5' }
           },
           provenance: {
             via: 'web',
@@ -254,9 +246,162 @@ export default defineEvent({
     }
   ],
   hero: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/2/24/%22Scene_of_Gen._Custer%27s_last_stand%2C_looking_in_the_direction_of_the_ford_and_the_Indian_village.%22_A_pile_of_bones_on_the_Little_Big_Horn_battlefield_is_all_that_remains%2C_ca._1877_-_NARA_-_530869.gif',
-    page: 'https://commons.wikimedia.org/wiki/File:%22Scene_of_Gen._Custer%27s_last_stand,_looking_in_the_direction_of_the_ford_and_the_Indian_village.%22_A_pile_of_bones_on_the_Little_Big_Horn_battlefield_is_all_that_remains,_ca._1877_-_NARA_-_530869.gif',
-    credit: { institution: 'U.S. National Archives and Records Administration' },
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b5/Sitting_Bull_1885_uncropped.jpg/1280px-Sitting_Bull_1885_uncropped.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Sitting_Bull_1885_uncropped.jpg',
+    credit: {
+      institution: 'Library of Congress Prints and Photographs Division',
+      creator: 'David Francis Barry'
+    },
     license: { id: 'public-domain' }
-  }
+  },
+  course: [
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1876-03' },
+            cites: [
+              {
+                source: 'nps-libi-story-of-the-battle',
+                loc: { section: 'Story of the Battle', para: '6' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q8',
+        text: 'The campaign was set in motion in March of 1876, when a 450-man force of combined cavalry and infantry commanded by Colonel John Gibbon, marched out of Fort Ellis near Bozeman, Montana.',
+        lang: 'en',
+        cite: {
+          source: 'nps-libi-story-of-the-battle',
+          loc: { section: 'Story of the Battle', para: '6' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://www.nps.gov/libi/learn/historyculture/battle-story.htm'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1876-06-22' },
+            cites: [
+              {
+                source: 'nps-libi-story-of-the-battle',
+                loc: { section: 'Story of the Battle', para: '11' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q9',
+        text: 'On June 22, General Terry decided to detach Custer and his 7th Cavalry to make a wide flanking march and approach the Indians from the east and south.',
+        lang: 'en',
+        cite: {
+          source: 'nps-libi-story-of-the-battle',
+          loc: { section: 'Story of the Battle', para: '11' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://www.nps.gov/libi/learn/historyculture/battle-story.htm'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1876-06-25' },
+            cites: [
+              {
+                source: 'nps-libi-story-of-the-battle',
+                loc: { section: 'Story of the Battle', para: '13' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q10',
+        text: 'As instructed by Custer, Major Reno crossed the river about two miles south of the village and began advancing downstream toward its southern end.',
+        lang: 'en',
+        cite: {
+          source: 'nps-libi-story-of-the-battle',
+          loc: { section: 'Story of the Battle', para: '17' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://www.nps.gov/libi/learn/historyculture/battle-story.htm'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1876-06-25' },
+            cites: [
+              {
+                source: 'nps-libi-story-of-the-battle',
+                loc: { section: 'Story of the Battle', para: '19' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q4',
+        text: 'About 40 men of the original 210 were cornered on the hill where the stone monument now stands.',
+        lang: 'en',
+        cite: {
+          source: 'nps-libi-story-of-the-battle',
+          loc: { section: 'Story of the Battle', para: '24' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-06',
+          url: 'https://www.nps.gov/libi/learn/historyculture/battle-story.htm'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1876-06-26' },
+            cites: [
+              {
+                source: 'nps-libi-story-of-the-battle',
+                loc: { section: 'Story of the Battle', para: '19' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q11',
+        text: 'Large numbers of warriors approaching from that direction forced the cavalry to withdraw to Reno Hill where the Indians held them under siege from the afternoon of June 25, until dusk on June 26. On the evening of June 26, the entire village began to move to the south.',
+        lang: 'en',
+        cite: {
+          source: 'nps-libi-story-of-the-battle',
+          loc: { section: 'Story of the Battle', para: '19' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://www.nps.gov/libi/learn/historyculture/battle-story.htm'
+        }
+      }
+    }
+  ],
+  furtherReading: [
+    { source: 'mattioli-2017-verlorene-welten', perspective: 'european' }
+  ]
 })

@@ -6,8 +6,15 @@ export default definePlace({
     { text: 'Famagusta', lang: 'en', role: 'primary' },
     { text: 'Αμμόχωστος', lang: 'el', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   placeType: 'city',
   regions: ['europe'],
+  coords: {
+    lat: 35.1249,
+    lon: 33.9413,
+    cites: [
+      { source: 'geonames-cities500', loc: { section: 'Famagusta (geonameid 146617)' } }
+    ]
+  },
   modernCountry: 'CY'
 })

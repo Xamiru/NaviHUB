@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Great Leap Forward', lang: 'en', role: 'primary' },
     { text: '大跃进', lang: 'zh', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'economic',
   start: {
     alts: [
@@ -42,6 +42,9 @@ export default defineEvent({
   prominence: 2,
   partOf: [
     { ref: 'period:cold-war' }
+  ],
+  polities: [
+    { ref: 'polity:peoples-republic-of-china' }
   ],
   participants: [
     {
@@ -256,5 +259,10 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Soil_blast_furnaces.jpg',
     credit: { institution: 'Selected Works of Chinese Photographic Art', creator: 'Zhang Qingyun' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'ccp-2011-zhongguo-gongchandang-lishi-di-er-juan', perspective: 'chinese' },
+    { source: 'yang-2008-mubei', perspective: 'chinese' },
+    { source: 'lin-2008-wutuobang-yundong', perspective: 'chinese' }
+  ]
 })

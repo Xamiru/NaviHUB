@@ -13,7 +13,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -44,6 +44,10 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:mahdiyah' }
+  ],
+  polities: [
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:khedivate-of-egypt' }
   ],
   sides: [
     {
@@ -196,7 +200,7 @@ export default defineEvent({
   ],
   related: [
     {
-      ref: 'period:anglo-egyptian-sudan',
+      ref: 'polity:anglo-egyptian-sudan',
       rel: 'led-to',
       cites: [
         {
@@ -254,17 +258,6 @@ export default defineEvent({
             loc: { section: 'Reconquest of Sudan', para: '3' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/sudan/14.htm' }
-        },
-        {
-          id: 'q5',
-          text: 'Ein britisch-ägyptisches Heer unter Horatio Herbert Kitchener besiegt die Truppen des sudanesischen Mahdi in der Schlacht bei Omdurman und schlägt den 1881 begonnen Mahdi-Aufstand damit endgültig nieder.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1898', loc: { section: 'Chronik 1898', para: '47' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1898.html'
-          }
         }
       ]
     },
@@ -331,20 +324,26 @@ export default defineEvent({
           {
             value: { d: '1898-07-10' },
             cites: [
-              { source: 'lemo-chronik-1898', loc: { section: 'Chronik 1898', para: '38' } }
+              {
+                source: 'britannica-1911-africa',
+                loc: { section: 'AFRICA, V. Partition among European Powers', para: '42' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q9',
-        text: 'Französische Kolonialtruppen unter Jean-Baptiste Marchand (1863-1934) nehmen den Ort Faschoda am Weißen Nil, der zum britischen Interessensgebiet gehört, in Besitz.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1898', loc: { section: 'Chronik 1898', para: '39' } },
+        id: 'q12',
+        text: 'On the 1st of May 1898 Marchand started on the final stage of his journey, and reached Fashoda on the 10th of July, having established a chain of posts en route.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-africa',
+          loc: { section: 'AFRICA, V. Partition among European Powers', para: '42' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1898.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Africa'
         }
       }
     },
@@ -360,14 +359,17 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q10',
-        text: 'Der britische General Kitchener erreicht Faschoda und beginnt mit den französischen Besatzern Verhandlungen zur Räumung des Gebiets, die schließlich zur Beilegung der "Faschodakrise" im Sudanvertrag 1899 führen.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1898', loc: { section: 'Chronik 1898', para: '51' } },
+        id: 'q13',
+        text: 'The sirdar at once proceeded in a steamer up the Nile, and courteously but firmly requested Captain Marchand to remove the French flag. On his refusal the Egyptian flag was raised close to the French flag, and the dispute was referred to Europe for adjustment between the British and French governments.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-africa',
+          loc: { section: 'AFRICA, V. Partition among European Powers', para: '42' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1898.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Africa'
         }
       }
     },
@@ -377,20 +379,26 @@ export default defineEvent({
           {
             value: { d: '1899-03-21' },
             cites: [
-              { source: 'lemo-chronik-1899', loc: { section: 'Chronik 1899', para: '16' } }
+              {
+                source: 'britannica-1911-africa',
+                loc: { section: 'AFRICA, V. Partition among European Powers', para: '42' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q11',
-        text: 'Mit dem Sudan-Vertrag bereinigen Frankreich und Großbritannien die Faschodakrise und legen die Grenzen des Sudan fest: Frankreich behält den gesamten westlichen Sudan, muss aber das Niltal den Briten überlassen.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1899', loc: { section: 'Chronik 1899', para: '17' } },
+        id: 'q14',
+        text: 'Happily Lord Salisbury was able to announce, on the 4th of November, that France was willing to recognize the British claims, and the incident was finally closed on the 21st of March 1899, when an Anglo-French declaration was signed, by the terms of which France withdrew from the Nile valley and accepted a boundary line which satisfied her earlier ambition by uniting the whole of her territories in North, West and Central Africa into a homogeneous whole, while effectually preventing the realization of her dream of a transcontinental empire from west to east.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-africa',
+          loc: { section: 'AFRICA, V. Partition among European Powers', para: '42' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1899.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Africa'
         }
       }
     }
@@ -403,5 +411,8 @@ export default defineEvent({
       creator: 'Great Britain. War Office. Intelligence Division'
     },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'shuqayr-1981-tarikh-al-sudan', perspective: 'arab' }
+  ]
 })

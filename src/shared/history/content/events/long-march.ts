@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Long March', lang: 'en', role: 'primary' },
     { text: '长征', lang: 'zh', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -55,6 +55,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:republic-of-china' }
   ],
   participants: [
     {
@@ -163,5 +166,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Mao_Zedong_1950_Portrait_(3x4_cropped)(2).jpg',
     credit: { institution: 'Associated Press', creator: 'Chen Zhengqing' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'ams-1996-zhongguo-gongnong-hongjun-changzheng-shi', perspective: 'chinese' }
+  ]
 })

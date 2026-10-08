@@ -4,13 +4,14 @@ export default defineInterpretation({
   id: 'gallipoli-campaign-memory-of-kemal',
   about: ['event:gallipoli-campaign', 'person:mustafa-kemal-ataturk'],
   topic: 'historiography',
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   positions: [
     {
-      id: 'single-handed-victor',
-      category: 'official',
+      id: 'divisional-commander-under-others',
+      category: 'scholarly',
       holders: [
-        { kind: 'state', name: 'Republic of Turkey' }
+        { kind: 'scholar', name: 'Erik-Jan Zürcher' },
+        { kind: 'scholar', name: 'Harold Allen Skinner Jr.' }
       ],
       statements: [
         {
@@ -40,17 +41,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://encyclopedia.1914-1918-online.net/article/kemal-mustafa-ataturk/'
           }
-        }
-      ]
-    },
-    {
-      id: 'divisional-commander-under-others',
-      category: 'scholarly',
-      holders: [
-        { kind: 'scholar', name: 'Erik-Jan Zürcher' },
-        { kind: 'scholar', name: 'Harold Allen Skinner Jr.' }
-      ],
-      statements: [
+        },
         {
           id: 'q3',
           text: 'Yet the reality was different: Mustafa Kemal twice played a crucial role in containing the British and ANZAC advances, but in fact he served as a divisional commander with the rank of colonel under both General Esat Pasha, commander of the III Corps, and Liman von Sanders, overall commander of the Fifth Army that defended the Dardanelles.',

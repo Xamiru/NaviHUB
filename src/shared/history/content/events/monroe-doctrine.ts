@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Monroe Doctrine', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -26,6 +26,9 @@ export default defineEvent({
   },
   regions: ['north-america', 'latin-america'],
   prominence: 2,
+  polities: [
+    { ref: 'polity:united-states' }
+  ],
   participants: [
     {
       ref: 'person:james-monroe',
@@ -38,7 +41,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'John Quincy Adams',
+      ref: 'person:john-quincy-adams',
       role: 'diplomat',
       cites: [
         {
@@ -239,5 +242,9 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 2835193
     }
+  ],
+  furtherReading: [
+    { source: 'pereyra-1959-el-mito-de-monroe', perspective: 'latin-american' },
+    { source: 'nerval-1934-autopsy-of-the-monroe-doctrine', perspective: 'latin-american' }
   ]
 })

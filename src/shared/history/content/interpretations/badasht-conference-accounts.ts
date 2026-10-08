@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'badasht-conference-accounts',
   about: ['event:badasht-conference'],
   topic: 'historiography',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   framing: {
     id: 'q1',
     text: 'Accounts of the proceedings of the conference are not completely in agreement.',
@@ -41,16 +41,7 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/badast'
           }
-        }
-      ]
-    },
-    {
-      id: 'pre-arranged',
-      category: 'contemporary',
-      holders: [
-        { kind: 'participant', name: 'Mollā Moḥammad Nabīl Zarandī' }
-      ],
-      statements: [
+        },
         {
           id: 'q4',
           text: 'Indeed one source states that this confrontation was pre-arranged in conjunction with Bahāʾ-Allāh so as to prepare the Babis for and mitigate the impact of the break with the Islamic Šarīʿa (see Nabīl, p. 294 n.).',

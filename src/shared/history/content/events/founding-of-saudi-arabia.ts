@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'founding',
   start: {
     alts: [
@@ -42,6 +42,9 @@ export default defineEvent({
   prominence: 2,
   places: [
     { ref: 'place:riyadh' }
+  ],
+  polities: [
+    { ref: 'polity:saudi-arabia' }
   ],
   participants: [
     {
@@ -99,17 +102,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-07',
             url: 'https://history.state.gov/countries/saudi-arabia'
-          }
-        },
-        {
-          id: 'q4',
-          text: 'Die arabischen Königreiche Hedschas und Nadschd vereinigen sich zum Königreich Saudi-Arabien.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1932', loc: { section: 'Chronik 1932', para: '206' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1932.html'
           }
         }
       ]

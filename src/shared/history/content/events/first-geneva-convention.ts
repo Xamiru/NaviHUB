@@ -31,7 +31,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -128,28 +128,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://ehne.fr/en/encyclopedia/themes/international-relations/cultures-peace/spirit-geneva'
-          }
-        },
-        {
-          id: 'q2',
-          text: 'In Genf unterzeichnen Vertreter von Baden, Belgien, Dänemark, Frankreich, dem Großherzogtum Hessen, Italien, den Niederlanden, Portugal, Preußen, der Schweiz, Spanien und Württemberg die "Konvention zur Verbesserung des Loses der verwundeten Soldaten der Armeen im Felde".',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1864', loc: { section: 'Chronik 1864', para: '36' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1864.html'
-          }
-        },
-        {
-          id: 'q3',
-          text: 'Als Schutzzeichen wird ein rotes Kreuz auf weißem Grund vereinbart.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1864', loc: { section: 'Chronik 1864', para: '36' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1864.html'
           }
         }
       ]
@@ -339,6 +317,12 @@ export default defineEvent({
       credit: { institution: 'Internet Archive', creator: 'Henry Dunant' },
       license: { id: 'public-domain' },
       bytes: 5142205
+    }
+  ],
+  furtherReading: [
+    {
+      source: 'bugnion-1994-le-cicr-et-la-protection-des-victimes-de-la-guerre',
+      perspective: 'european'
     }
   ]
 })

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'anglo-persian-agreement-of-1919-nature',
   about: ['event:anglo-persian-agreement-of-1919'],
   topic: 'nature',
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   positions: [
     {
       id: 'virtual-protectorate',
@@ -66,7 +66,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q4',
-          text: '1. It “reiterates, in the most categorical manner, the understanding which they have repeatedly given in the past to respect absolutely the independence and integrity of Persia.”',
+          text: 'reiterates, in the most categorical manner, the understanding which they have repeatedly given in the past to respect absolutely the independence and integrity of Persia.',
           lang: 'en',
           cite: {
             source: 'iranica-fatemi-anglo-persian-agreement-1919',
@@ -74,7 +74,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/anglo-persian-agreement-1919'
           }
         }
@@ -82,9 +82,9 @@ export default defineInterpretation({
     },
     {
       id: 'defence-against-bolshevism',
-      category: 'contemporary',
+      category: 'scholarly',
       holders: [
-        { kind: 'participant', name: 'Ḥasan Woṯuq-al-Dawla', ref: 'person:vosuq-al-dowleh' }
+        { kind: 'scholar', name: 'Ehsan Yarshater' }
       ],
       statements: [
         {

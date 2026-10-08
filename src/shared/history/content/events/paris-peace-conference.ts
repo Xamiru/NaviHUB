@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Paris Peace Conference', lang: 'en', role: 'primary' },
     { text: 'Conférence de la paix de Paris', lang: 'fr', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'conference',
   start: {
     alts: [
@@ -59,6 +59,12 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:united-states' },
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:french-third-republic' },
+    { ref: 'polity:kingdom-of-italy' }
   ],
   participants: [
     {
@@ -395,5 +401,8 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 146577930
     }
+  ],
+  furtherReading: [
+    { source: 'renouvin-1969-le-traite-de-versailles', perspective: 'european' }
   ]
 })

@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'gardane-mission',
   names: [
-    { text: 'Gardane mission', lang: 'en', role: 'primary' }
+    { text: 'Gardane mission', lang: 'en', role: 'primary' },
+    { text: 'هیئت گاردان', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -41,6 +42,10 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:reign-of-fath-ali-shah' }
+  ],
+  polities: [
+    { ref: 'polity:first-french-empire' },
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {

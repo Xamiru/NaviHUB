@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Imperial Bank of Persia', lang: 'en', role: 'primary' },
     {
       text: 'Bank-e šāhī',
-      lang: 'fa',
+      lang: 'fa-Latn',
       role: 'alternative',
       cites: [
         {
@@ -17,7 +17,7 @@ export default defineEvent({
     },
     { text: 'بانک شاهی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'founding',
   start: {
     alts: [
@@ -61,6 +61,9 @@ export default defineEvent({
   related: [
     { ref: 'event:opening-of-the-karun-river', rel: 'related' },
     { ref: 'event:reuter-concession', rel: 'preceded-by' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -473,5 +476,12 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:IRA-1b-Imperial_Bank_of_Persia-One_Toman_(1906).jpg',
     credit: { creator: 'Bradbury Wilkinson and Company' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'nateq-1994-bazarganan-dar-dad-o-setad', perspective: 'iranian' },
+    {
+      source: 'mahmud-1949-tarikh-e-ravabet-e-siyasi-ye-iran-va-engelis',
+      perspective: 'iranian'
+    }
+  ]
 })

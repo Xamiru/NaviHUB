@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Ito Hirobumi', lang: 'en', role: 'primary' },
     { text: '伊藤博文', lang: 'ja', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -42,6 +42,7 @@ export default definePerson({
   offices: [
     {
       title: 'Prime Minister of Japan',
+      polity: 'polity:empire-of-japan',
       start: {
         alts: [
           {

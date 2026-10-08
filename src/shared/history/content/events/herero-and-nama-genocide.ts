@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Herero and Nama genocide', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'genocide',
   start: {
     alts: [
@@ -38,6 +38,29 @@ export default defineEvent({
   },
   regions: ['subsaharan-africa', 'europe'],
   prominence: 1,
+  places: [
+    {
+      ref: 'place:waterberg',
+      cites: [
+        {
+          source: 'ehne-patin-herero-and-nama',
+          loc: { section: 'The first genocide of the twentieth century', para: '13' }
+        }
+      ]
+    },
+    {
+      ref: 'place:swakopmund',
+      cites: [
+        {
+          source: 'ehne-patin-herero-and-nama',
+          loc: { section: 'A German “special path”?', para: '20' }
+        }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:german-empire' }
+  ],
   participants: [
     {
       name: 'Lothar von Trotha',
@@ -396,5 +419,15 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Nama_und_Damara_pg172_Johannes_Samuel_Maharero_Oberh%C3%A4uptling_der_Herero.jpg',
     credit: { institution: 'British Library' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'drechsler-1985-sudwestafrika-unter-deutscher-kolonialherrschaft',
+      perspective: 'european'
+    },
+    {
+      source: 'zimmerer-zeller-2003-volkermord-in-deutsch-sudwestafrika',
+      perspective: 'european'
+    }
+  ]
 })

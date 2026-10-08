@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -67,6 +67,7 @@ export default definePerson({
   offices: [
     {
       title: 'Shah of Persia',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {
@@ -254,5 +255,9 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Muhammad_Shah_Qadjar_-_MV_6700_-_v1.JPG',
     credit: { creator: 'Muhammad Hasan Afshar' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'nateq-1988-iran-dar-rahyabi-ye-farhangi', perspective: 'iranian' },
+    { source: 'bamdad-1968-sharh-e-hal-e-rejal-e-iran', perspective: 'iranian' }
+  ]
 })

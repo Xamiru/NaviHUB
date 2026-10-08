@@ -5,7 +5,7 @@ export default definePlace({
   names: [
     { text: 'Dolores', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   placeType: 'city',
   regions: ['latin-america'],
   modernCountry: 'MX'

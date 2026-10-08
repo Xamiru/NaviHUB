@@ -2,6 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { decimalYear, formatHistDate } from '@shared/history/calendars'
+import { splitAtCourse } from '@shared/history/sectionOrder'
+import type { Section } from '@shared/history/schema'
 import {
   EVENT_TYPES,
   FIGURE_KEYS,
@@ -10,6 +12,7 @@ import {
   PERIOD_TYPES,
   PERSON_ROLES,
   PLACE_TYPES,
+  POLITY_TYPES,
   RANGE_QUALIFIERS,
   RELATION_KINDS,
   SECTION_KINDS,
@@ -17,16 +20,19 @@ import {
   type HistoryArticle,
   type HistoryEvent,
   type HistoryPerson,
+  type HistoryTheme,
+  type Cite,
+  type DatedLink,
   type NameVariant,
   type Range
 } from '@shared/history/schema'
-import type { HistoryArticleView, HistoryRefInfo } from '@shared/types'
+import type { HistoryArticleView, HistoryRefInfo, HistoryTerritory } from '@shared/types'
 import BackButton from '../components/BackButton'
 import PageStatus from '../components/PageStatus'
 import FavoriteButton from '../components/FavoriteButton'
 import FranchiseBackground from '../components/FranchiseBackground'
 import { Field } from '../components/Field'
-import { Bibliography, CitationProvider, Cites, QuoteBlock } from '../components/history/Citations'
+import { Bibliography, CitationProvider, Cites, FurtherReadingList, QuoteBlock } from '../components/history/Citations'
 import {
   ClaimView,
   DateClaim,
@@ -136,6 +142,51 @@ function RefLink({ info }: { info: HistoryRefInfo | undefined }) {
   )
 }
 
+function LinkList({ links, view }: { links: Array<{ ref: string; cites?: Cite[] }>; view: HistoryArticleView }) {
+  return (
+    <>
+      {links.map((l, i) => (
+        <span key={l.ref}>
+          {i > 0 && ', '}
+          <RefLink info={view.refs[l.ref]} />
+          {l.cites && <Cites cites={l.cites} />}
+        </span>
+      ))}
+    </>
+  )
+}
+
+function DatedLinks({ links, view }: { links: DatedLink[]; view: HistoryArticleView }) {
+  const year = (c: DatedLink['start']): string | null => (c?.alts[0] ? formatHistDate(c.alts[0].value, { short: true }) : null)
+  return (
+    <ul className="space-y-1">
+      {links.map((l, i) => (
+        <li key={`${l.ref}-${i}`}>
+          <RefLink info={view.refs[l.ref]} />
+          <Cites cites={l.cites} />
+          {(l.start || l.end) && (
+            <span className="block text-xs text-ink-muted">
+              {year(l.start) ?? '?'} to {year(l.end) ?? '?'}
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/** "1800s to 1970s": the decades a theme's thread spans. */
+function threadSpan(theme: HistoryTheme, view: HistoryArticleView): string {
+  const years = theme.thread
+    .map((t) => Number((t.date?.alts[0]?.value.d ?? view.refs[t.ref]?.years ?? '').match(/-?\d{4}/)?.[0] ?? NaN))
+    .filter(Number.isFinite)
+  if (!years.length) return 'time'
+  const d = (y: number): string => `${Math.floor(y / 10) * 10}s`
+  const a = d(Math.min(...years))
+  const b = d(Math.max(...years))
+  return a === b ? a : `${a} to ${b}`
+}
+
 const rangeText = (r: Range): string =>
   r.max !== undefined && r.max !== r.min
     ? `${r.min.toLocaleString()} to ${r.max.toLocaleString()}`
@@ -195,11 +246,16 @@ function InfoCard({ view }: { view: HistoryArticleView }) {
                       <ul className="space-y-1">
                         {e.sides.map((s) => (
                           <li key={s.key}>
-                            {s.name}
+                            {s.polity ? <RefLink info={ref(s.polity)} /> : s.name}
                             <Cites cites={s.cites} />
                           </li>
                         ))}
                       </ul>
+                    </Fact>
+                  )}
+                  {e.polities && e.polities.length > 0 && (
+                    <Fact label="States involved">
+                      <LinkList links={e.polities} view={view} />
                     </Fact>
                   )}
                   {e.figures?.map((f, i) => (
@@ -272,6 +328,50 @@ function InfoCard({ view }: { view: HistoryArticleView }) {
                   )}
                 </>
               )}
+              {e.kind === 'polity' && (
+                <>
+                  <Fact label="Type">{POLITY_TYPES[e.polityType]}</Fact>
+                  <Fact label="Founded">
+                    <DateClaim claim={e.start} solarHijri={sh} />
+                  </Fact>
+                  {e.end && (
+                    <Fact label="Ended">
+                      <DateClaim claim={e.end} solarHijri={sh} />
+                    </Fact>
+                  )}
+                  {e.capitals && e.capitals.length > 0 && (
+                    <Fact label={e.capitals.length > 1 ? 'Capitals' : 'Capital'}>
+                      <DatedLinks links={e.capitals} view={view} />
+                    </Fact>
+                  )}
+                  {e.partOf && e.partOf.length > 0 && (
+                    <Fact label="Part of">
+                      <DatedLinks links={e.partOf} view={view} />
+                    </Fact>
+                  )}
+                  {e.dynasties && e.dynasties.length > 0 && (
+                    <Fact label="Ruling houses">
+                      <LinkList links={e.dynasties.map((r) => ({ ref: r }))} view={view} />
+                    </Fact>
+                  )}
+                  {e.predecessors && e.predecessors.length > 0 && (
+                    <Fact label="Preceded by">
+                      <LinkList links={e.predecessors} view={view} />
+                    </Fact>
+                  )}
+                  {view.successors.length > 0 && (
+                    <Fact label="Succeeded by">
+                      <LinkList links={view.successors.map((r) => ({ ref: r }))} view={view} />
+                    </Fact>
+                  )}
+                  {e.figures?.map((f, i) => (
+                    <Fact key={i} label={FIGURE_KEYS[f.key]}>
+                      <ClaimView claim={f.value} render={(v) => <span className="font-semibold tabular-nums text-ink">{rangeText(v)}</span>} />
+                    </Fact>
+                  ))}
+                </>
+              )}
+              {e.kind === 'theme' && <Fact label="Thread">{e.thread.length} entries across {threadSpan(e, view)}</Fact>}
               {e.kind === 'place' && (
                 <>
                   <Fact label="Type">{PLACE_TYPES[e.placeType]}</Fact>
@@ -294,6 +394,11 @@ function InfoCard({ view }: { view: HistoryArticleView }) {
                       <Cites cites={p.cites} />
                     </span>
                   ))}
+                </Fact>
+              )}
+              {view.themes.length > 0 && (
+                <Fact label="Themes">
+                  <LinkList links={view.themes.map((r) => ({ ref: r }))} view={view} />
                 </Fact>
               )}
               <Fact label="Regions">{e.regions.map(regionLabel).join(', ')}</Fact>
@@ -344,11 +449,17 @@ function Hero({
   const e = view.entity
   const primary = e.names.find((n) => n.role === 'primary')?.text ?? e.id
   const native = e.names.find((n) => n.role === 'native')
-  const typeLabel =
-    e.kind === 'event' ? EVENT_TYPES[e.type] : e.kind === 'period' ? PERIOD_TYPES[e.periodType] : e.kind === 'place' ? PLACE_TYPES[e.placeType] : e.roles.map((r) => PERSON_ROLES[r]).join(', ')
-  const kindLabel = { event: 'Event', person: 'Person', period: 'Period', place: 'Place' }[e.kind]
-  const start = e.kind === 'event' || e.kind === 'period' ? e.start : e.kind === 'person' ? e.born : undefined
-  const end = e.kind === 'event' || e.kind === 'period' ? e.end : e.kind === 'person' ? e.died : undefined
+  const typeLabel = {
+    event: () => (e.kind === 'event' ? EVENT_TYPES[e.type] : ''),
+    period: () => (e.kind === 'period' ? PERIOD_TYPES[e.periodType] : ''),
+    place: () => (e.kind === 'place' ? PLACE_TYPES[e.placeType] : ''),
+    polity: () => (e.kind === 'polity' ? POLITY_TYPES[e.polityType] : ''),
+    theme: () => '',
+    person: () => (e.kind === 'person' ? e.roles.map((r) => PERSON_ROLES[r]).join(', ') : '')
+  }[e.kind]()
+  const kindLabel = { event: 'Event', person: 'Person', period: 'Period', place: 'Place', polity: 'State', theme: 'Theme' }[e.kind]
+  const start = e.kind === 'event' || e.kind === 'period' || e.kind === 'polity' ? e.start : e.kind === 'person' ? e.born : undefined
+  const end = e.kind === 'event' || e.kind === 'period' || e.kind === 'polity' ? e.end : e.kind === 'person' ? e.died : undefined
   return (
     <header className="relative mb-8 flex min-h-[300px] items-end overflow-hidden rounded-lg border border-line-subtle">
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/5" />
@@ -357,7 +468,7 @@ function Hero({
         <div className="min-w-0 max-w-4xl">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded bg-black/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">{kindLabel}</span>
-            <span className="rounded bg-black/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-300">{typeLabel}</span>
+            {typeLabel && <span className="rounded bg-black/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-300">{typeLabel}</span>}
             {e.regions.map((r) => (
               <span key={r} className="rounded bg-black/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-300">
                 {regionLabel(r)}
@@ -388,7 +499,10 @@ function Hero({
         <div className="flex shrink-0 items-center gap-2">
           {menu}
           {view.mapYear !== null && (
-            <Link to={`/history/map?focus=${encodeURIComponent(view.ref)}`} className="btn-ghost bg-black/50">
+            <Link
+              to={e.kind === 'polity' ? `/history/map?year=${view.mapYear}` : `/history/map?focus=${encodeURIComponent(view.ref)}`}
+              className="btn-ghost bg-black/50"
+            >
               On the map
             </Link>
           )}
@@ -542,14 +656,24 @@ export default function HistoryArticlePage({ kind }: { kind: Kind }) {
 
   const sections = e.sections ?? []
   const course = e.kind === 'event' ? e.course ?? [] : []
+  // Stored order is not reading order: background before the course, results after it.
+  const split = splitAtCourse(sections)
+  const lead = course.length ? split.before : [...split.before, ...split.after]
+  const results = course.length ? split.after : []
   const related = e.kind === 'event' ? e.related ?? [] : []
   const hasPeople = e.kind === 'event' && (e.participants?.length ?? 0) > 0
-  const quoteCount = sections.reduce((n, s) => n + s.quotes.length, 0) + course.length
+  const quoteCount = lead.reduce((n, s) => n + s.quotes.length, 0)
   const toc: TocItem[] = [
-    ...(sections.length ? [{ id: 'text', label: 'Overview', count: quoteCount }] : []),
+    ...(lead.length ? [{ id: 'text', label: 'Overview', count: quoteCount }] : []),
     ...(course.length ? [{ id: 'course', label: 'Course of events', count: course.length }] : []),
+    ...(results.length ? [{ id: 'results', label: 'What followed', count: results.reduce((n, s) => n + s.quotes.length, 0) }] : []),
+    ...(e.kind === 'theme' ? [{ id: 'thread', label: 'The thread', count: e.thread.length }] : []),
+    ...(view.territory.length ? [{ id: 'territory', label: 'Territory', count: view.territory.length }] : []),
+    ...(view.rulers.length ? [{ id: 'rulers', label: 'Rulers and officials', count: view.rulers.length }] : []),
+    ...(view.events.length ? [{ id: 'state-events', label: 'Events', count: view.events.length }] : []),
+    ...(view.dependencies.length ? [{ id: 'dependencies', label: 'Dependencies', count: view.dependencies.length }] : []),
     ...(view.appearsIn.length ? [{ id: 'life', label: 'Took part in', count: view.appearsIn.length }] : []),
-    ...(view.children.length ? [{ id: 'within', label: e.kind === 'period' ? 'In this period' : 'Within', count: view.children.length }] : []),
+    ...(view.children.length ? [{ id: 'within', label: e.kind === 'period' ? 'In this period' : e.kind === 'polity' ? 'Within this state' : 'Within', count: view.children.length }] : []),
     ...(related.length || view.inbound.length ? [{ id: 'context', label: 'Before and after' }] : []),
     ...(view.interpretations.length ? [{ id: 'views', label: 'Interpretations', count: view.interpretations.reduce((n, i) => n + i.positions.length, 0) }] : []),
     ...(hasPeople ? [{ id: 'people', label: 'People', count: e.kind === 'event' ? e.participants!.length : 0 }] : []),
@@ -558,6 +682,7 @@ export default function HistoryArticlePage({ kind }: { kind: Kind }) {
     { id: 'media', label: 'In media', count: view.media.length },
     { id: 'archive', label: 'Archive', count: view.archive.length },
     { id: 'sources', label: 'Sources', count: view.sourceOrder.length },
+    ...(view.furtherReading.length ? [{ id: 'further-reading', label: 'Further reading', count: view.furtherReading.length }] : []),
     { id: 'notes', label: 'Your notes' }
   ]
 
@@ -595,22 +720,7 @@ export default function HistoryArticlePage({ kind }: { kind: Kind }) {
             <Contents items={toc} />
             <article className="min-w-0 max-w-3xl">
               <Infobox view={view} inline />
-              {sections.length > 0 && (
-                <section id="text" aria-label="Overview" className="mb-12 scroll-mt-6 space-y-8">
-                  {sections.map((s, i) => (
-                    <div key={i}>
-                      {(i > 0 || s.kind !== 'overview') && (
-                        <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-ink-secondary">{SECTION_KINDS[s.kind]}</h2>
-                      )}
-                      <div className="space-y-5">
-                        {s.quotes.map((q) => (
-                          <QuoteBlock key={q.id} quote={q} />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </section>
-              )}
+              {lead.length > 0 && <SectionList id="text" label="Overview" sections={lead} />}
 
               {course.length > 0 && (
                 <SectionBlock id="course" title="Course of events">
@@ -622,6 +732,77 @@ export default function HistoryArticlePage({ kind }: { kind: Kind }) {
                       body: <QuoteBlock quote={c.quote} size="sm" />
                     }))}
                   />
+                </SectionBlock>
+              )}
+
+              {results.length > 0 && <SectionList id="results" label="What followed" sections={results} />}
+
+              {e.kind === 'theme' && (
+                <SectionBlock id="thread" title="The thread" aside={<span className="text-xs text-ink-muted">Across the decades, in order</span>}>
+                  <Timeline
+                    items={e.thread.map((t) => ({
+                      key: t.ref,
+                      date: t.date ? <DateClaim claim={t.date} solarHijri={view.solarHijri} /> : <span className="text-xs tabular-nums text-ink-muted">{view.refs[t.ref]?.years}</span>,
+                      body: (
+                        <div className="space-y-2">
+                          <RefRow info={view.refs[t.ref]} />
+                          {t.quote && <QuoteBlock quote={t.quote} size="sm" />}
+                        </div>
+                      )
+                    }))}
+                  />
+                </SectionBlock>
+              )}
+
+              {view.territory.length > 0 && (
+                <SectionBlock id="territory" title="Territory" aside={<span className="text-xs text-ink-muted">Borders on the History map, by version</span>}>
+                  <TerritoryStrip items={view.territory} />
+                </SectionBlock>
+              )}
+
+              {view.rulers.length > 0 && (
+                <SectionBlock id="rulers" title="Rulers and officials">
+                  <Timeline
+                    items={view.rulers.map((r, i) => ({
+                      key: `${r.person}-${i}`,
+                      date: (
+                        <span className="text-xs tabular-nums text-ink-muted">
+                          {r.start?.alts[0] ? formatHistDate(r.start.alts[0].value, { short: true }) : '?'} to{' '}
+                          {r.end?.alts[0] ? formatHistDate(r.end.alts[0].value, { short: true }) : '?'}
+                        </span>
+                      ),
+                      body: (
+                        <div>
+                          <RefRow info={view.refs[r.person]} />
+                          <p className="mt-1 pl-[52px] text-xs text-ink-secondary">{r.title}</p>
+                        </div>
+                      )
+                    }))}
+                  />
+                </SectionBlock>
+              )}
+
+              {view.events.length > 0 && (
+                <SectionBlock id="state-events" title="Events">
+                  <Timeline
+                    items={view.events.map((r) => ({
+                      key: r,
+                      date: <span className="text-xs tabular-nums text-ink-muted">{view.refs[r]?.years}</span>,
+                      body: <RefRow info={view.refs[r]} />
+                    }))}
+                  />
+                </SectionBlock>
+              )}
+
+              {view.dependencies.length > 0 && (
+                <SectionBlock id="dependencies" title="Colonies and dependencies">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {view.dependencies.map((r) => (
+                      <div key={r} className="card p-4">
+                        <RefRow info={view.refs[r]} />
+                      </div>
+                    ))}
+                  </div>
                 </SectionBlock>
               )}
 
@@ -641,7 +822,7 @@ export default function HistoryArticlePage({ kind }: { kind: Kind }) {
               )}
 
               {view.children.length > 0 && (
-                <SectionBlock id="within" title={e.kind === 'period' ? 'In this period' : 'Within this event'}>
+                <SectionBlock id="within" title={e.kind === 'period' ? 'In this period' : e.kind === 'polity' ? 'Periods and events within' : 'Within this event'}>
                   <Timeline
                     items={view.children.map((c) => ({
                       key: c.ref,
@@ -746,6 +927,12 @@ export default function HistoryArticlePage({ kind }: { kind: Kind }) {
                 <Bibliography order={view.sourceOrder} />
               </SectionBlock>
 
+              {view.furtherReading.length > 0 && (
+                <SectionBlock id="further-reading" title="Further reading" aside={<span className="text-xs text-ink-muted">Works from other traditions, listed, not quoted</span>}>
+                  <FurtherReadingList items={view.furtherReading} />
+                </SectionBlock>
+              )}
+
               <SectionBlock id="notes" title="Your notes" aside={<span className="text-xs text-ink-muted">Private, this machine only</span>}>
                 <Notes key={view.note?.updatedAt ?? 'none'} view={view} />
               </SectionBlock>
@@ -755,5 +942,51 @@ export default function HistoryArticlePage({ kind }: { kind: Kind }) {
         </div>
       </div>
     </CitationProvider>
+  )
+}
+
+// Quoted sections under their headings; the overview is the page's opening and
+// carries no heading of its own.
+function SectionList({ id, label, sections }: { id: string; label: string; sections: Section[] }): JSX.Element {
+  return (
+    <section id={id} aria-label={label} className="mb-12 scroll-mt-6 space-y-8">
+      {sections.map((s, i) => (
+        <div key={i}>
+          {s.kind !== 'overview' && (
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-ink-secondary">{SECTION_KINDS[s.kind]}</h2>
+          )}
+          <div className="space-y-5">
+            {s.quotes.map((q) => (
+              <QuoteBlock key={q.id} quote={q} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </section>
+  )
+}
+
+// A state's outline in each border version, small multiples left to right.
+function TerritoryStrip({ items }: { items: HistoryTerritory[] }): JSX.Element {
+  const label = (t: HistoryTerritory): string => {
+    const a = Math.floor(t.from)
+    const b = t.to >= 2019.99 ? 'present' : String(Math.floor(t.to - 1e-6))
+    return a === Number(b) ? String(a) : `${a} to ${b}`
+  }
+  return (
+    <ul className="flex flex-wrap gap-3">
+      {items.map((t, i) => {
+        const [x, y, w, h] = t.box
+        const pad = Math.max(w, h) * 0.08 + 0.5
+        return (
+          <li key={i} className="w-28 rounded-lg border border-line-subtle bg-base-900/40 p-2">
+            <svg viewBox={`${x - pad} ${y - pad} ${w + 2 * pad} ${h + 2 * pad}`} className="h-20 w-full" role="img" aria-label={`Borders ${label(t)}`}>
+              <path d={t.path} className="fill-accent/60 stroke-accent" strokeWidth={Math.max(w, h) / 200} />
+            </svg>
+            <p className="mt-1 text-center text-[11px] tabular-nums text-ink-muted">{label(t)}</p>
+          </li>
+        )
+      })}
+    </ul>
   )
 }

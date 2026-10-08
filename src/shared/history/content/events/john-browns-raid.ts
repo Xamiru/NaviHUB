@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'John Brown\'s raid on Harpers Ferry', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -38,6 +38,9 @@ export default defineEvent({
       ]
     }
   ],
+  polities: [
+    { ref: 'polity:united-states' }
+  ],
   sides: [
     {
       key: 'raiders',
@@ -64,7 +67,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Robert E. Lee',
+      ref: 'person:robert-e-lee',
       role: 'commander',
       side: 'us',
       cites: [

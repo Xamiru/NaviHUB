@@ -35,7 +35,7 @@ export default definePeriod({
   },
   regions: ['russia-central-asia'],
   prominence: 2,
-  parent: 'period:soviet-union',
+  parent: 'polity:soviet-union',
   hero: {
     url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7d/President_Richard_Nixon_and_General_Secretary_Leonid_Brezhnev_Signing_the_Anti-Ballistic_Missile_%28ABM%29_Treaty_and_Interim_Strategic_Arms_Limitations_Talks_%28SALT%29_Agreement_-_DPLA_-_2183c7bf0be290b820f7eb20c295121b.jpg/1280px-thumbnail.jpg',
     page: 'https://commons.wikimedia.org/wiki/File:President_Richard_Nixon_and_General_Secretary_Leonid_Brezhnev_Signing_the_Anti-Ballistic_Missile_(ABM)_Treaty_and_Interim_Strategic_Arms_Limitations_Talks_(SALT)_Agreement_-_DPLA_-_2183c7bf0be290b820f7eb20c295121b.jpg',

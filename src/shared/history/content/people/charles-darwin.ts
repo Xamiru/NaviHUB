@@ -5,7 +5,33 @@ export default definePerson({
   names: [
     { text: 'Charles Darwin', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1809-02-12' },
+        cites: [
+          {
+            source: 'britannica-1911-darwin-charles-robert',
+            loc: { section: 'DARWIN, CHARLES ROBERT', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1882-04-19' },
+        cites: [
+          {
+            source: 'britannica-1911-darwin-charles-robert',
+            loc: { section: 'DARWIN, CHARLES ROBERT', para: '7' }
+          }
+        ]
+      }
+    ]
+  },
   regions: ['europe'],
   roles: ['scientist', 'writer'],
   sections: [

@@ -26,7 +26,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -70,6 +70,10 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:argentina' },
+    { ref: 'polity:empire-of-brazil' }
   ],
   sides: [
     {
@@ -456,5 +460,10 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Legion_Paraguaya.jpg',
     credit: { institution: 'Biblioteca Nacional de Uruguay' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'doratioto-2002-maldita-guerra', perspective: 'latin-american' },
+    { source: 'chiavenato-1979-genocidio-americano', perspective: 'latin-american' },
+    { source: 'oleary-1919-nuestra-epopeya', perspective: 'latin-american' }
+  ]
 })

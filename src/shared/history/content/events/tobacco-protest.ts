@@ -20,7 +20,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'protest',
   start: {
     alts: [
@@ -98,6 +98,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-naser-al-din-shah-qajar' },
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -634,5 +637,9 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 48843454
     }
+  ],
+  furtherReading: [
+    { source: 'adamiyat-1981-shuresh-bar-emtiyaznameh-ye-rezhi', perspective: 'iranian' },
+    { source: 'nateq-1994-bazarganan-dar-dad-o-setad', perspective: 'iranian' }
   ]
 })

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'oil-agreement-of-1933-assessment',
   about: ['event:cancellation-of-the-darcy-concession'],
   topic: 'outcome',
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   framing: {
     id: 'q1',
     text: 'There were a number of provisions in the 1933 Agreement, which planted the seeds of future controversies and disputes between the two parties.',
@@ -52,7 +52,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q3',
-          text: 'To this end it is worth noting what Cadman had stated afterwards: “I felt that we had been pretty well plucked” (Yergin, p. 271).',
+          text: 'I felt that we had been pretty well plucked',
           lang: 'en',
           cite: {
             source: 'iranica-mina-oil-agreements',
@@ -60,7 +60,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/oil-agreements-in-iran/'
           }
         }

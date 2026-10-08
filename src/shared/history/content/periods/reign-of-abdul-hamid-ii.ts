@@ -5,7 +5,7 @@ export default definePeriod({
   names: [
     { text: 'Reign of Abdul Hamid II', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   periodType: 'reign',
   start: {
     alts: [
@@ -32,6 +32,7 @@ export default definePeriod({
   },
   regions: ['mena', 'europe'],
   prominence: 2,
+  parent: 'polity:ottoman-empire',
   sections: [
     {
       kind: 'overview',

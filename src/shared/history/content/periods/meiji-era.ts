@@ -17,7 +17,7 @@ export default definePeriod({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   periodType: 'era',
   start: {
     alts: [
@@ -51,6 +51,7 @@ export default definePeriod({
   },
   regions: ['east-asia'],
   prominence: 2,
+  parent: 'polity:empire-of-japan',
   sections: [
     {
       kind: 'overview',

@@ -91,14 +91,14 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
-          id: 'q1',
-          text: 'Der ungarische Revolutionsführer Lajos Kossuth (1802-1894) fordert eine unabhängige Regierung für das bislang von Österreich regierte Königreich Ungarn.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '21' } },
+          id: 'q4',
+          text: 'On the 3rd of March 1848, as soon as the news of the revolution in Paris had arrived, in a speech of surpassing power he demanded parliamentary government for Hungary and constitutional government for the rest of Austria.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-kossuth', loc: { section: 'KOSSUTH, LAJOS', para: '3' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1848.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Kossuth,_Lajos'
           }
         },
         {
@@ -117,14 +117,14 @@ export default definePerson({
       kind: 'later-life',
       quotes: [
         {
-          id: 'q3',
-          text: 'Unter dem Druck einer österreichisch-russischen Interventionsarmee dankt der ungarische Reichsverweser Lajos Kossuth ab und flieht zunächst ins Osmanische Reich.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1849', loc: { section: 'Chronik 1849', para: '64' } },
+          id: 'q5',
+          text: 'With the capitulation of Villagos Kossuth’s career was at an end. A solitary fugitive, he crossed the Turkish frontier.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-kossuth', loc: { section: 'KOSSUTH, LAJOS', para: '4' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1849.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Kossuth,_Lajos'
           }
         }
       ]

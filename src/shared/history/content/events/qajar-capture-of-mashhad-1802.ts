@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'qajar-capture-of-mashhad-1802',
   names: [
-    { text: 'Qajar capture of Mashhad (1802)', lang: 'en', role: 'primary' }
+    { text: 'Qajar capture of Mashhad (1802)', lang: 'en', role: 'primary' },
+    { text: 'تصرف مشهد به دست قاجاریان', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -27,6 +28,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:reign-of-fath-ali-shah' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {

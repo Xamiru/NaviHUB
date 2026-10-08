@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'French intervention in Mexico', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'invasion',
   start: {
     alts: [
@@ -71,7 +71,11 @@ export default defineEvent({
     }
   ],
   partOf: [
-    { ref: 'period:second-french-empire' }
+    { ref: 'polity:second-french-empire' }
+  ],
+  polities: [
+    { ref: 'polity:mexico' },
+    { ref: 'polity:second-mexican-empire' }
   ],
   related: [
     { ref: 'event:reform-war', rel: 'preceded-by' }
@@ -80,6 +84,7 @@ export default defineEvent({
     {
       key: 'france',
       name: 'French',
+      polity: 'polity:second-french-empire',
       cites: [
         {
           source: 'state-dept-milestones-french-intervention-in-mexico',
@@ -481,5 +486,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Manet,_Edouard_-_The_Execution_of_Emperor_Maximilian,_1867.jpg',
     credit: { institution: 'Museum of Fine Arts, Boston', creator: 'Édouard Manet' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'pani-2001-para-mexicanizar-el-segundo-imperio', perspective: 'latin-american' },
+    { source: 'avenel-1996-la-campagne-du-mexique', perspective: 'european' }
+  ]
 })

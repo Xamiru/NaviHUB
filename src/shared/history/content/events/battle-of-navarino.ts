@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Battle of Navarino', lang: 'en', role: 'primary' },
     { text: 'Ναυμαχία του Ναυαρίνου', lang: 'el', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -36,6 +36,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'event:greek-war-of-independence' }
+  ],
+  polities: [
+    { ref: 'polity:united-kingdom' }
   ],
   sides: [
     {
@@ -221,5 +224,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Navarino.jpg',
     credit: { institution: 'Château de Versailles', creator: 'Ambroise Louis Garneray' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'trikoupis-1860-historia-tes-hellenikes-epanastaseos', perspective: 'european' }
+  ]
 })

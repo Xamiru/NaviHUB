@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -37,6 +37,11 @@ export default defineEvent({
   partOf: [
     { ref: 'event:second-world-war' },
     { ref: 'period:reign-of-mohammad-reza-shah' }
+  ],
+  polities: [
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:pahlavi-iran' },
+    { ref: 'polity:soviet-union' }
   ],
   related: [
     {
@@ -128,5 +133,8 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  furtherReading: [
+    { source: 'hasanli-2006-at-the-dawn-of-the-cold-war', perspective: 'central-asian' }
   ]
 })

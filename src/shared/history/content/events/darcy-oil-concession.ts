@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'darcy-oil-concession',
   names: [
-    { text: 'D’Arcy Concession', lang: 'en', role: 'primary' }
+    { text: 'D’Arcy Concession', lang: 'en', role: 'primary' },
+    { text: 'امتیاز دارسی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'economic',
   start: {
     alts: [
@@ -22,6 +23,20 @@ export default defineEvent({
   },
   regions: ['iran'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:tehran',
+      cites: [
+        {
+          source: 'iranica-mina-oil-agreements',
+          loc: { section: 'OIL AGREEMENTS IN IRAN', para: '4' }
+        }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
+  ],
   participants: [
     {
       ref: 'person:william-knox-darcy',
@@ -124,5 +139,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Persia,_Afghanistan_%26_Baluchistan._LOC_2006626010.tif',
     credit: { institution: 'Library of Congress', creator: 'Scribner & Co.' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'fateh-1979-panjah-sal-naft-e-iran', perspective: 'iranian' }
+  ]
 })

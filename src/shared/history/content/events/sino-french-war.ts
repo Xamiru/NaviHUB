@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Sino-French War', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -46,6 +46,7 @@ export default defineEvent({
     {
       key: 'china',
       name: 'China',
+      polity: 'polity:qing-empire',
       cites: [
         {
           source: 'loc-china-country-study-1987',
@@ -56,6 +57,7 @@ export default defineEvent({
     {
       key: 'france',
       name: 'France',
+      polity: 'polity:french-third-republic',
       cites: [
         {
           source: 'loc-china-country-study-1987',
@@ -130,14 +132,14 @@ export default defineEvent({
       kind: 'course',
       quotes: [
         {
-          id: 'q5',
-          text: 'Als die schnell vorrückenden französischen Truppen auf die noch nicht abgezogenen chinesischen Truppen treffen, kommt es erneut zum Krieg, der erst im Juni 1885 mit dem zweiten Frieden von Tientsin beendet wird.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1884', loc: { section: 'Chronik 1884', para: '20' } },
+          id: 'q12',
+          text: 'A misunderstanding arose between the French and the Chinese as to the exact date for the evacuation of their posts by the Chinese, and in June General Millot, then commander-in-chief of the French forces, dispatched Colonel Dugenne at the head of a strong force to occupy Lang-Son. The expedition was badly arranged; the baggage train was far too unwieldy; and the pace at which the men were made to march was too quick for that scorching time of the year. They advanced, however, to Bac-Le, within 25 m. of Lang-Son, when they suddenly came upon a Chinese camp. An irregular engagement began, and, in the pitched battle which ensued, the Chinese broke the French lines, and drove them away in headlong flight.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-tongking', loc: { section: 'TONGKING', para: '31' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1884.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Tongking'
           }
         }
       ]
@@ -145,17 +147,6 @@ export default defineEvent({
     {
       kind: 'aftermath',
       quotes: [
-        {
-          id: 'q6',
-          text: 'China verzichtete nun endgültig zugunsten Frankreichs auf alle Rechte an den seit 1883 unter französischer Schutzherrschaft stehenden Annam (Südvietnam) und Tonking (Nordvietnam).',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1885', loc: { section: 'Chronik 1885', para: '28' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1885.html'
-          }
-        },
         {
           id: 'q7',
           text: 'A rebellion known as the Can Vuong (Loyalty to the King) movement formed in 1885 around the deposed Emperor Ham Nghi and attracted support from both scholars and peasants. The rebellion was essentially subdued with the capture and exile of Ham Nghi in 1888. Scholar and patriot Phan Dinh Phung continued to lead the resistance until his death in 1895. Although unsuccessful in driving out the French, the Can Vuong movement, with its heroes and patriots, laid important groundwork for future Vietnamese independence movements.',
@@ -183,14 +174,14 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q8',
-        text: 'Der König von Annam, dem heutigen Vietnam, erkennt die französische Schutzherrschaft vertraglich an.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1883', loc: { section: 'Chronik 1883', para: '34' } },
+        id: 'q13',
+        text: 'They found that, though King Tu Duc was dead, his policy of resistance was maintained, and therefore stormed the city. After a feeble defence it was taken, and Harmand concluded a treaty with the king (August 1883) in which the French protectorate was fully recognized, the king further binding himself to recall the Annamese troops serving in Tongking, and to construct a road from Saigon to Hanoi.',
+        lang: 'en',
+        cite: { source: 'britannica-1911-tongking', loc: { section: 'TONGKING', para: '29' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1883.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Tongking'
         }
       }
     },
@@ -207,14 +198,14 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q9',
-        text: 'Im chinesisch-französischen Vertrag von Tientsin verzichtet China auf alle Rechte in Tonking (Nordvietnam) und Annam (Südvietnam).',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1884', loc: { section: 'Chronik 1884', para: '20' } },
+        id: 'q14',
+        text: 'While hostilities were in progress M. Fournier, the French consul at Tientsin, had been negotiating for peace, so far as China was concerned, with Li Hung-chang, and in May 1884 had signed and sealed a memorandum by which the Chinese plenipotentiary agreed that the Chinese troops should evacuate the northern provinces of Tongking “immédiatement.”',
+        lang: 'en',
+        cite: { source: 'britannica-1911-tongking', loc: { section: 'TONGKING', para: '31' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1884.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Tongking'
         }
       }
     },
@@ -231,14 +222,14 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q10',
-        text: 'Der Friedensvertrag von Tientsin beendet den seit 1884 andauernden Krieg zwischen China und Frankreich.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1885', loc: { section: 'Chronik 1885', para: '28' } },
+        id: 'q15',
+        text: 'Shortly afterwards Sir Robert Hart succeeded in negotiating peace with China. By the terms agreed on at Tientsin (June, 1885), it was stipulated that France was to take Tongking and Annam under its protection and to evacuate Formosa and the Pescadores.',
+        lang: 'en',
+        cite: { source: 'britannica-1911-tongking', loc: { section: 'TONGKING', para: '33' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1885.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Tongking'
         }
       }
     }
@@ -248,5 +239,13 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:The_Graphic,_Aug._30,_1884,_P239.jpg',
     credit: { creator: 'Charles William Wyllie' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'liao-2002-zhongfa-zhanzheng-shi', perspective: 'chinese' },
+    { source: 'long-1996-yuenan-yu-zhongfa-zhanzheng', perspective: 'chinese' },
+    {
+      source: 'brocheux-hemery-1995-indochine-la-colonisation-ambigue',
+      perspective: 'european'
+    }
+  ]
 })

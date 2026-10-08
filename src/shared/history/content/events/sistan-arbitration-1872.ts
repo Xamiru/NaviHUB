@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'sistan-arbitration-1872',
   names: [
     { text: 'Sistan arbitration of 1872', lang: 'en', role: 'primary' },
+    { text: 'حکمیت گلداسمید در سیستان', lang: 'fa', role: 'native' },
     {
       text: 'Seistan Border Commission',
       lang: 'en',
@@ -16,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -75,6 +76,10 @@ export default defineEvent({
   ],
   related: [
     { ref: 'event:indo-european-telegraph-line', rel: 'related' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' },
+    { ref: 'polity:emirate-of-afghanistan' }
   ],
   participants: [
     {

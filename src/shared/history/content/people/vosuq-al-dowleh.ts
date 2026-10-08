@@ -25,12 +25,13 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   regions: ['iran'],
   roles: ['politician'],
   offices: [
     {
       title: 'prime minister',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {
@@ -53,6 +54,7 @@ export default definePerson({
     },
     {
       title: 'prime minister',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {
@@ -152,5 +154,9 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Hvosough.jpg',
     credit: { institution: 'W. Morgan Shuster, The Strangling of Persia (1912)' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'safai-1995-vosuq-al-dowleh', perspective: 'iranian' },
+    { source: 'sheikholeslami-1989-sima-ye-ahmad-shah-qajar', perspective: 'iranian' }
+  ]
 })

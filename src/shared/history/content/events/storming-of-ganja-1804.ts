@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'storming-of-ganja-1804',
   names: [
-    { text: 'Storming of Ganja (1804)', lang: 'en', role: 'primary' }
+    { text: 'Storming of Ganja (1804)', lang: 'en', role: 'primary' },
+    { text: 'سقوط گنجه', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -30,6 +31,10 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'event:russo-persian-war-1804-1813' }
+  ],
+  polities: [
+    { ref: 'polity:russian-empire' },
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -140,5 +145,11 @@ export default defineEvent({
       creator: 'Adolf Charlemagne'
     },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'dubrovin-2019-istoriia-voiny-i-vladychestva-russkikh-na-kavkaze',
+      perspective: 'russian-soviet'
+    }
+  ]
 })

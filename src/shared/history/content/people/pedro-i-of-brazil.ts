@@ -7,12 +7,13 @@ export default definePerson({
     { text: 'Pedro I', lang: 'pt', role: 'native' },
     { text: 'Dom Pedro', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   regions: ['latin-america'],
   roles: ['monarch'],
   offices: [
     {
       title: 'Emperor of Brazil',
+      polity: 'polity:empire-of-brazil',
       start: {
         alts: [
           {

@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'panjdeh-incident',
   names: [
     { text: 'Panjdeh incident', lang: 'en', role: 'primary' },
+    { text: 'واقعه پنجده', lang: 'fa', role: 'native' },
     {
       text: 'Panǰdeh incident',
       lang: 'en',
@@ -16,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'crisis',
   start: {
     alts: [
@@ -61,6 +62,7 @@ export default defineEvent({
     {
       key: 'russia',
       name: 'Russian',
+      polity: 'polity:russian-empire',
       cites: [
         {
           source: 'iranica-balland-boundaries-afghanistan',
@@ -71,6 +73,7 @@ export default defineEvent({
     {
       key: 'afghanistan',
       name: 'Afghans',
+      polity: 'polity:emirate-of-afghanistan',
       cites: [
         {
           source: 'iranica-balland-boundaries-afghanistan',
@@ -360,6 +363,12 @@ export default defineEvent({
       },
       license: { id: 'public-domain' },
       bytes: 21317718
+    }
+  ],
+  furtherReading: [
+    {
+      source: 'khalfin-1965-prisoedinenie-srednei-azii-k-rossii',
+      perspective: 'russian-soviet'
     }
   ]
 })

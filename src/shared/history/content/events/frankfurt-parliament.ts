@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'conference',
   start: {
     alts: [
@@ -83,6 +83,10 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'event:revolutions-of-1848' }
+  ],
+  polities: [
+    { ref: 'polity:austrian-empire' },
+    { ref: 'polity:kingdom-of-prussia' }
   ],
   participants: [
     {
@@ -169,14 +173,17 @@ export default defineEvent({
       kind: 'course',
       quotes: [
         {
-          id: 'q4',
-          text: 'Die erste deutsche Nationalversammlung tritt in Frankfurt am Main zusammen.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '54' } },
+          id: 'q16',
+          text: 'Great hindrances were put in the way of the elections, but, as the Prussian and Austrian governments were too much occupied with their immediate difficulties to resist to the uttermost, the parliament was at last chosen, and met at Frankfort on the 18th May.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-germany-history',
+            loc: { section: 'GERMANY: History', para: '225' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1848.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
           }
         },
         {
@@ -245,14 +252,17 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q9',
-        text: 'In Frankfurter Paulskirche tagt das „Vorparlament“.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '38' } },
+        id: 'q17',
+        text: 'About 500 representatives accepted the invitation. They constituted themselves a preliminary parliament (Vorparlament), and at once began to provide for the election of a national assembly.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-germany-history',
+          loc: { section: 'GERMANY: History', para: '225' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1848.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
         }
       }
     },
@@ -269,14 +279,17 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q10',
-        text: 'Die Nationalversammlung wählt mit erheblicher Mehrheit den österreichischen Erzherzog Johann (1782-1859) zum Reichsverweser.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '72' } },
+        id: 'q18',
+        text: 'At last, after a vast amount of tedious and useless discussion, it was agreed that the parliament should appoint an imperial vicar (Reichsverweser) who should carry on the government by means of a ministry selected by himself; and on the motion of Heinrich von Gagern the archduke John of Austria was chosen by a large majority for the office.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-germany-history',
+          loc: { section: 'GERMANY: History', para: '225' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1848.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
         }
       }
     },
@@ -293,14 +306,17 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q11',
-        text: 'Die Frankfurter Nationalversammlung verabschiedet das Gesetz über die „Grundrechte des deutschen Volkes“.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '133' } },
+        id: 'q19',
+        text: 'About the time that the Prussian parliament was thus created, and that the emperor Ferdinand resigned, the Frankfort parliament succeeded in formulating the fundamental laws, which were duly proclaimed to be those of Germany […] as it was now to be constituted.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-germany-history',
+          loc: { section: 'GERMANY: History', para: '230' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1848.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
         }
       }
     },
@@ -317,14 +333,17 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q12',
-        text: 'Die Frankfurter Nationalversammlung verkündet die Reichsverfassung und wählt den preußischen König Friedrich Wilhelm IV. mit 290 Stimmen - bei 248 Enthaltungen und 20 Gegenstimmen - zum deutschen Kaiser.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1849', loc: { section: 'Chronik 1849', para: '15' } },
+        id: 'q20',
+        text: 'Nothing came of this suggestion, and in due time the parliament proceeded to the second reading of the constitution. It was revised in a democratic sense, but the imperial title was maintained, and a narrow majority decided that it should be hereditary. Frederick William IV. of Prussia was then chosen emperor.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-germany-history',
+          loc: { section: 'GERMANY: History', para: '231' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1849.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
         }
       }
     },
@@ -341,14 +360,17 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q13',
-        text: 'Der preußische König Friedrich Wilhelm IV. erklärt die endgültige Ablehnung der Kaiserwürde.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1849', loc: { section: 'Chronik 1849', para: '27' } },
+        id: 'q21',
+        text: 'Frederick William, however, whose instincts were far from democratic, refused “to pick up a crown out of the gutter”; and the deputation which waited upon him was dismissed with the answer that he could not assume the imperial title without the full sanction of the princes and the free cities.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-germany-history',
+          loc: { section: 'GERMANY: History', para: '232' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1849.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
         }
       }
     },
@@ -365,14 +387,17 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q14',
-        text: 'Die nach der Abberufung der österreichischen und preußischen Vertreter noch verbliebenen Abgeordneten der Frankfurter Nationalversammlung verlegen ihre Sitzungen nach Stuttgart.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1849', loc: { section: 'Chronik 1849', para: '44' } },
+        id: 'q22',
+        text: 'Prussia, which, following the example of Austria, had recalled her representatives from Frankfort, sent her troops to put down these risings, and on the 21st of May 1849 the larger number of the deputies to the parliament voluntarily resigned their seats. A few republican members held on by it, and transferred the sittings to Stuttgart.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-germany-history',
+          loc: { section: 'GERMANY: History', para: '233' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1849.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
         }
       }
     },
@@ -382,21 +407,26 @@ export default defineEvent({
           {
             value: { d: '1849-06-18' },
             cites: [
-              { source: 'lemo-chronik-1849', loc: { section: 'Chronik 1849', para: '50' } },
-              { source: 'lemo-chronik-1849', loc: { section: 'Chronik 1849', para: '49' } }
+              {
+                source: 'britannica-1911-germany-history',
+                loc: { section: 'GERMANY: History', para: '233' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q15',
-        text: 'Die württembergische Regierung unter Ministerpräsident Friedrich von Römer (1794-1864) lässt das in Stuttgart tagende "Rumpfparlament" gewaltsam auflösen.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1849', loc: { section: 'Chronik 1849', para: '50' } },
+        id: 'q23',
+        text: 'Here they even elected an imperial government, but they had no longer any real influence, and on the 18th of June they were forcibly dispersed by order of the Württemberg ministry.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-germany-history',
+          loc: { section: 'GERMANY: History', para: '233' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1849.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
         }
       }
     }
@@ -406,5 +436,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:1848_Delius_Abgeordnete_Paulskirche_anagoria.JPG',
     credit: { institution: 'Deutsches Historisches Museum', creator: 'Gerhard Delius' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'siemann-1985-die-deutsche-revolution-von-1848-49', perspective: 'european' }
+  ]
 })

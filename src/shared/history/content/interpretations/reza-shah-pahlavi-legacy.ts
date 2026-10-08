@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'reza-shah-pahlavi-legacy',
   about: ['person:reza-shah-pahlavi', 'period:reign-of-reza-shah'],
   topic: 'legacy',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'great-modernizer',
@@ -112,7 +112,7 @@ export default defineInterpretation({
     },
     {
       id: 'british-instrument',
-      category: 'popular',
+      category: 'fringe',
       holders: [
         { kind: 'public', name: 'Many people in Persia' }
       ],

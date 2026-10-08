@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -49,6 +49,7 @@ export default definePerson({
   offices: [
     {
       title: 'prime minister',
+      polity: 'polity:pahlavi-iran',
       start: {
         alts: [
           {
@@ -71,6 +72,7 @@ export default definePerson({
     },
     {
       title: 'prime minister',
+      polity: 'polity:pahlavi-iran',
       start: {
         alts: [
           {
@@ -173,5 +175,8 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Ghavam_al-Saltaneh.jpg',
     credit: { institution: 'The Strangling of Persia (W. Morgan Shuster, 1912)' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'showkat-2007-dar-tirras-e-hadeseh', perspective: 'iranian' }
+  ]
 })

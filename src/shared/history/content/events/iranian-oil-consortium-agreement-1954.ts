@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Consortium Agreement of 1954', lang: 'en', role: 'primary' },
     { text: 'قرارداد کنسرسیوم نفت ۱۳۳۳', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -50,9 +50,14 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-mohammad-reza-shah' }
   ],
+  polities: [
+    { ref: 'polity:united-states' },
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:pahlavi-iran' }
+  ],
   participants: [
     {
-      name: 'ʿAli Amini',
+      ref: 'person:ali-amini',
       role: 'negotiator',
       cites: [
         {
@@ -372,5 +377,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Fazlollah_Zahedi_after_resignations_from_government_-_April_1955.jpg',
     credit: { institution: 'Institute for Iranian Contemporary Historical Studies' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'fateh-1979-panjah-sal-naft-e-iran', perspective: 'iranian' },
+    { source: 'rouhani-1973-tarikh-e-melli-shodan-e-sanat-e-naft', perspective: 'iranian' }
+  ]
 })

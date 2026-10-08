@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'perry-expedition-motives',
   about: ['event:perry-expedition-to-japan'],
   topic: 'motives',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'peace-and-amity',
@@ -123,6 +123,49 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1830-1860/opening-to-japan'
+          }
+        }
+      ]
+    },
+    {
+      id: 'bound-by-ancestral-laws',
+      category: 'official',
+      holders: [
+        { kind: 'state', name: 'Tokugawa shogunate (the Japanese commissioners at Kanagawa)' }
+      ],
+      statements: [
+        {
+          id: 'q7',
+          text: 'Moreover, his Majesty the new Emperor, at the succession to the throne, promised to the princes and high officers of the Empire to observe the laws. It is therefore evident that he cannot now bring about any alteration in the ancient laws.',
+          lang: 'en',
+          cite: {
+            source: 'hawks-1856-narrative-of-the-expedition-vol-1',
+            loc: {
+              section: 'Translation of answer to the letter of the President to the Emperor of Japan',
+              page: '350'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://archive.org/download/narrativeofexped01perr/narrativeofexped01perr_djvu.txt'
+          }
+        },
+        {
+          id: 'q8',
+          text: 'Having no precedent with respect to coal, we request your excellency to furnish us with an estimate, and upon due consideration this will be complied with, if not in opposition to our laws.',
+          lang: 'en',
+          cite: {
+            source: 'hawks-1856-narrative-of-the-expedition-vol-1',
+            loc: {
+              section: 'Translation of answer to the letter of the President to the Emperor of Japan',
+              page: '350'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://archive.org/download/narrativeofexped01perr/narrativeofexped01perr_djvu.txt'
           }
         }
       ]

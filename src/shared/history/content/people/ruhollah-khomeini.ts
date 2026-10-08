@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Ruhollah Khomeini', lang: 'en', role: 'primary' },
     { text: 'روح‌الله خمینی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -76,22 +76,8 @@ export default definePerson({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'Imam Ayatollah Seyed Ruhollah Musavi Khomeini (May 17, 1900 – June 3, 1989) was a Muslim cleric and Marja, and the political leader of the 1979 Islamic Revolution of Iran which overthrew Mohammad Reza Pahlavi, the last Shah of Iran.',
-          lang: 'en',
-          cite: {
-            source: 'khamenei-ir-imam-khomeini-biography',
-            loc: { section: 'Imam Khomeini’s Biography', para: '1' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-07',
-            url: 'https://web.archive.org/web/20260610181904/https://english.khamenei.ir/news/2116/Imam-Khomeini-s-Biography'
-          }
-        },
-        {
           id: 'q2',
-          text: 'Early life and education. Ruhollah Khomeini was born on 20 Jomādā II 1320/24 September 1902 in Ḵomeyn, a small town in the province of Lorestān (now Markazi), about 135 miles from Isfahan, that numbered Jews and Armenians among its population (PLATE I and PLATE II).',
+          text: 'Ruhollah Khomeini was born on 20 Jomādā II 1320/24 September 1902 in Ḵomeyn, a small town in the province of Lorestān (now Markazi), about 135 miles from Isfahan, that numbered Jews and Armenians among its population (PLATE I and PLATE II).',
           lang: 'en',
           cite: {
             source: 'iranica-algar-khomeini-life',
@@ -192,6 +178,31 @@ export default definePerson({
           }
         }
       ]
+    },
+    {
+      kind: 'memory',
+      quotes: [
+        {
+          id: 'q1',
+          text: 'Imam Ayatollah Seyed Ruhollah Musavi Khomeini (May 17, 1900 – June 3, 1989) was a Muslim cleric and Marja, and the political leader of the 1979 Islamic Revolution of Iran which overthrew Mohammad Reza Pahlavi, the last Shah of Iran.',
+          lang: 'en',
+          cite: {
+            source: 'khamenei-ir-imam-khomeini-biography',
+            loc: { section: 'Imam Khomeini’s Biography', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://web.archive.org/web/20260610181904/https://english.khamenei.ir/news/2116/Imam-Khomeini-s-Biography'
+          }
+        }
+      ]
+    }
+  ],
+  furtherReading: [
+    {
+      source: 'ruhani-1977-barresi-va-tahlili-az-nehzat-e-imam-khomeini',
+      perspective: 'iranian'
     }
   ]
 })

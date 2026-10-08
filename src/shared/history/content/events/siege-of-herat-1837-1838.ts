@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'siege-of-herat-1837-1838',
   names: [
     { text: 'Siege of Herat (1837–1838)', lang: 'en', role: 'primary' },
+    { text: 'محاصره هرات', lang: 'fa', role: 'native' },
     {
       text: 'Herat campaign',
       lang: 'en',
@@ -13,7 +14,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -86,6 +87,7 @@ export default defineEvent({
     {
       key: 'persia',
       name: 'the Persian army',
+      polity: 'polity:qajar-iran',
       cites: [
         {
           source: 'iranica-amanat-herat-vi',
@@ -587,5 +589,13 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Herat_from_the_Citadel.png',
     credit: { creator: 'The Illustrated London News' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'ghubar-1980-afghanistan-dar-masir-e-tarikh', perspective: 'south-asian' },
+    {
+      source: 'mahmud-1949-tarikh-e-ravabet-e-siyasi-ye-iran-va-engelis',
+      perspective: 'iranian'
+    },
+    { source: 'nateq-1988-iran-dar-rahyabi-ye-farhangi', perspective: 'iranian' }
+  ]
 })

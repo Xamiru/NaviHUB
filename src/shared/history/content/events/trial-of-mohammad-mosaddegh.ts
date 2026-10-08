@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Trial of Mohammad Mosaddegh', lang: 'en', role: 'primary' },
     { text: 'محاکمه محمد مصدق', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -36,6 +36,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:reign-of-mohammad-reza-shah' }
+  ],
+  polities: [
+    { ref: 'polity:pahlavi-iran' }
   ],
   participants: [
     {
@@ -116,20 +119,6 @@ export default defineEvent({
             at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/coup-detat-1953/'
           }
-        },
-        {
-          id: 'q4',
-          text: 'In 1953, when Mossadegh was convicted of treason, I wrote to the court saying that I forgave him for all wrongs he had done to me. Because of this letter and of his advanced age, he escaped the death penalty which in this and most other countries is normal for proved traitors, and received only a light sentence of three years’ imprisonment.',
-          lang: 'en',
-          cite: {
-            source: 'pahlavi-1961-mission-for-my-country',
-            loc: { section: 'Mission for My Country' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-07',
-            url: 'https://archive.org/download/mission-for-my-country-mohammad-reza-pahlavi_202605/Mission%20For%20My%20Country%20-%20Mohammad%20Reza%20Pahlavi_djvu.txt'
-          }
         }
       ]
     },
@@ -161,6 +150,25 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/iran/17.htm' }
         }
       ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q4',
+          text: 'In 1953, when Mossadegh was convicted of treason, I wrote to the court saying that I forgave him for all wrongs he had done to me. Because of this letter and of his advanced age, he escaped the death penalty which in this and most other countries is normal for proved traitors, and received only a light sentence of three years’ imprisonment.',
+          lang: 'en',
+          cite: {
+            source: 'pahlavi-1961-mission-for-my-country',
+            loc: { section: 'Mission for My Country' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://archive.org/download/mission-for-my-country-mohammad-reza-pahlavi_202605/Mission%20For%20My%20Country%20-%20Mohammad%20Reza%20Pahlavi_djvu.txt'
+          }
+        }
+      ]
     }
   ],
   hero: {
@@ -168,5 +176,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Trial_of_Mosaddegh_by_Ettelaat_-_First_session_(5).jpg',
     credit: { institution: 'Ettela\'at' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'mosaddegh-1986-khaterat-va-taallomat', perspective: 'iranian' },
+    { source: 'makki-1983-ketab-e-siyah', perspective: 'iranian' }
+  ]
 })

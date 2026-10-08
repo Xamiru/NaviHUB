@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'armenian-genocide-recognition',
   about: ['event:armenian-genocide'],
   topic: 'naming',
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   positions: [
     {
       id: 'genocide-scholarly',
@@ -242,7 +242,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q11',
-          text: 'Ziya Gökalp, who like so many others saw the genocide as necessary or even forced on the Ottomans, could with confidence write, “there was no Armenian massacre, there was a Turkish-Armenian arrangement. They stabbed us in the back, we stabbed them back.”',
+          text: 'there was no Armenian massacre, there was a Turkish-Armenian arrangement. They stabbed us in the back, we stabbed them back.',
           lang: 'en',
           cite: {
             source: 'eo1418-suny-armenian-genocide',
@@ -250,7 +250,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://encyclopedia.1914-1918-online.net/article/armenian-genocide/'
           }
         }

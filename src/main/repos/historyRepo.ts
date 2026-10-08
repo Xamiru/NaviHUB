@@ -248,3 +248,61 @@ export function nextUserId(kind: HistoryEntity['kind'], name: string): string {
   for (let i = 2; ; i++) if (!taken.has(`${base}-${i}`)) return `${base}-${i}`
 }
 
+
+// ---- renamed content ----
+
+/**
+ * Moves this machine's personal rows from retired refs to their replacements
+ * (ids.lock.json redirects, e.g. a period that became a state). Idempotent; when
+ * both refs already carry a mark or a note, the newer reading and either
+ * favourite are kept and the notes are joined, so nothing is lost.
+ */
+export function followRedirects(redirects: Record<string, string>): number {
+  const db = getSqlite()
+  const pairs = Object.entries(redirects)
+  if (pairs.length === 0) return 0
+  let moved = 0
+  db.transaction(() => {
+    for (const [from, to] of pairs) {
+      const mark = db.prepare('SELECT ref, read_at, favorite FROM history_mark WHERE ref = ?').get(from) as MarkRow | undefined
+      if (mark) {
+        const cur = db.prepare('SELECT ref, read_at, favorite FROM history_mark WHERE ref = ?').get(to) as MarkRow | undefined
+        const read = [mark.read_at, cur?.read_at].filter((x): x is string => !!x).sort().pop() ?? null
+        db.prepare(
+          `INSERT INTO history_mark (ref, read_at, favorite) VALUES (?, ?, ?)
+           ON CONFLICT(ref) DO UPDATE SET read_at = excluded.read_at, favorite = excluded.favorite`
+        ).run(to, read, mark.favorite === 1 || cur?.favorite === 1 ? 1 : 0)
+        db.prepare('DELETE FROM history_mark WHERE ref = ?').run(from)
+        moved++
+      }
+      const note = db.prepare('SELECT * FROM history_note WHERE ref = ?').get(from) as NoteRow | undefined
+      if (note) {
+        const cur = db.prepare('SELECT * FROM history_note WHERE ref = ?').get(to) as NoteRow | undefined
+        if (cur) db.prepare('UPDATE history_note SET body = ? WHERE ref = ?').run(`${cur.body}\n\n${note.body}`, to)
+        else db.prepare('INSERT INTO history_note (ref, body, kind, updated_at) VALUES (?, ?, ?, ?)').run(to, note.body, note.kind, note.updated_at)
+        db.prepare('DELETE FROM history_note WHERE ref = ?').run(from)
+        moved++
+      }
+      // A link both refs already carry stays once, on the new ref.
+      moved += db.prepare('UPDATE OR IGNORE history_media_link SET ref = ? WHERE ref = ?').run(to, from).changes
+      db.prepare('DELETE FROM history_media_link WHERE ref = ?').run(from)
+      // An archive row owns a file, so it always moves; its suggestion key is
+      // rewritten only when the new key is still free (the key is UNIQUE).
+      moved += db
+        .prepare(
+          `UPDATE history_archive SET ref = ?, suggestion_key = CASE
+             WHEN suggestion_key LIKE ?
+               AND NOT EXISTS (SELECT 1 FROM history_archive o
+                               WHERE o.suggestion_key = ? || substr(history_archive.suggestion_key, ?))
+             THEN ? || substr(suggestion_key, ?) ELSE suggestion_key END
+           WHERE ref = ?`
+        )
+        .run(to, `${from}#%`, to, from.length + 1, to, from.length + 1, from).changes
+      // Personal entities mention refs as quoted strings inside their JSON.
+      moved += db
+        .prepare(`UPDATE history_user_entity SET json = replace(json, ?, ?) WHERE instr(json, ?) > 0`)
+        .run(JSON.stringify(from), JSON.stringify(to), JSON.stringify(from)).changes
+    }
+  })()
+  return moved
+}

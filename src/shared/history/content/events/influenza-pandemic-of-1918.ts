@@ -17,7 +17,7 @@ export default defineEvent({
     },
     {
       text: 'nāḵoši-e bād',
-      lang: 'fa',
+      lang: 'fa-Latn',
       role: 'alternative',
       translit: 'nāḵoši-e bād',
       cites: [
@@ -25,7 +25,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'epidemic',
   start: {
     alts: [
@@ -59,6 +59,35 @@ export default defineEvent({
   },
   regions: ['global', 'north-america', 'europe', 'iran', 'subsaharan-africa', 'oceania'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:freetown',
+      cites: [
+        {
+          source: 'eo1418-phillips-influenza-pandemic',
+          loc: { section: 'A possible path to a lethal pandemic', para: '7' }
+        }
+      ]
+    },
+    {
+      ref: 'place:brest',
+      cites: [
+        {
+          source: 'eo1418-phillips-influenza-pandemic',
+          loc: { section: 'A possible path to a lethal pandemic', para: '7' }
+        }
+      ]
+    },
+    {
+      ref: 'place:boston',
+      cites: [
+        {
+          source: 'eo1418-phillips-influenza-pandemic',
+          loc: { section: 'A possible path to a lethal pandemic', para: '7' }
+        }
+      ]
+    }
+  ],
   figures: [
     {
       key: 'deaths',

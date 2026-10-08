@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -42,6 +42,9 @@ export default defineEvent({
         { source: 'lemo-chronik-1882', loc: { section: 'Chronik 1882', para: '26' } }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:united-states' }
   ],
   participants: [
     {
@@ -227,5 +230,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Chineseexclusionact.JPG',
     credit: { institution: 'National Archives and Records Administration' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'chen-1985-huagong-chuguo-shiliao-huibian', perspective: 'chinese' }
+  ]
 })

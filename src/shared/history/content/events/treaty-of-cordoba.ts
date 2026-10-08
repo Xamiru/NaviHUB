@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Treaty of Córdoba', lang: 'en', role: 'primary' },
     { text: 'Tratado de Córdoba', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -23,6 +23,21 @@ export default defineEvent({
   },
   regions: ['latin-america'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:cordoba-veracruz',
+      cites: [
+        {
+          source: 'loc-mexico-country-study-1996',
+          loc: { section: 'Iturbide and the Plan of Iguala', para: '4' }
+        }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:kingdom-of-spain' },
+    { ref: 'polity:first-mexican-empire' }
+  ],
   related: [
     { ref: 'event:mexican-war-of-independence', rel: 'preceded-by' }
   ],
@@ -155,5 +170,12 @@ export default defineEvent({
       creator: 'Jaontiveros (photograph)'
     },
     license: { id: 'cc-by-sa', version: '4.0', url: 'https://creativecommons.org/licenses/by-sa/4.0' }
-  }
+  },
+  furtherReading: [
+    {
+      source: 'rodriguez-2009-nosotros-somos-ahora-los-verdaderos-espanoles',
+      perspective: 'latin-american'
+    },
+    { source: 'alaman-1968-historia-de-mejico', perspective: 'latin-american' }
+  ]
 })

@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Wilhelm II', lang: 'en', role: 'primary' },
     { text: 'Wilhelm II.', lang: 'de', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -38,6 +38,7 @@ export default definePerson({
   offices: [
     {
       title: 'Deutscher Kaiser und König von Preußen',
+      polity: 'polity:german-empire',
       lang: 'de',
       start: {
         alts: [
@@ -82,24 +83,32 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
-          id: 'q1',
-          text: 'Durch den Tod des Vaters, Kaiser Friedrichs III., wird der Kronprinz als Wilhelm II. Deutscher Kaiser und König von Preußen.',
-          lang: 'de',
+          id: 'q5',
+          text: 'Wilhelm II, German Emperor (1859-1941) acceded to the Prusso-German throne on 15 June 1888.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-wilhelm-ii',
-            loc: { section: 'Wilhelm II. 1859-1941', para: '11' }
+            source: 'eo1418-rohl-wilhelm-ii-german-emperor',
+            loc: { section: 'Decisions for War', para: '1' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'https://www.dhm.de/lemo/biografie/wilhelm-ii' }
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://encyclopedia.1914-1918-online.net/article/wilhelm-ii-german-emperor/'
+          }
         },
         {
-          id: 'q2',
-          text: 'Beginn des Schlachtflottenbaus unter dem Staatssekretär im Reichsmarineamt Alfred von Tirpitz.',
-          lang: 'de',
+          id: 'q6',
+          text: 'He abandoned Otto von Bismarck’s (1815-1898) policy of “satiation” in favour of Weltmachtpolitik and he supported Admiral Alfred von Tirpitz’s (1849-1930) battlefleet building programme, placing Germany on a collision course with Britain.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-wilhelm-ii',
-            loc: { section: 'Wilhelm II. 1859-1941', para: '17' }
+            source: 'eo1418-rohl-wilhelm-ii-german-emperor',
+            loc: { section: 'Decisions for War', para: '1' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'https://www.dhm.de/lemo/biografie/wilhelm-ii' }
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://encyclopedia.1914-1918-online.net/article/wilhelm-ii-german-emperor/'
+          }
         },
         {
           id: 'q3',
@@ -117,14 +126,18 @@ export default definePerson({
       kind: 'later-life',
       quotes: [
         {
-          id: 'q4',
-          text: 'Wilhelm II. flieht aus dem Hauptquartier in Spa in die Niederlande.',
-          lang: 'de',
+          id: 'q7',
+          text: 'On 9-10 November 1918 Wilhelm fled to neutral Holland and on 28 November abdicated both as German Kaiser and King of Prussia.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-wilhelm-ii',
-            loc: { section: 'Wilhelm II. 1859-1941', para: '36' }
+            source: 'eo1418-rohl-wilhelm-ii-german-emperor',
+            loc: { section: 'Revolution', para: '2' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'https://www.dhm.de/lemo/biografie/wilhelm-ii' }
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://encyclopedia.1914-1918-online.net/article/wilhelm-ii-german-emperor/'
+          }
         }
       ]
     }

@@ -36,7 +36,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'revolution',
   start: {
     alts: [
@@ -82,6 +82,9 @@ export default defineEvent({
       ]
     }
   ],
+  polities: [
+    { ref: 'polity:russian-empire' }
+  ],
   participants: [
     {
       ref: 'person:vladimir-lenin',
@@ -119,7 +122,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Aleksandr Kerenskiy',
+      ref: 'person:alexander-kerensky',
       role: 'head-of-government',
       cites: [
         {
@@ -307,21 +310,24 @@ export default defineEvent({
           {
             value: { d: '1917-03-08' },
             cites: [
-              { source: 'lemo-chronik-1917', loc: { section: 'Chronik 1917', para: '47' } }
+              { source: 'lemo-chronik-1917', loc: { section: 'Chronik 1917', para: '47' } },
+              {
+                source: 'loc-russia-country-study-1996',
+                loc: { section: 'Revolutions and Civil War', para: '4' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q10',
-        text: 'Aufgrund des erfolglosen Kriegsverlaufs und der wirtschaftlichen Zerrüttung kommt es in Petrograd zu ersten schweren Zusammenstößen zwischen streikenden Arbeitern und dem Militär.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1917', loc: { section: 'Chronik 1917', para: '48' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1917.html'
-        }
+        id: 'q16',
+        text: 'Driven by shortages of food and fuel, crowds of hungry citizens and striking workers began spontaneous rioting and demonstrations. Local reserve troops, called in to suppress the riots, refused to fire on the crowds, and some soldiers joined the workers and other rioters.',
+        lang: 'en',
+        cite: {
+          source: 'loc-russia-country-study-1996',
+          loc: { section: 'Revolutions and Civil War', para: '4' }
+        },
+        provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/russia/8.htm' }
       }
     },
     {
@@ -459,5 +465,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:19170704_Riot_on_Nevsky_prosp_Petrograd.jpg',
     credit: { creator: 'Viktor Bulla' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'mints-1977-istoriia-velikogo-oktiabria', perspective: 'russian-soviet' },
+    { source: 'trotsky-1931-istoriia-russkoi-revoliutsii', perspective: 'russian-soviet' }
+  ]
 })

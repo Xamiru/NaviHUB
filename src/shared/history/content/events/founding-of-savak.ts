@@ -28,7 +28,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'founding',
   start: {
     alts: [
@@ -52,6 +52,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-mohammad-reza-shah' }
   ],
+  polities: [
+    { ref: 'polity:pahlavi-iran' }
+  ],
   participants: [
     {
       ref: 'person:mohammad-reza-pahlavi',
@@ -60,6 +63,26 @@ export default defineEvent({
         {
           source: 'loc-iran-country-study-1987',
           loc: { section: 'THE SHAH\'S WHITE REVOLUTION', para: '1' }
+        }
+      ]
+    },
+    {
+      ref: 'person:teymour-bakhtiar',
+      role: 'leader',
+      cites: [
+        {
+          source: 'iranica-zabih-bakhtiar-teymur',
+          loc: { section: 'BAḴTĪĀR, TEYMŪR', para: '2' }
+        }
+      ]
+    },
+    {
+      name: 'Hassan Pakravan',
+      role: 'leader',
+      cites: [
+        {
+          source: 'iranica-zabih-bakhtiar-teymur',
+          loc: { section: 'BAḴTĪĀR, TEYMŪR', para: '3' }
         }
       ]
     }
@@ -146,6 +169,20 @@ export default defineEvent({
             at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/great-britain-v/'
           }
+        },
+        {
+          id: 'q8',
+          text: 'SAVAK was instructed by the shah to eliminate Baḵtīār at all costs. In a carefully organized plot, SAVAK agents managed to cultivate his trust. On August 12, 1970, his trusted driver, sent two years earlier from Tehran, shot him as he was lured to an area near the Iranian border ostensibly for hunting.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-zabih-bakhtiar-teymur',
+            loc: { section: 'BAḴTĪĀR, TEYMŪR', para: '3' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.iranicaonline.org/articles/baktiar-teymur-iranian-general-born-in-1914-the-son-of-sardar-moazzam-baktiari/'
+          }
         }
       ]
     }
@@ -155,5 +192,65 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Shapoor_Reporter_and_Teymour_Bakhtiar_with_RAF_officers.jpg',
     credit: { institution: 'historydocuments.ir' },
     license: { id: 'public-domain' }
-  }
+  },
+  course: [
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1958-02' },
+            cites: [
+              {
+                source: 'iranica-zabih-bakhtiar-teymur',
+                loc: { section: 'BAḴTĪĀR, TEYMŪR', para: '2' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q6',
+        text: 'In February 1958, he was appointed as the first chief of SAVAK (State Security and Intelligence Organization).',
+        lang: 'en',
+        cite: {
+          source: 'iranica-zabih-bakhtiar-teymur',
+          loc: { section: 'BAḴTĪĀR, TEYMŪR', para: '2' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://www.iranicaonline.org/articles/baktiar-teymur-iranian-general-born-in-1914-the-son-of-sardar-moazzam-baktiari/'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1961' },
+            cites: [
+              {
+                source: 'iranica-zabih-bakhtiar-teymur',
+                loc: { section: 'BAḴTĪĀR, TEYMŪR', para: '3' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q7',
+        text: 'In 1961, when Dr. ʿAlī Amīnī was made prime minister, he convinced the shah that the more moderate general Pākravān should replace Baḵtīār.',
+        lang: 'en',
+        cite: {
+          source: 'iranica-zabih-bakhtiar-teymur',
+          loc: { section: 'BAḴTĪĀR, TEYMŪR', para: '3' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://www.iranicaonline.org/articles/baktiar-teymur-iranian-general-born-in-1914-the-son-of-sardar-moazzam-baktiari/'
+        }
+      }
+    }
+  ]
 })

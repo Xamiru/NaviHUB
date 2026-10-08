@@ -39,7 +39,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'genocide',
   start: {
     alts: [
@@ -88,6 +88,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:ottoman-empire' }
   ],
   participants: [
     {
@@ -537,5 +540,9 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 27184042
     }
+  ],
+  furtherReading: [
+    { source: 'akcam-1999-insan-haklari-ve-ermeni-sorunu', perspective: 'turkish' },
+    { source: 'akcam-2006-a-shameful-act', perspective: 'turkish' }
   ]
 })

@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'persian-students-sent-to-england',
   names: [
-    { text: 'First Persian students sent to England', lang: 'en', role: 'primary' }
+    { text: 'First Persian students sent to England', lang: 'en', role: 'primary' },
+    { text: 'اعزام نخستین محصلان به انگلستان', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'reform',
   start: {
     alts: [
@@ -27,6 +28,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {

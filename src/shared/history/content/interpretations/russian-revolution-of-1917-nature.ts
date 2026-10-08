@@ -4,8 +4,45 @@ export default defineInterpretation({
   id: 'russian-revolution-of-1917-nature',
   about: ['event:russian-revolution-of-1917'],
   topic: 'nature',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
+    {
+      id: 'great-october-socialist-revolution',
+      category: 'official',
+      holders: [
+        { kind: 'party', name: 'Communist Party of the Soviet Union (Bolsheviks)' }
+      ],
+      statements: [
+        {
+          id: 'q7',
+          text: 'The Great October Socialist Revolution had won.',
+          lang: 'en',
+          cite: {
+            source: 'cpsu-1939-short-course-chapter-7',
+            loc: { section: 'Chapter Seven, section 6', para: '43' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.marxists.org/reference/archive/stalin/works/1939/x01/ch07.htm'
+          }
+        },
+        {
+          id: 'q8',
+          text: '2) The October Revolution was headed by so revolutionary a class as the working class of Russia, a class which had been steeled in battle, which had in a short space passed through two revolutions, and which by the eve of the third revolution had won recognition as the leader of the people in the struggle for peace, land, liberty and Socialism. If the revolution had not had a leader like the working class of Russia, a leader that had earned the confidence of the people, there would have been no alliance between the workers and peasants, and without such an alliance the victory of the October Revolution would have been impossible.',
+          lang: 'en',
+          cite: {
+            source: 'cpsu-1939-short-course-chapter-7',
+            loc: { section: 'Chapter Seven, section 6', para: '48' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.marxists.org/reference/archive/stalin/works/1939/x01/ch07.htm'
+          }
+        }
+      ]
+    },
     {
       id: 'coup-detat',
       category: 'scholarly',

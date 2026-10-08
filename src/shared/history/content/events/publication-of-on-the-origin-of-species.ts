@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Publication of On the Origin of Species', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'discovery',
   start: {
     alts: [
@@ -154,5 +154,8 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 62933303
     }
+  ],
+  furtherReading: [
+    { source: 'timiryazev-1949-charlz-darvin-i-ego-uchenie', perspective: 'russian-soviet' }
   ]
 })

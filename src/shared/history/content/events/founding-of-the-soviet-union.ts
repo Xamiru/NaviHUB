@@ -6,18 +6,17 @@ export default defineEvent({
     { text: 'Founding of the Soviet Union', lang: 'en', role: 'primary' },
     { text: 'Образование СССР', lang: 'ru', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'founding',
   start: {
     alts: [
       {
-        value: { d: '1922-12' },
+        value: { d: '1922-12-30' },
         cites: [
           {
-            source: 'loc-russia-country-study-1996',
-            loc: { section: 'The Era of the New Economic Policy', para: '4' }
-          },
-          { source: 'lemo-chronik-1922', loc: { section: 'Chronik 1922', para: '224' } }
+            source: 'stalin-1922-formation-of-the-union-of-soviet-republics',
+            loc: { section: 'Notes', para: '1' }
+          }
         ]
       }
     ]
@@ -69,15 +68,14 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/russia/9.htm' }
         },
         {
-          id: 'q1',
-          text: 'Der X. Allrussische Rätekongress in Moskau beschließt die Gründung der Union der Sozialistischen Sowjetrepubliken (UdSSR). Damit soll eine engere Bindung von der Ukraine, Weißrusslands und der Kaukasusrepubliken an Sowjetrussland erreicht werden.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1922', loc: { section: 'Chronik 1922', para: '225' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1922.html'
-          }
+          id: 'q12',
+          text: 'The constituent republics of this "Soviet Union" (the Russian, Belorussian, Ukrainian, and Transcaucasian republics--the last combining Armenia, Azerbaijan, and Georgia) exercised a degree of cultural and linguistic autonomy, while the communist, predominantly Russian, leadership in Moscow retained political authority over the entire country.',
+          lang: 'en',
+          cite: {
+            source: 'loc-russia-country-study-1996',
+            loc: { section: 'The Era of the New Economic Policy', para: '4' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/russia/9.htm' }
         }
       ]
     },
@@ -103,6 +101,45 @@ export default defineEvent({
             loc: { section: 'The Era of the New Economic Policy', para: '3' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/9.htm' }
+        },
+        {
+          id: 'q13',
+          text: 'The Politburo (Political Bureau), which became the elite policy-making agency of the nation, created the new post of general secretary for the supervision of personnel matters and assigned Stalin to this office in April 1922.',
+          lang: 'en',
+          cite: {
+            source: 'loc-russia-country-study-1996',
+            loc: { section: 'The Era of the New Economic Policy', para: '5' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/russia/9.htm' }
+        },
+        {
+          id: 'q19',
+          text: 'From 1922 until 1936, Georgia was part of a united Transcaucasian Soviet Federated Socialist Republic (TSFSR) within the Soviet Union.',
+          lang: 'en',
+          cite: {
+            source: 'loc-georgia-country-study-1994',
+            loc: { section: 'Within the Soviet Union', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/georgia/9.htm' }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q18',
+          text: 'Comrades, this day marks a turning point in the history of the Soviet power.',
+          lang: 'en',
+          cite: {
+            source: 'stalin-1922-formation-of-the-union-of-soviet-republics',
+            loc: { section: 'The Formation of the Union of the Soviet Republics', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.marxists.org/reference/archive/stalin/works/1922/12/30.htm'
+          }
         }
       ]
     },
@@ -120,6 +157,16 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/9.htm' }
         },
         {
+          id: 'q14',
+          text: 'Although Lenin recommended that Stalin be removed from that position, the Politburo decided not to take action, and Stalin still was in office when Lenin died in January 1924.',
+          lang: 'en',
+          cite: {
+            source: 'loc-russia-country-study-1996',
+            loc: { section: 'The Era of the New Economic Policy', para: '6' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/russia/9.htm' }
+        },
+        {
           id: 'q6',
           text: 'With this support, Stalin ousted the leaders of the "Left Opposition" from their positions in 1926 and 1927 and forced Trotsky into exile in 1928. As the NEP era ended, open debate within the party became increasingly limited as Stalin gradually eliminated his opponents.',
           lang: 'en',
@@ -128,6 +175,20 @@ export default defineEvent({
             loc: { section: 'The Era of the New Economic Policy', para: '10' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/9.htm' }
+        },
+        {
+          id: 'q15',
+          text: 'The period of Trotsky’s triumph also contained the seeds of his future disappointments. The national revolution did not spread beyond Russia’s borders; Joseph Stalin’s (1878-1953) leadership attempted to build socialism in isolation. It was a political environment that, after Lenin’s death, saw Trotsky crushed politically and exiled from the USSR.',
+          lang: 'en',
+          cite: {
+            source: 'eo1418-thatcher-trotsky',
+            loc: { section: 'The 1917 Russian Revolution', para: '4' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://encyclopedia.1914-1918-online.net/article/trotsky-leon/'
+          }
         }
       ]
     },
@@ -152,22 +213,28 @@ export default defineEvent({
       date: {
         alts: [
           {
-            value: { d: '1922-04-03' },
+            value: { d: '1922-12-29' },
             cites: [
-              { source: 'lemo-chronik-1922', loc: { section: 'Chronik 1922', para: '58' } }
+              {
+                source: 'stalin-1922-formation-of-the-union-of-soviet-republics',
+                loc: { section: 'Notes', para: '2' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q8',
-        text: 'Auf Vorschlag von Wladimir I. Lenin wird Josef W. Stalin zum neuen Generalsekretär des Zentralkomitees (ZK) der Kommunistischen Partei (KP) Russlands gewählt.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1922', loc: { section: 'Chronik 1922', para: '59' } },
+        id: 'q16',
+        text: 'The conference examined and adopted the Declaration and the Treaty on the Formation of the Union of Soviet Socialist Republics.',
+        lang: 'en',
+        cite: {
+          source: 'stalin-1922-formation-of-the-union-of-soviet-republics',
+          loc: { section: 'Notes', para: '2' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1922.html'
+          at: '2026-10-08',
+          url: 'https://www.marxists.org/reference/archive/stalin/works/1922/12/30.htm'
         }
       }
     },
@@ -175,68 +242,28 @@ export default defineEvent({
       date: {
         alts: [
           {
-            value: { d: '1923-07-06' },
+            value: { d: '1922-12-30' },
             cites: [
-              { source: 'lemo-chronik-1923', loc: { section: 'Chronik 1923', para: '136' } }
+              {
+                source: 'stalin-1922-formation-of-the-union-of-soviet-republics',
+                loc: { section: 'Notes', para: '1' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q9',
-        text: 'Nach Billigung durch das sowjetische Zentralexekutivkomitee tritt die erste Verfassung der UdSSR in Kraft.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1923', loc: { section: 'Chronik 1923', para: '137' } },
+        id: 'q17',
+        text: 'The First Congress of Soviets of the U.S.S.R. took place in Moscow on December 30, 1922. There were present 1,727 delegates from the R.S.F.S.R., 364 from the Ukrainian S.S.R., 91 from the Transcaucasian Federation and 33 from the Byelo-russian S.S.R. The congress discussed J. V. Stalin\'s report on the formation of the Union of Soviet Socialist Republics, it ratified the Declaration and the Treaty of Union on the Formation of the U.S.S.R., and elected the Central Executive Committee of the U.S.S.R.',
+        lang: 'en',
+        cite: {
+          source: 'stalin-1922-formation-of-the-union-of-soviet-republics',
+          loc: { section: 'Notes', para: '1' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1923.html'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1924-01-21' },
-            cites: [
-              { source: 'lemo-chronik-1924', loc: { section: 'Chronik 1924', para: '8' } }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q10',
-        text: 'Tod des Gründers und Regierungschefs der Sowjetunion, Wladimir I. Lenin, in Gorki (bei Moskau).',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1924', loc: { section: 'Chronik 1924', para: '9' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1924.html'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1929-01-29' },
-            cites: [
-              { source: 'lemo-chronik-1929', loc: { section: 'Chronik 1929', para: '14' } }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q11',
-        text: 'Der ehemalige Volkskommissar des Äußeren, Leo D. Trotzki, wird aus der Sowjetunion ausgewiesen und reist nach Konstantinopel (heute: Istanbul).',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1929', loc: { section: 'Chronik 1929', para: '15' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1929.html'
+          at: '2026-10-08',
+          url: 'https://www.marxists.org/reference/archive/stalin/works/1922/12/30.htm'
         }
       }
     }
@@ -246,5 +273,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Declaration_and_Treaty_on_the_Creation_of_the_USSR-1922-page1.jpg',
     credit: { institution: 'Federal Archival Agency of Russia' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'gurvich-1923-istoriia-sovetskoi-konstitutsii', perspective: 'russian-soviet' },
+    { source: 'kharmandarian-1972-obrazovanie-soiuza-sssr', perspective: 'russian-soviet' }
+  ]
 })

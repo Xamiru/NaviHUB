@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Muhammad Ali appointed governor of Egypt', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -22,6 +22,17 @@ export default defineEvent({
   },
   regions: ['mena'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:cairo',
+      cites: [
+        { source: 'britannica-1911-mehemet-ali', loc: { section: 'MEHEMET ALI', para: '1' } }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:ottoman-empire' }
+  ],
   participants: [
     {
       ref: 'person:muhammad-ali-of-egypt',
@@ -99,5 +110,9 @@ export default defineEvent({
       creator: 'Auguste Couder'
     },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'jabarti-1958-ajaib-al-athar', perspective: 'arab' },
+    { source: 'rafii-1982-asr-muhammad-ali', perspective: 'arab' }
+  ]
 })

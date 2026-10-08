@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'emancipation-proclamation-nature',
   about: ['event:emancipation-proclamation'],
   topic: 'nature',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'lincoln-central-act',
@@ -31,30 +31,27 @@ export default defineInterpretation({
     },
     {
       id: 'confederate-servile-war',
-      category: 'contemporary',
+      category: 'official',
       holders: [
+        { kind: 'state', name: 'Confederate States of America' },
         { kind: 'participant', name: 'Jefferson Davis' }
       ],
       statements: [
         {
-          id: 'q2',
-          text: 'Included in this proclamation is a statement that Lincoln\'s upcoming Emancipation Proclamation is designed to "excite servile war" and that any black US soldiers or their white officers are to be sent to the individual states instead of being treated as prisoners of war.',
+          id: 'q9',
+          text: 'And whereas the President of the United States has by public and official declaration signified not only his approval of the effort to excite servile war within the Confederacy but his intention to give aid and encouragement thereto if these independent States shall continue to refuse submission to a foreign power after the 1st day of January next',
           lang: 'en',
           cite: {
-            source: 'nps-gett-civil-war-timeline',
-            loc: { section: 'Civil War Timeline', para: '50' }
+            source: 'fssp-davis-1862-12-23-proclamation-general-orders-111',
+            loc: { section: 'Proclamation by the Confederate President, General Orders No. 111' }
           },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.nps.gov/gett/learn/historyculture/civil-war-timeline.htm'
-          }
+          provenance: { via: 'web', at: '2026-10-08', url: 'https://www.freedmen.umd.edu/pow.htm' }
         }
       ]
     },
     {
       id: 'military-measure',
-      category: 'official',
+      category: 'scholarly',
       holders: [
         { kind: 'organization', name: 'National Archives and Records Administration' }
       ],
@@ -91,7 +88,7 @@ export default defineInterpretation({
     },
     {
       id: 'confirmed-self-emancipation',
-      category: 'official',
+      category: 'scholarly',
       holders: [
         { kind: 'organization', name: 'National Archives and Records Administration' }
       ],

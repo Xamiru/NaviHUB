@@ -7,7 +7,7 @@ export default definePerson({
     { text: 'میرزا ابوالحسن خان ایلچی', lang: 'fa', role: 'native' },
     { text: 'Mīrzā Abu’l-Ḥasan Khan Īlčī Šīrāzī', lang: 'fa-Latn', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -39,6 +39,7 @@ export default definePerson({
   offices: [
     {
       title: 'minister of foreign affairs',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {

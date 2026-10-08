@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'austro-prussian-war-causes',
   about: ['event:austro-prussian-war'],
   topic: 'causes',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'holstein',
@@ -30,6 +30,16 @@ export default defineInterpretation({
           cite: {
             source: 'loc-austria-country-study-1994',
             loc: { section: 'The Loss of Leadership in Germany', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/austria/25.htm' }
+        },
+        {
+          id: 'q8',
+          text: 'Nonetheless, by mid-1864 Franz Joseph realized that war was inevitable if Austrian leadership was to be preserved.',
+          lang: 'en',
+          cite: {
+            source: 'loc-austria-country-study-1994',
+            loc: { section: 'The Loss of Leadership in Germany', para: '1' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/austria/25.htm' }
         }
@@ -121,25 +131,6 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://ehne.fr/en/encyclopedia/themes/international-relations/arbiters-and-arbitration-in-europe-beginning-modern-times/napoleon-iii-and-europe'
           }
-        }
-      ]
-    },
-    {
-      id: 'austrian-inevitability',
-      category: 'contemporary',
-      holders: [
-        { kind: 'participant', name: 'Franz Joseph' }
-      ],
-      statements: [
-        {
-          id: 'q8',
-          text: 'Nonetheless, by mid-1864 Franz Joseph realized that war was inevitable if Austrian leadership was to be preserved.',
-          lang: 'en',
-          cite: {
-            source: 'loc-austria-country-study-1994',
-            loc: { section: 'The Loss of Leadership in Germany', para: '1' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/austria/25.htm' }
         }
       ]
     }

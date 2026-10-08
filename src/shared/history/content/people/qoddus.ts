@@ -4,10 +4,11 @@ export default definePerson({
   id: 'qoddus',
   names: [
     { text: 'Qoddus', lang: 'en', role: 'primary' },
+    { text: 'قدوس', lang: 'fa', role: 'native' },
     { text: 'Moḥammad-ʿAli Bārforuši', lang: 'en', role: 'alternative' },
     { text: 'Quddus', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {

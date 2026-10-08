@@ -7,7 +7,7 @@ export default defineEvent({
     { text: 'भारत का विभाजन', lang: 'hi', role: 'native' },
     { text: 'تقسیم ہند', lang: 'ur', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'partition',
   start: {
     alts: [
@@ -58,7 +58,12 @@ export default defineEvent({
     }
   ],
   partOf: [
-    { ref: 'period:british-raj' }
+    { ref: 'polity:british-raj' }
+  ],
+  polities: [
+    { ref: 'polity:british-raj' },
+    { ref: 'polity:india' },
+    { ref: 'polity:pakistan' }
   ],
   participants: [
     {
@@ -92,7 +97,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Louis Mountbatten',
+      ref: 'person:louis-mountbatten',
       role: 'head-of-state',
       cites: [
         {
@@ -412,5 +417,11 @@ export default defineEvent({
       creator: 'Research Department, Foreign Office'
     },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'menon-1957-the-transfer-of-power-in-india', perspective: 'south-asian' },
+    { source: 'ali-1967-the-emergence-of-pakistan', perspective: 'south-asian' },
+    { source: 'jalal-1985-the-sole-spokesman', perspective: 'south-asian' },
+    { source: 'butalia-1998-the-other-side-of-silence', perspective: 'south-asian' }
+  ]
 })

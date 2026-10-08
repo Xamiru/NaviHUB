@@ -3,9 +3,36 @@ import { definePerson } from '../../schema'
 export default definePerson({
   id: 'jose-de-san-martin',
   names: [
-    { text: 'José de San Martín', lang: 'en', role: 'primary' }
+    { text: 'José de San Martín', lang: 'en', role: 'primary' },
+    { text: 'José de San Martín', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1778-02-25' },
+        cites: [
+          {
+            source: 'britannica-1911-san-martin-jose-de',
+            loc: { section: 'SAN MARTIN, JOSÉ DE', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1850-08-17' },
+        cites: [
+          {
+            source: 'britannica-1911-san-martin-jose-de',
+            loc: { section: 'SAN MARTIN, JOSÉ DE', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
   regions: ['latin-america'],
   roles: ['military', 'revolutionary'],
   sections: [

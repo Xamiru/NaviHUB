@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Treaty of Portsmouth', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -25,8 +25,27 @@ export default defineEvent({
   },
   regions: ['east-asia', 'russia-central-asia', 'north-america'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:portsmouth-new-hampshire',
+      cites: [
+        {
+          source: 'state-dept-milestones-portsmouth',
+          loc: {
+            section: 'The Treaty of Portsmouth and the Russo-Japanese War, 1904–1905',
+            para: '2'
+          }
+        }
+      ]
+    }
+  ],
   partOf: [
     { ref: 'event:russo-japanese-war' }
+  ],
+  polities: [
+    { ref: 'polity:united-states' },
+    { ref: 'polity:russian-empire' },
+    { ref: 'polity:empire-of-japan' }
   ],
   participants: [
     {
@@ -128,5 +147,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Portraits_of_envoys_at_the_Portsmouth_Peace_Conference,_Baron_Komura_and_Kogoro_Takahira_(left),_M._Witte_and_Baron_Rosen_(right),_and_President_Theodore_Roosevelt_(center)._Written_at_LCCN2005680007.jpg',
     credit: { institution: 'Library of Congress' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'sanbo-honbu-1912-nichi-ro-senshi', perspective: 'japanese' },
+    { source: 'vik-1910-russko-iaponskaia-voina', perspective: 'russian-soviet' }
+  ]
 })

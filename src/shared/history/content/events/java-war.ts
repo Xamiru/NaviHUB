@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Java War', lang: 'en', role: 'primary' },
     { text: 'Perang Jawa', lang: 'id', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -46,6 +46,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:dutch-east-indies' }
   ],
   participants: [
     {
@@ -219,5 +222,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Raden_Saleh_-_Diponegoro_arrest.jpg',
     credit: { institution: 'Istana Negara, Jakarta', creator: 'Raden Saleh' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'louw-1904-de-java-oorlog-van-1825-30', perspective: 'european' }
+  ]
 })

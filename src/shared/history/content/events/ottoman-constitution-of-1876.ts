@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Ottoman constitution of 1876', lang: 'en', role: 'primary' },
     { text: 'Kanûn-ı Esâsî', lang: 'tr', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'law',
   start: {
     alts: [
@@ -35,6 +35,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:reign-of-abdul-hamid-ii' }
+  ],
+  polities: [
+    { ref: 'polity:ottoman-empire' }
   ],
   participants: [
     {
@@ -100,14 +103,14 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/turkey/10.htm' }
         },
         {
-          id: 'q3',
-          text: 'Das Osmanische Reich erhält unter dem am 31. August zum Sultan proklamierten Abd Al Hamid II. (1842-1918) erstmals eine Verfassung, in der die völlige Rechtsgleichheit aller Untertanen proklamiert wird. 1878 wird die Verfassung wieder zurückgezogen.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1876', loc: { section: 'Chronik 1876', para: '72' } },
+          id: 'q6',
+          text: 'Turkey now made a show of going even beyond the demands formulated by Europe, and the international conference which met at Constantinople during ​the last days of 1876 was startled by the salvo of artillery which heralded the promulgation of a liberal constitution, not for the European provinces only, but for the whole empire, and the institution of a Turkish parliament.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-turkey', loc: { section: 'TURKEY', para: '1442' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1876.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Turkey'
           }
         }
       ]
@@ -143,5 +146,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Midah_Pacha_(i.e._Midhat-Pacha)_-_btv1b531377226.jpg',
     credit: { institution: 'Bibliothèque nationale de France', creator: 'Atelier Nadar' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'tanor-2020-osmanli-turk-anayasal-gelismeleri', perspective: 'turkish' }
+  ]
 })

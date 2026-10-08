@@ -79,18 +79,14 @@ export default definePerson({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/38.htm' }
         },
         {
-          id: 'q3',
-          text: '26. Februar: Hitler wird zusammen mit Ernst Röhm, General Erich Ludendorff u.a. vor dem Münchener Volksgericht des Hochverrats angeklagt und schließlich zu fünfjähriger Festungshaft verurteilt.',
-          lang: 'de',
+          id: 'q5',
+          text: 'General Ludendorff supported the former corporal in the Beer Hall Putsch of November 1923 in Munich, an attempt to overthrow the Bavarian government. The putsch failed, and Hitler received a light sentence of five years, of which he served less than one.',
+          lang: 'en',
           cite: {
-            source: 'lemo-biografie-adolf-hitler',
-            loc: { section: 'Adolf Hitler 1889-1945', para: '37' }
+            source: 'loc-germany-country-study-1995',
+            loc: { section: 'Hitler and the Rise of National Socialism', para: '2' }
           },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/biografie/adolf-hitler'
-          }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/germany/38.htm' }
         },
         {
           id: 'q4',

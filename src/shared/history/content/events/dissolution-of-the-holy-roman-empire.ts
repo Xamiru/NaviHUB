@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Dissolution of the Holy Roman Empire', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'dissolution',
   start: {
     alts: [
@@ -28,6 +28,10 @@ export default defineEvent({
   prominence: 2,
   partOf: [
     { ref: 'period:napoleonic-wars' }
+  ],
+  polities: [
+    { ref: 'polity:austrian-empire' },
+    { ref: 'polity:first-french-empire' }
   ],
   participants: [
     {
@@ -98,5 +102,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Johann_Nepomuk_H%C3%B6chle_-_Kaiser_Franz_I._(II.)_von_%C3%96sterreich_-_3622_-_Kunsthistorisches_Museum.jpg',
     credit: { institution: 'Österreichische Galerie Belvedere', creator: 'Johann Nepomuk Höchle' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'aretin-1967-heiliges-romisches-reich', perspective: 'european' }
+  ]
 })

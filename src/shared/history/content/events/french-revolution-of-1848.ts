@@ -13,7 +13,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'revolution',
   start: {
     alts: [
@@ -38,6 +38,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'event:revolutions-of-1848' }
+  ],
+  polities: [
+    { ref: 'polity:french-second-republic' }
   ],
   participants: [
     {
@@ -101,14 +104,17 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/25.htm' }
         },
         {
-          id: 'q2',
-          text: 'In Paris demonstrieren Arbeiter, Studenten und Nationalgardisten gegen die Regierung von François Guizot (1787-1874).',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '6' } },
+          id: 'q15',
+          text: 'The industrial population of the faubourgs on its way towards the centre of the town was welcomed by the National Guard, among cries of “Vive la réforme.” Barricades were raised after the unfortunate incident of the firing on the crowd in the Boulevard des Capucines.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-france-history',
+            loc: { section: 'FRANCE: History', para: '492' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1848.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/France/History'
           }
         },
         {
@@ -131,14 +137,17 @@ export default defineEvent({
       kind: 'course',
       quotes: [
         {
-          id: 'q4',
-          text: 'In Frankreich wird die Zweite Republik ausgerufen.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '50' } },
+          id: 'q16',
+          text: 'It was now the turn of the Republic, and it was proclaimed by Lamartine in the name of the provisional government elected by the Chamber under the pressure of the mob.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-france-history',
+            loc: { section: 'FRANCE: History', para: '492' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1848.html'
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/France/History'
           }
         },
         {
@@ -297,14 +306,17 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q12',
-        text: 'Der französische Kriegsminister Louis Eugène Cavaignac (1802-1857) lässt in Paris einen Arbeiteraufstand blutig niederschlagen.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '69' } },
+        id: 'q17',
+        text: 'A furious insurrection at once broke out. Throughout the whole of the 24th, 25th and 26th of June, the eastern industrial quarter of Paris, led by Pujol, carried on a furious struggle against the western quarter, led by Cavaignac, who had been appointed dictator. Vanquished and decimated, first by fighting and afterwards by deportation, the socialist party was crushed.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-france-history',
+          loc: { section: 'FRANCE: History', para: '496' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1848.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/France/History'
         }
       }
     },
@@ -314,21 +326,26 @@ export default defineEvent({
           {
             value: { d: '1848-11-04' },
             cites: [
-              { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '105' } },
-              { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '104' } }
+              {
+                source: 'britannica-1911-france-history',
+                loc: { section: 'FRANCE: History', para: '498' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q13',
-        text: 'In Frankreich verabschiedet die französische Nationalversammlung die Verfassung der zweiten Republik.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '105' } },
+        id: 'q18',
+        text: 'On the 4th of November 1848 was promulgated the new constitution, obviously the work of inexperienced hands, proclaiming a democratic republic, direct universal suffrage and the separation of powers;',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-france-history',
+          loc: { section: 'FRANCE: History', para: '498' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1848.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/France/History'
         }
       }
     },
@@ -338,21 +355,26 @@ export default defineEvent({
           {
             value: { d: '1848-12-20' },
             cites: [
-              { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '131' } },
-              { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '130' } }
+              {
+                source: 'britannica-1911-napoleon-iii',
+                loc: { section: 'NAPOLEON III.', para: '13' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q14',
-        text: 'Charles Louis Napoléon Bonaparte (1808-), ein Neffe von Napoleon I., wird Präsident der zweiten französischen Republik.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1848', loc: { section: 'Chronik 1848', para: '131' } },
+        id: 'q19',
+        text: 'On the 20th of December he took the oath “to remain faithful to the democratic Republic . . . to regard as enemies of the nation all those who may attempt by illegal means to change the form of the established government.”',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-napoleon-iii',
+          loc: { section: 'NAPOLEON III.', para: '13' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1848.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Napoleon_III.'
         }
       }
     }
@@ -362,5 +384,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Philippoteaux_-_Lamartine_in_front_of_the_Town_Hall_of_Paris_rejects_the_red_flag.jpg',
     credit: { institution: 'Paris Musées', creator: 'Henri Félix Emmanuel Philippoteaux' },
     license: { id: 'cc0' }
-  }
+  },
+  furtherReading: [
+    { source: 'agulhon-1973-1848-ou-lapprentissage-de-la-republique', perspective: 'european' }
+  ]
 })

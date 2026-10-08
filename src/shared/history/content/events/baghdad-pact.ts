@@ -4,6 +4,7 @@ export default defineEvent({
   id: 'baghdad-pact',
   names: [
     { text: 'Baghdad Pact', lang: 'en', role: 'primary' },
+    { text: 'پیمان بغداد', lang: 'fa', role: 'native' },
     {
       text: 'Central Treaty Organization',
       lang: 'en',
@@ -20,7 +21,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -50,6 +51,13 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:cold-war' }
+  ],
+  polities: [
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:pahlavi-iran' },
+    { ref: 'polity:kingdom-of-iraq' },
+    { ref: 'polity:republic-of-turkey' },
+    { ref: 'polity:pakistan' }
   ],
   participants: [
     {

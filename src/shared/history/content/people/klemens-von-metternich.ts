@@ -6,12 +6,39 @@ export default definePerson({
     { text: 'Klemens von Metternich', lang: 'en', role: 'primary' },
     { text: 'Clemens von Metternich', lang: 'de', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1773-05-15' },
+        cites: [
+          {
+            source: 'britannica-1911-metternich-winneburg',
+            loc: { section: 'METTERNICH-WINNEBURG, CLEMENS WENZEL LOTHAR', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1859-06-11' },
+        cites: [
+          {
+            source: 'britannica-1911-metternich-winneburg',
+            loc: { section: 'METTERNICH-WINNEBURG, CLEMENS WENZEL LOTHAR', para: '22' }
+          }
+        ]
+      }
+    ]
+  },
   regions: ['europe'],
   roles: ['politician', 'diplomat'],
   offices: [
     {
       title: 'director of Austria’s foreign policy',
+      polity: 'polity:austrian-empire',
       start: {
         alts: [
           {

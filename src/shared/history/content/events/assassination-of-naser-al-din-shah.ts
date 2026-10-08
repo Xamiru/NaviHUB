@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Assassination of Naser al-Din Shah', lang: 'en', role: 'primary' },
     { text: 'ترور ناصرالدین شاه', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'assassination',
   start: {
     alts: [
@@ -39,6 +39,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-naser-al-din-shah-qajar' },
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -92,6 +95,25 @@ export default defineEvent({
   ],
   sections: [
     {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q3',
+          text: '1896 Assassination of Nāṣer-al-Din Shah by Mirzā Reżā Kermāni, follower of Jamāl-al-Din Afḡāni, a leading Iranian cleric and one of the influential leaders of the late 19th century pan-Islamic movement.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-yarshater-chronology-part-2',
+            loc: { section: 'Chronology of Iranian History Part 2, 1896' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
+          }
+        }
+      ]
+    },
+    {
       kind: 'background',
       quotes: [
         {
@@ -113,39 +135,6 @@ export default defineEvent({
             loc: { section: 'THE QAJARS, 1795-1925', para: '6' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/iran/12.htm' }
-        }
-      ]
-    },
-    {
-      kind: 'overview',
-      quotes: [
-        {
-          id: 'q3',
-          text: '1896 Assassination of Nāṣer-al-Din Shah by Mirzā Reżā Kermāni, follower of Jamāl-al-Din Afḡāni, a leading Iranian cleric and one of the influential leaders of the late 19th century pan-Islamic movement.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-yarshater-chronology-part-2',
-            loc: { section: 'Chronology of Iranian History Part 2, 1896' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
-          }
-        },
-        {
-          id: 'q4',
-          text: 'Mīrzā Reżā returned and on 1 May 1896, as Nāṣer-al-dīn Shah was preparing for the 50th lunar anniversary of his accession, Mīrzā Reżā pretended to offer a petition but instead shot the shah dead.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-keddie-afgani-jamal-al-din',
-            loc: { section: 'AFḠĀNĪ, JAMĀL-AL-DĪN', para: '17' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/afgani-jamal-al-din'
-          }
         }
       ]
     },
@@ -222,6 +211,35 @@ export default defineEvent({
       date: {
         alts: [
           {
+            value: { d: '1896-05-01' },
+            cites: [
+              {
+                source: 'iranica-keddie-afgani-jamal-al-din',
+                loc: { section: 'AFḠĀNĪ, JAMĀL-AL-DĪN', para: '17' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q4',
+        text: 'Mīrzā Reżā returned and on 1 May 1896, as Nāṣer-al-dīn Shah was preparing for the 50th lunar anniversary of his accession, Mīrzā Reżā pretended to offer a petition but instead shot the shah dead.',
+        lang: 'en',
+        cite: {
+          source: 'iranica-keddie-afgani-jamal-al-din',
+          loc: { section: 'AFḠĀNĪ, JAMĀL-AL-DĪN', para: '17' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-06',
+          url: 'https://www.iranicaonline.org/articles/afgani-jamal-al-din'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
             value: { d: '1896-07' },
             cites: [
               {
@@ -253,9 +271,12 @@ export default defineEvent({
     }
   ],
   hero: {
-    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f3/The_Young_Nasir_Al-Din_Shah_Qajar.jpg/1280px-The_Young_Nasir_Al-Din_Shah_Qajar.jpg',
-    page: 'https://commons.wikimedia.org/wiki/File:The_Young_Nasir_Al-Din_Shah_Qajar.jpg',
-    credit: { creator: 'Mirza Abolhassan Khan Ghaffari' },
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/60/Antoin_Sevruguin_51_8_SI.jpg/1280px-Antoin_Sevruguin_51_8_SI.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Antoin_Sevruguin_51_8_SI.jpg',
+    credit: {
+      institution: 'Freer Gallery of Art and Arthur M. Sackler Gallery Archives, Smithsonian Institution',
+      creator: 'Antoin Sevruguin'
+    },
     license: { id: 'public-domain' }
   },
   archive: [
@@ -273,5 +294,9 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 48843454
     }
+  ],
+  furtherReading: [
+    { source: 'nateq-1984-karnameh-va-zamaneh-ye-mirza-reza-kermani', perspective: 'iranian' },
+    { source: 'nazem-al-eslam-1983-tarikh-e-bidari-ye-iranian', perspective: 'iranian' }
   ]
 })

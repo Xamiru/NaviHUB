@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Siege of Khartoum', lang: 'en', role: 'primary' },
     { text: 'Fall of Khartoum', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -52,6 +52,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:mahdiyah' }
   ],
+  polities: [
+    { ref: 'polity:united-kingdom' }
+  ],
   related: [
     { ref: 'event:urabi-revolt', rel: 'related' }
   ],
@@ -69,6 +72,7 @@ export default defineEvent({
     {
       key: 'garrison',
       name: 'garrison',
+      polity: 'polity:khedivate-of-egypt',
       cites: [
         {
           source: 'loc-sudan-country-study-1991',
@@ -213,17 +217,6 @@ export default defineEvent({
             loc: { section: 'THE MAHDIYAH, 1884-98', para: '9' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/sudan/12.htm' }
-        },
-        {
-          id: 'q7',
-          text: 'Die Truppen des Mahdi, eines islamischen Führers im Sudan, erobern die Hauptstadt Karthum.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1885', loc: { section: 'Chronik 1885', para: '3' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1885.html'
-          }
         }
       ]
     },
@@ -271,14 +264,14 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q10',
-        text: 'Der Derwischführer Muhammad Ahmad Ibn Abd Allah (1844-1885) ruft im Sudan zum "Heiligen Krieg" gegen die britisch-ägyptische Fremdherrschaft auf.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1881', loc: { section: 'Chronik 1881', para: '42' } },
+        id: 'q16',
+        text: 'In 1881 Mahommed Ahmed ibn Seyyid Abdullah (q.v.), a Dongolese, proclaimed himself al-mahdi and founded in the eastern Sudan the short-lived empire overthrown by an Anglo-Egyptian force at the battle of Omdurman in 1898.',
+        lang: 'en',
+        cite: { source: 'britannica-1911-mahdi', loc: { section: 'MAHDI', para: '1' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1881.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Mahdi'
         }
       }
     },
@@ -404,5 +397,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:George_William_Joy_(1844-1925)_-_General_Gordon%27s_Last_Stand_-_LEEAG.PA.1920.0274_-_Leeds_Art_Gallery.jpg',
     credit: { institution: 'Leeds Art Gallery', creator: 'George William Joy' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'shuqayr-1981-tarikh-al-sudan', perspective: 'arab' }
+  ]
 })

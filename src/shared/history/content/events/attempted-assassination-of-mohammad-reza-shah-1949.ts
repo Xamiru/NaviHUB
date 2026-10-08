@@ -10,7 +10,7 @@ export default defineEvent({
     },
     { text: 'ترور نافرجام محمدرضا شاه در ۱۵ بهمن ۱۳۲۷', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'assassination',
   start: {
     alts: [
@@ -56,6 +56,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:reign-of-mohammad-reza-shah' }
+  ],
+  polities: [
+    { ref: 'polity:pahlavi-iran' }
   ],
   participants: [
     {

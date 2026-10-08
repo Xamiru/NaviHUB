@@ -6,12 +6,13 @@ export default definePerson({
     { text: 'Asadollah Alam', lang: 'en', role: 'primary' },
     { text: 'اسدالله علم', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   regions: ['iran'],
   roles: ['politician'],
   offices: [
     {
       title: 'prime minister',
+      polity: 'polity:pahlavi-iran',
       start: {
         alts: [
           {

@@ -7,7 +7,7 @@ export default definePerson({
     { text: 'محمد مصدق', lang: 'fa', role: 'native' },
     { text: 'Moḥammad Moṣaddeq', lang: 'fa-Latn', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -67,6 +67,7 @@ export default definePerson({
   offices: [
     {
       title: 'prime minister',
+      polity: 'polity:pahlavi-iran',
       start: {
         alts: [
           {
@@ -114,6 +115,48 @@ export default definePerson({
         {
           source: 'iranica-gasiorowski-coup-detat-1953',
           loc: { section: 'COUP D’ETAT OF 1332 Š./1953', para: '1' }
+        },
+        { source: 'frus-1952-1954-iran-1951-1954', loc: { section: 'Persons' } }
+      ]
+    },
+    {
+      title: 'Minister of Defense',
+      polity: 'polity:pahlavi-iran',
+      lang: 'en',
+      start: {
+        alts: [
+          {
+            value: { d: '1952-07-22' },
+            cites: [
+              { source: 'frus-1952-1954-iran-1951-1954', loc: { section: 'Persons' } }
+            ]
+          }
+        ]
+      },
+      end: {
+        alts: [
+          {
+            value: { d: '1953-08-15' },
+            cites: [
+              { source: 'frus-1952-1954-iran-1951-1954', loc: { section: 'Persons' } }
+            ]
+          }
+        ]
+      },
+      cites: [
+        { source: 'frus-1952-1954-iran-1951-1954', loc: { section: 'Persons' } }
+      ]
+    },
+    {
+      title: 'Governor of Fārs',
+      polity: 'polity:qajar-iran',
+      lang: 'en',
+      cites: [
+        {
+          source: 'iranica-yarshater-iranian-history-islamic-period-6',
+          loc: {
+            section: 'IRAN ii. IRANIAN HISTORY (2) Islamic period, Moḥammad Reza Shah (1941-79)'
+          }
         }
       ]
     }
@@ -129,6 +172,20 @@ export default definePerson({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'Moṣaddeq was the popular leader of the National front (Jabha-ye mellī), a coalition of political parties and prominent individuals formed in 1328 Š./1949 with the primary goals of nationalizing the oil industry and democratizing the Persian political system',
+          lang: 'en',
+          cite: {
+            source: 'iranica-gasiorowski-coup-detat-1953',
+            loc: { section: 'COUP D’ETAT OF 1332 Š./1953', para: '2' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.iranicaonline.org/articles/coup-detat-1953/'
+          }
+        },
+        {
           id: 'q1',
           text: 'A deputy to the Majles who was not only opposed to the concession sought by the Soviet Union but also considered the Anglo-Persian Oil Agreement an offense against Persian interests and economic independence was Dr. Moḥammad Moṣaddeq.',
           lang: 'en',
@@ -142,20 +199,6 @@ export default definePerson({
             via: 'web',
             at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/iran-ii2-islamic-period-page-6/'
-          }
-        },
-        {
-          id: 'q2',
-          text: 'Moṣaddeq was the popular leader of the National front (Jabha-ye mellī), a coalition of political parties and prominent individuals formed in 1328 Š./1949 with the primary goals of nationalizing the oil industry and democratizing the Persian political system',
-          lang: 'en',
-          cite: {
-            source: 'iranica-gasiorowski-coup-detat-1953',
-            loc: { section: 'COUP D’ETAT OF 1332 Š./1953', para: '2' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-07',
-            url: 'https://www.iranicaonline.org/articles/coup-detat-1953/'
           }
         }
       ]
@@ -200,7 +243,7 @@ export default definePerson({
         },
         {
           id: 'q5',
-          text: 'Moṣaddeq himself strongly suspected the British of having long endeavored to bring about his political frustration and discomfiture (Moṣaddeq, 1365 Š./1985, pp. 216-17).',
+          text: 'Moṣaddeq himself strongly suspected the British of having long endeavored to bring about his political frustration and discomfiture',
           lang: 'en',
           cite: {
             source: 'iranica-azimi-great-britain-v',
@@ -208,7 +251,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-08',
             url: 'https://www.iranicaonline.org/articles/great-britain-v/'
           }
         }
@@ -234,6 +277,39 @@ export default definePerson({
       ]
     },
     {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q8',
+          text: 'The special interest you have shown on various occasions in the welfare of our country in general, and in the recent oil question in particular, and the personal message you were kind enough to send me on 3 [1] June 1951,2 prompt me to inform you that the Imperial Iranian Government has been duty-bound to put into force the law enacted by the two Houses of Parliament concerning the nationalization of the oil industry all over Iran and the modus operandi of that law in the quickest possible time.',
+          lang: 'en',
+          cite: {
+            source: 'frus-1952-54-v10-mosadeq-to-truman-1951-06-28',
+            loc: { section: 'No. 34: Prime Minister Mosadeq to President Truman', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://history.state.gov/historicaldocuments/frus1952-54v10/d34'
+          }
+        },
+        {
+          id: 'q9',
+          text: 'Although the Iranian people have prepared themselves for every kind of privations in their resolve to achieve their aim, yet there is no doubt that the stoppage in the exploitation of oil machinery is not only damaging to us but it is also damaging to Great Britain and to all other countries which use the Iranian oil',
+          lang: 'en',
+          cite: {
+            source: 'frus-1952-54-v10-mosadeq-to-truman-1951-06-28',
+            loc: { section: 'No. 34: Prime Minister Mosadeq to President Truman', para: '7' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://history.state.gov/historicaldocuments/frus1952-54v10/d34'
+          }
+        }
+      ]
+    },
+    {
       kind: 'later-life',
       quotes: [
         {
@@ -254,5 +330,10 @@ export default definePerson({
         }
       ]
     }
+  ],
+  furtherReading: [
+    { source: 'mosaddegh-1986-khaterat-va-taallomat', perspective: 'iranian' },
+    { source: 'movahhed-1999-khvab-e-ashofteh-ye-naft', perspective: 'iranian' },
+    { source: 'makki-1983-ketab-e-siyah', perspective: 'iranian' }
   ]
 })

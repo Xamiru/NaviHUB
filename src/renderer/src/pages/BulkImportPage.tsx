@@ -79,7 +79,7 @@ export default function BulkImportPage(): React.JSX.Element {
   // The offline games catalog must be installed before its lists exist.
   const { data: catalogStatus } = useQuery({
     queryKey: qk.gamesCatalog.status,
-    queryFn: () => api.rawgCatalog.status(),
+    queryFn: () => api.gameCatalog.status(),
     enabled: !!cfg.offline
   })
   const catalogMissing = !!cfg.offline && catalogStatus != null && !catalogStatus.installed
@@ -185,7 +185,7 @@ export default function BulkImportPage(): React.JSX.Element {
   async function installCatalog(): Promise<void> {
     setInstalling(true)
     try {
-      await api.rawgCatalog.install()
+      await api.gameCatalog.install()
       await qc.invalidateQueries({ queryKey: qk.gamesCatalog.status })
     } finally {
       setInstalling(false)
@@ -253,8 +253,8 @@ export default function BulkImportPage(): React.JSX.Element {
         {catalogMissing ? (
           <div className="rounded-md bg-base-700/60 p-4">
             <p className="text-sm text-gray-300">
-              The offline games catalog is a one-time ~55 MB download (RAWG&apos;s final dataset, ~120k
-              games incl. consoles). Lists are instant and local afterwards.
+              The games catalog is a one-time ~60 MB download: about 148,000 games on every
+              platform, with real box art. Lists are instant and local afterwards.
             </p>
             <button className="btn-primary mt-3" onClick={installCatalog} disabled={installing}>
               {installing ? 'Downloading…' : 'Install catalog'}

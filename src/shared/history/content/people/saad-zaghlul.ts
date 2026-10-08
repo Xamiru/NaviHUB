@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Saad Zaghlul', lang: 'en', role: 'primary' },
     { text: 'سعد زغلول', lang: 'ar', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -35,6 +35,44 @@ export default definePerson({
   },
   regions: ['mena'],
   roles: ['politician', 'revolutionary'],
+  offices: [
+    {
+      title: 'prime minister',
+      polity: 'polity:kingdom-of-egypt',
+      start: {
+        alts: [
+          {
+            value: { d: '1924' },
+            cites: [
+              {
+                source: 'loc-egypt-country-study-1990',
+                loc: { section: 'The Rise and Decline of the Wafd, 1924-39', para: '4' }
+              }
+            ]
+          }
+        ]
+      },
+      end: {
+        alts: [
+          {
+            value: { d: '1924-11-24' },
+            cites: [
+              {
+                source: 'loc-egypt-country-study-1990',
+                loc: { section: 'The Rise and Decline of the Wafd, 1924-39', para: '5' }
+              }
+            ]
+          }
+        ]
+      },
+      cites: [
+        {
+          source: 'loc-egypt-country-study-1990',
+          loc: { section: 'The Rise and Decline of the Wafd, 1924-39', para: '4' }
+        }
+      ]
+    }
+  ],
   sections: [
     {
       kind: 'career',

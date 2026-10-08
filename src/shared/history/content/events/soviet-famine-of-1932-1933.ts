@@ -119,7 +119,7 @@ export default defineEvent({
     }
   ],
   partOf: [
-    { ref: 'period:soviet-union' }
+    { ref: 'polity:soviet-union' }
   ],
   participants: [
     {

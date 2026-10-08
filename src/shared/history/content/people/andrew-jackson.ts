@@ -5,12 +5,39 @@ export default definePerson({
   names: [
     { text: 'Andrew Jackson', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1767-03-15' },
+        cites: [
+          {
+            source: 'britannica-1911-jackson-andrew',
+            loc: { section: 'JACKSON, ANDREW', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1845-06-08' },
+        cites: [
+          {
+            source: 'britannica-1911-jackson-andrew',
+            loc: { section: 'JACKSON, ANDREW', para: '10' }
+          }
+        ]
+      }
+    ]
+  },
   regions: ['north-america'],
   roles: ['politician', 'military'],
   offices: [
     {
       title: 'President of the United States',
+      polity: 'polity:united-states',
       start: {
         alts: [
           {

@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Seyyed Zia al-Din Tabatabai', lang: 'en', role: 'primary' },
     { text: 'سید ضیاءالدین طباطبایی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -38,6 +38,7 @@ export default definePerson({
   offices: [
     {
       title: 'prime minister',
+      polity: 'polity:qajar-iran',
       start: {
         alts: [
           {

@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Philippine Revolution', lang: 'en', role: 'primary' },
     { text: 'Himagsikang Pilipino', lang: 'tl', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'revolution',
   start: {
     alts: [
@@ -343,5 +343,13 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:AguinaldoMP.jpg',
     credit: { institution: 'Malacañang Palace' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'agoncillo-1956-the-revolt-of-the-masses', perspective: 'southeast-asian' },
+    { source: 'ileto-1979-pasyon-and-revolution', perspective: 'southeast-asian' },
+    {
+      source: 'constantino-1975-the-philippines-a-past-revisited',
+      perspective: 'southeast-asian'
+    }
+  ]
 })

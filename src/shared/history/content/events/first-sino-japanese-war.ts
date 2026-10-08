@@ -7,7 +7,7 @@ export default defineEvent({
     { text: '甲午戰爭', lang: 'zh', role: 'native' },
     { text: '日清戦争', lang: 'ja', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -53,20 +53,22 @@ export default defineEvent({
     {
       key: 'japan',
       name: 'Japan',
+      polity: 'polity:empire-of-japan',
       cites: [
         {
-          source: 'loc-japan-country-study-1994',
-          loc: { section: 'Overseas Expansion', para: '1' }
+          source: 'britannica-1911-chino-japanese-war',
+          loc: { section: 'CHINO-JAPANESE WAR', para: '1' }
         }
       ]
     },
     {
       key: 'china',
       name: 'China',
+      polity: 'polity:qing-empire',
       cites: [
         {
-          source: 'loc-japan-country-study-1994',
-          loc: { section: 'Overseas Expansion', para: '1' }
+          source: 'britannica-1911-chino-japanese-war',
+          loc: { section: 'CHINO-JAPANESE WAR', para: '1' }
         }
       ]
     }
@@ -82,37 +84,56 @@ export default defineEvent({
           loc: { section: 'Overseas Expansion', para: '1' }
         }
       ]
+    },
+    {
+      name: 'Admiral Ting',
+      role: 'commander',
+      side: 'china',
+      cites: [
+        {
+          source: 'britannica-1911-chino-japanese-war',
+          loc: { section: 'CHINO-JAPANESE WAR', para: '5' }
+        }
+      ]
+    },
+    {
+      name: 'Vice-Admiral Ito',
+      role: 'commander',
+      side: 'japan',
+      cites: [
+        {
+          source: 'britannica-1911-chino-japanese-war',
+          loc: { section: 'CHINO-JAPANESE WAR', para: '5' }
+        }
+      ]
+    },
+    {
+      name: 'Marshal Yamagata',
+      role: 'commander',
+      side: 'japan',
+      cites: [
+        {
+          source: 'britannica-1911-chino-japanese-war',
+          loc: { section: 'CHINO-JAPANESE WAR', para: '6' }
+        }
+      ]
+    },
+    {
+      name: 'Marshal Oyama',
+      role: 'commander',
+      side: 'japan',
+      cites: [
+        {
+          source: 'britannica-1911-chino-japanese-war',
+          loc: { section: 'CHINO-JAPANESE WAR', para: '6' }
+        }
+      ]
     }
   ],
   related: [
     { ref: 'event:russo-japanese-war', rel: 'related' }
   ],
   sections: [
-    {
-      kind: 'background',
-      quotes: [
-        {
-          id: 'q1',
-          text: 'The revolt of 1894-95, known as the Tonghak Rebellion, had international repercussions.',
-          lang: 'en',
-          cite: {
-            source: 'loc-south-korea-country-study-1990',
-            loc: { section: 'The Choson Dynasty', para: '13' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/south-korea/5.htm' }
-        },
-        {
-          id: 'q2',
-          text: 'The Korean court apparently felt unable to cope with the rebels and invited China to send troops to quell the rebellion. This move gave Japan a pretext to dispatch troops to Korea.',
-          lang: 'en',
-          cite: {
-            source: 'loc-south-korea-country-study-1990',
-            loc: { section: 'The Choson Dynasty', para: '13' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/south-korea/5.htm' }
-        }
-      ]
-    },
     {
       kind: 'overview',
       quotes: [
@@ -145,6 +166,50 @@ export default defineEvent({
             loc: { section: 'Overseas Expansion', para: '1' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/japan/27.htm' }
+        }
+      ]
+    },
+    {
+      kind: 'background',
+      quotes: [
+        {
+          id: 'q1',
+          text: 'The revolt of 1894-95, known as the Tonghak Rebellion, had international repercussions.',
+          lang: 'en',
+          cite: {
+            source: 'loc-south-korea-country-study-1990',
+            loc: { section: 'The Choson Dynasty', para: '13' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/south-korea/5.htm' }
+        },
+        {
+          id: 'q2',
+          text: 'The Korean court apparently felt unable to cope with the rebels and invited China to send troops to quell the rebellion. This move gave Japan a pretext to dispatch troops to Korea.',
+          lang: 'en',
+          cite: {
+            source: 'loc-south-korea-country-study-1990',
+            loc: { section: 'The Choson Dynasty', para: '13' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/south-korea/5.htm' }
+        }
+      ]
+    },
+    {
+      kind: 'casualties',
+      quotes: [
+        {
+          id: 'q21',
+          text: 'It is impossible to estimate the Chinese losses in the war. The Japanese lost 4177 men by death in action or by sickness, and 56,862 were wounded or disabled by sickness, exclusive of the losses in the Formosa and Pescadores expeditions.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-chino-japanese-war',
+            loc: { section: 'CHINO-JAPANESE WAR', para: '11' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Chino-Japanese_War'
+          }
         }
       ]
     },
@@ -215,20 +280,143 @@ export default defineEvent({
           {
             value: { d: '1894-06-10' },
             cites: [
-              { source: 'lemo-chronik-1894', loc: { section: 'Chronik 1894', para: '17' } }
+              { source: 'lemo-chronik-1894', loc: { section: 'Chronik 1894', para: '17' } },
+              {
+                source: 'britannica-1911-chino-japanese-war',
+                loc: { section: 'CHINO-JAPANESE WAR', para: '1' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q12',
-        text: 'Einmarsch chinesischer Truppen in Korea; Beginn der zum chinesisch-japanischen Krieg führenden Verwicklungen.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1894', loc: { section: 'Chronik 1894', para: '18' } },
+        id: 'q15',
+        text: 'Early in June 1894 a small force of Chinese troops were sent to Asan, and Japan, duly informed of this action, replied by furnishing her minister at Seoul with an escort, rapidly following up this step by the despatch of about 5000 troops under Major-General Oshima.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-chino-japanese-war',
+          loc: { section: 'CHINO-JAPANESE WAR', para: '1' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1894.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Chino-Japanese_War'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1894-07-25' },
+            cites: [
+              {
+                source: 'britannica-1911-chino-japanese-war',
+                loc: { section: 'CHINO-JAPANESE WAR', para: '3' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q17',
+        text: 'Meanwhile a portion of the Japanese fleet had encountered some Chinese warships and transports off Phung-Tao, and scored an important success, sinking, amongst other vessels, the transport “Kowshing” (July 25).',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-chino-japanese-war',
+          loc: { section: 'CHINO-JAPANESE WAR', para: '3' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Chino-Japanese_War'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1894-09-15' },
+            cites: [
+              {
+                source: 'britannica-1911-chino-japanese-war',
+                loc: { section: 'CHINO-JAPANESE WAR', para: '4' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q18',
+        text: 'Reinforcements from Japan were now pouring into Korea, in spite of the fact that the rival navies had not yet tried conclusions, and General Nozu, the senior Japanese officer present, soon found himself in a position to move on Ping-Yang. Three columns converged upon the place on the 15th of September, and in spite of its strong walls carried it, though only after severe fighting.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-chino-japanese-war',
+          loc: { section: 'CHINO-JAPANESE WAR', para: '4' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Chino-Japanese_War'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1894-09-17' },
+            cites: [
+              {
+                source: 'britannica-1911-chino-japanese-war',
+                loc: { section: 'CHINO-JAPANESE WAR', para: '5' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q19',
+        text: 'In the end the Chinese fleet was defeated and scattered, but the two heavy battleships drew off without serious injury. This battle of the Yalu gave Japan command of the sea, but Ito continued to act with great caution.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-chino-japanese-war',
+          loc: { section: 'CHINO-JAPANESE WAR', para: '5' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Chino-Japanese_War'
+        }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1895-02-12' },
+            cites: [
+              {
+                source: 'britannica-1911-chino-japanese-war',
+                loc: { section: 'CHINO-JAPANESE WAR', para: '9' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q20',
+        text: 'On the 12th Admiral Ting wrote to Admiral Ito offering to surrender, and then took poison, other officers following his example.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-chino-japanese-war',
+          loc: { section: 'CHINO-JAPANESE WAR', para: '9' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Chino-Japanese_War'
         }
       }
     },
@@ -238,43 +426,26 @@ export default defineEvent({
           {
             value: { d: '1895-04-17' },
             cites: [
-              { source: 'lemo-chronik-1895', loc: { section: 'Chronik 1895', para: '16' } }
+              {
+                source: 'britannica-1911-chino-japanese-war',
+                loc: { section: 'CHINO-JAPANESE WAR', para: '10' }
+              }
             ]
           }
         ]
       },
       quote: {
-        id: 'q13',
-        text: 'Der Friede von Schimonoseki beendet den neunmonatigen chinesisch-japanischen Krieg um die Vorherrschaft in Korea: China tritt Formosa (heute Taiwan) und die Pescadores-Inseln an Japan ab, zahlt 300 Millionen Yen Kriegsentschädigung und erkennt die Unabhängigkeit Koreas an.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1895', loc: { section: 'Chronik 1895', para: '17' } },
+        id: 'q16',
+        text: 'Li Hung-Chang proceeded to Shimonoseki, where the treaty was signed on the 17th of April 1895.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-chino-japanese-war',
+          loc: { section: 'CHINO-JAPANESE WAR', para: '10' }
+        },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1895.html'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1895-05-08' },
-            cites: [
-              { source: 'lemo-chronik-1895', loc: { section: 'Chronik 1895', para: '23' } }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q14',
-        text: 'Die Intervention des Deutschen Reiches, Russlands und Frankreichs in Tokio führt zur teilweisen Revision des Friedens von Schimonoseki im Friedensvertrag von Chefoo (heute Yantai in China): Japan gibt die Halbinsel Liaotung zurück und erhält dafür weitere Reparationszahlungen von China.',
-        lang: 'de',
-        cite: { source: 'lemo-chronik-1895', loc: { section: 'Chronik 1895', para: '24' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/jahreschronik/1895.html'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Chino-Japanese_War'
         }
       }
     }
@@ -284,5 +455,28 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:%E3%80%8C%E5%90%91%E8%99%95%E7%84%A1%E6%95%B5_%E5%B9%B3%E5%A3%8C%E9%99%A5%E8%90%BD%E3%80%8D-There_Stands_No_Enemy_Where_We_Go-_Surrender_of_Pyongyang_from_a_series_on_the_Sino-Japanese_War_(Mukau_tokoro_tekinashi-_Heij%C5%8D_kanraku)_MET_DP146887.jpg',
     credit: { institution: 'The Metropolitan Museum of Art', creator: 'Toshihide Migita' },
     license: { id: 'cc0' }
-  }
+  },
+  figures: [
+    {
+      key: 'military-deaths',
+      side: 'japan',
+      value: {
+        alts: [
+          {
+            value: { min: 4177 },
+            cites: [
+              {
+                source: 'britannica-1911-chino-japanese-war',
+                loc: { section: 'CHINO-JAPANESE WAR', para: '11' }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  furtherReading: [
+    { source: 'qi-1990-jiawu-zhanzheng-shi', perspective: 'chinese' },
+    { source: 'fujimura-1973-nisshin-senso', perspective: 'japanese' }
+  ]
 })

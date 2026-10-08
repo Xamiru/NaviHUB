@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'persian-corridor',
   names: [
-    { text: 'Persian Corridor', lang: 'en', role: 'primary' }
+    { text: 'Persian Corridor', lang: 'en', role: 'primary' },
+    { text: 'پل پیروزی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'other',
   start: {
     alts: [
@@ -36,6 +37,12 @@ export default defineEvent({
   partOf: [
     { ref: 'event:second-world-war' },
     { ref: 'period:reign-of-mohammad-reza-shah' }
+  ],
+  polities: [
+    { ref: 'polity:united-states' },
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:pahlavi-iran' },
+    { ref: 'polity:soviet-union' }
   ],
   related: [
     {
@@ -183,5 +190,8 @@ export default defineEvent({
       bytes: 27620662,
       date: { d: '1952' }
     }
+  ],
+  furtherReading: [
+    { source: 'hasanli-2006-at-the-dawn-of-the-cold-war', perspective: 'central-asian' }
   ]
 })

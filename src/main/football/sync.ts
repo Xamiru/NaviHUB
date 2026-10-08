@@ -1088,6 +1088,46 @@ async function enrichOne(
  * competitions, every club (most-played first), then players with a footprint in the
  * archive. Entities already complete are skipped, so a paused or cancelled run resumes.
  */
+/**
+ * People the pictures step visits, most goals first: those still missing a portrait or facts
+ * who are favourites, in the player quiz pack, or have a footprint in the scoped competitions,
+ * meaning three goals or five appearances. Open identity conflicts wait for resolution.
+ */
+export async function artworkPeople(
+  keys: readonly FootballCompetitionKey[],
+  yieldBetween: () => Promise<void>
+): Promise<Array<{ id: number }>> {
+  const db = getSqlite()
+  const scope = `IN (SELECT s.id FROM football_season s JOIN football_competition c ON c.id=s.competition_id
+    WHERE c.key IN (${keys.map(() => '?').join(',')}))`
+  // Counted per player with correlated subqueries, this held the main process for seconds
+  // on a full archive, so each table is grouped once, with a yield between the reads.
+  const footprint = new Set<number>()
+  await yieldBetween()
+  for (const row of db.prepare(`
+    SELECT l.person_id AS id FROM football_match m JOIN football_lineup l ON l.match_id=m.id
+    WHERE m.season_id ${scope} GROUP BY l.person_id HAVING COUNT(*) >= 5
+  `).all(...keys) as { id: number }[]) footprint.add(row.id)
+  await yieldBetween()
+  for (const row of db.prepare(`
+    SELECT e.person_id AS id FROM football_match m JOIN football_event e ON e.match_id=m.id
+    WHERE m.season_id ${scope} AND e.type='goal' AND e.person_id IS NOT NULL
+    GROUP BY e.person_id HAVING COUNT(*) >= 3
+  `).all(...keys) as { id: number }[]) footprint.add(row.id)
+  await yieldBetween()
+  return (db.prepare(`
+    SELECT p.id, p.quiz_pack AS quizPack,
+      EXISTS(SELECT 1 FROM football_favorite f WHERE f.entity_kind='person' AND f.entity_id=p.id) AS favorite
+    FROM football_person p
+    WHERE (p.image_path IS NULL OR p.enrichment_state<>'ready')
+      AND NOT EXISTS(SELECT 1 FROM football_conflict c
+        WHERE c.entity_kind='person' AND c.entity_id=p.id AND c.status='open')
+    ORDER BY (SELECT COUNT(*) FROM football_event e WHERE e.person_id=p.id) DESC, p.id
+  `).all() as Array<{ id: number; quizPack: number; favorite: number }>)
+    .filter((row) => row.favorite || row.quizPack === 1 || footprint.has(row.id))
+    .map((row) => ({ id: row.id }))
+}
+
 async function installArtwork(runGate: PauseGate, competitionKeys?: FootballCompetitionKey[]): Promise<void> {
   const db = getSqlite()
   const keys = competitionKeys?.length ? competitionKeys : FOOTBALL_COMPETITION_KEYS
@@ -1100,19 +1140,7 @@ async function installArtwork(runGate: PauseGate, competitionKeys?: FootballComp
     WHERE t.image_path IS NULL OR t.enrichment_state<>'ready'
     GROUP BY t.id ORDER BY COUNT(*) DESC
   `).all(...keys, ...keys) as { id: number }[]
-  const people = db.prepare(`
-    SELECT p.id FROM football_person p
-    WHERE (p.image_path IS NULL OR p.enrichment_state<>'ready')
-      AND NOT EXISTS(SELECT 1 FROM football_conflict c
-        WHERE c.entity_kind='person' AND c.entity_id=p.id AND c.status='open')
-      AND (EXISTS(SELECT 1 FROM football_favorite f WHERE f.entity_kind='person' AND f.entity_id=p.id)
-        OR p.quiz_pack=1
-        OR (SELECT COUNT(*) FROM football_event e JOIN football_match m ON m.id=e.match_id
-            WHERE e.person_id=p.id AND e.type='goal' AND m.season_id ${scope}) >= 3
-        OR (SELECT COUNT(*) FROM football_lineup l JOIN football_match m ON m.id=l.match_id
-            WHERE l.person_id=p.id AND m.season_id ${scope}) >= 5)
-    ORDER BY (SELECT COUNT(*) FROM football_event e WHERE e.person_id=p.id) DESC, p.id
-  `).all(...keys, ...keys) as { id: number }[]
+  const people = await artworkPeople(keys, () => checkpoint(runGate))
   status = { ...status, total: keys.length + teams.length + people.length }
   for (const key of keys) {
     await checkpoint(runGate)

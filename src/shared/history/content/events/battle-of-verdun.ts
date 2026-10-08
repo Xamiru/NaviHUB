@@ -7,7 +7,7 @@ export default defineEvent({
     { text: 'Bataille de Verdun', lang: 'fr', role: 'native' },
     { text: 'Schlacht um Verdun', lang: 'de', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -98,6 +98,7 @@ export default defineEvent({
     {
       key: 'france',
       name: 'French army',
+      polity: 'polity:french-third-republic',
       cites: [
         {
           source: 'eo1418-julien-verdun-site-of-memory',
@@ -108,6 +109,7 @@ export default defineEvent({
     {
       key: 'germany',
       name: 'German army',
+      polity: 'polity:german-empire',
       cites: [
         {
           source: 'eo1418-julien-verdun-site-of-memory',
@@ -158,14 +160,17 @@ export default defineEvent({
       kind: 'course',
       quotes: [
         {
-          id: 'q3',
-          text: 'General Henri Philippe Pétain übernimmt den Oberbefehl über die französischen Truppen bei Verdun.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1916', loc: { section: 'Chronik 1916', para: '25' } },
+          id: 'q8',
+          text: 'When the Germans launched a full-scale offensive on Verdun on 21 February 1916, Pétain was ordered by General Joseph Joffre (1852-1931) to defend the fortified region at the head of the 2nd army.',
+          lang: 'en',
+          cite: {
+            source: 'eo1418-cosson-petain-philippe',
+            loc: { section: 'The Battle of Verdun (1916)', para: '1' }
+          },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1916.html'
+            at: '2026-10-07',
+            url: 'https://encyclopedia.1914-1918-online.net/article/petain-philippe/'
           }
         },
         {
@@ -239,5 +244,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:The_Battle_of_Verdun,_February-december_1916_Q69716.jpg',
     credit: { institution: 'Imperial War Museums', creator: 'French official photographer' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'prost-krumeich-2015-verdun-1916', perspective: 'european' }
+  ]
 })

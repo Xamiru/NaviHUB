@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Battle of Carabobo', lang: 'en', role: 'primary' },
     { text: 'Batalla de Carabobo', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -26,8 +26,12 @@ export default defineEvent({
   places: [
     { ref: 'place:carabobo' }
   ],
+  polities: [
+    { ref: 'polity:gran-colombia' },
+    { ref: 'polity:kingdom-of-spain' }
+  ],
   related: [
-    { ref: 'period:gran-colombia', rel: 'related' }
+    { ref: 'polity:gran-colombia', rel: 'related' }
   ],
   participants: [
     {

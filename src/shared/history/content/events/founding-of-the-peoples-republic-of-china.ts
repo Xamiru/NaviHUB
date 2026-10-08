@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'revolution',
   start: {
     alts: [
@@ -49,6 +49,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:peoples-republic-of-china' }
   ],
   participants: [
     {
@@ -252,5 +255,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Kaiguodadian.jpg',
     credit: { institution: 'Huaxia, no. 7 (1998)', creator: 'Meng Zhaorui' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'ccp-2011-zhongguo-gongchandang-lishi-di-er-juan', perspective: 'chinese' }
+  ]
 })

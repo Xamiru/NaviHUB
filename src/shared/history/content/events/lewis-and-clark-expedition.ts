@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'expedition',
   start: {
     alts: [
@@ -46,6 +46,17 @@ export default defineEvent({
   },
   regions: ['north-america'],
   prominence: 2,
+  places: [
+    {
+      ref: 'place:st-louis',
+      cites: [
+        {
+          source: 'nps-missouri-national-recreational-river-lewis-and-clark',
+          loc: { section: 'The Lewis and Clark Expedition', para: '12' }
+        }
+      ]
+    }
+  ],
   participants: [
     {
       name: 'Meriwether Lewis',

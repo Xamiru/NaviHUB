@@ -48,3 +48,21 @@ describe('person edits', () => {
     expect(peopleRepo.get(id)?.birthday).toBe('1965-05-23')
   })
 })
+
+describe('person credits', () => {
+  it('report each voiced role’s place in its cast and the cast size', () => {
+    const show = mediaRepo.create({ mediaType: 'anime', title: 'Show' })
+    const person = peopleRepo.upsert({ name: 'Voice actor' })
+    const characters = ['Lead', 'Rival', 'Extra'].map(
+      (name) => db.prepare('INSERT INTO character (name) VALUES (?)').run(name).lastInsertRowid as number
+    )
+    characters.forEach((id, i) =>
+      db.prepare('INSERT INTO media_character (media_id, character_id, sort_order) VALUES (?, ?, ?)').run(show, id, i + 1)
+    )
+    db.prepare('INSERT INTO credit (media_id, person_id, character_id, role) VALUES (?, ?, ?, ?)')
+      .run(show, person, characters[2], 'voice_actor')
+
+    const [credit] = peopleRepo.credits(person)
+    expect(credit).toMatchObject({ castPosition: 3, castSize: 3 })
+  })
+})

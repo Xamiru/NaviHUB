@@ -3,9 +3,10 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'abbas-mirza-khorasan-campaign',
   names: [
-    { text: 'Khorasan campaign of Abbas Mirza', lang: 'en', role: 'primary' }
+    { text: 'Khorasan campaign of Abbas Mirza', lang: 'en', role: 'primary' },
+    { text: 'لشکرکشی عباس میرزا به خراسان', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'war',
   start: {
     alts: [
@@ -58,6 +59,9 @@ export default defineEvent({
   partOf: [
     { ref: 'period:reign-of-fath-ali-shah' },
     { ref: 'period:qajar-dynasty' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {

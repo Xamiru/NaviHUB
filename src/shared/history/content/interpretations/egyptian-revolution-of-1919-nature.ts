@@ -4,12 +4,13 @@ export default defineInterpretation({
   id: 'egyptian-revolution-of-1919-nature',
   about: ['event:egyptian-revolution-of-1919'],
   topic: 'nature',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'national-union',
-      category: 'official',
+      category: 'popular',
       holders: [
+        { kind: 'public', name: 'Egyptian popular memory' },
         { kind: 'state', name: 'Kingdom of Egypt (the monarchy of Fuad I)' }
       ],
       statements: [
@@ -90,15 +91,15 @@ export default defineInterpretation({
       ]
     },
     {
-      id: 'savage-outbreak',
-      category: 'contemporary',
+      id: 'milner-report-wartime-grievances',
+      category: 'scholarly',
       holders: [
-        { kind: 'participant', name: 'Alfred, 1st Viscount Milner' }
+        { kind: 'scholar', name: 'Christopher S. Rose' }
       ],
       statements: [
         {
           id: 'q5',
-          text: 'He acknowledged there were “unfortunate incidences” during the period of the war which “shook for a time” Egyptians’ “confidence in our justice and good will, and were pre-disposing causes of the savage outbreak of anti-British feeling in the spring of 1919”.',
+          text: 'Milner’s report to the cabinet and King George V (1865-1936) was published in February 1921. He acknowledged there were “unfortunate incidences” during the period of the war which “shook for a time” Egyptians’ “confidence in our justice and good will, and were pre-disposing causes of the savage outbreak of anti-British feeling in the spring of 1919”',
           lang: 'en',
           cite: {
             source: 'eo1418-rose-egypt',
@@ -106,7 +107,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-08',
             url: 'https://encyclopedia.1914-1918-online.net/article/egypt/'
           }
         }

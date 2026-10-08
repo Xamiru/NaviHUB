@@ -5,20 +5,16 @@ export default defineEvent({
   names: [
     { text: 'Emancipation of the serfs in Russia', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'reform',
   start: {
     alts: [
       {
-        value: { d: '1861' },
+        value: { d: '1861-03-03', julian: true },
         cites: [
           {
-            source: 'loc-russia-country-study-1996',
-            loc: { section: 'Transformation of Russia in the Nineteenth Century', para: '6' }
-          },
-          {
-            source: 'state-dept-milestones-consequences-of-union-victory',
-            loc: { section: 'The Consequences of Union Victory, 1865', para: '8' }
+            source: 'britannica-1911-alexander-ii-tsar',
+            loc: { section: 'ALEXANDER II. (tsar)', para: '2' }
           }
         ]
       }
@@ -28,6 +24,9 @@ export default defineEvent({
   prominence: 1,
   partOf: [
     { ref: 'period:reign-of-alexander-ii' }
+  ],
+  polities: [
+    { ref: 'polity:russian-empire' }
   ],
   participants: [
     {
@@ -148,6 +147,46 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1861-1865/victory'
           }
+        },
+        {
+          id: 'q12',
+          text: 'In 1864 most local government in the European part of Russia was organized into provincial and district zemstva (sing., zemstvo), which were made up of representatives of all classes and were responsible for local schools, public health, roads, prisons, food supply, and other concerns.',
+          lang: 'en',
+          cite: {
+            source: 'loc-russia-country-study-1996',
+            loc: { section: 'Transformation of Russia in the Nineteenth Century', para: '8' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/russia/6.htm' }
+        },
+        {
+          id: 'q13',
+          text: 'In 1870 elected city councils, or dumy (sing., duma ), were formed.',
+          lang: 'en',
+          cite: {
+            source: 'loc-russia-country-study-1996',
+            loc: { section: 'Transformation of Russia in the Nineteenth Century', para: '8' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/russia/6.htm' }
+        },
+        {
+          id: 'q14',
+          text: 'In 1864 the regime implemented judicial reforms.',
+          lang: 'en',
+          cite: {
+            source: 'loc-russia-country-study-1996',
+            loc: { section: 'Transformation of Russia in the Nineteenth Century', para: '9' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/russia/6.htm' }
+        },
+        {
+          id: 'q15',
+          text: 'The levy system introduced in 1874 gave the army a role in teaching many peasants to read and in pioneering medical education for women.',
+          lang: 'en',
+          cite: {
+            source: 'loc-russia-country-study-1996',
+            loc: { section: 'Transformation of Russia in the Nineteenth Century', para: '12' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/russia/6.htm' }
         }
       ]
     }
@@ -157,5 +196,46 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Reading_of_the_Manifest_(Liberation_of_peasants)_-_Kustodiev,_1907.jpg',
     credit: { creator: 'Boris Kustodiev' },
     license: { id: 'public-domain' }
-  }
+  },
+  course: [
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1861-03-03', julian: true },
+            cites: [
+              {
+                source: 'britannica-1911-alexander-ii-tsar',
+                loc: { section: 'ALEXANDER II. (tsar)', para: '2' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q11',
+        text: 'On the 3rd of March 1861, the sixth anniversary of his accession, the emancipation law was signed and published.',
+        lang: 'en',
+        cite: {
+          source: 'britannica-1911-alexander-ii-tsar',
+          loc: { section: 'ALEXANDER II. (tsar)', para: '2' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-08',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Alexander_II._(tsar)'
+        }
+      }
+    }
+  ],
+  furtherReading: [
+    {
+      source: 'zaionchkovskii-1954-otmena-krepostnogo-prava-v-rossii',
+      perspective: 'russian-soviet'
+    },
+    {
+      source: 'zaionchkovskii-1958-provedenie-v-zhizn-krestianskoi-reformy',
+      perspective: 'russian-soviet'
+    }
+  ]
 })

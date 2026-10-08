@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Anglo-Persian Agreement of 1919', lang: 'en', role: 'primary' },
     { text: 'قرارداد ۱۹۱۹', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'treaty',
   start: {
     alts: [
@@ -63,6 +63,10 @@ export default defineEvent({
     { ref: 'period:reign-of-ahmad-shah-qajar' },
     { ref: 'period:qajar-dynasty' }
   ],
+  polities: [
+    { ref: 'polity:united-kingdom' },
+    { ref: 'polity:qajar-iran' }
+  ],
   participants: [
     {
       ref: 'person:vosuq-al-dowleh',
@@ -79,7 +83,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Lord Curzon',
+      ref: 'person:george-curzon',
       role: 'negotiator',
       cites: [
         {
@@ -329,5 +333,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Conf%C3%A9rence_de_San_Remo_-_Lord_Curzon_-_btv1b9033690j.jpg',
     credit: { institution: 'Bibliothèque nationale de France', creator: 'Agence de presse Meurisse' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'sheikholeslami-1989-sima-ye-ahmad-shah-qajar', perspective: 'iranian' },
+    { source: 'safai-1995-vosuq-al-dowleh', perspective: 'iranian' }
+  ]
 })

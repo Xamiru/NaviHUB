@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Menelik II', lang: 'en', role: 'primary' },
     { text: 'ምኒልክ ፪ኛ', lang: 'am', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   born: {
     alts: [
       {
@@ -32,6 +32,7 @@ export default definePerson({
   offices: [
     {
       title: 'Emperor',
+      polity: 'polity:ethiopian-empire',
       start: {
         alts: [
           {

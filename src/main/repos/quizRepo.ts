@@ -258,7 +258,10 @@ function assignRelationComponents(media: Map<number, ChallengeMediaCandidate>): 
   for (const row of getSqlite().prepare(
     `SELECT mr.media_id, related.id AS related_id FROM media_relation mr
      JOIN media_item related ON related.external_source=mr.related_source
-       AND related.external_id=mr.related_external_id`
+       AND related.external_id=mr.related_external_id
+     UNION ALL
+     SELECT mr.media_id, l.media_id AS related_id FROM media_relation mr
+     JOIN media_external_link l ON l.source=mr.related_source AND l.external_id=mr.related_external_id`
   ).all() as Array<{ media_id: number; related_id: number }>) {
     if (!media.has(row.media_id) || !media.has(row.related_id)) continue
     const left = root(row.media_id)

@@ -24,7 +24,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'founding',
   start: {
     alts: [
@@ -99,17 +99,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://ehne.fr/en/encyclopedia/themes/international-relations/cultures-peace/socialists-and-peace'
           }
-        },
-        {
-          id: 'q1',
-          text: 'In Paris gründen unter maßgeblicher Beteiligung von Friedrich Engels sozialistische Parteien aus 20 Ländern die II. Internationale.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1889', loc: { section: 'Chronik 1889', para: '44' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1889.html'
-          }
         }
       ]
     },
@@ -168,5 +157,9 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Congresso_Socialdem_1910.jpg',
     credit: { institution: 'Den Store Danske' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'haupt-1964-la-deuxieme-internationale', perspective: 'european' },
+    { source: 'zubok-1965-istoriya-vtorogo-internatsionala', perspective: 'russian-soviet' }
+  ]
 })

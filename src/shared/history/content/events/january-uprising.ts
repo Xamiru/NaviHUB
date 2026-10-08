@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   type: 'uprising',
   start: {
     alts: [
@@ -48,6 +48,9 @@ export default defineEvent({
   prominence: 2,
   partOf: [
     { ref: 'period:reign-of-alexander-ii' }
+  ],
+  polities: [
+    { ref: 'polity:russian-empire' }
   ],
   participants: [
     {
@@ -193,17 +196,17 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q8',
-        text: '8. Februar: Mit Unterzeichnung der Alvenslebenschen Konvention unterstützt Bismarck Russland in der Bekämpfung des polnischen Aufstands und sichert sich so den in den kommenden Jahren wichtigen russischen Rückhalt.',
-        lang: 'de',
+        id: 'q9',
+        text: 'The first was the outbreak of rebellion in Poland. Bismarck, an inheritor of the older Prussian traditions, and recollecting how much of the greatness of Prussia had been gained at the expense of the Poles, offered his help to the tsar.',
+        lang: 'en',
         cite: {
-          source: 'lemo-biografie-otto-von-bismarck',
-          loc: { section: 'Otto von Bismarck 1815-1898', para: '62' }
+          source: 'britannica-1911-bismarck',
+          loc: { section: 'BISMARCK, OTTO EDUARD LEOPOLD VON', para: '6' }
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.dhm.de/lemo/biografie/otto-von-bismarck'
+          at: '2026-10-07',
+          url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Bismarck,_Otto_Eduard_Leopold_von'
         }
       }
     }

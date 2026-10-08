@@ -7,7 +7,7 @@ export default defineEvent({
     { text: 'به توپ بستن مجلس', lang: 'fa', role: 'native' },
     { text: 'royal coup d’état of 1908', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'coup',
   start: {
     alts: [
@@ -33,6 +33,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'event:persian-constitutional-revolution' }
+  ],
+  polities: [
+    { ref: 'polity:qajar-iran' }
   ],
   participants: [
     {
@@ -145,5 +148,9 @@ export default defineEvent({
     title: 'Shah of Persia, Mohammed Ali Mirzi, Dec. 19, 1907',
     credit: { institution: 'Library of Congress', creator: 'Bain News Service' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'kasravi-1940-tarikh-e-mashruteh-ye-iran', perspective: 'iranian' },
+    { source: 'malekzadeh-1949-tarikh-e-enqelab-e-mashrutiyat', perspective: 'iranian' }
+  ]
 })

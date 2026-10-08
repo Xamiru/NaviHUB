@@ -6,12 +6,13 @@ export default definePerson({
     { text: 'Hasan Arsanjani', lang: 'en', role: 'primary' },
     { text: 'حسن ارسنجانی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   regions: ['iran'],
   roles: ['politician', 'journalist'],
   offices: [
     {
       title: 'minister of agriculture',
+      polity: 'polity:pahlavi-iran',
       cites: [
         {
           source: 'iranica-yarshater-chronology-part-3',

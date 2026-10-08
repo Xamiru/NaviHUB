@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'fall-of-qaem-maqam-farahani-responsibility',
   about: ['event:fall-of-qaem-maqam-farahani'],
   topic: 'responsibility',
-  researched: '2026-10-06',
+  researched: '2026-10-08',
   positions: [
     {
       id: 'rivals-and-haughtiness',
@@ -40,6 +40,20 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
+        },
+        {
+          id: 'q4',
+          text: 'He also pressed upon the Shah for Moḥammad Mirzā’s designation, to foster his own ambition according to James Fraser.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-calmard-mohammad-shah',
+            loc: { section: 'MOḤAMMAD SHAH QĀJĀR', para: '6' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/mohammad-shah'
+          }
         }
       ]
     },
@@ -59,29 +73,6 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/aqasff-ujuli-mnsz-adras-ivxni-ca'
-          }
-        }
-      ]
-    },
-    {
-      id: 'personal-ambition',
-      category: 'contemporary',
-      holders: [
-        { kind: 'participant', name: 'James Baillie Fraser' }
-      ],
-      statements: [
-        {
-          id: 'q4',
-          text: 'He also pressed upon the Shah for Moḥammad Mirzā’s designation, to foster his own ambition according to James Fraser.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-calmard-mohammad-shah',
-            loc: { section: 'MOḤAMMAD SHAH QĀJĀR', para: '6' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
         }
       ]

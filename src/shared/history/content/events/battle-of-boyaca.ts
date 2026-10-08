@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Battle of Boyacá', lang: 'en', role: 'primary' },
     { text: 'Batalla de Boyacá', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'battle',
   start: {
     alts: [
@@ -33,6 +33,9 @@ export default defineEvent({
         }
       ]
     }
+  ],
+  polities: [
+    { ref: 'polity:kingdom-of-spain' }
   ],
   participants: [
     {
@@ -128,5 +131,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Batalla_de_Boyaca_de_Martin_Tovar_y_Tovar.jpg',
     credit: { creator: 'Martín Tovar y Tovar' },
     license: { id: 'public-domain' }
-  }
+  },
+  furtherReading: [
+    { source: 'riano-1969-la-campana-libertadora-de-1819', perspective: 'latin-american' }
+  ]
 })

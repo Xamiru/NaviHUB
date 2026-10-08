@@ -31,7 +31,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'reform',
   start: {
     alts: [
@@ -81,6 +81,9 @@ export default defineEvent({
   ],
   partOf: [
     { ref: 'period:reign-of-mohammad-reza-shah' }
+  ],
+  polities: [
+    { ref: 'polity:pahlavi-iran' }
   ],
   participants: [
     {
@@ -396,6 +399,13 @@ export default defineEvent({
           url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-3/'
         }
       }
+    }
+  ],
+  furtherReading: [
+    { source: 'pahlavi-1967-enqelab-e-sefid', perspective: 'iranian' },
+    {
+      source: 'ruhani-1977-barresi-va-tahlili-az-nehzat-e-imam-khomeini',
+      perspective: 'iranian'
     }
   ]
 })

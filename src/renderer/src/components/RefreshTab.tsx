@@ -13,6 +13,7 @@ import { REFRESH_ASPECTS, aspectsForTypes } from '@shared/refresh'
 import type { RefreshAspect } from '@shared/refresh'
 import type { MediaType, RefreshPreview, RefreshRunStatus } from '@shared/types'
 import QuietWorkspace from './QuietWorkspace'
+import GamesUpgradeSection from './GamesUpgradeSection'
 import OperationFlow from './OperationFlow'
 import { formatRunTime } from '../lib/archiveDisplay'
 
@@ -176,6 +177,7 @@ export default function RefreshTab(): React.JSX.Element {
 
   return (
     <div className="space-y-6">
+      <GamesUpgradeSection />
       <QuietWorkspace
         title="Online metadata"
         description="Revisit the original source for titles already in your library. Choose a quick setup or keep your own selection."

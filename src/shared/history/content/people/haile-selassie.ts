@@ -17,7 +17,17 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
+  born: {
+    alts: [
+      {
+        value: { d: '1892' },
+        cites: [
+          { source: 'lemo-chronik-1928', loc: { section: 'Chronik 1928', para: '182' } }
+        ]
+      }
+    ]
+  },
   died: {
     alts: [
       {
@@ -36,6 +46,7 @@ export default definePerson({
   offices: [
     {
       title: 'Emperor of Ethiopia',
+      polity: 'polity:ethiopian-empire',
       start: {
         alts: [
           {

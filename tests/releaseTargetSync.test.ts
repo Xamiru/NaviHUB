@@ -10,7 +10,8 @@ const workflow = read('../.github/workflows/release.yml')
 const localRelease = read('../.claude/skills/local-release/SKILL.md')
 const packagingDocs = read('../docs/architecture/packaging-ci-updates.md')
 const updater = read('../src/main/updater.ts')
-const catalog = read('../src/main/gamesCatalog.ts')
+// Both games catalogs install through the one release installer.
+const catalog = read('../src/main/catalogRelease.ts')
 
 describe('public release target', () => {
   it('publishes each main push in order and keeps manual recovery', () => {

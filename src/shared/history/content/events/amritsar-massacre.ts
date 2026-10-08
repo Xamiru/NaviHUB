@@ -17,7 +17,7 @@ export default defineEvent({
     },
     { text: 'ਜਲ੍ਹਿਆਂਵਾਲਾ ਬਾਗ ਹੱਤਿਆਕਾਂਡ', lang: 'pa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-08',
   type: 'massacre',
   start: {
     alts: [
@@ -59,7 +59,10 @@ export default defineEvent({
     }
   ],
   partOf: [
-    { ref: 'period:british-raj' }
+    { ref: 'polity:british-raj' }
+  ],
+  polities: [
+    { ref: 'polity:british-raj' }
   ],
   participants: [
     {
@@ -347,5 +350,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Jallianwala_Bagh_Memorial,_Amritsar.jpg',
     credit: { creator: 'Baap8969' },
     license: { id: 'cc0' }
-  }
+  },
+  furtherReading: [
+    { source: 'datta-1969-jallianwala-bagh', perspective: 'south-asian' }
+  ]
 })
