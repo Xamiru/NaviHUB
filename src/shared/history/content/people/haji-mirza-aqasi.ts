@@ -103,12 +103,12 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'Through the latter’s mediation, Āqāsī was readmitted to the Crown Prince’s service, and by 1240/1824 was appointed chief tutor to several of the Crown Prince’s sons, including Farīdūn Mīrzā and, soon after, Moḥammad Mīrzā, the future shah.',
+          text: 'Mīrzā Bozorg encouraged the dervish ʿAbbās to adopt a mulla’s attire and gave him the tutorship of his son Mūsā, a half brother of the famous Mīrzā Abu’l-Qāsem Qāʾem-maqām. In the service of Mīrzā Bozorg, he rose in rank and even received some toyūls around Tabrīz and the title Āqāsī (as is seen from his seal “Āqāsī 1237”) but the death of his patron in 1237/1821 endangered his rank and possessions. The rivalry between Qāʾem-maqām’s sons, Mūsā and Abu’l-Qāsem brought to the surface the deep-rooted Turko-Persian factionalism in Tabrīz, forcing Mollā ʿAbbās, himself of Turkish descent with strong links with the Turko-Kurdish Bayāt chiefs of Mākū, to take refuge from the triumphant Abu’l-Qāsem with the powerful chief of Ḵoy, Amīr Khan Sardār. Through the latter’s mediation, Āqāsī was readmitted to the Crown Prince’s service, and by 1240/1824 was appointed chief tutor to several of the Crown Prince’s sons, including Farīdūn Mīrzā and, soon after, Moḥammad Mīrzā, the future shah.',
           lang: 'en',
           cite: { source: 'iranica-amanat-aqasi', loc: { section: 'ĀQĀSĪ, ḤĀJJĪ MĪRZĀ', para: '2' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/aqasff-ujuli-mnsz-adras-ivxni-ca'
           }
         }

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'perry-expedition-motives',
   about: ['event:perry-expedition-to-japan'],
   topic: 'motives',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'peace-and-amity',
@@ -27,6 +27,28 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://avalon.law.yale.edu/19th_century/japan002.asp'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q9',
+          text: 'In the final years of the Tokugawa, foreign contacts increased as more concessions were granted. The new treaty with the United States in 1859 allowed more ports to be opened to diplomatic representatives, unsupervised trade at four additional ports, and foreign residences in Osaka and Edo. It also embodied the concept of extraterritoriality',
+          lang: 'en',
+          cite: {
+            source: 'loc-japan-country-study-1994',
+            loc: { section: 'Decline of the Tokugawa', para: '8' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/japan/21.htm' }
+        },
+        {
+          id: 'q11',
+          text: 'Foreign intrusions helped to precipitate a complex political struggle between the bakufu and a coalition of its critics.',
+          lang: 'en',
+          cite: {
+            source: 'loc-japan-country-study-1994',
+            loc: { section: 'Decline of the Tokugawa', para: '1' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/japan/21.htm' }
         }
       ]
     },
@@ -167,6 +189,28 @@ export default defineInterpretation({
             at: '2026-10-08',
             url: 'https://archive.org/download/narrativeofexped01perr/narrativeofexped01perr_djvu.txt'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q10',
+          text: 'The shogun\'s advisers pushed for a return to the martial spirit, more restrictions on foreign trade and contacts, suppression of Rangaku, censorship of literature, and elimination of "luxury" in the government and samurai class.',
+          lang: 'en',
+          cite: {
+            source: 'loc-japan-country-study-1994',
+            loc: { section: 'Decline of the Tokugawa', para: '4' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/japan/21.htm' }
+        },
+        {
+          id: 'q12',
+          text: 'Although the Japanese made some minor concessions and allowed some landings, they largely attempted to keep all foreigners out, sometimes using force.',
+          lang: 'en',
+          cite: {
+            source: 'loc-japan-country-study-1994',
+            loc: { section: 'Decline of the Tokugawa', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/japan/21.htm' }
         }
       ]
     }

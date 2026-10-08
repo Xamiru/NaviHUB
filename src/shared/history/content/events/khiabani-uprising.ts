@@ -200,7 +200,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q7',
-          text: 'The next day, the Cossack forces entered the city, meeting with only sporadic resistance that was quickly quashed.',
+          text: 'Ironically, rather than being alarmed by this development, on the very same day the autonomous government dispatched the remainder of the gendarmes in the city to suppress the Šāhsevan (q.v.) tribal disorder on the main trade route a few miles away, leaving the city defended by only a poorly equipped police force and the few hundred citizens’ militia, the latter seemingly inclusive of the roughly three hundred “Ḵiābāni Guards” protecting ʿᾹli Qāpu, Tajaddod’s office, and Ḵiābāni and other members of the Public Committee. The next day, the Cossack forces entered the city, meeting with only sporadic resistance that was quickly quashed.',
           lang: 'en',
           cite: {
             source: 'iranica-bonakdarian-khiabani',
@@ -208,7 +208,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/%E1%B8%B5iabani-shaikh-mo%E1%B8%A5ammad/'
           }
         },

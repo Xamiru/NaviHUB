@@ -69,6 +69,20 @@ export default definePerson({
       kind: 'later-life',
       quotes: [
         {
+          id: 'q4',
+          text: 'Following the disastrous rout of the British army by the Afghans, Aga Khan and his followers settled in India, where in 1843 he abetted the British annexation of Sind in present-day Pakistan (See also Daftary, pp. 196-99; Algar, 1991, p. 729).',
+          lang: 'en',
+          cite: {
+            source: 'iranica-bonakdarian-india-relations-qajar-19th-century',
+            loc: { section: 'INDIA viii. Relations: Qajar Period, the 19th Century', para: '19' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/india-viii-relations-qajar-period-the-19th-century'
+          }
+        },
+        {
           id: 'q2',
           text: 'Soon after he arrived in Moḥarram, 1262/January, 1846, the Iranian government demanded his extradition, citing article fourteen of the Anglo-Iranian Treaty of 1299/1814.',
           lang: 'en',
@@ -94,20 +108,6 @@ export default definePerson({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/aqa-khan/aqa-khan-i-aqa-khan-i-ma%e1%b8%a5allati'
-          }
-        },
-        {
-          id: 'q4',
-          text: 'Following the disastrous rout of the British army by the Afghans, Aga Khan and his followers settled in India, where in 1843 he abetted the British annexation of Sind in present-day Pakistan (See also Daftary, pp. 196-99; Algar, 1991, p. 729).',
-          lang: 'en',
-          cite: {
-            source: 'iranica-bonakdarian-india-relations-qajar-19th-century',
-            loc: { section: 'INDIA viii. Relations: Qajar Period, the 19th Century', para: '19' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/india-viii-relations-qajar-period-the-19th-century'
           }
         }
       ]

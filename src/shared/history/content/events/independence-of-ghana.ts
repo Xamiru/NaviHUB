@@ -143,13 +143,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q8',
-          text: 'This special relationship between the British Crown and Ghana would continue until 1960, when the position of governor general was abolished under terms of a new constitution that declared the nation a republic.',
+          text: 'According to an independence constitution also drafted in 1957, Queen Elizabeth II of England was to be represented in the former colony by a governor general, and Sir Arden-Clarke was appointed to that position. This special relationship between the British Crown and Ghana would continue until 1960, when the position of governor general was abolished under terms of a new constitution that declared the nation a republic.',
           lang: 'en',
           cite: {
             source: 'loc-ghana-country-study-1994',
             loc: { section: 'INDEPENDENT GHANA', para: '1' }
           },
-          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/ghana/14.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/ghana/14.htm' }
         }
       ]
     }

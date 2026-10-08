@@ -14,6 +14,7 @@ import Tabs, { TabPanel } from '../components/Tabs'
 import CoverImage from '../components/CoverImage'
 import WrestlingMatchRow from '../components/wrestling/WrestlingMatchRow'
 import LooseMatchDialog from '../components/wrestling/LooseMatchDialog'
+import { WrestlingClipShelf } from '../components/wrestling/WrestlingClips'
 import { promotionName } from '@shared/wrestling'
 import type { WrestlingMatchWithEvent } from '@shared/types'
 import EditorialDetailFrame from '../components/EditorialDetailFrame'
@@ -193,6 +194,7 @@ export default function WrestlingCollectionPage(): JSX.Element {
                   </span>
                 </div>
                 <WrestlingMatchRow match={m} highlighted={m.id === highlightedId} />
+                <LooseMatchClips matchId={m.id} title={m.title} />
               </div>
             ))}
           </div>
@@ -212,5 +214,17 @@ export default function WrestlingCollectionPage(): JSX.Element {
         />
       )}
     </EditorialDetailFrame>
+  )
+}
+
+// Clips linked to a loose match, mounted only when opened so a long collection
+// does not issue one query per row.
+function LooseMatchClips({ matchId, title }: { matchId: number; title: string }): JSX.Element {
+  const [open, setOpen] = useState(false)
+  return (
+    <details className="mt-1 text-sm" onToggle={(e) => setOpen(e.currentTarget.open)}>
+      <summary className="cursor-pointer text-xs text-gray-400 hover:text-ink">Clips</summary>
+      {open && <WrestlingClipShelf kind="match" id={matchId} label={title} className="mt-2" />}
+    </details>
   )
 }

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'indian-removal-act-justification',
   about: ['event:indian-removal-act'],
   topic: 'legitimacy',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'benevolent-policy',
@@ -39,6 +39,39 @@ export default defineInterpretation({
           provenance: {
             via: 'web',
             at: '2026-10-06',
+            url: 'https://www.archives.gov/milestone-documents/jacksons-message-to-congress-on-indian-removal'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q8',
+          text: 'U.S. Army troops, along with various state militia, moved into the tribe’s homelands and forcibly evicted more than 16,000 Cherokee Indian people from their homelands in Tennessee, Alabama, North Carolina, and Georgia.',
+          lang: 'en',
+          cite: {
+            source: 'nps-trail-of-tears-brief-history',
+            loc: { section: 'History & Culture: A Brief History', para: '2' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.nps.gov/trte/learn/historyculture/index.htm'
+          }
+        },
+        {
+          id: 'q9',
+          text: 'The treaty was opposed by many members of the Cherokee Nation; and when they refused to leave, Maj. Gen. Winfield Scott was ordered to push them out.',
+          lang: 'en',
+          cite: {
+            source: 'nara-milestone-jackson-message-indian-removal',
+            loc: {
+              section: 'President Andrew Jackson\'s Message to Congress \'On Indian Removal\' (1830)',
+              para: '7'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
             url: 'https://www.archives.gov/milestone-documents/jacksons-message-to-congress-on-indian-removal'
           }
         }

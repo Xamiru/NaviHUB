@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'anglo-irish-treaty-acceptance',
   about: ['event:anglo-irish-treaty'],
   topic: 'legitimacy',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'recommend-the-treaty',
@@ -92,6 +92,22 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://api.parliament.uk/historic-hansard/commons/1921/dec/14/irish-free-state'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q7',
+          text: 'This compromise had provoked a civil war in Ireland, but by 1923 the pro-Treaty side had emerged victorious and the partition of the country had become permanent.',
+          lang: 'en',
+          cite: {
+            source: 'eo1418-leeson-post-war-conflict-great-britain-and-ireland',
+            loc: { section: 'Post-war Conflict (Great Britain and Ireland)' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://encyclopedia.1914-1918-online.net/article/post-war-conflict-great-britain-and-ireland/'
           }
         }
       ]

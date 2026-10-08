@@ -131,6 +131,16 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
+          id: 'q5',
+          text: 'The requirement of joining France\'s Continental Blockade against Britain was a serious disruption of Russian commerce, and in 1810 Alexander repudiated the obligation.',
+          lang: 'en',
+          cite: {
+            source: 'loc-russia-country-study-1996',
+            loc: { section: 'Ruling the Empire', para: '7' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/5.htm' }
+        },
+        {
           id: 'q4',
           text: 'However, some of the allies were reluctant to apply the blockade with any real conviction for fear that their own trade would suffer, and smuggling increased. On top of this, Napoleon was forced to mobilise a lot of men to oversee the blockade, many of whom were taken from army contingents.',
           lang: 'en',
@@ -142,19 +152,9 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.napoleon.org/en/young-historians/napodoc/timeline-consulate1st-french-empire/'
           }
-        },
-        {
-          id: 'q5',
-          text: 'The requirement of joining France\'s Continental Blockade against Britain was a serious disruption of Russian commerce, and in 1810 Alexander repudiated the obligation.',
-          lang: 'en',
-          cite: {
-            source: 'loc-russia-country-study-1996',
-            loc: { section: 'Ruling the Empire', para: '7' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/5.htm' }
         }
       ]
     }

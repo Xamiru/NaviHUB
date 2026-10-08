@@ -250,7 +250,9 @@ export default defineTheme({
           url: 'https://www.iranicaonline.org/articles/russia-ii-iranian-soviet-relations-1917-1991/'
         }
       }
-    }
+    },
+    { ref: 'event:iran-iraq-war' },
+    { ref: 'event:suppression-of-the-tudeh-party' }
   ],
   related: [
     { ref: 'theme:iran-and-britain' },

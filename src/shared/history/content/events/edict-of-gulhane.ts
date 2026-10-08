@@ -140,6 +140,16 @@ export default defineEvent({
       kind: 'in-their-words',
       quotes: [
         {
+          id: 'q14',
+          text: 'All the world knows that in the first days of the Ottoman monarchy, the glorious precepts of the Kuran and the laws of the empire were always honored.',
+          lang: 'en',
+          cite: {
+            source: 'rescript-of-gulhane-1839-english',
+            loc: { section: 'The Rescript of Gülhane', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'https://anayasa.gen.tr/gulhane.htm' }
+        },
+        {
           id: 'q4',
           text: 'These institutions must be principally carried out under three heads, which are:',
           lang: 'en',
@@ -215,13 +225,24 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
+          id: 'q13',
+          text: 'In 1843, the new Ottoman governor, Najib Pāšā, was determined to subdue Karbala as part of the centralizing reform (ṭanẓimāt) policy.',
+          lang: 'en',
+          cite: { source: 'iranica-litvak-karbala', loc: { section: 'KARBALA', para: '20' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.iranicaonline.org/articles/karbala/'
+          }
+        },
+        {
           id: 'q11',
           text: 'Yet the feelings of dismay and even ridicule with which this proclamation was received by the Mussulmans in many parts of the country show how great a change it instituted, and how strong was the opposition which it encountered among the ruling race.',
           lang: 'en',
           cite: { source: 'britannica-1911-turkey', loc: { section: 'TURKEY', para: '1423' } },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Turkey'
           }
         },
@@ -234,17 +255,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Turkey'
-          }
-        },
-        {
-          id: 'q13',
-          text: 'In 1843, the new Ottoman governor, Najib Pāšā, was determined to subdue Karbala as part of the centralizing reform (ṭanẓimāt) policy.',
-          lang: 'en',
-          cite: { source: 'iranica-litvak-karbala', loc: { section: 'KARBALA', para: '20' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://www.iranicaonline.org/articles/karbala/'
           }
         }
       ]

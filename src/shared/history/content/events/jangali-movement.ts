@@ -207,7 +207,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'But Gilān’s administration completely collapsed when in August 1914 the Russian forces left for the Caucasus. Chaos ensued, and even the Qajar governors refused to uphold the law and enforce order without the protection of the Russian army. Disobedience began in mild forms. There were collective complaints about landlords and Russian agents, and a few industrial strikes took place. But by the beginning of 1915, Gilān was the scene of widespread unrest.',
+          text: 'Gilān’s administration completely collapsed when in August 1914 the Russian forces left for the Caucasus. Chaos ensued, and even the Qajar governors refused to uphold the law and enforce order without the protection of the Russian army. Disobedience began in mild forms. There were collective complaints about landlords and Russian agents, and a few industrial strikes took place. But by the beginning of 1915, Gilān was the scene of widespread unrest.',
           lang: 'en',
           cite: {
             source: 'iranica-dailami-jangali-movement',
@@ -215,7 +215,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/jangali-movement'
           }
         }
@@ -258,6 +258,20 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
+          id: 'q16',
+          text: 'The Russian Revolutions of March and October 1917 had a profound impact on Persian nationalism, British policy towards Persia, and the range of anti-British activities in Persia.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-bonakdarian-great-britain-iii',
+            loc: { section: 'GREAT BRITAIN iii. British influence in Persia, 1900-21', para: '53' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/great-britain-iii'
+          }
+        },
+        {
           id: 'q6',
           text: 'This revolt, led by Mirzā Kuček Khan, and known as the Jangali (forest) movement, posed the most serious military challenge to British post-war prestige in Persia and would be a factor in precipitating the British-sponsored coup d’etat of 1921, led by Reżā Khan and Sayyed Ziāʾ-al-Din Ṭabāṭabāʾi.',
           lang: 'en',
@@ -267,7 +281,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/great-britain-iii'
           }
         }

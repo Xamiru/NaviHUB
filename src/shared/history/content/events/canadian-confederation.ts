@@ -187,6 +187,20 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
+          id: 'q12',
+          text: 'The outcome of the Civil War resulted in a strengthening of U.S. foreign power and influence, as the definitive Union defeat of the Confederacy firmly demonstrated the strength of the United States Government and restored its legitimacy to handle the sectional tensions that had complicated U.S. external relations in the years before the Civil War.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-consequences-of-union-victory',
+            loc: { section: 'The Consequences of Union Victory, 1865', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1861-1865/victory'
+          }
+        },
+        {
           id: 'q7',
           text: 'Subsequently, in 1870, Canadian Prime Minister John MacDonald successfully convinced the British Government to cede the lands of the Hudson’s Bay Company to Canada, crushing the hopes of U.S. expansionists who hoped to acquire those lands for the United States.',
           lang: 'en',
@@ -196,7 +210,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://history.state.gov/milestones/1861-1865/victory'
           }
         }

@@ -19,6 +19,7 @@ const KINDS: ListKind[] = [
   'wrestlingEvent',
   'wrestlingWrestler',
   'wrestlingMatch',
+  'wrestlingClip',
   'footballCompetition',
   'footballTeam',
   'footballPerson',

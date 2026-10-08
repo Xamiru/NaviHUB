@@ -93,12 +93,12 @@ export default definePerson({
       quotes: [
         {
           id: 'q4',
-          text: 'He was arrested, tried on 31 July 1909 (13 Rajab 1327), and publicly hung in Tupḵāneh Square in Tehran.',
+          text: 'After Moḥammad-ʿAli Shah abdicated in July 1909, he took refuge in the Russian Legation, but Shaikh Fażl-Allāh, declined the offer of taking refuge in an embassy, unlike other supporters of the shah (Malekzādeh, VI, p. 117). He was arrested, tried on 31 July 1909 (13 Rajab 1327), and publicly hung in Tupḵāneh Square in Tehran.',
           lang: 'en',
           cite: { source: 'iranica-martin-nuri', loc: { section: 'NURI, FAŻL-ALLĀH', para: '16' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/nuri-fazl-allah/'
           }
         }

@@ -151,13 +151,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'This was Russia\'s golden opportunity to gain control of Western trade routes to its southwest and finally destroy the empire that had blocked this ambition for centuries.',
+          text: 'Russia\'s golden opportunity to gain control of Western trade routes to its southwest and finally destroy the empire that had blocked this ambition for centuries.',
           lang: 'en',
           cite: {
             source: 'loc-bulgaria-country-study-1992',
             loc: { section: 'BULGARIAN INDEPENDENCE', para: '21' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/bulgaria/10.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/bulgaria/10.htm' }
         }
       ]
     },

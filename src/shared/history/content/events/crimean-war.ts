@@ -447,12 +447,12 @@ export default defineEvent({
       quotes: [
         {
           id: 'q30',
-          text: 'But, with the advent of spring, paved roads and a railway were promptly taken in hand, and during the remainder of the war the British troops were so well cared for that their death-rate was lower than at home, while the hospitals in rear, thanks to the energy and devotion of Florence Nightingale and her nurses, became models of good management.',
+          text: 'Canrobert took over the lines before the Malakoff to relieve the British. He had at the end of January 1855 78,000 men for duty; Raglan could barely muster 12,000. But, with the advent of spring, paved roads and a railway were promptly taken in hand, and during the remainder of the war the British troops were so well cared for that their death-rate was lower than at home, while the hospitals in rear, thanks to the energy and devotion of Florence Nightingale and her nurses, became models of good management.',
           lang: 'en',
           cite: { source: 'britannica-1911-crimean-war', loc: { section: 'CRIMEAN WAR', para: '8' } },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Crimean_War'
           }
         }

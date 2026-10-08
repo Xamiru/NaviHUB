@@ -833,6 +833,10 @@ export function pruneOrphanWrestlers(): number {
             SELECT 1 FROM tier_item ti
             JOIN tier_list tl ON tl.id = ti.list_id
             WHERE tl.entity_kind = 'wrestlingWrestler' AND ti.entity_id = wrestling_wrestler.id
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM wrestling_clip_link cl
+            WHERE cl.entity_kind = 'wrestler' AND cl.entity_id = wrestling_wrestler.id
           )`
     )
     .run().changes
@@ -1235,6 +1239,10 @@ export function removeLooseMatch(matchId: number): void {
 function removeMatchFromCollections(matchId: number): void {
   removeEntityFromLists('wrestlingMatch', matchId)
   removeEntityFromTierLists('wrestlingMatch', matchId)
+  // The clip itself survives; only its link to the vanished match goes.
+  getSqlite()
+    .prepare(`DELETE FROM wrestling_clip_link WHERE entity_kind = 'match' AND entity_id = ?`)
+    .run(matchId)
 }
 
 // Registers a picked file as a loose video row (event_id NULL) so it plays

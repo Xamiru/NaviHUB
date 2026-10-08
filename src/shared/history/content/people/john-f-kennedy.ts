@@ -201,8 +201,25 @@ export default definePerson({
       ]
     },
     {
-      kind: 'early-life',
+      kind: 'career',
       quotes: [
+        {
+          id: 'q9',
+          text: 'The Kennedy administration inherited the containment doctrine of the 1940s and 1950s, and maintained the belief that Communism was a threat to the United States.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-1961-1968-foreword',
+            loc: {
+              section: '1961–1968: The Presidencies of John F. Kennedy and Lyndon B. Johnson',
+              para: '4'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1961-1968/foreword'
+          }
+        },
         {
           id: 'q3',
           text: 'during the Second World War served as a lieutenant in the United States Navy 1941-1945; PT boat commander in the South Pacific',
@@ -212,12 +229,7 @@ export default definePerson({
             loc: { section: 'KENNEDY, John Fitzgerald', para: '1' }
           },
           provenance: { via: 'web', at: '2026-10-07', url: 'https://history.house.gov/People/Detail/7707' }
-        }
-      ]
-    },
-    {
-      kind: 'career',
-      quotes: [
+        },
         {
           id: 'q4',
           text: 'elected thirty-fifth President of the United States in 1960, and was inaugurated on January 20, 1961',
@@ -261,6 +273,23 @@ export default definePerson({
     {
       kind: 'death',
       quotes: [
+        {
+          id: 'q10',
+          text: 'Kennedy’s assassination in November 1963 brought his Vice President, Lyndon B.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-1961-1968-foreword',
+            loc: {
+              section: '1961–1968: The Presidencies of John F. Kennedy and Lyndon B. Johnson',
+              para: '9'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1961-1968/foreword'
+          }
+        },
         {
           id: 'q7',
           text: 'died in Dallas, Tex., November 22, 1963, from the effects of an assassin\'s bullet',

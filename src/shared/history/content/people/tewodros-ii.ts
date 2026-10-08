@@ -133,12 +133,12 @@ export default definePerson({
       quotes: [
         {
           id: 'q4',
-          text: 'Shortly afterwards Kassa moved against Tigré, defeated Ubié’s forces at Deragié, in Simen (February 1855), took their chief prisoner and proclaimed himself negūs negusti of Ethiopia under the name of Theodore III.',
+          text: 'Kassa moved against Tigré, defeated Ubié’s forces at Deragié, in Simen (February 1855), took their chief prisoner and proclaimed himself negūs negusti of Ethiopia under the name of Theodore III.',
           lang: 'en',
           cite: { source: 'britannica-1911-abyssinia', loc: { section: 'ABYSSINIA', para: '70' } },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Abyssinia'
           }
         },

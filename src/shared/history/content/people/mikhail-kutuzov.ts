@@ -28,7 +28,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q1',
-          text: 'His popularity with the army saw him appointed – from the end of August 1812 – commander-in-chief of Russian forces, during which he executed the scorched-earth retreat policy. After offering battle at Borodino and then retreating, he subsequently abandoned Moscow.',
+          text: 'The defeat at Austerlitz (2 December 1805) – for which he was deemed responsible – saw him sidelined once again: he was appointed military governor of Kiev in 1806 and served in a similar position in Vilnius in 1809 before returning to military service as commander-in-chief of the Army of the Danube in March 1811. His victory at Rusçuk (modern-day Ruse, Bulgaria) and successes along the north bank of the Danube saw him given the title of Count on 10 November 1811 and in 1812 he concluded the peace treaty signed at Bucharest. His popularity with the army saw him appointed – from the end of August 1812 – commander-in-chief of Russian forces, during which he executed the scorched-earth retreat policy. After offering battle at Borodino and then retreating, he subsequently abandoned Moscow.',
           lang: 'en',
           cite: {
             source: 'fondation-napoleon-kutuzov',
@@ -36,7 +36,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.napoleon.org/en/reading_room/biographies/files/481511.asp'
           }
         },

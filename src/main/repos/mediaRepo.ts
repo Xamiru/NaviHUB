@@ -66,6 +66,7 @@ const COMMUNITY_SQL = `COALESCE(
   json_extract(m.metadata, '$.igdbRating'),
   json_extract(m.metadata, '$.vndbRating'),
   json_extract(m.metadata, '$.olRating'),
+  json_extract(m.metadata, '$.hcRating'),
   json_extract(m.metadata, '$.imdbRating') * 10
 )`
 
@@ -821,8 +822,13 @@ export function get(id: number): MediaDetail | null {
         `SELECT mr.relation_type, mr.related_type, mr.related_title, m2.*
          FROM media_relation mr
          LEFT JOIN media_item m2 ON m2.id = COALESCE(
+           -- related_type keeps one source's id spaces apart: TMDB movies and
+           -- TV shows share numbers, so a book's adaptation edge to movie 278
+           -- must never resolve to TV show 278.
            (SELECT x.id FROM media_item x
-             WHERE x.external_source = mr.related_source AND x.external_id = mr.related_external_id),
+             WHERE x.external_source = mr.related_source AND x.external_id = mr.related_external_id
+               AND (mr.related_type IS NULL OR x.media_type = mr.related_type)
+             LIMIT 1),
            -- A game keyed by Steam or RAWG reaches its catalog work this way.
            (SELECT l.media_id FROM media_external_link l
              WHERE l.source = mr.related_source AND l.external_id = mr.related_external_id LIMIT 1))
@@ -839,6 +845,26 @@ export function get(id: number): MediaDetail | null {
       mediaType: (local?.mediaType ?? (r.related_type as MediaType) ?? null) as MediaType | null
     }
   })
+
+  // The other direction of a book's adaptation edges: a movie, show or anime
+  // lists the library books it is based on as SOURCE. Read here rather than
+  // written onto the adaptation's row, because TMDB and AniList re-imports own
+  // (and replace) every relation stored on their titles.
+  if (base.externalSource && base.externalId) {
+    const sources = db
+      .prepare(
+        `SELECT b.* FROM media_relation mr JOIN media_item b ON b.id = mr.media_id
+         WHERE mr.relation_type = 'ADAPTATION' AND mr.related_source = ? AND mr.related_external_id = ?
+           AND mr.related_type = ? AND b.media_type = 'book'
+         ORDER BY b.release_date, b.id`
+      )
+      .all(base.externalSource, String(base.externalId), base.mediaType) as Record<string, unknown>[]
+    for (const b of sources) {
+      if (relations.some((r) => r.media?.id === b.id)) continue
+      const local = mapMedia(b)
+      relations.push({ relationType: 'SOURCE', media: local, title: local.title, mediaType: 'book' })
+    }
+  }
 
   return {
     ...base,

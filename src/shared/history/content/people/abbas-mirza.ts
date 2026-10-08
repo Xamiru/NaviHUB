@@ -206,7 +206,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q5',
-          text: 'In the summer of 1805 the crown prince fought with moderate success against the Russians; only then was he formally appointed governor of “Azarbaijan and Qarabāḡ, from Qaplān Kūh to Darband”',
+          text: 'ʿAbbās Mīrzā was assigned the governorship of Azarbaijan; it was a threatened province, like Khorasan in the northeast, where the shah proceeded in the spring of 1799. Thus it was natural that the crown prince should have been dispatched to subdue the Kurd Jaʿfar-qolī Khan Dombalī, who was asserting a territorial claim to Azarbaijan. After a victory near Salmās, ʿAbbās Mīrzā marched to Ḵoy and then returned to Tabrīz. Although the crown prince’s brothers who were also appointed governors of important provinces in the same year as himself usually took up permanent residence in their provincial capitals, ʿAbbās Mīrzā clearly did not live in Tabrīz all the time. In fact, Mīrzā Bozorg had built him the palace of Negārestān near Tehran (Tancoigne, pp. 179f.). In 1803, ʿAbbās Mīrzā was in Tehran, where, in autumn or winter, his marriage to the daughter of a Devellū prince was solemnized with great pomp (Hedāyat, IX, pp. 373f.). When the Russians overran Ganǰa in 1804, he left Tehran and marched to the relief of Erevan, which was under siege from Russian forces. When the Russians retreated to Tiflis, the shah, then at the Russian front, left Azarbaijan in the hands of “experienced amirs.” Fatḥ-ʿAlī Shah returned to Tehran in the fall, while ʿAbbās Mīrzā remained in Tabrīz and made preparations for the following year’s campaign. In the summer of 1805 the crown prince fought with moderate success against the Russians; only then was he formally appointed governor of “Azarbaijan and Qarabāḡ, from Qaplān Kūh to Darband”',
           lang: 'en',
           cite: {
             source: 'iranica-busse-abbas-mirza',
@@ -214,7 +214,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/abbas-mirza'
           }
         },

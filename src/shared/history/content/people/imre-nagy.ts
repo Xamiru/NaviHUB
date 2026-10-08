@@ -80,7 +80,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'On that day, Imre Nagy announced an unconditional general ceasefire and amnesty, as well as the end of the single-party system in Hungary. On 1 November, Nagy formally declared Hungary’s withdrawal from the Warsaw Pact.',
+          text: 'Imre Nagy became Prime Minister and János Kádár First Secretary of the Communist Party. Fighting lasted for five days, culminating in the expulsion of the Soviet forces from Budapest on 28 October. On that day, Imre Nagy announced an unconditional general ceasefire and amnesty, as well as the end of the single-party system in Hungary. On 1 November, Nagy formally declared Hungary’s withdrawal from the Warsaw Pact.',
           lang: 'en',
           cite: {
             source: 'enrs-scieranska-hungarian-revolution-1956',
@@ -88,7 +88,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
             url: 'https://enrs.eu/article/the-hungarian-revolution-1956'
           }
         }

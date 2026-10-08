@@ -148,7 +148,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'This campaign ended abruptly, however, with the prince’s death from cholera at Ṭāq-e Garrā during his withdrawal.',
+          text: 'Moḥammad-ʿAlī advanced deep into Iraq but was stopped by the formidable walls of Baghdad and dissuaded from taking the city by the intervention of Shaikh Mūsā Najafī, son of Shaikh Jaʿfar. This campaign ended abruptly, however, with the prince’s death from cholera at Ṭāq-e Garrā during his withdrawal.',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-dawlatshah',
@@ -156,7 +156,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/dawlatsah-mohammad-ali-mirza/'
           }
         }

@@ -131,13 +131,13 @@ export default definePerson({
       quotes: [
         {
           id: 'q3',
-          text: 'Shortly after his cult of personality began to take root in the mid-1970s, Brezhnev began to experience periods of ill health. After Brezhnev suffered a stroke in 1975, Politburo members Mikhail Suslov and Andrey Kirilenko assumed some of the leader\'s functions for a time. Then, after another bout of poor health in 1978, Brezhnev delegated more of his responsibilities to Konstantin U. Chernenko, a longtime associate who soon began to be regarded as the heir apparent. His prospects of succeeding Brezhnev, however, were hurt by political problems plaguing the general secretary in the early 1980s. Not only were economic failures damaging Brezhnev\'s prestige, but scandals involving his family and political allies also were undermining his stature. Meanwhile, Yuriy V. Andropov, chief of the Committee for State Security (Komitet gosudarstvennoy bezopasnosti--KGB; see Glossary), apparently also began a campaign to discredit Brezhnev. Andropov took over Suslov\'s functions after Suslov died in 1982, and he used his position to promote himself as the next CPSU general secretary. Although he suffered another stroke in March 1982, Brezhnev refused to relinquish his office. He died that November.',
+          text: 'Brezhnev began to experience periods of ill health. After Brezhnev suffered a stroke in 1975, Politburo members Mikhail Suslov and Andrey Kirilenko assumed some of the leader\'s functions for a time. Then, after another bout of poor health in 1978, Brezhnev delegated more of his responsibilities to Konstantin U. Chernenko, a longtime associate who soon began to be regarded as the heir apparent. His prospects of succeeding Brezhnev, however, were hurt by political problems plaguing the general secretary in the early 1980s. Not only were economic failures damaging Brezhnev\'s prestige, but scandals involving his family and political allies also were undermining his stature. Meanwhile, Yuriy V. Andropov, chief of the Committee for State Security (Komitet gosudarstvennoy bezopasnosti--KGB; see Glossary), apparently also began a campaign to discredit Brezhnev. Andropov took over Suslov\'s functions after Suslov died in 1982, and he used his position to promote himself as the next CPSU general secretary. Although he suffered another stroke in March 1982, Brezhnev refused to relinquish his office. He died that November.',
           lang: 'en',
           cite: {
             source: 'loc-russia-country-study-1996',
             loc: { section: 'The Brezhnev Era', para: '23' }
           },
-          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/russia/14.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/russia/14.htm' }
         }
       ]
     }

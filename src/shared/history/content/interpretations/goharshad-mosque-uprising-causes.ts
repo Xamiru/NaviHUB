@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'goharshad-mosque-uprising-causes',
   about: ['event:goharshad-mosque-uprising'],
   topic: 'causes',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'against-unveiling',
@@ -42,6 +42,19 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://web.archive.org/web/20240930004224id_/https://english.khamenei.ir/news/5803/The-massacre-of-Goharshad-Mosque-by-Pahlavi-should-be-narrated'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q6',
+          text: 'Two days later, the celebrated preacher Moḥammad-Taqi Bohlul addressed a second mass protest, this time at the Gowhar-šād mosque (q.v.), which was assaulted even more violently than the first and dispersed',
+          lang: 'en',
+          cite: { source: 'iranica-algar-khomeini-life', loc: { section: 'KHOMEINI i. Life' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/khomeini-i-life/'
           }
         }
       ]

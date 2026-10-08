@@ -227,7 +227,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q8',
-          text: 'Finally, in April of 1969, the Soviets forced Dubcek from power in favor of a more conservative administrator. In the years that followed, the new leadership reestablished government censorship and controls preventing freedom of movement, but it also improved economic conditions, eliminating one of the sources for revolutionary fervor. Czechoslovakia once again became a cooperative member of the Warsaw Pact.',
+          text: 'Although the Soviet crackdown on Czechoslovakia was swift and successful, small-scale resistance continued throughout early 1969 while the Soviets struggled to install a stable government. Finally, in April of 1969, the Soviets forced Dubcek from power in favor of a more conservative administrator. In the years that followed, the new leadership reestablished government censorship and controls preventing freedom of movement, but it also improved economic conditions, eliminating one of the sources for revolutionary fervor. Czechoslovakia once again became a cooperative member of the Warsaw Pact.',
           lang: 'en',
           cite: {
             source: 'state-dept-milestones-soviet-invasion-of-czechoslovakia',
@@ -235,7 +235,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
             url: 'https://history.state.gov/milestones/1961-1968/soviet-invasion-czechoslavkia'
           }
         }

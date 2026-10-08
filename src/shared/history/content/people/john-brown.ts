@@ -45,6 +45,13 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
+          id: 'q5',
+          text: 'Brown also continued to cultivate his interest in the wool business. He sailed for London to establish an English market for Perkins and Brown. His plan failed, forcing him to return to Ohio in 1851 and work off his debts to his partner. He eventually returned to North Elba, but his unceasing interest in the anti-slavery movement soon compelled him to go to Kansas.',
+          lang: 'en',
+          cite: { source: 'nps-people-john-brown', loc: { section: 'John Brown' } },
+          provenance: { via: 'web', at: '2026-10-09', url: 'https://www.nps.gov/people/john-brown.htm' }
+        },
+        {
           id: 'q2',
           text: 'Several members of his family were settling in the territory and they were in desperate need of assistance. The Kansas-Nebraska Act had created a battleground over the spread of slavery. Brown went there to help his family and strike a blow for freedom.',
           lang: 'en',

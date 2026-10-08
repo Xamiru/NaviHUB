@@ -145,7 +145,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'Yet, even though the Portuguese were driven out of Bahrain in 1622 by the Safavid Shah ʿAbbās, Persian rule over the island did not become effective until 1753, when Shaikh Naṣīr of Būšehr sent an expeditionary force to conquer the archipelago from the Arab Howayla tribe. In 1783, Bahrain was reconquered by the Arab al-ʿOtūb tribe led by Aḥmad al-Ḵalīfa. The British government, which had entered into treaty relations with al-Ḵalīfa in 1820, formalized its ties through treaties signed in 1847, 1856, 1861, and the Executive Agreements of 1880 and 1892 establishing “exclusive” control over Bahrain’s foreign relations (Lorimer, pp. 836-999, passim), and questioned the validity of the Iranian claim.',
+          text: '(Ramazani, 1966, p. 248). Yet, even though the Portuguese were driven out of Bahrain in 1622 by the Safavid Shah ʿAbbās, Persian rule over the island did not become effective until 1753, when Shaikh Naṣīr of Būšehr sent an expeditionary force to conquer the archipelago from the Arab Howayla tribe. In 1783, Bahrain was reconquered by the Arab al-ʿOtūb tribe led by Aḥmad al-Ḵalīfa. The British government, which had entered into treaty relations with al-Ḵalīfa in 1820, formalized its ties through treaties signed in 1847, 1856, 1861, and the Executive Agreements of 1880 and 1892 establishing “exclusive” control over Bahrain’s foreign relations (Lorimer, pp. 836-999, passim), and questioned the validity of the Iranian claim.',
           lang: 'en',
           cite: {
             source: 'iranica-kechichian-bahrain-political-relations-with-iran',
@@ -153,7 +153,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/bahrain-iii/'
           }
         }

@@ -40,11 +40,20 @@ export default definePolity({
   end: {
     alts: [
       {
-        value: { d: '1979-02' },
+        value: { d: '1979-02-12' },
         cites: [
           {
             source: 'loc-iran-country-study-1987',
             loc: { section: 'THE BAKHTIAR GOVERNMENT', para: '4' }
+          }
+        ]
+      },
+      {
+        value: { d: '1979-02-11' },
+        cites: [
+          {
+            source: 'iranica-yarshater-chronology-part-4',
+            loc: { section: 'Chronology of Iranian History Part 4, 1979' }
           }
         ]
       }

@@ -157,20 +157,6 @@ export default defineEvent({
       kind: 'background',
       quotes: [
         {
-          id: 'q3',
-          text: 'Thus the stage was set for the settlement of the Iranian oil crisis, and the conclusion of a new agreement for revival of the Iranian oil industry (Yeganeh, pp. 61-64).',
-          lang: 'en',
-          cite: {
-            source: 'iranica-mina-oil-agreements',
-            loc: { section: 'OIL AGREEMENTS IN IRAN', para: '48' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-07',
-            url: 'https://www.iranicaonline.org/articles/oil-agreements-in-iran/'
-          }
-        },
-        {
           id: 'q4',
           text: 'With the installment of Zāhedi’s government, the stage was set to bring Iranian oil back into production and onto the world market. But how was this to be done? AIOC, of course, was hamstrung. For it to take the lead would only re-ignite the nationalist fires in Iran. Clearly the US government would have to lead the way to an oil settlement.',
           lang: 'en',
@@ -181,6 +167,20 @@ export default defineEvent({
           provenance: {
             via: 'web',
             at: '2026-10-07',
+            url: 'https://www.iranicaonline.org/articles/oil-agreements-in-iran/'
+          }
+        },
+        {
+          id: 'q3',
+          text: 'Thus the stage was set for the settlement of the Iranian oil crisis, and the conclusion of a new agreement for revival of the Iranian oil industry (Yeganeh, pp. 61-64).',
+          lang: 'en',
+          cite: {
+            source: 'iranica-mina-oil-agreements',
+            loc: { section: 'OIL AGREEMENTS IN IRAN', para: '48' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/oil-agreements-in-iran/'
           }
         },

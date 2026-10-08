@@ -76,7 +76,7 @@ export const REFRESH_ASPECTS: RefreshAspectDef[] = [
 // catalog while it is installed. 'launchbox' rows come from the games catalog
 // v2, which also serves the cover and cast of any game linked to it. 'igdb'
 // rows are not refreshable, except for the source-free 'length' aspect.
-export const REFRESHABLE_SOURCES = ['anilist', 'tmdb', 'vndb', 'steam', 'openlibrary', 'rawg', 'launchbox'] as const
+export const REFRESHABLE_SOURCES = ['anilist', 'tmdb', 'vndb', 'steam', 'openlibrary', 'hardcover', 'rawg', 'launchbox'] as const
 export type RefreshableSource = (typeof REFRESHABLE_SOURCES)[number]
 
 export function isRefreshableSource(source: string | null | undefined): source is RefreshableSource {

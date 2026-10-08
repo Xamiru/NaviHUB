@@ -156,7 +156,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q3',
-          text: 'By this time Manṣur was also back in Tehran, and together with Hoveyda he formed what eventually was called “the Progressive Circle” (Kānun-e motaraqqi).',
+          text: 'Hoveyda soon established himself as a capable manager and a congenial colleague (Ṣādeq Čubak, interview with author, 22 November 1997). Using a combination of savvy, subtlety, and Machiavellian guile, he emerged as a capable director. He began publishing a journal called Kāvoš, where he solicited essays from some of the leading Iranian intellectuals of the time. He also began to write about many of the themes that would later define his political creed. He talked of the necessity of pulling Iran out of its cycle of backwardness. He suggested training a new technocratic class who could replace Western advisors, managers, and technicians. (Kāvoš, 1960, various issues). By this time Manṣur was also back in Tehran, and together with Hoveyda he formed what eventually was called “the Progressive Circle” (Kānun-e motaraqqi).',
           lang: 'en',
           cite: {
             source: 'iranica-milani-hoveyda',
@@ -164,7 +164,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
             url: 'https://web.archive.org/web/20261002185029/https://www.iranicaonline.org/articles/hoveyda-amir-abbas/'
           }
         },

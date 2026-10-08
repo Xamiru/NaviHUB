@@ -71,6 +71,33 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
+          id: 'q3',
+          text: 'The granting and then repealing of the Reuter concession (1872-1873), and its long-term consequences, introduced a new kind of British economic and financial presence in Persia beyond the familiar areas of strategy and diplomacy.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-amanat-great-britain-ii',
+            loc: {
+              section: 'GREAT BRITAIN ii. British influence in Persia in the 19th century',
+              para: '25'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
+          }
+        },
+        {
+          id: 'q4',
+          text: 'In 1871, with the encouragement of his new prime minister, Mirza Hosain Khan Moshir od Dowleh, the shah established a European-style cabinet with administrative responsibilities and a consultative council of senior princes and officials. He granted a concession for railroad construction and other economic projects to a Briton, Baron Julius de Reuter, and visited Russia and Britain himself.',
+          lang: 'en',
+          cite: {
+            source: 'loc-iran-country-study-1987',
+            loc: { section: 'THE QAJARS, 1795-1925', para: '5' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/iran/12.htm' }
+        },
+        {
           id: 'q2',
           text: 'In 1888 the shah, heeding this advice, opened the Karun River in Khuzestan to foreign shipping and gave Reuter permission to open the country\'s first bank.',
           lang: 'en',

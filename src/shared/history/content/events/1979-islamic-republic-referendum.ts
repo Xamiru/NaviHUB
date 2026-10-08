@@ -1,0 +1,286 @@
+import { defineEvent } from '../../schema'
+
+export default defineEvent({
+  id: '1979-islamic-republic-referendum',
+  names: [
+    { text: '1979 Islamic Republic referendum', lang: 'en', role: 'primary' },
+    {
+      text: 'همه‌پرسی جمهوری اسلامی',
+      lang: 'fa',
+      role: 'native',
+      translit: 'Hamepors-i-ye Jomhuri-ye Eslāmi'
+    },
+    {
+      text: 'Referendum of 30-31 March 1979',
+      lang: 'en',
+      role: 'alternative',
+      cites: [
+        {
+          source: 'iranica-algar-khomeini-life',
+          loc: { section: 'KHOMEINI i. Life', para: '63' }
+        }
+      ]
+    }
+  ],
+  researched: '2026-10-09',
+  type: 'referendum',
+  start: {
+    alts: [
+      {
+        value: { d: '1979-03-30' },
+        cites: [
+          {
+            source: 'iranica-yarshater-chronology-part-4',
+            loc: { section: 'Chronology of Iranian History Part 4, 1979' }
+          },
+          {
+            source: 'iranica-algar-khomeini-life',
+            loc: { section: 'KHOMEINI i. Life', para: '63' }
+          },
+          {
+            source: 'loc-iran-country-study-1987',
+            loc: { section: 'The New Constitution', para: '1' }
+          },
+          {
+            source: 'constitute-iran-constitution-1979-rev-1989',
+            loc: { section: 'Preamble' }
+          }
+        ]
+      },
+      {
+        value: { d: '1979-04' },
+        cites: [
+          {
+            source: 'iranica-azimi-bakhash-kakar-elections',
+            loc: {
+              section: 'ELECTIONS i. Under the Qajar and Pahlavi monarchies, 1906-79',
+              para: '91'
+            }
+          }
+        ],
+        heldBy: [
+          { kind: 'scholar', name: 'Fakhreddin Azimi' },
+          { kind: 'scholar', name: 'Shaul Bakhash' },
+          { kind: 'scholar', name: 'Mohammad Hassan Kakar' }
+        ]
+      }
+    ]
+  },
+  end: {
+    alts: [
+      {
+        value: { d: '1979-03-31' },
+        cites: [
+          {
+            source: 'iranica-yarshater-chronology-part-4',
+            loc: { section: 'Chronology of Iranian History Part 4, 1979' }
+          },
+          {
+            source: 'iranica-algar-khomeini-life',
+            loc: { section: 'KHOMEINI i. Life', para: '63' }
+          }
+        ]
+      }
+    ]
+  },
+  regions: ['iran'],
+  prominence: 2,
+  places: [
+    { ref: 'place:tehran' }
+  ],
+  partOf: [
+    { ref: 'event:iranian-revolution' }
+  ],
+  participants: [
+    {
+      ref: 'person:ruhollah-khomeini',
+      role: 'leader',
+      cites: [
+        {
+          source: 'iranica-algar-khomeini-life',
+          loc: { section: 'KHOMEINI i. Life', para: '63' }
+        },
+        {
+          source: 'loc-iran-country-study-1987',
+          loc: { section: 'The New Constitution', para: '1' }
+        }
+      ]
+    },
+    {
+      ref: 'person:mehdi-bazargan',
+      role: 'organizer',
+      cites: [
+        {
+          source: 'iranica-algar-khomeini-life',
+          loc: { section: 'KHOMEINI i. Life', para: '59' }
+        }
+      ]
+    },
+    {
+      ref: 'person:kazem-shariatmadari',
+      role: 'participant',
+      cites: [
+        {
+          source: 'loc-iran-country-study-1987',
+          loc: { section: 'The New Constitution', para: '1' }
+        }
+      ]
+    }
+  ],
+  related: [
+    {
+      ref: 'event:iranian-revolution',
+      rel: 'response-to',
+      cites: [
+        {
+          source: 'iranica-algar-khomeini-life',
+          loc: { section: 'KHOMEINI i. Life', para: '59' }
+        }
+      ]
+    },
+    {
+      ref: 'event:constitution-of-the-islamic-republic-1979',
+      rel: 'led-to',
+      cites: [
+        {
+          source: 'iranica-algar-khomeini-life',
+          loc: { section: 'KHOMEINI i. Life', para: '63' }
+        },
+        {
+          source: 'loc-iran-country-study-1987',
+          loc: { section: 'The New Constitution', para: '2' }
+        }
+      ]
+    }
+  ],
+  polities: [
+    { ref: 'polity:islamic-republic-of-iran' }
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/6/61/Iran_1979_referendum_ballot_model.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Iran_1979_referendum_ballot_model.jpg',
+    credit: { institution: 'Ministry of the Interior of the Interim Government of Iran' },
+    license: { id: 'public-domain' }
+  },
+  sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q1',
+          text: 'In 1979 a referendum abolished the age-old monarchical regime in Persia, and the “Islamic Republic of Iran” was established.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-yarshater-iranian-history-islamic-period-6',
+            loc: {
+              section: 'IRAN ii. IRANIAN HISTORY (2) Islamic period, Moḥammad Reza Shah (1941-79)'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/iran-ii2-islamic-period-page-6/'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'background',
+      quotes: [
+        {
+          id: 'q2',
+          text: 'On 5 February, invoking the principle of welāyat, Khomeini publicly announced this appointment, charging Bāzargān and his cabinet with preparing a referendum on proclaiming Iran an Islamic Republic that, in turn, would pave the way to the election of a constituent assembly to elaborate a new constitution',
+          lang: 'en',
+          cite: {
+            source: 'iranica-algar-khomeini-life',
+            loc: { section: 'KHOMEINI i. Life', para: '59' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'consequences',
+      quotes: [
+        {
+          id: 'q14',
+          text: 'Khomeini proclaimed the establishment of the Islamic Republic of Iran on April 1, 1979.',
+          lang: 'en',
+          cite: {
+            source: 'loc-iran-country-study-1987',
+            loc: { section: 'Consolidation of the Islamic Republic', para: '1' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/iran/24.htm' }
+        }
+      ]
+    }
+  ],
+  course: [
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1979-03-30' },
+            cites: [
+              {
+                source: 'iranica-yarshater-chronology-part-4',
+                loc: { section: 'Chronology of Iranian History Part 4, 1979' }
+              },
+              {
+                source: 'iranica-algar-khomeini-life',
+                loc: { section: 'KHOMEINI i. Life', para: '63' }
+              },
+              {
+                source: 'loc-iran-country-study-1987',
+                loc: { section: 'The New Constitution', para: '1' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q12',
+        text: 'A step in this direction was taken on March 30 and 31, 1979, when a national referendum was held to determine the kind of political system to be established.',
+        lang: 'en',
+        cite: {
+          source: 'loc-iran-country-study-1987',
+          loc: { section: 'The New Constitution', para: '1' }
+        },
+        provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/iran/24.htm' }
+      }
+    },
+    {
+      date: {
+        alts: [
+          {
+            value: { d: '1979-03-30' },
+            cites: [
+              {
+                source: 'iranica-yarshater-chronology-part-4',
+                loc: { section: 'Chronology of Iranian History Part 4, 1979' }
+              }
+            ]
+          }
+        ]
+      },
+      quote: {
+        id: 'q4',
+        text: 'March 30-31: The establishment of an Islamic Republic is approved in a nationwide referendum.',
+        lang: 'en',
+        cite: {
+          source: 'iranica-yarshater-chronology-part-4',
+          loc: { section: 'Chronology of Iranian History Part 4, 1979' }
+        },
+        provenance: {
+          via: 'web',
+          at: '2026-10-09',
+          url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-4/'
+        }
+      }
+    }
+  ]
+})

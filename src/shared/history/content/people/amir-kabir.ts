@@ -134,7 +134,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'He was born into a lowly household at Hazāva in the Farāhān district.',
+          text: 'KABĪR, MĪRZĀ TAQĪ KHAN (1222-68/1807-52), also known by the titles of Atābak and Amīr-e Neẓām; chief minister to Nāṣer-al-dīn Shah for the first four years of his reign and one of the most capable and innovative figures to appear in the whole Qajar period. He was born into a lowly household at Hazāva in the Farāhān district.',
           lang: 'en',
           cite: {
             source: 'iranica-algar-amir-kabir',
@@ -142,7 +142,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/amir-e-kabir-mirza-taqi-khan'
           }
         }
@@ -151,6 +151,20 @@ export default definePerson({
     {
       kind: 'career',
       quotes: [
+        {
+          id: 'q10',
+          text: 'Amīr Kabīr also participated in three foreign missions dispatched from Tabrīz.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-algar-amir-kabir',
+            loc: { section: 'AMĪR KABĪR, MĪRZĀ TAQĪ KHAN', para: '2' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/amir-e-kabir-mirza-taqi-khan'
+          }
+        },
         {
           id: 'q3',
           text: 'More significant were the almost four years that he spent in Erzurum, participating in the work of a commission to delineate the Ottoman-Iranian frontier and settle certain other differences between the two states.',

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'cultural-revolution-nature',
   about: ['event:cultural-revolution'],
   topic: 'nature',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'new-stage-of-socialist-revolution',
@@ -40,6 +40,18 @@ export default defineInterpretation({
             at: '2026-10-08',
             url: 'https://www.marxists.org/subject/china/peking-review/1966/PR1966-33g.htm'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q6',
+          text: 'By mid-1965 Mao had gradually but systematically regained control of the party with the support of Lin Biao, Jiang Qing (Mao\'s fourth wife), and Chen Boda, a leading theoretician.',
+          lang: 'en',
+          cite: {
+            source: 'loc-china-country-study-1987',
+            loc: { section: 'The Cultural Revolution, 1966-76', para: '5' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/china/28.htm' }
         }
       ]
     },
@@ -77,6 +89,18 @@ export default defineInterpretation({
             at: '2026-10-08',
             url: 'https://www.marxists.org/subject/china/documents/cpc/history/01.htm'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q7',
+          text: 'Considerable intraparty opposition to the Cultural Revolution was evident.',
+          lang: 'en',
+          cite: {
+            source: 'loc-china-country-study-1987',
+            loc: { section: 'The Cultural Revolution, 1966-76', para: '6' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/china/28.htm' }
         }
       ]
     },

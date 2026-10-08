@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'treaty-of-paris-1898-payment',
   about: ['event:spanish-american-war'],
   topic: 'nature',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'treaty-text',
@@ -24,6 +24,18 @@ export default defineInterpretation({
             at: '2026-10-08',
             url: 'https://avalon.law.yale.edu/19th_century/sp1898.asp'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q6',
+          text: 'Among its conditions was the cession of the Philippines, Guam, and Puerto Rico to the United States (Cuba was granted its independence); in return, the United States would pay Spain the sum of US$20 million.',
+          lang: 'en',
+          cite: {
+            source: 'loc-philippines-country-study-1991',
+            loc: { section: 'The Malolos Constitution and the Treaty of Paris', para: '4' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/philippines/14.htm' }
         }
       ]
     },

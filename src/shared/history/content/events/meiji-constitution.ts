@@ -78,13 +78,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'He called for elections to be held by 1882 and for a national assembly to be convened by 1883; in doing so, he precipitated a political crisis that ended with an 1881 imperial rescript declaring the establishment of a national assembly in 1890 and dismissing Okuma.',
+          text: 'Within the ruling circle, however, and despite the conservative approach of the leadership, Okuma continued as a lone advocate of British-style government, a government with political parties and a cabinet organized by the majority party, answerable to the national assembly. He called for elections to be held by 1882 and for a national assembly to be convened by 1883; in doing so, he precipitated a political crisis that ended with an 1881 imperial rescript declaring the establishment of a national assembly in 1890 and dismissing Okuma.',
           lang: 'en',
           cite: {
             source: 'loc-japan-country-study-1994',
             loc: { section: 'The Development of Representative Government', para: '4' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/japan/25.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/japan/25.htm' }
         },
         {
           id: 'q4',

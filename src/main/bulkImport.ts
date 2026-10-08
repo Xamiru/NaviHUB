@@ -3,6 +3,7 @@ import * as anilist from './anilist'
 import * as tmdb from './tmdb'
 import * as vndb from './vndb'
 import * as launchboxCatalog from './launchboxCatalog'
+import * as hardcover from './hardcover'
 import * as gameLinks from './gameLinks'
 import { normTitle } from './steam'
 import { sleep } from './http'
@@ -46,7 +47,8 @@ const SOURCE_IDENT: Record<BulkSourceKey, { externalSource: string; mediaType: s
   game: { externalSource: 'launchbox', mediaType: 'game' },
   visual_novel: { externalSource: 'vndb', mediaType: 'visual_novel' },
   movie: { externalSource: 'tmdb', mediaType: 'movie' },
-  tv: { externalSource: 'tmdb', mediaType: 'tv' }
+  tv: { externalSource: 'tmdb', mediaType: 'tv' },
+  book: { externalSource: 'hardcover', mediaType: 'book' }
 }
 
 // Inter-title delay per source. AniList has none here: anilist.gql spaces every
@@ -59,7 +61,9 @@ const SOURCE_DELAY_MS: Record<BulkSourceKey, number> = {
   game: 0,
   visual_novel: 600,
   movie: 300,
-  tv: 300
+  tv: 300,
+  // hardcover.gql spaces every request through its own process-wide throttle.
+  book: 0
 }
 
 // Ten failures in a row means the source (or the network) is down, not ten
@@ -160,6 +164,8 @@ export async function preview(params: BulkListParams): Promise<BulkPreviewItem[]
       return tmdb.discoverTop('movie', clamped, undefined, keep)
     case 'tv':
       return tmdb.discoverTop('tv', clamped, undefined, keep)
+    case 'book':
+      return hardcover.topList(clamped, keep)
   }
 }
 
@@ -220,6 +226,8 @@ async function importOne(source: BulkSourceKey, sourceId: number): Promise<Impor
       return tmdb.importMovie(sourceId, { skipOmdb: true })
     case 'tv':
       return tmdb.importTv(sourceId, { skipOmdb: true })
+    case 'book':
+      return hardcover.importBook(sourceId)
   }
 }
 

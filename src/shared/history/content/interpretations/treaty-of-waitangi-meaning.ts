@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'treaty-of-waitangi-meaning',
   about: ['event:treaty-of-waitangi'],
   topic: 'nature',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   framing: {
     id: 'q1',
     text: 'However, the Māori text is not an exact translation of the English text.',
@@ -41,11 +41,41 @@ export default defineInterpretation({
             url: 'https://www.waitangitribunal.govt.nz/en/about/the-treaty/maori-and-english-versions'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q8',
+          text: 'By contrast, in the English text this was called the ‘exclusive right of Preemption’, which meant only the Crown could purchase land from Māori.',
+          lang: 'en',
+          cite: {
+            source: 'waitangi-tribunal-about-the-treaty',
+            loc: { section: 'About the treaty', para: '29' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.waitangitribunal.govt.nz/en/about/the-treaty/about-the-treaty'
+          }
+        },
+        {
+          id: 'q9',
+          text: 'For this reason, the Treaty of Waitangi Act requires the Tribunal to ‘decide issues raised by the differences between them’.',
+          lang: 'en',
+          cite: {
+            source: 'waitangi-tribunal-about-the-treaty',
+            loc: { section: 'About the treaty', para: '13' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.waitangitribunal.govt.nz/en/about/the-treaty/about-the-treaty'
+          }
+        }
       ]
     },
     {
       id: 'kawanatanga-governance',
-      category: 'official',
+      category: 'scholarly',
       holders: [
         { kind: 'organization', name: 'Waitangi Tribunal' }
       ],

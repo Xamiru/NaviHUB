@@ -295,7 +295,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q9',
-          text: 'He died suddenly of a heart attack at his Texas ranch on January 22, 1973.',
+          text: 'When Johnson left office, peace talks were underway. He died suddenly of a heart attack at his Texas ranch on January 22, 1973.',
           lang: 'en',
           cite: {
             source: 'lbj-library-biography-lyndon-b-johnson',
@@ -303,7 +303,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
             url: 'https://www.lbjlibrary.org/life-and-legacy/the-man-himself/biography'
           }
         }

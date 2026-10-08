@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'korean-war-origins',
   about: ['event:korean-war'],
   topic: 'responsibility',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'communist-armed-invasion',
@@ -42,6 +42,18 @@ export default defineInterpretation({
             url: 'https://www.trumanlibrary.gov/library/public-papers/173/statement-president-situation-korea'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q6',
+          text: 'The events following the June 1950 invasion proved the superiority of North Korean military forces and the soundness of their overall invasion strategy.',
+          lang: 'en',
+          cite: {
+            source: 'loc-south-korea-country-study-1990',
+            loc: { section: 'The Korean War, 1950-53', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/south-korea/10.htm' }
+        }
       ]
     },
     {
@@ -65,6 +77,18 @@ export default defineInterpretation({
             at: '2026-10-08',
             url: 'https://history.state.gov/historicaldocuments/frus1950v07/d151'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q7',
+          text: 'Soviet equipment, including automatic weapons of various types, T-34 tanks, and Yak fighter planes, had also been pouring into North Korea in early 1950.',
+          lang: 'en',
+          cite: {
+            source: 'loc-south-korea-country-study-1990',
+            loc: { section: 'The Korean War, 1950-53', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/south-korea/10.htm' }
         }
       ]
     },

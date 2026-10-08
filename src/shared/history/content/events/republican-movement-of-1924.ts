@@ -144,7 +144,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'They threw themselves into the anti-republican campaign and incited the people to invade Bahārestān Square, where the Majlis was on the point of debating the proposed constitutional changes.',
+          text: 'Iranian ʿolamāʾ , who feared that the proclamation of a republic in Iran would have similar consequences for the role of Islam and the religious establishment in their country (Survey of International Affairs 3, 1925, p. 537). They threw themselves into the anti-republican campaign and incited the people to invade Bahārestān Square, where the Majlis was on the point of debating the proposed constitutional changes.',
           lang: 'en',
           cite: {
             source: 'iranica-sheikh-ol-islami-ahmad-shah',
@@ -152,7 +152,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/ahmad-shah-qajar-1909-1925-the-seventh-and-last-ruler-of-the-qajar-dynasty/'
           }
         },

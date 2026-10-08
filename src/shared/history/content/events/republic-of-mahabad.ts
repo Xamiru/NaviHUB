@@ -222,7 +222,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q7',
-          text: 'Two days later, on December 15, Qāżī Moḥammad announced the surrender of Mahābād.',
+          text: 'By 21 Āḏar 1325 Š./13 December 1946, Pīšavarī had fled to Baku and Iranian forces entered Tabrīz. Two days later, on December 15, Qāżī Moḥammad announced the surrender of Mahābād.',
           lang: 'en',
           cite: {
             source: 'iranica-kuniholm-azerbaijan-1941-1947',
@@ -230,7 +230,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/azerbaijan-v/'
           }
         },

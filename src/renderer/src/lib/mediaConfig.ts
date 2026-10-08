@@ -24,6 +24,7 @@ export interface ImportSourceCfg {
     | 'rawgCatalog'
     | 'gameCatalog'
     | 'openlibrary'
+    | 'hardcover'
   label: string // "AniList" / "TMDB" / "VNDB" / "RAWG" / "Open Library"
   placeholder: string
   // Noun for a result's unit count in the search dialog ("352 pages"); "ep" default.
@@ -470,7 +471,8 @@ export const TV: MediaConfig = {
 }
 
 // Books track pages, not sittings: progress = current page (hand-edited or from
-// a physical bookmark), total_units = page count from Open Library. No
+// a physical bookmark), total_units = the chosen edition's page count, else the
+// book's (Hardcover; Open Library for its older rows). No
 // unitProgress — "+1 page" is not a meaningful log action, so the detail-page
 // log button falls back to mark-completed / read-again. Local EPUBs attach via
 // the manga chapter machinery under the books.dir root (each .epub = a volume).
@@ -503,12 +505,28 @@ export const BOOK: MediaConfig = {
   companyDefaultRole: 'publisher',
   companyPickerPlaceholder: 'Add publisher…',
   children: [{ to: '/authors', label: 'Authors', role: 'writer' }],
+  // Hardcover first (series, characters, clean genres, editions, adaptations);
+  // Open Library stays as the keyless fallback when no token is set.
   importSource: {
-    key: 'openlibrary',
-    label: 'Open Library',
-    placeholder: 'Search Open Library (e.g. The Hobbit)…',
+    key: 'hardcover',
+    label: 'Hardcover',
+    placeholder: 'Search Hardcover (title, author or ISBN)…',
     unitNoun: 'pages'
   },
+  importSources: [
+    {
+      key: 'hardcover',
+      label: 'Hardcover',
+      placeholder: 'Search Hardcover (title, author or ISBN)…',
+      unitNoun: 'pages'
+    },
+    {
+      key: 'openlibrary',
+      label: 'Open Library',
+      placeholder: 'Search Open Library (e.g. The Hobbit)…',
+      unitNoun: 'pages'
+    }
+  ],
   hasLocalReader: true,
   mediaTabLabel: 'Volumes',
   hasFanArt: true

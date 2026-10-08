@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'boxer-uprising-nature',
   about: ['event:boxer-uprising'],
   topic: 'nature',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'righteous-resistance-to-foreign-aggression',
@@ -43,6 +43,18 @@ export default defineInterpretation({
             url: 'https://zh.wikisource.org/wiki/%E5%AE%A3%E6%88%B0%E8%A9%94%E6%9B%B8'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q4',
+          text: 'In 1900 Boxer bands spread over the north China countryside, burning missionary facilities and killing Chinese Christians.',
+          lang: 'en',
+          cite: {
+            source: 'loc-china-country-study-1987',
+            loc: { section: 'The Hundred Days\' Reform and the Aftermath', para: '4' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/china/18.htm' }
+        }
       ]
     },
     {
@@ -66,6 +78,18 @@ export default defineInterpretation({
             at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/William_McKinley%27s_Fourth_State_of_the_Union_Address'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q5',
+          text: 'Supported by ultraconservatives and with the tacit support of the political opportunist Yuan Shikai (1859-1916), Empress Dowager Ci Xi engineered a coup d\'etat on September 21, 1898, forcing the young reform-minded Guangxu into seclusion.',
+          lang: 'en',
+          cite: {
+            source: 'loc-china-country-study-1987',
+            loc: { section: 'The Hundred Days\' Reform and the Aftermath', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/china/18.htm' }
         }
       ]
     }

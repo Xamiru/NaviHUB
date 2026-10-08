@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'munich-agreement-verdict',
   about: ['event:munich-agreement'],
   topic: 'significance',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'peace-saved',
@@ -39,6 +39,36 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://api.parliament.uk/historic-hansard/commons/1938/oct/03/prime-ministers-statement'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q9',
+          text: 'Chamberlain believed that Sudeten German grievances were just and Hitler\'s intention limited.',
+          lang: 'en',
+          cite: {
+            source: 'loc-czechoslovakia-country-study-1987',
+            loc: { section: 'Munich', para: '2' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'http://countrystudies.us/czech-republic/28.htm'
+          }
+        },
+        {
+          id: 'q11',
+          text: 'Both Britain and France advised Czechoslovakia to concede.',
+          lang: 'en',
+          cite: {
+            source: 'loc-czechoslovakia-country-study-1987',
+            loc: { section: 'Munich', para: '2' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'http://countrystudies.us/czech-republic/28.htm'
           }
         }
       ]
@@ -142,6 +172,22 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'http://en.kremlin.ru/events/president/news/63527'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q10',
+          text: 'The Soviet Union announced its willingness to come to Czechoslovakia\'s assistance. Benes, however, refused to go to war without the support of the Western powers.',
+          lang: 'en',
+          cite: {
+            source: 'loc-czechoslovakia-country-study-1987',
+            loc: { section: 'Munich', para: '4' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'http://countrystudies.us/czech-republic/28.htm'
           }
         }
       ]

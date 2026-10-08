@@ -72,7 +72,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q4',
-          text: 'He was hanged and the Iranian government tried to extradite Afḡānī; but the sultan, probably fearful of the secrets of his court Afḡānī knew, insisted Afḡānī was an Afghan and not extraditable.',
+          text: 'Mīrzā Reżā returned and on 1 May 1896, as Nāṣer-al-dīn Shah was preparing for the 50th lunar anniversary of his accession, Mīrzā Reżā pretended to offer a petition but instead shot the shah dead. He was hanged and the Iranian government tried to extradite Afḡānī; but the sultan, probably fearful of the secrets of his court Afḡānī knew, insisted Afḡānī was an Afghan and not extraditable.',
           lang: 'en',
           cite: {
             source: 'iranica-keddie-afgani-jamal-al-din',
@@ -80,7 +80,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/afgani-jamal-al-din'
           }
         }

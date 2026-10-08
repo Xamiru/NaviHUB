@@ -75,7 +75,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q4',
-          text: 'His later attempt to regain his throne (July 1911) failed, and he returned to Europe, where he died in San Remo, Italy, in April 1924.',
+          text: 'Moḥammad-ʿAli Shah took refuge in the Russian embassy and, following an agreement worked out with the help of the British and Russian embassies, resigned his kingship and left for Russia. His later attempt to regain his throne (July 1911) failed, and he returned to Europe, where he died in San Remo, Italy, in April 1924.',
           lang: 'en',
           cite: {
             source: 'iranica-yarshater-iranian-history-islamic-period-5',
@@ -83,7 +83,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/iran-ii2-islamic-period-page-5/'
           }
         }

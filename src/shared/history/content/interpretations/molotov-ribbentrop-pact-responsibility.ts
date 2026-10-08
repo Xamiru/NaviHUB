@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'molotov-ribbentrop-pact-responsibility',
   about: ['event:molotov-ribbentrop-pact'],
   topic: 'responsibility',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'paved-the-way',
@@ -54,6 +54,18 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://web.archive.org/web/20241227154400/https://www.europarl.europa.eu/doceo/document/TA-9-2019-0021_EN.html'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q10',
+          text: 'Hitler, who had decided to attack Poland despite the guarantees of Britain and France to defend that country, soon responded to the changed Soviet stance.',
+          lang: 'en',
+          cite: {
+            source: 'loc-russia-country-study-1996',
+            loc: { section: 'Transformation and Terror', para: '23' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/russia/10.htm' }
         }
       ]
     },
@@ -114,6 +126,18 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'http://en.kremlin.ru/events/president/news/63527'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q9',
+          text: 'From 1934 through 1937, the Soviet Union tried to restrain German militarism by building coalitions hostile to fascism.',
+          lang: 'en',
+          cite: {
+            source: 'loc-russia-country-study-1996',
+            loc: { section: 'Transformation and Terror', para: '22' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/russia/10.htm' }
         }
       ]
     },

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'congress-of-vienna-legacy',
   about: ['event:congress-of-vienna'],
   topic: 'legacy',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'lasting-order',
@@ -88,6 +88,19 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-08',
             url: 'https://api.parliament.uk/historic-hansard/commons/1815/mar/20/address-respecting-the-congress-at-vienna'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q8',
+          text: 'In Genoa the government was particularly unpopular, for the Genoese resented being handed over to their old enemy Piedmont like a flock of sheep.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-italy', loc: { section: 'ITALY', para: '1512' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Italy'
           }
         }
       ]

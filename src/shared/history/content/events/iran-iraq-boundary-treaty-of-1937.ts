@@ -170,7 +170,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'a new treaty partly redrawing the frontier along the thalweg, guaran­teeing freedom of navigation through the Šaṭṭ al-ʿArab, and recommending joint maintenance facilities was concluded',
+          text: 'On 13 Tīr 1316 Š./14 July 1937 a new treaty partly redrawing the frontier along the thalweg, guaran­teeing freedom of navigation through the Šaṭṭ al-ʿArab, and recommending joint maintenance facilities was concluded',
           lang: 'en',
           cite: {
             source: 'iranica-kechichian-boundaries-iraq',
@@ -178,7 +178,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/boundaries-iv/'
           }
         },
@@ -202,20 +202,6 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
-          id: 'q6',
-          text: 'even though the Baghdad government conceded to Tehran sovereignty over anchorage facilities extending approximately 6 km along the shore opposite Ābādān, Iraq retained virtual control of the river until Far­vardīn, 1349 Š./April, 1969, when the Baʿthist regime decided for the first time to check the papers of ships moving up the Šaṭṭ al-ʿArab and demanded that Iranian vessels lower their flags before entering the river.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-kechichian-boundaries-iraq',
-            loc: { section: 'BOUNDARIES iv. With Iraq', para: '2' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://www.iranicaonline.org/articles/boundaries-iv/'
-          }
-        },
-        {
           id: 'q7',
           text: 'President Qāsem, who repudiated the 1937 treaty on grounds of undue British pressure to sign, regarded the whole river as subject to Iraqi control.',
           lang: 'en',
@@ -227,6 +213,20 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-08',
             url: 'https://www.iranicaonline.org/articles/arab-v/'
+          }
+        },
+        {
+          id: 'q6',
+          text: 'Neverthe­less, even though the Baghdad government conceded to Tehran sovereignty over anchorage facilities extending approximately 6 km along the shore opposite Ābādān, Iraq retained virtual control of the river until Far­vardīn, 1349 Š./April, 1969, when the Baʿthist regime decided for the first time to check the papers of ships moving up the Šaṭṭ al-ʿArab and demanded that Iranian vessels lower their flags before entering the river.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-kechichian-boundaries-iraq',
+            loc: { section: 'BOUNDARIES iv. With Iraq', para: '2' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/boundaries-iv/'
           }
         },
         {

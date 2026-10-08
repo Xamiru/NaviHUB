@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'german-democratic-republic-legitimacy',
   about: ['polity:german-democratic-republic'],
   topic: 'legitimacy',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'one-indivisible-german-republic',
@@ -35,6 +35,15 @@ export default defineInterpretation({
             url: 'http://www.documentarchiv.de/ddr/verfddr1949.html'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q6',
+          text: 'West Germany joined the Western community of nations, while East Germany became the westernmost part of the Soviet empire.',
+          lang: 'en',
+          cite: { source: 'loc-germany-country-study-1995', loc: { section: 'History', para: '15' } },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/germany/3.htm' }
+        }
       ]
     },
     {
@@ -57,6 +66,15 @@ export default defineInterpretation({
             at: '2026-10-08',
             url: 'https://history.state.gov/countries/german-democratic-republic'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q5',
+          text: 'untries in the summer and fall of 1989, particularly through Hungary, was telling evidence that the GDR did not have the support of its citizens',
+          lang: 'en',
+          cite: { source: 'loc-germany-country-study-1995', loc: { section: 'History', para: '20' } },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/germany/3.htm' }
         }
       ]
     },

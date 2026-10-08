@@ -40,6 +40,22 @@ export default defineInterpretation({
             url: 'https://www.marxists.org/subject/china/documents/cpc/history/01.htm'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q8',
+          text: 'The ironically titled Great Leap Forward was supposed to be the spectacular culmination of Mao Zedong\'s program for transforming China into a Communist paradise.',
+          lang: 'en',
+          cite: {
+            source: 'afe-columbia-china-1950-to-the-present',
+            loc: { section: 'Cultural Revolution (1966-1976)' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://afe.easia.columbia.edu/tps/1950_cn.htm'
+          }
+        }
       ]
     },
     {
@@ -132,5 +148,5 @@ export default defineInterpretation({
       ]
     }
   ],
-  researched: '2026-10-07'
+  researched: '2026-10-09'
 })

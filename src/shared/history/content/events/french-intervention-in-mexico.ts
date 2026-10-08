@@ -292,7 +292,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q7',
-          text: 'His capture by Mexican forces, court-martial, and sentence to be executed, marked the end of direct European intervention in Mexico.',
+          text: 'Without European support, Maximilian was unable to retain power. His capture by Mexican forces, court-martial, and sentence to be executed, marked the end of direct European intervention in Mexico.',
           lang: 'en',
           cite: {
             source: 'state-dept-milestones-french-intervention-in-mexico',
@@ -303,7 +303,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://history.state.gov/milestones/1861-1865/french-intervention'
           }
         },

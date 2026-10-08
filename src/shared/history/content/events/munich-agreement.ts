@@ -230,7 +230,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q7',
-          text: 'After Munich, Bohemia and Moravia lost about 38 percent of their combined area, as well as about 2.8 million Germans and approximately 750,000 Czechs to Germany. Hungary received 11,882 square kilometers in southern Slovakia and southern Ruthenia; only 53 percent of the population in this territory was Hungarian. Poland acquired Tesin and two minor border areas in northern Slovakia.',
+          text: 'Hungary received 11,882 square kilometers in southern Slovakia and southern Ruthenia; only 53 percent of the population in this territory was Hungarian. Poland acquired Tesin and two minor border areas in northern Slovakia.',
           lang: 'en',
           cite: {
             source: 'loc-czechoslovakia-country-study-1987',
@@ -238,7 +238,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
             url: 'http://countrystudies.us/czech-republic/28.htm'
           }
         },

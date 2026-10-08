@@ -74,12 +74,12 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'He was born 2 Moḥarram 1233/12 November 1817 in Tehran into the household of a notable family from Māzandarān.',
+          text: 'Iranian notable and founder of the Bahai religion or Bahaism. He was born 2 Moḥarram 1233/12 November 1817 in Tehran into the household of a notable family from Māzandarān.',
           lang: 'en',
           cite: { source: 'iranica-cole-baha-allah', loc: { section: 'BAHĀʾ-ALLĀH', para: '1' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/baha-allah'
           }
         },
@@ -99,6 +99,17 @@ export default definePerson({
     {
       kind: 'career',
       quotes: [
+        {
+          id: 'q11',
+          text: 'In June, 1851, Bahāʾ-Allāh left Tehran for Karbalāʾ in Iraq at the suggestion of First Minister Amīr Neẓām Taqī Khan (later Amīr[-e] Kabīr), who attempted to co-opt him by offering him a government post whenever he should return. Bahāʾ-Allāh refused the post, but took the hint that he should leave Iran for a while. Bahāʾ-Allāh found Babis in Karbalāʾ following a Sayyed ʿOloww, who claimed to be a divine incarnation until Bahāʾ-Allāh’s greater prestige caused him to renounce his pretensions. While in Karbalāʾ in 1851, according to his companion Shaikh Ḥasan Zonūzī, Bahāʾ-Allāh said he was himself the return of Imam Ḥosayn (whom many expected to appear after the Mahdī, whom Babis identified with the Bāb), though he kept this “messianic secret” from most of his associates. In public, Bahāʾ-Allāh supported Azal, in the interests of unity, and worked to spread Babism in Karbalāʾ',
+          lang: 'en',
+          cite: { source: 'iranica-cole-baha-allah', loc: { section: 'BAHĀʾ-ALLĀH', para: '7' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/baha-allah'
+          }
+        },
         {
           id: 'q4',
           text: 'Despite having found him innocent, the government exiled Bahāʾ-Allāh, who chose to return to Iraq in the Ottoman empire, arriving in Baghdad on 12 January 1853.',

@@ -107,6 +107,20 @@ export default defineEvent({
       kind: 'background',
       quotes: [
         {
+          id: 'q6',
+          text: 'Einstein seems to have wrestled with the problems of an emission theory of light for some time, looking for a set of differential equations describing such a theory that could replace the Maxwell-Lorentz equations; and trying to explain a number of optical experiments, notably the Fizeau experiment, based on some version of the emission theory.',
+          lang: 'en',
+          cite: {
+            source: 'aip-stachel-einstein-relativity',
+            loc: { section: 'Einstein\'s Discovery of Relativity', para: '26' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.aip.org/exhibits/einstein/essay-einstein-relativity.htm'
+          }
+        },
+        {
           id: 'q4',
           text: 'Finally, after a day spent wrestling once more with the problem in the company of his friend and patent office colleague Michele Besso, the only person thanked in the 1905 SRT paper, there came a moment of crucial insight.',
           lang: 'en',
@@ -116,7 +130,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://history.aip.org/exhibits/einstein/essay-einstein-relativity.htm'
           }
         }

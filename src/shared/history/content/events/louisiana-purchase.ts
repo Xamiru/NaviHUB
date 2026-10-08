@@ -112,7 +112,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'He planned to recapture the valuable sugar colony of St. Domingue from a slave rebellion, and then use Louisiana as the granary for his empire. France acquired Louisiana from Spain in 1800 and took possession in 1802, sending a large French army to St. Domingue and preparing to send another to New Orleans. Westerners became very apprehensive about having the more-powerful French in control of New Orleans: President Thomas Jefferson noted, “There is on the globe one single spot, the possessor of which is our natural and habitual enemy. It is New Orleans.”',
+          text: 'Napoleon Bonaparte’s plans to revive the French empire in the New World. He planned to recapture the valuable sugar colony of St. Domingue from a slave rebellion, and then use Louisiana as the granary for his empire. France acquired Louisiana from Spain in 1800 and took possession in 1802, sending a large French army to St. Domingue and preparing to send another to New Orleans. Westerners became very apprehensive about having the more-powerful French in control of New Orleans: President Thomas Jefferson noted, “There is on the globe one single spot, the possessor of which is our natural and habitual enemy. It is New Orleans.”',
           lang: 'en',
           cite: {
             source: 'state-dept-milestones-louisiana-purchase',
@@ -120,7 +120,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://history.state.gov/milestones/1801-1829/louisiana-purchase'
           }
         },
@@ -145,7 +145,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'However, the loss of Haiti made Louisiana strategically undesirable, and with war again on the horizon with Great Britain, Napoleon was willing to agree to the Louisiana Purchase in 1803.',
+          text: 'Napoleon had also re-obtained the North American province of Louisiana from Spain in 1800. However, the loss of Haiti made Louisiana strategically undesirable, and with war again on the horizon with Great Britain, Napoleon was willing to agree to the Louisiana Purchase in 1803.',
           lang: 'en',
           cite: {
             source: 'state-dept-milestones-napoleonic-wars',
@@ -153,7 +153,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://history.state.gov/milestones/1801-1829/napoleonic-wars'
           }
         },

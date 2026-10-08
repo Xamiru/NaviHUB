@@ -142,6 +142,17 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
+          id: 'q13',
+          text: 'Congress meets beginning what is later known as Roosevelt\'s “Hundred Days.” During this period, Congress enacts many of the principal programs of FDR\'s “New Deal.”',
+          lang: 'en',
+          cite: { source: 'millercenter-fdr-key-events', loc: { section: 'Key Events' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://millercenter.org/president/fdroosevelt/key-events'
+          }
+        },
+        {
           id: 'q10',
           text: 'Roosevelt wins reelection to the presidency in stunning fashion, gaining 523 electoral votes (27,750,000 popular) to Landon\'s 8 (16,680,000 popular).',
           lang: 'en',

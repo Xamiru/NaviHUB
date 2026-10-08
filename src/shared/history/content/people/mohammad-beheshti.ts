@@ -1,0 +1,209 @@
+import { definePerson } from '../../schema'
+
+export default definePerson({
+  id: 'mohammad-beheshti',
+  names: [
+    { text: 'Mohammad Beheshti', lang: 'en', role: 'primary' },
+    { text: 'محمد حسینی بهشتی', lang: 'fa', role: 'native' },
+    { text: 'Mohammad Hosayn Beheshti', lang: 'en', role: 'alternative' },
+    { text: 'Moḥammad Ḥosayn Behešti', lang: 'en', role: 'alternative' }
+  ],
+  researched: '2026-10-09',
+  born: {
+    alts: [
+      {
+        value: { d: '1928' },
+        cites: [
+          {
+            source: 'iranica-yarshater-chronology-part-4',
+            loc: { section: 'Chronology of Iranian History Part 4, 1981' }
+          },
+          {
+            source: 'iranica-algar-khomeini-life',
+            loc: { section: 'KHOMEINI i. Life', para: '17' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1981-06-28' },
+        cites: [
+          {
+            source: 'loc-iran-country-study-1987',
+            loc: { section: 'TERROR AND REPRESSION', para: '3' }
+          },
+          {
+            source: 'iranica-algar-khomeini-life',
+            loc: { section: 'KHOMEINI i. Life', para: '80' }
+          }
+        ]
+      }
+    ]
+  },
+  regions: ['iran'],
+  roles: ['cleric', 'politician'],
+  offices: [
+    {
+      title: 'Chief justice of Iran',
+      polity: 'polity:islamic-republic-of-iran',
+      end: {
+        alts: [
+          {
+            value: { d: '1981-06-28' },
+            cites: [
+              {
+                source: 'loc-iran-country-study-1987',
+                loc: { section: 'TERROR AND REPRESSION', para: '3' }
+              }
+            ]
+          }
+        ]
+      },
+      cites: [
+        {
+          source: 'loc-iran-country-study-1987',
+          loc: { section: 'THE BANI SADR PRESIDENCY', para: '2' }
+        },
+        {
+          source: 'loc-iran-country-study-1987',
+          loc: { section: 'TERROR AND REPRESSION', para: '3' }
+        }
+      ]
+    },
+    {
+      title: 'Secretary general of the Islamic Republican Party',
+      end: {
+        alts: [
+          {
+            value: { d: '1981-06-28' },
+            cites: [
+              {
+                source: 'loc-iran-country-study-1987',
+                loc: { section: 'TERROR AND REPRESSION', para: '3' }
+              }
+            ]
+          }
+        ]
+      },
+      cites: [
+        {
+          source: 'loc-iran-country-study-1987',
+          loc: { section: 'TERROR AND REPRESSION', para: '3' }
+        }
+      ]
+    }
+  ],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/e/ec/Mohammad_Beheshti_1980.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Mohammad_Beheshti_1980.jpg',
+    credit: {
+      institution: 'iusnews.ir (source named on the Commons file page)',
+      creator: 'Hayrik Shahbazian'
+    },
+    license: { id: 'public-domain' }
+  },
+  sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q1',
+          text: 'Ayatollah Moḥammad Ḥosayn Behešti (1928-81), a prominent member of the Revolutionary Council established soon after Khomeini’s return to Iran in 1979, first made Khomeini’s acquaintance in 1945 when he left Isfahan for Qom to pursue studies there.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-algar-khomeini-life',
+            loc: { section: 'KHOMEINI i. Life', para: '17' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'career',
+      quotes: [
+        {
+          id: 'q2',
+          text: 'With Beheštī in the chair, the militant clerics of the Assembly adopted the principle of welāyat-e faqīh.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-arjomand-constitution-of-the-islamic-republic',
+            loc: { section: 'CONSTITUTION OF THE ISLAMIC REPUBLIC', para: '8' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.iranicaonline.org/articles/constitution-of-the-islamic-republic/'
+          }
+        },
+        {
+          id: 'q3',
+          text: 'Khomeini himself appointed IRP members Ayatollah Mohammad Beheshti as chief justice and member Ayatollah Abdol-Karim Musavi-Ardabili as prosecutor general',
+          lang: 'en',
+          cite: {
+            source: 'loc-iran-country-study-1987',
+            loc: { section: 'THE BANI SADR PRESIDENCY', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/iran/25.htm' }
+        },
+        {
+          id: 'q4',
+          text: 'On 28 June, a bomb was placed in the headquarters of the Islamic Republic Party, killing Ayatollah Behešti, the main antagonist of Bani-Ṣadr, together with some seventy other people.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-algar-khomeini-life',
+            loc: { section: 'KHOMEINI i. Life', para: '80' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'death',
+      quotes: [
+        {
+          id: 'q5',
+          text: 'On June 28, 1981, a powerful bomb exploded at the headquarters of the IRP while a meeting of party leaders was in progress.',
+          lang: 'en',
+          cite: {
+            source: 'loc-iran-country-study-1987',
+            loc: { section: 'TERROR AND REPRESSION', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/iran/26.htm' }
+        }
+      ]
+    },
+    {
+      kind: 'legacy',
+      quotes: [
+        {
+          id: 'q7',
+          text: 'But Beheshti was not a good organizer: He was a man of ruses and arrangements, a fixer.',
+          lang: 'en',
+          cite: {
+            source: 'merip-1981-bani-sadr-interview',
+            loc: { section: '“I Defeated the Ideology of the Regime”', para: '15' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.merip.org/1981/10/i-defeated-the-ideology-of-the-regime/'
+          }
+        }
+      ]
+    }
+  ],
+  furtherReading: [
+    { source: 'beheshti-1999-khaterat-e-mandegar', perspective: 'iranian' }
+  ]
+})

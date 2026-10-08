@@ -144,19 +144,51 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'This orientation became stronger three years later, when the group renamed itself the People\'s Will (Narodnaya volya), the name under which the radicals were responsible for the assassination of Alexander II in 1881.',
+          text: 'The radicals reconsidered their approach, and in 1876 they formed a propagandist organization called Land and Liberty (Zemlya i volya), which leaned toward terrorism. This orientation became stronger three years later, when the group renamed itself the People\'s Will (Narodnaya volya), the name under which the radicals were responsible for the assassination of Alexander II in 1881.',
           lang: 'en',
           cite: {
             source: 'loc-russia-country-study-1996',
             loc: { section: 'Transformation of Russia in the Nineteenth Century', para: '24' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/6.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/russia/6.htm' }
         }
       ]
     },
     {
       kind: 'aftermath',
       quotes: [
+        {
+          id: 'q19',
+          text: 'Make known to all our faithful subjects:',
+          lang: 'en',
+          cite: {
+            source: 'frus-1881-foster-to-blaine-assassination-of-alexander-ii',
+            loc: {
+              section: 'Document 613: Mr. Foster to Mr. Blaine, St. Petersburg, March 14, 1881'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/historicaldocuments/frus1881/d617'
+          }
+        },
+        {
+          id: 'q18',
+          text: 'It has pleased the Lord, in His inscrutable ways, to inflict a fatal blow upon Russia, and to call suddenly to Himself the benefactor of Russia, the Emperor Alexander II.',
+          lang: 'en',
+          cite: {
+            source: 'frus-1881-foster-to-blaine-assassination-of-alexander-ii',
+            loc: {
+              section: 'Document 613: Mr. Foster to Mr. Blaine, St. Petersburg, March 14, 1881'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/historicaldocuments/frus1881/d617'
+          }
+        },
         {
           id: 'q9',
           text: 'He fell under the sacrilegious hand of assassins who had already many times placed his precious life in peril.',

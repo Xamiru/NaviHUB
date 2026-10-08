@@ -15,7 +15,7 @@ export default defineInterpretation({
       url: 'https://encyclopedia.1914-1918-online.net/article/july-crisis-1914/'
     }
   },
-  researched: '2026-10-07',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'war-guilt-clause',
@@ -47,6 +47,22 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-07',
             url: 'https://history.state.gov/historicaldocuments/frus1919Parisv03/d11'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q19',
+          text: 'This article can be read as a kind of compromise: In view of the conviction of the victorious powers that Germany was at least responsible for the unleashing of the war in the July crisis',
+          lang: 'en',
+          cite: {
+            source: 'eo1418-brandt-versailles-treaty-of',
+            loc: { section: 'Versailles, Treaty of' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://encyclopedia.1914-1918-online.net/article/versailles-treaty-of/'
           }
         }
       ]

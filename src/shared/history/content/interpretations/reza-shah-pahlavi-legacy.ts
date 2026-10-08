@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'reza-shah-pahlavi-legacy',
   about: ['person:reza-shah-pahlavi', 'period:reign-of-reza-shah'],
   topic: 'legacy',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'great-modernizer',
@@ -185,6 +185,22 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://web.archive.org/web/20240929190515id_/https://english.khamenei.ir/news/6222/6-major-atrocities-by-Reza-Khan-Pahlavi-in-banning-hijab-for'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q11',
+          text: 'Although Reżā Khan had actually attempted a coup with German aid as early as 1335/1917 (Kaḥḥālzāda, pp. 299-308), the British did play a major role in the coup d’etat of 3 Esfand 1299 Š./22 February 1921, which brought him to power',
+          lang: 'en',
+          cite: {
+            source: 'iranica-ashraf-conspiracy-theories',
+            loc: { section: 'CONSPIRACY THEORIES', para: '10' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/conspiracy-theories/'
           }
         }
       ]

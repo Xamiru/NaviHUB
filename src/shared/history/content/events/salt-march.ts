@@ -128,16 +128,6 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
-          id: 'q4',
-          text: 'Their defiance reflected India\'s determination to be free, despite the imprisonment of thousands of protesters.',
-          lang: 'en',
-          cite: {
-            source: 'loc-india-country-study-1995',
-            loc: { section: 'Mahatma Gandhi', para: '6' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/india/20.htm' }
-        },
-        {
           id: 'q5',
           text: 'For the next five years, the Congress and government were locked in conflict and negotiations until what became the Government of India Act of 1935 could be hammered out.',
           lang: 'en',
@@ -146,6 +136,16 @@ export default defineEvent({
             loc: { section: 'Mahatma Gandhi', para: '6' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/india/20.htm' }
+        },
+        {
+          id: 'q4',
+          text: 'Their defiance reflected India\'s determination to be free, despite the imprisonment of thousands of protesters.',
+          lang: 'en',
+          cite: {
+            source: 'loc-india-country-study-1995',
+            loc: { section: 'Mahatma Gandhi', para: '6' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/india/20.htm' }
         }
       ]
     },

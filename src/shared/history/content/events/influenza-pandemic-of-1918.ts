@@ -167,6 +167,20 @@ export default defineEvent({
       kind: 'course',
       quotes: [
         {
+          id: 'q11',
+          text: 'Though this first wave of the pandemic laid millions low, it claimed relatively few lives and was most noted for the disruption of everyday activities which it caused among troops and civilians alike and for the fact that such disruptions in neutral Spain (where no censorship of the press was in force) were widely reported in the world’s media, earning it the mistaken tag of “Spanish” flu.',
+          lang: 'en',
+          cite: {
+            source: 'eo1418-phillips-influenza-pandemic',
+            loc: { section: 'The virus and its transmission', para: '7' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://encyclopedia.1914-1918-online.net/article/influenza-pandemic/'
+          }
+        },
+        {
           id: 'q3',
           text: 'It is surely no coincidence that the newly mutated H1N1 virus which created the deadly second wave of “Spanish” flu first made its transformed presence known late in August 1918 in Freetown, Brest and Boston, three major wartime ports through which hundreds of thousands of soldiers and sailors had been streaming since the first wave of the pandemic had broken out earlier in the year.',
           lang: 'en',
@@ -176,7 +190,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://encyclopedia.1914-1918-online.net/article/influenza-pandemic/'
           }
         },

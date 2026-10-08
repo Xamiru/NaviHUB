@@ -145,7 +145,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q3',
-          text: 'Nevertheless, Hindenburg was credited with orchestrating victory in the Battle of Tannenberg in late August 1914, which helped to drive the Russians out of East Prussia.',
+          text: 'In August 1914, Hindenburg was called back to command the Eighth Army in East Prussia. He was not chosen for his strategic brilliance, but as a calm and composed figurehead. His foremost task was to provide backing to the more junior Major-General Erich Ludendorff (1865-1937). Nevertheless, Hindenburg was credited with orchestrating victory in the Battle of Tannenberg in late August 1914, which helped to drive the Russians out of East Prussia.',
           lang: 'en',
           cite: {
             source: 'eo1418-von-der-goltz-hindenburg',
@@ -153,7 +153,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://encyclopedia.1914-1918-online.net/article/hindenburg-paul-von/'
           }
         },

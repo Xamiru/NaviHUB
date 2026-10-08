@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'herero-and-nama-genocide-naming',
   about: ['event:herero-and-nama-genocide'],
   topic: 'naming',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'germany-2021',
@@ -28,6 +28,25 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.auswaertiges-amt.de/en/newsroom/news/-/2463598'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q4',
+          text: 'Words themselves are striking, for after exterminating the large majority of Herero, colonial authorities imprisoned the survivors in “concentration camps.”',
+          lang: 'en',
+          cite: {
+            source: 'ehne-patin-herero-and-nama',
+            loc: {
+              section: 'The massacre of the Herero and Nama: A colonial laboratory for genocide?',
+              para: '20'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://ehne.fr/en/encyclopedia/themes/europe-europeans-and-world/europe-and-colonial-wars/massacre-herero-and-nama-a-colonial-laboratory-genocide'
           }
         }
       ]

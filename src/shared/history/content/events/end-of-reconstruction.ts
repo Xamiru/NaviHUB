@@ -133,12 +133,12 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
-          id: 'q7',
-          text: 'These Supreme Court decisions severely curtailed the federal government’s efforts to guarantee the rights of the millions of formerly enslaved men and women.',
+          id: 'q8',
+          text: 'By 1879, as conditions worsened in the South, many African Americans sought a way out of the region.',
           lang: 'en',
           cite: {
             source: 'house-history-demise-of-reconstruction',
-            loc: { section: 'The Demise of Reconstruction', para: '17' }
+            loc: { section: 'The Demise of Reconstruction', para: '8' }
           },
           provenance: {
             via: 'web',
@@ -147,12 +147,12 @@ export default defineEvent({
           }
         },
         {
-          id: 'q8',
-          text: 'By 1879, as conditions worsened in the South, many African Americans sought a way out of the region.',
+          id: 'q7',
+          text: 'These Supreme Court decisions severely curtailed the federal government’s efforts to guarantee the rights of the millions of formerly enslaved men and women.',
           lang: 'en',
           cite: {
             source: 'house-history-demise-of-reconstruction',
-            loc: { section: 'The Demise of Reconstruction', para: '8' }
+            loc: { section: 'The Demise of Reconstruction', para: '17' }
           },
           provenance: {
             via: 'web',

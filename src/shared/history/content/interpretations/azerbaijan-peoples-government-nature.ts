@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'azerbaijan-peoples-government-nature',
   about: ['event:azerbaijan-peoples-government', 'event:republic-of-mahabad'],
   topic: 'nature',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   framing: {
     id: 'q1',
     text: 'Subsequent developments are subject to differing interpretations.',
@@ -178,6 +178,22 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-08',
             url: 'https://history.state.gov/historicaldocuments/frus1946v07/d224'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q10',
+          text: 'When the Iranian gendarmerie tried to control the newly-armed rebels, the Soviets challenged them and forced them to retire.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-kuniholm-azerbaijan-1941-1947',
+            loc: { section: 'AZERBAIJAN v. History from 1941 to 1947', para: '8' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/azerbaijan-v/'
           }
         }
       ]

@@ -231,20 +231,6 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
-          id: 'q5',
-          text: 'It passed through the heart of Persia and connected major and lesser places in Persia not only with each other, but with many other countries as well.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-shahvar-telegraph-i',
-            loc: { section: 'TELEGRAPH i. FIRST TELEGRAPH LINES IN PERSIA', para: '9' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/telegraph-i-first-telegraph-lines-in-persia/'
-          }
-        },
-        {
           id: 'q6',
           text: 'With the establishment and growth of the Indo-European Telegraph Department (hereafter IETD) in Persia from the mid-1860s, the British networks for news-gathering and local influence grew in size and efficiency.',
           lang: 'en',
@@ -259,6 +245,20 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
+          }
+        },
+        {
+          id: 'q5',
+          text: 'It passed through the heart of Persia and connected major and lesser places in Persia not only with each other, but with many other countries as well.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-shahvar-telegraph-i',
+            loc: { section: 'TELEGRAPH i. FIRST TELEGRAPH LINES IN PERSIA', para: '9' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/telegraph-i-first-telegraph-lines-in-persia/'
           }
         },
         {

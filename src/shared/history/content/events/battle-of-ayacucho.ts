@@ -86,13 +86,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'Thus, when independence finally did come in 1824, it was largely a foreign imposition rather than a truly popular, indigenous, and nationalist movement.',
+          text: 'Despite the Túpac Amaru revolts, independence was slow to develop in the Viceroyalty of Peru. For one thing, Peru was a conservative, royalist stronghold where the potentially restless creole elites maintained a relatively privileged, if dependent, position in the old colonial system. At the same time, the "anti-white" manifestations of the Túpac Amaru revolt demonstrated that the indigenous masses could not easily be mobilized without posing a threat to the creole caste itself. Thus, when independence finally did come in 1824, it was largely a foreign imposition rather than a truly popular, indigenous, and nationalist movement.',
           lang: 'en',
           cite: {
             source: 'loc-peru-country-study-1992',
             loc: { section: 'INDEPENDENCE IMPOSED FROM WITHOUT', para: '1' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/peru/11.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/peru/11.htm' }
         },
         {
           id: 'q2',
@@ -125,6 +125,16 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
+          id: 'q6',
+          text: 'Independence did little to alter the fundamental structures of inequality and underdevelopment based on colonialism and Andean neofeudalism.',
+          lang: 'en',
+          cite: {
+            source: 'loc-peru-country-study-1992',
+            loc: { section: 'INDEPENDENCE IMPOSED FROM WITHOUT', para: '8' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/peru/11.htm' }
+        },
+        {
           id: 'q4',
           text: 'This battle in the remote southern highlands effectively ended the long era of Spanish colonial rule in South America.',
           lang: 'en',
@@ -132,7 +142,7 @@ export default defineEvent({
             source: 'loc-peru-country-study-1992',
             loc: { section: 'INDEPENDENCE IMPOSED FROM WITHOUT', para: '6' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/peru/11.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/peru/11.htm' }
         },
         {
           id: 'q5',
@@ -143,16 +153,6 @@ export default defineEvent({
             loc: { section: 'INDEPENDENCE FROM SPAIN, 1809-39', para: '6' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/bolivia/8.htm' }
-        },
-        {
-          id: 'q6',
-          text: 'Independence did little to alter the fundamental structures of inequality and underdevelopment based on colonialism and Andean neofeudalism.',
-          lang: 'en',
-          cite: {
-            source: 'loc-peru-country-study-1992',
-            loc: { section: 'INDEPENDENCE IMPOSED FROM WITHOUT', para: '8' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/peru/11.htm' }
         }
       ]
     }

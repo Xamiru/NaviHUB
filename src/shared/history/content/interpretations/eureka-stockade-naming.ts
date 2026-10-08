@@ -61,7 +61,7 @@ export default defineInterpretation({
     },
     {
       id: 'democratic-watershed',
-      category: 'official',
+      category: 'scholarly',
       holders: [
         {
           kind: 'organization',
@@ -86,5 +86,5 @@ export default defineInterpretation({
       ]
     }
   ],
-  researched: '2026-10-08'
+  researched: '2026-10-09'
 })

@@ -92,6 +92,16 @@ export default definePolity({
       kind: 'course',
       quotes: [
         {
+          id: 'q10',
+          text: 'In August delegates from Venezuela and Colombia met at the border town of Cúcuta to formally sign the Constitution of the Republic of Gran Colombia, with its capital in Bogotá.',
+          lang: 'en',
+          cite: {
+            source: 'loc-venezuela-country-study-1990',
+            loc: { section: 'The Epic of Independence', para: '8' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/venezuela/4.htm' }
+        },
+        {
           id: 'q4',
           text: 'In the meantime, the Bolivarian dream of Gran Colombia was proving to be politically unworkable.',
           lang: 'en',

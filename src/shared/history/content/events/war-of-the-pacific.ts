@@ -160,13 +160,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'This was especially true after Peru\'s initial defeat in the naval Battle of Iquique Bay, where it lost one of its two iron-clad warships. Five months later, it lost the other, allowing Chile to gain complete control of the sea lanes and thus to virtually dictate the pace of the war.',
+          text: 'With the perspective of hindsight, the outcome with Peru\'s more powerful and better organized foe to the south was altogether predictable. This was especially true after Peru\'s initial defeat in the naval Battle of Iquique Bay, where it lost one of its two iron-clad warships. Five months later, it lost the other, allowing Chile to gain complete control of the sea lanes and thus to virtually dictate the pace of the war.',
           lang: 'en',
           cite: {
             source: 'loc-peru-country-study-1992',
             loc: { section: 'WAR WITH CHILE', para: '2' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/peru/14.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/peru/14.htm' }
         },
         {
           id: 'q4',

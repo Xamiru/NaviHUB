@@ -1,0 +1,416 @@
+{
+ "v": 1,
+ "kind": "event",
+ "id": "return-of-ruhollah-khomeini",
+ "names": [
+  {
+   "text": "Return of Ruhollah Khomeini",
+   "lang": "en",
+   "role": "primary"
+  },
+  {
+   "text": "بازگشت امام خمینی به ایران",
+   "lang": "fa",
+   "role": "native",
+   "translit": "Bāzgašt-e Emām Ḵomeyni be Irān"
+  },
+  {
+   "text": "Return of Imam Khomeini",
+   "lang": "en",
+   "role": "alternative",
+   "cites": []
+  }
+ ],
+ "researched": "2026-10-09",
+ "type": "other",
+ "start": {
+  "alts": [
+   {
+    "value": {
+     "d": "1979-02-01"
+    },
+    "cites": [
+     {
+      "source": "iranica-yarshater-chronology-part-4",
+      "loc": {
+       "section": "Chronology of Iranian History Part 4, 1979"
+      }
+     },
+     {
+      "source": "iranica-algar-khomeini-life",
+      "loc": {
+       "section": "KHOMEINI i. Life",
+       "para": "57"
+      }
+     },
+     {
+      "source": "loc-iran-country-study-1987",
+      "loc": {
+       "section": "THE BAKHTIAR GOVERNMENT",
+       "para": "3"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "regions": [
+  "iran"
+ ],
+ "prominence": 2,
+ "places": [
+  {
+   "ref": "place:tehran",
+   "cites": [
+    {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "57"
+     }
+    }
+   ]
+  },
+  {
+   "ref": "place:paris",
+   "cites": [
+    {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "57"
+     }
+    }
+   ]
+  }
+ ],
+ "partOf": [
+  {
+   "ref": "event:iranian-revolution"
+  }
+ ],
+ "participants": [
+  {
+   "ref": "person:ruhollah-khomeini",
+   "role": "leader",
+   "cites": [
+    {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "57"
+     }
+    }
+   ]
+  },
+  {
+   "name": "Ebrahim Yazdi",
+   "role": "participant",
+   "cites": [
+    {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "57"
+     }
+    }
+   ]
+  },
+  {
+   "ref": "person:sadegh-ghotbzadeh",
+   "role": "participant",
+   "cites": [
+    {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "57"
+     }
+    }
+   ]
+  },
+  {
+   "ref": "person:abolhassan-banisadr",
+   "role": "participant",
+   "cites": [
+    {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "57"
+     }
+    }
+   ]
+  },
+  {
+   "ref": "person:shapour-bakhtiar",
+   "role": "head-of-government",
+   "cites": [
+    {
+     "source": "loc-iran-country-study-1987",
+     "loc": {
+      "section": "THE BAKHTIAR GOVERNMENT",
+      "para": "2"
+     }
+    }
+   ]
+  }
+ ],
+ "figures": [],
+ "related": [
+  {
+   "ref": "event:departure-of-the-shah-1979",
+   "rel": "preceded-by",
+   "cites": [
+    {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "55"
+     }
+    }
+   ]
+  },
+  {
+   "ref": "event:iranian-revolution",
+   "rel": "followed-by",
+   "cites": [
+    {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "57"
+     }
+    },
+    {
+     "source": "loc-iran-country-study-1987",
+     "loc": {
+      "section": "THE BAKHTIAR GOVERNMENT",
+      "para": "3"
+     }
+    }
+   ]
+  }
+ ],
+ "polities": [
+  {
+   "ref": "polity:pahlavi-iran"
+  }
+ ],
+ "hero": {
+  "url": "https://upload.wikimedia.org/wikipedia/commons/d/d6/Khomeini_in_Mehrabad.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Khomeini_in_Mehrabad.jpg",
+  "credit": {
+   "institution": "Ettela'at newspaper, Tehran, 1 February 1979",
+   "creator": "Abbas Attar"
+  },
+  "license": {
+   "id": "public-domain"
+  }
+ },
+ "sections": [
+  {
+   "kind": "overview",
+   "quotes": [
+    {
+     "id": "q1",
+     "text": "Khomeini arrived in Tehran from Paris on February 1, 1979, received a rapturous welcome from millions of Iranians, and announced he would \"smash in the mouth of the Bakhtiar government.\" He labeled the government illegal and called for the strikes and demonstrations to continue.",
+     "lang": "en",
+     "cite": {
+      "source": "loc-iran-country-study-1987",
+      "loc": {
+       "section": "THE BAKHTIAR GOVERNMENT",
+       "para": "3"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-09",
+      "url": "http://countrystudies.us/iran/22.htm"
+     }
+    }
+   ]
+  },
+  {
+   "kind": "background",
+   "quotes": [
+    {
+     "id": "q2",
+     "text": "Bakhtiar sought unsuccessfully to persuade Khomeini to postpone his return to Iran until conditions in the country were normalized. Khomeini refused to receive a member of the regency council Bakhtiar sent as an emissary to Paris and after some hesitation rejected Bakhtiar's offer to come to Paris personally for consultations. Bakhtiar's attempt to prevent Khomeini's imminent return by closing the Mehrabad Airport at Tehran on January 26, 1979, proved to be only a stopgap measure.",
+     "lang": "en",
+     "cite": {
+      "source": "loc-iran-country-study-1987",
+      "loc": {
+       "section": "THE BAKHTIAR GOVERNMENT",
+       "para": "2"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-09",
+      "url": "http://countrystudies.us/iran/22.htm"
+     }
+    },
+    {
+     "id": "q3",
+     "text": "The first of these aims came closer to realization when Jalāl-al-Din Ṭehrāni came to Paris in order to seek a compromise with Khomeini. Khomeini refused to see him until he resigned from the regency council and pronounced it illegal.",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-algar-khomeini-life",
+      "loc": {
+       "section": "KHOMEINI i. Life",
+       "para": "56"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-09",
+      "url": "https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/"
+     }
+    }
+   ]
+  },
+  {
+   "kind": "course",
+   "quotes": [
+    {
+     "id": "q5",
+     "text": "Before disembarking, Khomeini was joined by his elder brother, Ayatollah Pasandida, and Ayatollah Moṭahhari. He then delivered a brief speech in the airport building, thanking all who had made the event possible and calling for unity to remove the remnants of the shah’s regime. Amid unparalleled scenes of popular joy—millions of people had gathered in Tehran to welcome him—he proceeded, first by car and then by helicopter, to Behešt-e Zahrā (q.v.), the cemetery where martyrs of the revolution lay buried. There he decried the Baḵtiār administration as “the last feeble gasp of the Shah’s regime,” promised to “punch it in the mouth,” and warned the commanders of the army not to resist the popular will",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-algar-khomeini-life",
+      "loc": {
+       "section": "KHOMEINI i. Life",
+       "para": "58"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-09",
+      "url": "https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/"
+     }
+    }
+   ]
+  },
+  {
+   "kind": "in-their-words",
+   "quotes": [
+    {
+     "id": "q8",
+     "text": "The historic event was concisely summarized in the slogan, “the shah has gone, the imam has come!”",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-algar-khomeini-life",
+      "loc": {
+       "section": "KHOMEINI i. Life",
+       "para": "57"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-09",
+      "url": "https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/"
+     }
+    }
+   ]
+  },
+  {
+   "kind": "consequences",
+   "quotes": [
+    {
+     "id": "q10",
+     "text": "On February 11, twenty-two senior military commanders met and announced that the armed forces would observe neutrality in the confrontation between the government and the people.",
+     "lang": "en",
+     "cite": {
+      "source": "loc-iran-country-study-1987",
+      "loc": {
+       "section": "THE BAKHTIAR GOVERNMENT",
+       "para": "4"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-09",
+      "url": "http://countrystudies.us/iran/22.htm"
+     }
+    }
+   ]
+  }
+ ],
+ "course": [
+  {
+   "date": {
+    "alts": [
+     {
+      "value": {
+       "d": "1979-02-01"
+      },
+      "cites": [
+       {
+        "source": "iranica-algar-khomeini-life",
+        "loc": {
+         "section": "KHOMEINI i. Life",
+         "para": "57"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "quote": {
+    "id": "q4",
+    "text": "After a series of delays, including the military occupation of Mehrābād airport from 24-30 January, Khomeini, accompanied by Ebrāhim Yazdi, Ṣādeq Qoṭbzāda, and Bani-Ṣadr, embarked on a chartered Air France airliner on the evening of 31 January and arrived in Tehran the following morning.",
+    "lang": "en",
+    "cite": {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "57"
+     }
+    },
+    "provenance": {
+     "via": "web",
+     "at": "2026-10-09",
+     "url": "https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/"
+    }
+   }
+  },
+  {
+   "date": {
+    "alts": [
+     {
+      "value": {
+       "d": "1979-02-05"
+      },
+      "cites": [
+       {
+        "source": "loc-iran-country-study-1987",
+        "loc": {
+         "section": "THE BAKHTIAR GOVERNMENT",
+         "para": "3"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "quote": {
+    "id": "q7",
+    "text": "On February 5, Khomeini named Mehdi Bazargan as prime minister of a provisional government. Although Bazargan did not immediately announce a cabinet, the move reinforced the conditions of dual authority that increasingly came to characterize the closing days of the Pahlavi monarchy.",
+    "lang": "en",
+    "cite": {
+     "source": "loc-iran-country-study-1987",
+     "loc": {
+      "section": "THE BAKHTIAR GOVERNMENT",
+      "para": "3"
+     }
+    },
+    "provenance": {
+     "via": "web",
+     "at": "2026-10-09",
+     "url": "http://countrystudies.us/iran/22.htm"
+    }
+   }
+  }
+ ]
+}

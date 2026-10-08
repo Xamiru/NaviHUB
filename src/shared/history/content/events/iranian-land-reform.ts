@@ -210,7 +210,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q7',
-          text: 'But the land reform was not connected with increases in agricultural productivity because of the perpetuation of traditional forms of tools, cultivation techniques, and the absence of aid through cooperatives and agricultural extension services. A special problem turned out to be the Islamic laws of inheritance, as a result of which many of the new small holdings were fragmented only a few years after their foundation. It seems that this factor has contributed considerably to the rapid decrease of viable farm units. Renewed indebtedness of farmers to urban shopkeepers and former landlords and the final takeover of their lands by these persons became common.',
+          text: 'The important results of the first years of the land reform can only be summarized here—initial increases in the income of land recipients due to the abolition of sharecropping, the psychological and political awakening of the rural population, which for the first time had the right to determine land use and crop rotation patterns. But the land reform was not connected with increases in agricultural productivity because of the perpetuation of traditional forms of tools, cultivation techniques, and the absence of aid through cooperatives and agricultural extension services. A special problem turned out to be the Islamic laws of inheritance, as a result of which many of the new small holdings were fragmented only a few years after their foundation. It seems that this factor has contributed considerably to the rapid decrease of viable farm units. Renewed indebtedness of farmers to urban shopkeepers and former landlords and the final takeover of their lands by these persons became common.',
           lang: 'en',
           cite: {
             source: 'iranica-ehlers-agriculture-in-iran',
@@ -218,7 +218,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
             url: 'https://web.archive.org/web/20260726061555/https://www.iranicaonline.org/articles/agriculture-in-iran/'
           }
         }

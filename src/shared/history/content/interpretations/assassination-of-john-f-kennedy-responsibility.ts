@@ -57,6 +57,36 @@ export default defineInterpretation({
             url: 'https://www.archives.gov/research/jfk/warren-commission-report/chapter-1.html'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q8',
+          text: 'The Warren Commission failed to investigate adequately the possibility of a conspiracy to assassinate the President.',
+          lang: 'en',
+          cite: {
+            source: 'hsca-1979-report',
+            loc: { section: 'Summary of Findings and Recommendations', para: '28' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.archives.gov/research/jfk/select-committee-report/summary.html'
+          }
+        },
+        {
+          id: 'q9',
+          text: 'The Warren Commission conducted a thorough and professional investigation into the responsibility of Lee Harvey Oswald for the assassination.',
+          lang: 'en',
+          cite: {
+            source: 'hsca-1979-report',
+            loc: { section: 'Summary of Findings and Recommendations', para: '27' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.archives.gov/research/jfk/select-committee-report/summary.html'
+          }
+        }
       ]
     },
     {
@@ -125,8 +155,26 @@ export default defineInterpretation({
             url: 'https://www.archives.gov/research/jfk/select-committee-report/summary.html'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q10',
+          text: 'The validity of this evidence has been widely debated in the short time since it was first presented to the committee and the public',
+          lang: 'en',
+          cite: {
+            source: 'hsca-1979-report',
+            loc: {
+              section: 'Report of the Select Committee on Assassinations of the U.S. House of Representatives'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.archives.gov/research/jfk/select-committee-report/part-4.html'
+          }
+        }
       ]
     }
   ],
-  researched: '2026-10-07'
+  researched: '2026-10-09'
 })

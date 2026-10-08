@@ -175,12 +175,7 @@ export default defineEvent({
             loc: { section: 'The Great Trek', para: '6' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/south-africa/12.htm' }
-        }
-      ]
-    },
-    {
-      kind: 'memory',
-      quotes: [
+        },
         {
           id: 'q7',
           text: 'Their victory is celebrated each year on December 16, the Day of the Vow.',
@@ -189,7 +184,7 @@ export default defineEvent({
             source: 'loc-south-africa-country-study-1996',
             loc: { section: 'The Great Trek', para: '5' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/south-africa/12.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/south-africa/12.htm' }
         }
       ]
     }

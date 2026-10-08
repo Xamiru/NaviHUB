@@ -57,13 +57,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q2',
-          text: 'But capturing the Hijaz brought the Al Saud empire into conflict with the rest of the Islamic world. The popular and Shia practices to which the Wahhabis objected were important to other Muslims, the majority of whom were alarmed that shrines were destroyed and access to the holy cities restricted.',
+          text: 'If the Al Saud had remained in Najd, the world would have paid them scant attention. But capturing the Hijaz brought the Al Saud empire into conflict with the rest of the Islamic world. The popular and Shia practices to which the Wahhabis objected were important to other Muslims, the majority of whom were alarmed that shrines were destroyed and access to the holy cities restricted.',
           lang: 'en',
           cite: {
             source: 'loc-saudi-arabia-country-study-1992',
             loc: { section: 'The Saud Family and Wahhabi Islam', para: '12' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/saudi-arabia/7.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/saudi-arabia/7.htm' }
         },
         {
           id: 'q3',

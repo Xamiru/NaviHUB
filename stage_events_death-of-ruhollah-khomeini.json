@@ -1,0 +1,604 @@
+{
+ "v": 1,
+ "kind": "event",
+ "id": "death-of-ruhollah-khomeini",
+ "names": [
+  {
+   "text": "Death of Ruhollah Khomeini",
+   "lang": "en",
+   "role": "primary"
+  },
+  {
+   "text": "رحلت امام خمینی",
+   "lang": "fa",
+   "role": "native"
+  },
+  {
+   "text": "Succession of Ali Khamenei",
+   "lang": "en",
+   "role": "alternative"
+  },
+  {
+   "text": "انتخاب آیت‌الله خامنه‌ای به رهبری",
+   "lang": "fa",
+   "role": "alternative"
+  }
+ ],
+ "researched": "2026-10-09",
+ "type": "other",
+ "start": {
+  "alts": [
+   {
+    "value": {
+     "d": "1989-06-03"
+    },
+    "cites": [
+     {
+      "source": "iranica-algar-khomeini-life",
+      "loc": {
+       "section": "KHOMEINI i. Life",
+       "para": "129"
+      }
+     },
+     {
+      "source": "iranica-arjomand-constitution-of-the-islamic-republic",
+      "loc": {
+       "section": "CONSTITUTION OF THE ISLAMIC REPUBLIC",
+       "para": "32"
+      }
+     },
+     {
+      "source": "iranica-algar-fatwa",
+      "loc": {
+       "section": "FATWĀ",
+       "para": "33"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "end": {
+  "alts": [
+   {
+    "value": {
+     "d": "1989-06-04"
+    },
+    "cites": [
+     {
+      "source": "iranica-arjomand-constitution-of-the-islamic-republic",
+      "loc": {
+       "section": "CONSTITUTION OF THE ISLAMIC REPUBLIC",
+       "para": "32"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "regions": [
+  "iran"
+ ],
+ "prominence": 2,
+ "places": [
+  {
+   "ref": "place:tehran",
+   "cites": [
+    {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "129"
+     }
+    }
+   ]
+  }
+ ],
+ "polities": [
+  {
+   "ref": "polity:islamic-republic-of-iran",
+   "cites": [
+    {
+     "source": "iranica-arjomand-constitution-of-the-islamic-republic",
+     "loc": {
+      "section": "CONSTITUTION OF THE ISLAMIC REPUBLIC",
+      "para": "32"
+     }
+    }
+   ]
+  }
+ ],
+ "participants": [
+  {
+   "ref": "person:ruhollah-khomeini",
+   "role": "leader",
+   "cites": [
+    {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "129"
+     }
+    }
+   ]
+  },
+  {
+   "ref": "person:ali-khamenei",
+   "role": "leader",
+   "cites": [
+    {
+     "source": "iranica-arjomand-constitution-of-the-islamic-republic",
+     "loc": {
+      "section": "CONSTITUTION OF THE ISLAMIC REPUBLIC",
+      "para": "32"
+     }
+    }
+   ]
+  },
+  {
+   "ref": "person:hossein-ali-montazeri",
+   "role": "participant",
+   "cites": [
+    {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "101"
+     }
+    }
+   ]
+  },
+  {
+   "name": "Ahmad Khomeini",
+   "role": "participant",
+   "cites": [
+    {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "129"
+     }
+    }
+   ]
+  },
+  {
+   "name": "Mohammad-Reza Golpayegani",
+   "role": "participant",
+   "cites": [
+    {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "129"
+     }
+    }
+   ]
+  }
+ ],
+ "figures": [],
+ "related": [
+  {
+   "ref": "event:rushdie-fatwa",
+   "rel": "preceded-by"
+  },
+  {
+   "ref": "event:constitutional-revision-of-1989",
+   "rel": "followed-by"
+  },
+  {
+   "ref": "event:iran-iraq-war",
+   "rel": "related",
+   "cites": [
+    {
+     "source": "iranica-yarshater-chronology-part-4",
+     "loc": {
+      "section": "Chronology of Iranian History Part 4, 1988"
+     }
+    }
+   ]
+  }
+ ],
+ "sections": [
+  {
+   "kind": "overview",
+   "quotes": [
+    {
+     "id": "q1",
+     "text": "Khomeini passed away shortly before midnight on 3 June 1989, after suffering a series of heart attacks.",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-algar-khomeini-life",
+      "loc": {
+       "section": "KHOMEINI i. Life",
+       "para": "129"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-08",
+      "url": "https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/"
+     }
+    }
+   ]
+  },
+  {
+   "kind": "background",
+   "quotes": [
+    {
+     "id": "q2",
+     "text": "An Assembly of Experts (not to be confused with the constituent assembly that went by the same name) was elected in December 1982 and convened in the following year to determine the successor to Khomeini. Khomeini's own choice was known to be Montazeri. The assembly, an eighty-three-member body that is required to convene once a year, apparently could reach no agreement on a successor during either its 1983 or its 1984 session, however. In 1985 the Assembly of Experts agreed, reportedly on a split vote, to name Montazeri as Khomeini's \"deputy\" (qaem maqam), rather than \"successor\" (ja-neshin)",
+     "lang": "en",
+     "cite": {
+      "source": "loc-iran-country-study-1987",
+      "loc": {
+       "section": "CONSOLIDATION OF THE REVOLUTION",
+       "para": "2"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-08",
+      "url": "http://countrystudies.us/iran/27.htm"
+     }
+    },
+    {
+     "id": "q3",
+     "text": "Ayatollah Montaẓeri criticized this response to the incursion by the Mojāhedin. Conventionally eulogized as “esteemed jurisprudent” (faqih-e ʿāliqadr), he had been selected in November 1985 by the Assembly of Experts (Majles-e ḵobragān), after deliberations lasting for more than two years, as successor to Khomeini as leader of the Islamic Republic",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-algar-khomeini-life",
+      "loc": {
+       "section": "KHOMEINI i. Life",
+       "para": "99"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-08",
+      "url": "https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/"
+     }
+    },
+    {
+     "id": "q4",
+     "text": "More serious than all the preceding was Montaẓeri’s condemnation of the mass executions that followed the Mojāhedin incursion; he estimated their number to be between 2,800 and 3,000, men and women",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-algar-khomeini-life",
+      "loc": {
+       "section": "KHOMEINI i. Life",
+       "para": "101"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-08",
+      "url": "https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/"
+     }
+    },
+    {
+     "id": "q5",
+     "text": "Ayatollah Ḥosayn-ʿAli Montaẓeri is dismissed from his position as the successor to Ayatollah Khomeini.",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-yarshater-chronology-part-4",
+      "loc": {
+       "section": "Chronology of Iranian History Part 4, 1989"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-08",
+      "url": "https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-4/"
+     }
+    }
+   ]
+  },
+  {
+   "kind": "death",
+   "quotes": [
+    {
+     "id": "q7",
+     "text": "The next day, the seal on his testament was broken. He had stipulated that Aḥmad was to read it aloud, but, overcome by grief, he was unable to do so; it therefore fell to Khamenei to accomplish the task.",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-algar-khomeini-life",
+      "loc": {
+       "section": "KHOMEINI i. Life",
+       "para": "129"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-08",
+      "url": "https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/"
+     }
+    }
+   ]
+  },
+  {
+   "kind": "course",
+   "quotes": [
+    {
+     "id": "q8",
+     "text": "It was then placed in a helicopter to be conveyed to the Behešt-e Zahrā cemetery, but once there, the burial shroud was torn to pieces by mourners, and it became necessary to take the body back to the Moṣallā to be shrouded anew under the supervision of Ayatollah Golpāyagāni.",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-algar-khomeini-life",
+      "loc": {
+       "section": "KHOMEINI i. Life",
+       "para": "129"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-08",
+      "url": "https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/"
+     }
+    },
+    {
+     "id": "q9",
+     "text": "The crowds had not diminished when it was returned to the cemetery for burial. The scenario was appropriately reminiscent of his arrival from Paris, when similarly accompanied by vast numbers of supporters, he had proceeded from the airport to Behešt-e Zahrā. Thus was he laid to rest",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-algar-khomeini-life",
+      "loc": {
+       "section": "KHOMEINI i. Life",
+       "para": "129"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-08",
+      "url": "https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/"
+     }
+    }
+   ]
+  },
+  {
+   "kind": "consequences",
+   "quotes": [
+    {
+     "id": "q11",
+     "text": "Within three weeks Ḵāmenaʾī had asserted his supreme authority as the new leader of the Islamic Republic by confirming one of the last decrees issued by Khomeini",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-arjomand-constitution-of-the-islamic-republic",
+      "loc": {
+       "section": "CONSTITUTION OF THE ISLAMIC REPUBLIC",
+       "para": "32"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-08",
+      "url": "https://www.iranicaonline.org/articles/constitution-of-the-islamic-republic/"
+     }
+    },
+    {
+     "id": "q12",
+     "text": "The apparent disjunction was relatively short-lived, for Ayatollah ʿAlī Ḵāmenaʾī, who had succeeded to Ḵomeynī’s position as rahbar the day after his death on 13 Ḵordād 1368 Š./3 June 1989, began establishing his authority as a marjaʿ some five years later, after the demise of Ayatollah Moḥammad-ʿAlī Arākī, the last of the senior marājeʿ to outlive Ḵomeynī, on 8 Āḏar 1373 Š./29 November 1994",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-algar-fatwa",
+      "loc": {
+       "section": "FATWĀ",
+       "para": "33"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-08",
+      "url": "https://www.iranicaonline.org/articles/fatwa"
+     }
+    },
+    {
+     "id": "q13",
+     "text": "The cleric ʿAli-Akbar Hāšemi Rafsanjāni, a wealthy pistachio grower from Kerman, author of a book on Amir Kabir, active in the Islamic Revolution, a close confidant of Ayatollah Khomeini and former speaker of the Majles, is elected president.",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-yarshater-chronology-part-4",
+      "loc": {
+       "section": "Chronology of Iranian History Part 4, 1989"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-08",
+      "url": "https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-4/"
+     }
+    }
+   ]
+  }
+ ],
+ "course": [
+  {
+   "date": {
+    "alts": [
+     {
+      "value": {
+       "d": "1989-03-26"
+      },
+      "cites": [
+       {
+        "source": "iranica-algar-khomeini-life",
+        "loc": {
+         "section": "KHOMEINI i. Life",
+         "para": "101"
+        }
+       }
+      ],
+      "heldBy": [
+       {
+        "kind": "scholar",
+        "name": "Hamid Algar"
+       }
+      ]
+     },
+     {
+      "value": {
+       "d": "1989-03-27"
+      },
+      "cites": [
+       {
+        "source": "iranica-arjomand-constitution-of-the-islamic-republic",
+        "loc": {
+         "section": "CONSTITUTION OF THE ISLAMIC REPUBLIC",
+         "para": "31"
+        }
+       }
+      ],
+      "heldBy": [
+       {
+        "kind": "scholar",
+        "name": "Saïd Amir Arjomand"
+       }
+      ]
+     }
+    ]
+   },
+   "quote": {
+    "id": "q15",
+    "text": "On 26 March 1989, Khomeini dismissed him officially, writing that were he to succeed him, he would hand the country over to the “liberals,” meaning presumably Bāzargān and the Freedom Movement, and through them to the monāfeqin.",
+    "lang": "en",
+    "cite": {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "101"
+     }
+    },
+    "provenance": {
+     "via": "web",
+     "at": "2026-10-08",
+     "url": "https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/"
+    }
+   }
+  },
+  {
+   "date": {
+    "alts": [
+     {
+      "value": {
+       "d": "1989-06-03"
+      },
+      "cites": [
+       {
+        "source": "iranica-algar-khomeini-life",
+        "loc": {
+         "section": "KHOMEINI i. Life",
+         "para": "129"
+        }
+       },
+       {
+        "source": "iranica-arjomand-constitution-of-the-islamic-republic",
+        "loc": {
+         "section": "CONSTITUTION OF THE ISLAMIC REPUBLIC",
+         "para": "32"
+        }
+       },
+       {
+        "source": "iranica-algar-fatwa",
+        "loc": {
+         "section": "FATWĀ",
+         "para": "33"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "quote": {
+    "id": "q16",
+    "text": "When Khomeini died, on 13 Ḵordād 1368 Š./3 June 1989",
+    "lang": "en",
+    "cite": {
+     "source": "iranica-arjomand-constitution-of-the-islamic-republic",
+     "loc": {
+      "section": "CONSTITUTION OF THE ISLAMIC REPUBLIC",
+      "para": "32"
+     }
+    },
+    "provenance": {
+     "via": "web",
+     "at": "2026-10-08",
+     "url": "https://www.iranicaonline.org/articles/constitution-of-the-islamic-republic/"
+    }
+   }
+  },
+  {
+   "date": null,
+   "quote": {
+    "id": "q17",
+    "text": "The Assembly of experts met the following morning and after a long session elected Ḵāmenaʾī as Khomeini’s successor by a majority of sixty votes out of seventy-four.",
+    "lang": "en",
+    "cite": {
+     "source": "iranica-arjomand-constitution-of-the-islamic-republic",
+     "loc": {
+      "section": "CONSTITUTION OF THE ISLAMIC REPUBLIC",
+      "para": "32"
+     }
+    },
+    "provenance": {
+     "via": "web",
+     "at": "2026-10-08",
+     "url": "https://www.iranicaonline.org/articles/constitution-of-the-islamic-republic/"
+    }
+   }
+  },
+  {
+   "date": {
+    "alts": [
+     {
+      "value": {
+       "d": "1989-06-05"
+      },
+      "cites": [
+       {
+        "source": "iranica-algar-khomeini-life",
+        "loc": {
+         "section": "KHOMEINI i. Life",
+         "para": "129"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "quote": {
+    "id": "q18",
+    "text": "Mass demonstrations of mourning filled the streets of Tehran, and when, on 5 June, Khomeini’s body was taken to the Moṣallā in the hills to the north of the city to be prepared for burial",
+    "lang": "en",
+    "cite": {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "129"
+     }
+    },
+    "provenance": {
+     "via": "web",
+     "at": "2026-10-08",
+     "url": "https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/"
+    }
+   }
+  }
+ ],
+ "hero": {
+  "url": "https://upload.wikimedia.org/wikipedia/commons/3/39/Funeral_of_Ruhollah_Khomeini%2C_4_June_1989_%281%29.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Funeral_of_Ruhollah_Khomeini,_4_June_1989_(1).jpg",
+  "credit": {
+   "institution": "Khamenei.ir"
+  },
+  "license": {
+   "id": "cc-by",
+   "version": "4.0",
+   "url": "https://creativecommons.org/licenses/by/4.0"
+  }
+ },
+ "furtherReading": [
+  {
+   "source": "montazeri-2001-matn-e-kamel-e-khaterat",
+   "perspective": "iranian"
+  }
+ ]
+}

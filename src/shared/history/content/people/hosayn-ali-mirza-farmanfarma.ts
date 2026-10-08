@@ -115,7 +115,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'Ḥosayn-ʿAlī seems, however, to have been a lethargic ruler, very different from his older brothers, Moḥammad-ʿAlī Mīrzā Dawlatšāh (q.v.) in Kermānšāh and ʿAbbās Mīrzā in Azarbaijan.',
+          text: 'By now Ḥosayn-ʿAlī was entering his twenties and presumably was becoming more directly involved in governmental decisions. In 1822, apparently without any authority from the Persian government, he invited Lt. William Bruce, the Resident of the East India Company (q.v.) in Bušehr, to Shiraz and signed an agreement with him to settle Anglo-Persian differences over security in the Persian Gulf (Wright, 1977, pp. 63-64). Ḥosayn-ʿAlī seems, however, to have been a lethargic ruler, very different from his older brothers, Moḥammad-ʿAlī Mīrzā Dawlatšāh (q.v.) in Kermānšāh and ʿAbbās Mīrzā in Azarbaijan.',
           lang: 'en',
           cite: {
             source: 'iranica-hambly-farmanfarma',
@@ -123,7 +123,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/farmanfarma-hosayn-ali-mirza'
           }
         },
@@ -146,6 +146,20 @@ export default definePerson({
     {
       kind: 'later-life',
       quotes: [
+        {
+          id: 'q7',
+          text: 'In 1245/1829, Fatḥ-ʿAlī Shah moved with military force to Shiraz and Ḥosayn-ʿAlī Mīrzā felt compelled to present his father with a gift of 200,000 tomans, which was accepted as tax arrears (Fasāʾī, ed.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-hambly-farmanfarma',
+            loc: { section: 'FARMĀNFARMĀ, ḤOSAYN-ʿALĪ MĪRZĀ', para: '5' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/farmanfarma-hosayn-ali-mirza'
+          }
+        },
         {
           id: 'q4',
           text: 'It may have been at the time of ʿAbbās Mīrzā’s death in 1249/1833, when Fatḥ-ʿAlī Shah designated ʿAbbās Mīrzā’s son, Moḥammad Mīrzā, as heir-apparent, that Ḥosayn-ʿAlī determined to make his bid for the throne.',

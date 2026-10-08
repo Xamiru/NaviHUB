@@ -65,6 +65,8 @@ import * as gameLinks from './gameLinks'
 import * as gamesUpgrade from './gamesUpgrade'
 import * as bulkImport from './bulkImport'
 import * as openlibrary from './openlibrary'
+import * as hardcover from './hardcover'
+import * as bookEditions from './bookEditions'
 import * as themes from './themes'
 import * as pictures from './pictures'
 import * as pictureLibrary from './pictureLibrary'
@@ -105,6 +107,8 @@ import * as wrestlingImport from './wrestling/importRun'
 import * as playerBridge from './playerBridge'
 import * as widget from './widget'
 import * as looseMatch from './wrestling/looseMatch'
+import * as wrestlingClips from './wrestling/clips'
+import * as wrestlingClipRepo from './repos/wrestlingClipRepo'
 import * as footballRepo from './repos/footballRepo'
 import * as footballSync from './football/sync'
 import * as footballMedia from './football/media'
@@ -290,6 +294,7 @@ export function registerIpc(): void {
   )
   ipcMain.handle('people:get', (_e, id) => peopleRepo.get(id))
   ipcMain.handle('people:credits', (_e, id) => peopleRepo.credits(id))
+  ipcMain.handle('people:costars', (_e, id, limit) => peopleRepo.costars(id, limit))
   ipcMain.handle('people:directory', (_e, query) => peopleRepo.directory(query))
   ipcMain.handle('people:upsert', (_e, input) => peopleRepo.upsert(input))
   ipcMain.handle('people:remove', (_e, id) => peopleRepo.remove(id))
@@ -783,6 +788,16 @@ export function registerIpc(): void {
     withActivity('Importing from RAWG', () => rawg.importGame(rawgId))
   )
 
+  // ---- Hardcover import (books) + the chosen edition ----
+  ipcMain.handle('hardcover:search', (_e, query) => hardcover.search(query))
+  ipcMain.handle('hardcover:import', (_e, bookId) =>
+    withActivity('Importing from Hardcover', () => hardcover.importBook(bookId))
+  )
+  ipcMain.handle('books:editions', (_e, mediaId) => bookEditions.list(mediaId))
+  ipcMain.handle('books:edition', (_e, mediaId) => bookEditions.get(mediaId))
+  ipcMain.handle('books:chooseEdition', (_e, mediaId, editionId) => bookEditions.choose(mediaId, editionId))
+  ipcMain.handle('books:clearEdition', (_e, mediaId) => bookEditions.clear(mediaId))
+
   // ---- Open Library import (books) ----
   ipcMain.handle('openlibrary:search', (_e, query) => openlibrary.search(query))
   ipcMain.handle('openlibrary:import', (_e, olId) =>
@@ -1161,6 +1176,19 @@ export function registerIpc(): void {
   )
   ipcMain.handle('wrestling:removeLooseMatch', (_e, id) => wrestlingRepo.removeLooseMatch(id))
   ipcMain.handle('wrestling:recentlyAdded', () => wrestlingRepo.recentlyAdded())
+  // ---- wrestling clip shelf ----
+  ipcMain.handle('wrestling:clips', (_e, filter) => wrestlingClips.list(filter ?? {}))
+  ipcMain.handle('wrestling:clipsFor', (_e, kind, id) => wrestlingClips.forEntity(kind, id))
+  ipcMain.handle('wrestling:recentClips', (_e, limit) => wrestlingClips.recent(limit))
+  ipcMain.handle('wrestling:saveClip', (_e, input) => wrestlingClips.save(input))
+  ipcMain.handle('wrestling:removeClip', (_e, id) => wrestlingClips.remove(id))
+  ipcMain.handle('wrestling:setClipFavorite', (_e, id, favorite) =>
+    wrestlingClipRepo.setFavorite(id, favorite)
+  )
+  ipcMain.handle('wrestling:clipTags', () => wrestlingClipRepo.allTags())
+  ipcMain.handle('wrestling:clipTargets', (_e, query) => wrestlingClipRepo.linkTargets(query ?? ''))
+  ipcMain.handle('wrestling:pickClipFile', () => wrestlingClips.pickFile())
+  ipcMain.handle('wrestling:openClip', (_e, id) => wrestlingClips.open(id))
   ipcMain.handle('wrestling:startImport', (_e, opts) => wrestlingImport.start(opts ?? {}))
   ipcMain.handle('wrestling:importStatus', () => wrestlingImport.getStatus())
   ipcMain.handle('wrestling:cancelImport', () => wrestlingImport.cancel())

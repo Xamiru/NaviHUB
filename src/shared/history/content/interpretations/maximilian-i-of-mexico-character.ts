@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'maximilian-i-of-mexico-character',
   about: ['person:maximilian-i-of-mexico'],
   topic: 'character',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'well-intentioned-liberal',
@@ -37,7 +37,7 @@ export default defineInterpretation({
     },
     {
       id: 'ill-informed',
-      category: 'official',
+      category: 'scholarly',
       holders: [
         { kind: 'organization', name: 'Office of the Historian, U.S. Department of State' }
       ],

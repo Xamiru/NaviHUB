@@ -273,7 +273,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q7',
-          text: 'It was only because of British persuasion that the parsimonious shah, faced with the bankruptcy of the state treasury, reluctantly parted with a large portion of his own royal treasures.',
+          text: 'By the conclusion of the Treaty of Torkamānčāy in February 1828, the shah was deeply troubled not only by the humiliation of defeat and the temporary loss of Tabrīz but the burden of a war indemnity of ć4,000,000. It was only because of British persuasion that the parsimonious shah, faced with the bankruptcy of the state treasury, reluctantly parted with a large portion of his own royal treasures.',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-fath-ali-shah',
@@ -281,7 +281,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/fath-ali-shah'
           }
         },

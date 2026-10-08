@@ -103,6 +103,48 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
+          id: 'q9',
+          text: 'In 1843 Davis entered the field of politics as a Democrat, and exhibited great power as a public speaker.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-davis-jefferson',
+            loc: { section: 'DAVIS, JEFFERSON', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Davis,_Jefferson'
+          }
+        },
+        {
+          id: 'q10',
+          text: 'During his first session, war with Mexico was declared, and he resigned his seat in June 1846 to take command of the first regiment raised in his state—the Mississippi Rifles.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-davis-jefferson',
+            loc: { section: 'DAVIS, JEFFERSON', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Davis,_Jefferson'
+          }
+        },
+        {
+          id: 'q11',
+          text: 'In 1853 he accepted the position of secretary of war in the cabinet of President Pierce, and for four years performed the duties of the office with great distinction and with lasting benefit to the nation.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-davis-jefferson',
+            loc: { section: 'DAVIS, JEFFERSON', para: '2' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Davis,_Jefferson'
+          }
+        },
+        {
           id: 'q3',
           text: 'He resigned from the Senate on January 21, 1861, upon the secession of Mississippi from the Union.',
           lang: 'en',
@@ -142,7 +184,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q6',
-          text: 'He was taken prisoner on the 10th of May by Federal troops near Irwinville, Irwin county, Georgia, and was brought back to Old Point, Virginia, in order to be confined in prison at Fortress Monroe.',
+          text: 'After the surrender of the armies of Lee and Johnston in April 1865, President Davis attempted to make his way, through Georgia, across the Mississippi, in the vain hope of continuing the war with the forces of Generals Smith and Magruder. He was taken prisoner on the 10th of May by Federal troops near Irwinville, Irwin county, Georgia, and was brought back to Old Point, Virginia, in order to be confined in prison at Fortress Monroe.',
           lang: 'en',
           cite: {
             source: 'britannica-1911-davis-jefferson',
@@ -150,7 +192,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Davis,_Jefferson'
           }
         },

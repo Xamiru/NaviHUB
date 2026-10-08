@@ -171,7 +171,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q3',
-          text: 'It was an interest that never left him and was reflected in his lifelong concern for Persia as an outer bastion in the defense of India.',
+          text: 'Curzon’s interest in Britain’s eastern colonies and dominions had first been aroused while he was a schoolboy at Eton. It was an interest that never left him and was reflected in his lifelong concern for Persia as an outer bastion in the defense of India.',
           lang: 'en',
           cite: {
             source: 'iranica-wright-curzon',
@@ -179,7 +179,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/curzon-george-nathaniel/'
           }
         },

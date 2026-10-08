@@ -154,16 +154,6 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
-          id: 'q6',
-          text: 'This victory brought Ethiopia new prestige as well as general recognition of its sovereign status by the European powers.',
-          lang: 'en',
-          cite: {
-            source: 'loc-ethiopia-country-study-1991',
-            loc: { section: 'The Reign of Menelik II, 1889-1913', para: '6' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/ethiopia/15.htm' }
-        },
-        {
           id: 'q7',
           text: 'Besides confirming the annulment of the Treaty of Wuchale, the peace agreement ending the conflict also entailed Italian recognition of Ethiopian independence; in return, Menelik permitted the Italians to retain their colony of Eritrea.',
           lang: 'en',
@@ -172,6 +162,16 @@ export default defineEvent({
             loc: { section: 'The Reign of Menelik II, 1889-1913', para: '6' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/ethiopia/15.htm' }
+        },
+        {
+          id: 'q6',
+          text: 'This victory brought Ethiopia new prestige as well as general recognition of its sovereign status by the European powers.',
+          lang: 'en',
+          cite: {
+            source: 'loc-ethiopia-country-study-1991',
+            loc: { section: 'The Reign of Menelik II, 1889-1913', para: '6' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/ethiopia/15.htm' }
         },
         {
           id: 'q11',

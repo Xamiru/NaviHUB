@@ -272,6 +272,7 @@ export type ListKind =
   | 'wrestlingEvent'
   | 'wrestlingMatch'
   | 'wrestlingWrestler'
+  | 'wrestlingClip'
   | 'footballCompetition'
   | 'footballTeam'
   | 'footballPerson'
@@ -1586,6 +1587,13 @@ export interface PersonCredit {
   castSize: number
 }
 
+// Someone who shares acted/voiced titles with a person: the same role and dub
+// language on the same title, counted per title.
+export interface PersonCostar {
+  person: Person
+  shared: number
+}
+
 // One creator in a role-scoped directory (the Mangaka page): their works of
 // one media type in the library, a few covers, and how many the user has read.
 export type PersonDirectorySort = 'works' | 'read' | 'score' | 'name'
@@ -1662,6 +1670,28 @@ export interface ImportSummary {
   created: boolean
 }
 
+// One edition of a book as Hardcover lists it (the edition picker), and the
+// one the user chose to read (book_edition): its pages become the progress total.
+export interface BookEdition {
+  id: number
+  title: string | null
+  format: string | null
+  readingFormat: string | null
+  pages: number | null
+  releaseDate: string | null
+  isbn13: string | null
+  isbn10: string | null
+  audioSeconds: number | null
+  publisher: string | null
+  language: string | null
+  coverUrl: string | null
+}
+
+export interface ChosenBookEdition {
+  edition: BookEdition
+  chosenAt: string
+}
+
 // Back-compat aliases (the AniList client predates the generic names).
 export type AniListSearchResult = ImportSearchResult
 export type AniListImportSummary = ImportSummary
@@ -1696,7 +1726,7 @@ export interface BulkPreviewItem {
   year: number | null
   coverUrl: string | null
   // Source-native community score on its own scale (AniList 0-100, VNDB 10-100,
-  // TMDB 0-10, catalog Metacritic 0-100 or RAWG 0-5 depending on sort).
+  // TMDB 0-10, catalog Metacritic 0-100 or RAWG 0-5 depending on sort, Hardcover 0-5).
   score: number | null
   // AniList user-list previews only: the entry's own tracking (AniList status
   // enum, 0-10 score, progress), mapped to local statuses by the renderer.
@@ -4507,6 +4537,61 @@ export interface WrestlingLooseMatchInput {
   wrestlerIds?: number[] // side 0 first; winner is whoever `winnerIds` names
   winnerIds?: number[]
 }
+
+// ---- Wrestling clip shelf ----
+// Frozen keys (stored in wrestling_clip.kind).
+export type WrestlingClipKind = 'highlight' | 'promo' | 'interview' | 'documentary'
+export type WrestlingClipEntityKind = 'wrestler' | 'event' | 'match' | 'promotion'
+
+// A link names a wrestler/event/match by numeric id or a promotion by its frozen
+// id. `label` is null when the target has since vanished from the wiki.
+export type WrestlingClipLinkRef =
+  | { entityKind: 'wrestler' | 'event' | 'match'; entityId: number }
+  | { entityKind: 'promotion'; promotionId: WrestlingPromotionId }
+
+export type WrestlingClipLink = WrestlingClipLinkRef & {
+  label: string | null
+  imagePath: string | null // wrestler photo / event poster, for the card fallback
+}
+
+export interface WrestlingClip {
+  id: number
+  title: string
+  kind: WrestlingClipKind
+  localPath: string // wrestling/… relative path
+  available: boolean // the file is still on disk
+  note: string
+  framePath: string | null
+  favorite: boolean
+  tags: string[]
+  links: WrestlingClipLink[]
+  // Set by forEntity when the clip reaches the page through a linked match
+  // rather than a direct link ("via <match title>").
+  via: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface WrestlingClipInput {
+  id?: number
+  title: string
+  kind: WrestlingClipKind
+  localPath: string
+  note?: string
+  tags?: string[]
+  links: WrestlingClipLinkRef[]
+}
+
+export interface WrestlingClipFilter {
+  kind?: WrestlingClipKind | null
+  tag?: string | null
+  favorite?: boolean
+  search?: string
+  limit?: number
+  offset?: number
+}
+
+export type WrestlingClipTarget = WrestlingClipLinkRef & { label: string; sub: string | null }
 
 export interface WrestlingEventFilter {
   promotion?: WrestlingPromotionId | null

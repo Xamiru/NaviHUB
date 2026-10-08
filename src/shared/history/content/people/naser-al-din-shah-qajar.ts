@@ -85,7 +85,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q1',
-          text: 'Shortly after Āqāsi’s nomination, Nāṣer-al-Din Mirzā, then four years old, was appointed crown prince (wali-ʿahd).',
+          text: 'Nāṣer-al-Din Mirzā, then four years old, was appointed crown prince (wali-ʿahd).',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-mohammad-shah',
@@ -93,7 +93,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
         },
@@ -115,7 +115,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'Soon after, in Šawwāl, 1264/September, 1848, Moḥammad Shah died, and Nāṣer-al-dīn had to proceed to Tehran and assume the throne.',
+          text: 'Moḥammad Shah died, and Nāṣer-al-dīn had to proceed to Tehran and assume the throne.',
           lang: 'en',
           cite: {
             source: 'iranica-algar-amir-kabir',
@@ -123,7 +123,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/amir-e-kabir-mirza-taqi-khan'
           }
         },

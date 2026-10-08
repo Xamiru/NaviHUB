@@ -236,12 +236,7 @@ export default definePerson({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/indo-european-telegraph-department'
           }
-        }
-      ]
-    },
-    {
-      kind: 'later-life',
-      quotes: [
+        },
         {
           id: 'q5',
           text: 'Later, with the political restructuring of the 1870s and the promotion of the spirit of reform that was encouraged by Mirzā Ḥosayn Khan Mošir-al-Dawla during his tenure as grand vizier (ṣadr-e aʿẓam; December 1870-September 1873) and his subsequent positions as Minister of Foreign Affairs (wazir-e omur-e ḵāreja; 1873-80) and Minister of War (wazir-e jang; 1874-80), some change was introduced in the journalistic culture (Ādamiyat, p. 386).',

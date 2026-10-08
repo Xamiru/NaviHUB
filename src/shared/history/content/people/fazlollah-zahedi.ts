@@ -167,20 +167,6 @@ export default definePerson({
             at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/coup-detat-1953/'
           }
-        },
-        {
-          id: 'q3',
-          text: 'I should record that General Zahedi had been a close associate of Mossadegh, and had in fact served for awhile as his Minister of the Interior. Earlier he had been Chief of Police in Razmara’s Government and had helped re-elect Mossadegh to Parliament.',
-          lang: 'en',
-          cite: {
-            source: 'pahlavi-1961-mission-for-my-country',
-            loc: { section: 'Mission for My Country' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-07',
-            url: 'https://archive.org/download/mission-for-my-country-mohammad-reza-pahlavi_202605/Mission%20For%20My%20Country%20-%20Mohammad%20Reza%20Pahlavi_djvu.txt'
-          }
         }
       ]
     },

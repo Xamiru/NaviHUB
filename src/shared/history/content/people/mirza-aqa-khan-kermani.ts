@@ -123,7 +123,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q3',
-          text: 'His most productive years were spent in Istanbul, where he established a close relationship with the famous ideologue and political activist Jamāl-al-Din Afḡāni.',
+          text: 'The towering figure among them was Mirzā ʿAbd-al-Ḥosayn Āqā Khan Kermāni (1854-96) of Mašiz (Bardsir). He was tutored by a diverse array of people in Kerman as a young man, and developed particularly close ties with members of the Aḥmadi family. He was forced to flee the province after a conflict in 1883 with the provincial governor Nāṣer-al-Dawla Farmānfarmā and never returned to the province. His most productive years were spent in Istanbul, where he established a close relationship with the famous ideologue and political activist Jamāl-al-Din Afḡāni.',
           lang: 'en',
           cite: {
             source: 'iranica-gustafson-kerman-qajar',
@@ -131,7 +131,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/kerman-09-qajar-period'
           }
         }
@@ -161,7 +161,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q5',
-          text: 'A few months later, following the assassination of Nāṣer-al-dīn Shah (1313/1896) at the hand of an alleged Bābī closely associated with Afḡānī, the three men were also charged with murder; in Ḏu’l-ḥeǰǰa, 1313/May, 1896, they were extradited to Iran and executed in Tabrīz in Ṣafar, 1314/July, 1896.',
+          text: 'Ottoman authorities first resisted the demand of the Persian government for the arrest and extradition of Asadābādī and Mīrzā Āqā Khan, but the revolt of the Armenians in 1312-13/1894-95 changed the situation and Mīrzā Āqā Khan and two of his close companions, Shaikh Aḥmad Rūḥī and Mīrzā Ḥasan Khan Ḵabīr-al-molk, were charged with conspiracy, arrested, and sent to Trebizond (Raǰab, 1312/January, 1895). A few months later, following the assassination of Nāṣer-al-dīn Shah (1313/1896) at the hand of an alleged Bābī closely associated with Afḡānī, the three men were also charged with murder; in Ḏu’l-ḥeǰǰa, 1313/May, 1896, they were extradited to Iran and executed in Tabrīz in Ṣafar, 1314/July, 1896.',
           lang: 'en',
           cite: {
             source: 'iranica-bayat-aqa-khan-kermani',
@@ -169,7 +169,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/aqa-khan-kermani'
           }
         }

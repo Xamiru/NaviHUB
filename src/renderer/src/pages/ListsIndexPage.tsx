@@ -22,6 +22,7 @@ const KIND_ORDER: ListKind[] = [
   'wrestlingEvent',
   'wrestlingWrestler',
   'wrestlingMatch',
+  'wrestlingClip',
   'footballCompetition',
   'footballTeam',
   'footballPerson',

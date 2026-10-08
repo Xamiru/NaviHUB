@@ -135,13 +135,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q2',
-          text: 'While Britain and France dilatorily attempted to induce the Soviet Union to join them in pledging to protect Poland, the Soviet Union and Germany engaged in intense negotiations. The product of the talks between the former ideological foes--the Nazi-Soviet Nonaggression Pact (also known as the Molotov-Ribbentrop Pact) of August 23, 1939--shocked the world.',
+          text: 'While Britain and France dilatorily attempted to induce the Soviet Union to join them in pledging to protect Poland, the Soviet Union and Germany engaged in intense negotiations.',
           lang: 'en',
           cite: {
             source: 'loc-russia-country-study-1996',
             loc: { section: 'Transformation and Terror', para: '23' }
           },
-          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/russia/10.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/russia/10.htm' }
         },
         {
           id: 'q3',

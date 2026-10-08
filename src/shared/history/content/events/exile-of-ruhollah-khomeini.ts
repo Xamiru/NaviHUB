@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Exile of Ruhollah Khomeini', lang: 'en', role: 'primary' },
     { text: 'تبعید روح‌الله خمینی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   type: 'other',
   start: {
     alts: [
@@ -16,10 +16,6 @@ export default defineEvent({
           {
             source: 'iranica-algar-khomeini-life',
             loc: { section: 'KHOMEINI i. Life', para: '39' }
-          },
-          {
-            source: 'khamenei-ir-imam-khomeini-biography',
-            loc: { section: 'Imam Khomeini’s Biography', para: '21' }
           }
         ]
       }
@@ -43,10 +39,6 @@ export default defineEvent({
         {
           source: 'iranica-algar-khomeini-life',
           loc: { section: 'KHOMEINI i. Life', para: '39' }
-        },
-        {
-          source: 'khamenei-ir-imam-khomeini-biography',
-          loc: { section: 'Imam Khomeini’s Biography', para: '21' }
         }
       ]
     },
@@ -166,20 +158,6 @@ export default defineEvent({
             at: '2026-10-07',
             url: 'https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/'
           }
-        },
-        {
-          id: 'q5',
-          text: 'On 6 October 1965, Khomeini was able to leave Turkey for Najaf, a more congenial place of exile as a center of Shiʿi learning and pilgrimage. By acquiescing in this move, the Iranian government wished to quell or lessen the continuing disquiet among his followers in Iran at his banishment. But it was also hoped once there, he would either be overshadowed by the prestigious scholars resident there, or spend his energies on confronting them, a hope that was to be disappointed.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-algar-khomeini-life',
-            loc: { section: 'KHOMEINI i. Life', para: '40' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-07',
-            url: 'https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/'
-          }
         }
       ]
     },
@@ -221,17 +199,17 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q7',
-        text: 'Later in October 1965 he was allowed to move to Najaf, Iraq, where he stayed until being forced to leave in 1978, after then-Vice President Saddam Hossein forced him out (the two countries would fight a bitter eight year war 1980-1988 only a year after the beginning of Imam Khomeini’s leadership in Iran and the start of Saddam Hussein’s term in Iraq) after which he went to Neauphle le Château in France.',
+        id: 'q5',
+        text: 'On 6 October 1965, Khomeini was able to leave Turkey for Najaf, a more congenial place of exile as a center of Shiʿi learning and pilgrimage. By acquiescing in this move, the Iranian government wished to quell or lessen the continuing disquiet among his followers in Iran at his banishment. But it was also hoped once there, he would either be overshadowed by the prestigious scholars resident there, or spend his energies on confronting them, a hope that was to be disappointed.',
         lang: 'en',
         cite: {
-          source: 'khamenei-ir-imam-khomeini-biography',
-          loc: { section: 'Imam Khomeini’s Biography', para: '21' }
+          source: 'iranica-algar-khomeini-life',
+          loc: { section: 'KHOMEINI i. Life', para: '40' }
         },
         provenance: {
           via: 'web',
           at: '2026-10-07',
-          url: 'https://web.archive.org/web/20260610181904/https://english.khamenei.ir/news/2116/Imam-Khomeini-s-Biography'
+          url: 'https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/'
         }
       }
     }

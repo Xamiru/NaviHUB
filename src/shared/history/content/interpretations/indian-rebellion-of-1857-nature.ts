@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'indian-rebellion-of-1857-nature',
   about: ['event:indian-rebellion-of-1857'],
   topic: 'nature',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'first-war-of-independence',
@@ -102,6 +102,18 @@ export default defineInterpretation({
             at: '2026-10-08',
             url: 'https://api.parliament.uk/historic-hansard/commons/1857/jul/27/motion-for-papers'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q9',
+          text: 'Queen Victoria (who was given the title Empress of India in 1877) promised equal treatment under British law, but Indian mistrust of British rule had become a legacy of the 1857 rebellion.',
+          lang: 'en',
+          cite: {
+            source: 'loc-india-country-study-1995',
+            loc: { section: 'After the Sepoy Rebellion', para: '1' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/india/18.htm' }
         }
       ]
     },

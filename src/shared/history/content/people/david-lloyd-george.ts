@@ -85,7 +85,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'He played a central and controversial role at the Versailles Peace Conference in 1919, ensuring Germany was forced to accept clauses in the Versailles Treaty that laid the basis for the Allies’ demands for reparations, but opposing drastic reductions of its territory.',
+          text: 'Lloyd George won a crushing victory at the post-war general election in December 1918, in alliance with the Conservatives, and virtually eliminated his Liberal rivals. He played a central and controversial role at the Versailles Peace Conference in 1919, ensuring Germany was forced to accept clauses in the Versailles Treaty that laid the basis for the Allies’ demands for reparations, but opposing drastic reductions of its territory.',
           lang: 'en',
           cite: {
             source: 'eo1418-packer-lloyd-george',
@@ -93,7 +93,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://encyclopedia.1914-1918-online.net/article/lloyd-george-david/'
           }
         }

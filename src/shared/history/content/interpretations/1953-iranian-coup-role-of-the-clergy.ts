@@ -131,6 +131,22 @@ export default defineInterpretation({
             url: 'https://web.archive.org/web/2024/https://english.khamenei.ir/news/6978/The-unforgettable-coup-d-%C3%A9tat'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q10',
+          text: 'In the period following the coup, Behbahānī attained the height of his prominence, not shrinking from open association with the court and the government.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-algar-behbahani-mohammad',
+            loc: { section: 'BEHBAHĀNĪ, AYATOLLAH MOḤAMMAD' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/behbahani-ayatollah-mohammad/'
+          }
+        }
       ]
     },
     {
@@ -173,5 +189,5 @@ export default defineInterpretation({
       ]
     }
   ],
-  researched: '2026-10-07'
+  researched: '2026-10-09'
 })

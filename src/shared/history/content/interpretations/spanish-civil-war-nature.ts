@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'spanish-civil-war-nature',
   about: ['event:spanish-civil-war'],
   topic: 'nature',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'national-movement-in-defence-of-civilisation',
@@ -60,6 +60,18 @@ export default defineInterpretation({
             at: '2026-10-08',
             url: 'https://www.boe.es/buscar/act.php?id=BOE-A-2022-17099'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q4',
+          text: 'A coup was expected, however, and the urban police and the workers\' militia loyal to the government put down revolts by army garrisons in Madrid and Barcelona.',
+          lang: 'en',
+          cite: {
+            source: 'loc-spain-country-study-1988',
+            loc: { section: 'THE SPANISH CIVIL WAR', para: '1' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/spain/21.htm' }
         }
       ]
     }

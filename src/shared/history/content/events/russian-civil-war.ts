@@ -218,13 +218,13 @@ export default defineEvent({
         },
         {
           id: 'q7',
-          text: 'By the end of 1920, the communists had clearly triumphed in the Civil War. Although in 1919 Soviet Russia had shrunk to the size of sixteenth-century Muscovy, the Red Army had the advantage of defending the heartland with Moscow at its center (see fig. 4). The White armies, divided geographically and without a clearly defined cause, went down to defeat one by one.',
+          text: 'By the end of 1920, the communists had clearly triumphed in the Civil War. Although in 1919 Soviet Russia had shrunk to the size of sixteenth-century Muscovy, the Red Army had the advantage of defending the heartland with Moscow at its center (see fig. 4).',
           lang: 'en',
           cite: {
             source: 'loc-russia-country-study-1996',
             loc: { section: 'Revolutions and Civil War', para: '23' }
           },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/russia/8.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/russia/8.htm' }
         },
         {
           id: 'q8',

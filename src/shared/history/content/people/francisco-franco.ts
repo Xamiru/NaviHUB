@@ -158,13 +158,13 @@ export default definePerson({
       quotes: [
         {
           id: 'q4',
-          text: 'Thus, Franco\'s rule has been characterized as authoritarian rather than totalitarian.',
+          text: 'The Franco regime also lacked the ideological impetus characteristic of totalitarian governments. Furthermore, for those willing to work within the system, there was a limited form of pluralism. Thus, Franco\'s rule has been characterized as authoritarian rather than totalitarian.',
           lang: 'en',
           cite: {
             source: 'loc-spain-country-study-1988',
             loc: { section: 'THE FRANCO YEARS: Franco\'s Political System', para: '16' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/spain/22.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/spain/22.htm' }
         },
         {
           id: 'q5',

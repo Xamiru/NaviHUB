@@ -142,6 +142,13 @@ function seed(): void {
     INSERT INTO football_media_link (media_id,entity_kind,entity_id) VALUES (1,'match',1);
     INSERT INTO football_external_link (entity_kind,entity_id,provider,label,url)
       VALUES ('match',1,'fotmob','FotMob','https://www.fotmob.com/matches/a/b#1');
+    INSERT INTO wrestling_event (id,promotion,name) VALUES (1,'wwe','WrestleMania X-Seven');
+    INSERT INTO wrestling_clip (id,title,kind,local_path,note,frame_path,favorite)
+      VALUES (1,'Austin 3:16','promo','Clips/austin.mkv','private note','media/wrestling-clips/1-a.jpg',1);
+    INSERT INTO wrestling_clip_link (clip_id,entity_kind,entity_id) VALUES (1,'event',1);
+    INSERT INTO wrestling_clip_tag (clip_id,tag) VALUES (1,'classic promo');
+    INSERT INTO list (id,title,entity_kind) VALUES (3,'Best clips','wrestlingClip');
+    INSERT INTO list_item (list_id,entity_id) VALUES (3,1);
     INSERT INTO list (id,title,entity_kind) VALUES (2,'Football finals','footballMatch');
     INSERT INTO list_item (list_id,entity_id,note) VALUES (2,1,'private list note');
 
@@ -254,7 +261,8 @@ describe('export sanitize', () => {
       // Scan cache + remux index: rows point at the exporter's own userData,
       // and resume positions are personal. sanitizeSql.cjs has always deleted
       // these two; nothing ever seeded them, so the guard had a hole.
-      'video_file', 'video_cache'
+      'video_file', 'video_cache',
+      'wrestling_clip', 'wrestling_clip_link', 'wrestling_clip_tag'
     ]) {
       expect(count(t), t).toBe(0)
     }

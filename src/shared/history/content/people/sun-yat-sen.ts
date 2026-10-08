@@ -92,13 +92,13 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'It centered on the Three Principles of the People (san min zhuyi): "nationalism, democracy, and people\'s livelihood." The principle of nationalism called for overthrowing the Manchus and ending foreign hegemony over China. The second principle, democracy, was used to describe Sun\'s goal of a popularly elected republican form of government. People\'s livelihood, often referred to as socialism, was aimed at helping the common people through regulation of the ownership of the means of production and land.',
+          text: 'Sun\'s political philosophy was conceptualized in 1897, first enunciated in Tokyo in 1905, and modified through the early 1920s. It centered on the Three Principles of the People (san min zhuyi): "nationalism, democracy, and people\'s livelihood." The principle of nationalism called for overthrowing the Manchus and ending foreign hegemony over China. The second principle, democracy, was used to describe Sun\'s goal of a popularly elected republican form of government. People\'s livelihood, often referred to as socialism, was aimed at helping the common people through regulation of the ownership of the means of production and land.',
           lang: 'en',
           cite: {
             source: 'loc-china-country-study-1987',
             loc: { section: 'The Republican Revolution of 1911', para: '1' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/china/19.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/china/19.htm' }
         },
         {
           id: 'q3',

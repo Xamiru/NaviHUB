@@ -2,7 +2,7 @@ import { defineInterpretation } from '../../schema'
 
 export default defineInterpretation({
   id: 'mau-mau-uprising-responsibility',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   about: ['event:mau-mau-uprising'],
   topic: 'responsibility',
   positions: [
@@ -53,6 +53,30 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-08',
             url: 'https://www.gov.uk/government/news/statement-to-parliament-on-settlement-of-mau-mau-claims'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q6',
+          text: 'Many Mau Mau suspects were placed in detention camps. Conditions there were poor, disease was rife and food in short supply.',
+          lang: 'en',
+          cite: { source: 'nam-kenya-emergency', loc: { section: 'Kenya Emergency' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.nam.ac.uk/explore/kenya-emergency'
+          }
+        },
+        {
+          id: 'q7',
+          text: 'The Kenya Human Rights Commission has recently alleged that 90,000 Kenyans were executed, tortured or maimed during the crackdown, and that 160,000 people were detained in poor conditions.',
+          lang: 'en',
+          cite: { source: 'nam-kenya-emergency', loc: { section: 'Kenya Emergency' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.nam.ac.uk/explore/kenya-emergency'
           }
         }
       ]

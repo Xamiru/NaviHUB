@@ -121,8 +121,8 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
-          id: 'q3',
-          text: 'Kāšāni’s line of attack on Razmārā was very similar to Moṣaddeq’s. Kāšāni warned of invisible hands pushing Iran into “the clutches of a dictatorship.” He argued that Razmārā was trying to usurp power with the support and intervention of foreigners.',
+          id: 'q5',
+          text: 'Under pressure from Moṣaddeq and the National Front to clarify his position on the controversial Gass-Golshayan Supplemental Oil Agreement signed in July 1949 (see ANGLO-PERSIAN OIL COMPANY), ʿAli Manṣur resigned fifteen days after Kāšāni’s return.',
           lang: 'en',
           cite: {
             source: 'iranica-rahnema-kashani',
@@ -130,7 +130,21 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/kasani-abul-qasem/'
+          }
+        },
+        {
+          id: 'q3',
+          text: 'Subsequently, the shah appointed General Hājj ʿAli Razmārā as prime minister on 26 June 1950 (ʿĀqeli, I, p. 435). A few days later, after delivering his own speech on Razmārā’s premiership at the Majles, Moṣaddeq read out Kāšāni’s communiqué. Kāšāni’s line of attack on Razmārā was very similar to Moṣaddeq’s. Kāšāni warned of invisible hands pushing Iran into “the clutches of a dictatorship.” He argued that Razmārā was trying to usurp power with the support and intervention of foreigners.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-rahnema-kashani',
+            loc: { section: 'KĀŠĀNI, SAYYED ABU’L-QĀSEM', para: '38' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/kasani-abul-qasem/'
           }
         }

@@ -250,12 +250,7 @@ export default definePerson({
             at: '2026-10-08',
             url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-3/'
           }
-        }
-      ]
-    },
-    {
-      kind: 'later-life',
-      quotes: [
+        },
         {
           id: 'q10',
           text: '1950 Establishment of the Senate as the upper house of the Majles, and the election of Sayyed Ḥasan Taqizādeh as its president.',

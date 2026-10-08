@@ -176,6 +176,20 @@ export default defineEvent({
       kind: 'causes',
       quotes: [
         {
+          id: 'q10',
+          text: 'Following the occupation of Persia by Allied forces in September 1941 and the forced abdication of Reżā Shah, Fārs became, once again, an arena for international and local power struggles.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-ashraf-fars-qajar-pahlavi',
+            loc: { section: 'FĀRS iv. History in the Qajar and Pahlavi Periods', para: '41' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/fars-iv/'
+          }
+        },
+        {
           id: 'q3',
           text: 'He sent an ultimatum to the then prime minister Aḥmad Qawām (Qawām-al-Salṭana), demanding, inter alia, the formation of a provincial council similar to that in Azarbaijan, the resignation of the Tudeh (Tūda) party members of the cabinet, and more representatives for Fārs in the Majles.',
           lang: 'en',
@@ -185,7 +199,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/fars-iv/'
           }
         },

@@ -91,6 +91,20 @@ export default definePolity({
       kind: 'background',
       quotes: [
         {
+          id: 'q7',
+          text: 'The industrial population of the faubourgs on its way towards the centre of the town was welcomed by the National Guard, among cries of “Vive la réforme.”',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-france-history',
+            loc: { section: 'FRANCE: History', para: '492' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/France/History'
+          }
+        },
+        {
           id: 'q3',
           text: 'It was now the turn of the Republic, and it was proclaimed by Lamartine in the name of the provisional government elected by the Chamber under the pressure of the mob.',
           lang: 'en',

@@ -164,7 +164,7 @@ export function franchiseCfg(id: string): FranchiseCfg | null {
 export function communityScoreFor(entry: FranchiseEntry, item: MediaItem | null): number | null {
   const meta = item?.metadata
   if (meta) {
-    for (const key of ['averageScore', 'metacritic', 'igdbRating', 'vndbRating', 'olRating']) {
+    for (const key of ['averageScore', 'metacritic', 'igdbRating', 'vndbRating', 'olRating', 'hcRating']) {
       const v = meta[key]
       if (typeof v === 'number' && v > 0) return Math.round(v)
     }

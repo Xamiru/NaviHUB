@@ -2,7 +2,7 @@ import { defineInterpretation } from '../../schema'
 
 export default defineInterpretation({
   id: 'egyptian-revolution-of-1952-nature',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   about: ['event:egyptian-revolution-of-1952'],
   topic: 'nature',
   positions: [
@@ -46,6 +46,21 @@ export default defineInterpretation({
             at: '2026-10-08',
             url: 'https://www.cairo.gov.eg/en/news/news-eng/2022/ed7d0236a3ac43f3be31886b5728acf2'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q4',
+          text: 'It was extremely important for the Free Officers to ensure the loyalty of the army if the coup were to succeed.',
+          lang: 'en',
+          cite: {
+            source: 'loc-egypt-country-study-1990',
+            loc: {
+              section: 'The Revolution and the Early Years of the New Government: 1952-56',
+              para: '3'
+            }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/egypt/32.htm' }
         }
       ]
     },

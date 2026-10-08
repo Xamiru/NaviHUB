@@ -1,10 +1,10 @@
 // Bulk-import vocabulary — the catalog of "top N" lists the /bulk page offers,
 // as code (the CHECKLIST_DEFS idiom). Sort `key` strings are
 // FROZEN: the main process switches on them and the renderer persists them.
-// Books are deliberately absent: Open Library has no usable "top" lists, and
-// its work ids are strings (every source here crosses IPC as a number).
+// Books rank on Hardcover (numeric ids, reader counts and ratings); Open
+// Library, the earlier book source, had no usable "top" lists.
 
-export type BulkSourceKey = 'anime' | 'manga' | 'game' | 'visual_novel' | 'movie' | 'tv'
+export type BulkSourceKey = 'anime' | 'manga' | 'game' | 'visual_novel' | 'movie' | 'tv' | 'book'
 
 export interface BulkSortCfg {
   key: string
@@ -154,6 +154,17 @@ export const ANILIST_COUNTRIES: BulkSortCfg[] = [
   { key: 'TW', label: 'Taiwan' }
 ]
 
+// Hardcover book filters on its documented category and fiction/nonfiction
+// columns (hardcoverCore.topWhere). Keys FROZEN. Genre names are not filtered:
+// Hardcover's tag vocabulary is undocumented, so a guessed list could only miss.
+export const BOOK_FORMATS: BulkSortCfg[] = [
+  { key: 'fiction', label: 'Fiction' },
+  { key: 'nonfiction', label: 'Nonfiction' },
+  { key: 'light_novel', label: 'Light novels' },
+  { key: 'graphic_novel', label: 'Graphic novels' },
+  { key: 'poetry', label: 'Poetry' }
+]
+
 export const BULK_SOURCES: BulkSourceCfg[] = [
   {
     key: 'anime',
@@ -227,6 +238,19 @@ export const BULK_SOURCES: BulkSourceCfg[] = [
     genreIds: TMDB_TV_GENRES,
     hasSeason: false,
     maxCount: 2000
+  },
+  {
+    key: 'book',
+    label: 'Books',
+    sorts: [
+      { key: 'popular', label: 'Most read' },
+      { key: 'rated', label: 'Top rated' }
+    ],
+    hasGenre: false,
+    hasSeason: false,
+    formats: BOOK_FORMATS,
+    // Each book costs about three Hardcover requests; the free plan allows 5,000 a day.
+    maxCount: 1000
   }
 ]
 

@@ -112,13 +112,13 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'The center, an exclusive club of senior civil servants, had been established by Hasan Ali Mansur in 1961 to study and make policy recommendations on major economic and social issues. In June 1963, the shah had designated the center as his personal research bureau. When the new Majlis convened in October, 100 more deputies joined the center, giving Mansur a majority. In December, Mansur converted the Progressive Center into a political party, the Iran Novin. In March 1964, Alam resigned and the shah appointed Mansur prime minister, at the head of an Iran Novin-led government.',
+          text: 'After the elections, the largest bloc in the new Majlis, with forty seats, was a group called the Progressive Center. The center, an exclusive club of senior civil servants, had been established by Hasan Ali Mansur in 1961 to study and make policy recommendations on major economic and social issues. In June 1963, the shah had designated the center as his personal research bureau. When the new Majlis convened in October, 100 more deputies joined the center, giving Mansur a majority. In December, Mansur converted the Progressive Center into a political party, the Iran Novin. In March 1964, Alam resigned and the shah appointed Mansur prime minister, at the head of an Iran Novin-led government.',
           lang: 'en',
           cite: {
             source: 'loc-iran-country-study-1987',
             loc: { section: 'State and Society, 1964-74', para: '1' }
           },
-          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/iran/19.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/iran/19.htm' }
         },
         {
           id: 'q3',

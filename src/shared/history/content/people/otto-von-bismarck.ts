@@ -366,7 +366,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q12',
-          text: 'He died at Friedrichsruh on the 31st of July 1898.',
+          text: 'In 1891 he had been elected a member of the Reichstag, but he never took his seat. He died at Friedrichsruh on the 31st of July 1898.',
           lang: 'en',
           cite: {
             source: 'britannica-1911-bismarck',
@@ -374,7 +374,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Bismarck,_Otto_Eduard_Leopold_von'
           }
         }

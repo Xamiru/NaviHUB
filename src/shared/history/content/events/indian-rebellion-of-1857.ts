@@ -180,16 +180,6 @@ export default defineEvent({
       kind: 'causes',
       quotes: [
         {
-          id: 'q1',
-          text: 'Until the rebellion, the British had succeeded in suppressing numerous riots and "tribal" wars or in accommodating them through concessions, but two events triggered the violent explosion of wrath in 1857.',
-          lang: 'en',
-          cite: {
-            source: 'loc-india-country-study-1995',
-            loc: { section: 'Sepoy Rebellion, 1857-59', para: '2' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/india/17.htm' }
-        },
-        {
           id: 'q2',
           text: 'First, was the annexation in 1856 of Oudh, a wealthy princely state that generated huge revenue and represented a vestige of Mughal authority. The second was the British blunder in using cartridges for the Lee-Enfield rifle that were allegedly greased with animal fat, which was offensive to the religious beliefs of Muslim and Hindu sepoys.',
           lang: 'en',

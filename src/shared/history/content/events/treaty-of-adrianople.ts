@@ -34,6 +34,16 @@ export default defineEvent({
       kind: 'background',
       quotes: [
         {
+          id: 'q5',
+          text: 'In 1806 forces of Tsar Alexander I reoccupied the principalities, and the Romanian peasants were subjected to forced requisitions, heavy labor obligations, and real threats of exile to Siberia.',
+          lang: 'en',
+          cite: {
+            source: 'loc-romania-country-study-1989',
+            loc: { section: 'The Russian Protectorate', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/romania/14.htm' }
+        },
+        {
           id: 'q1',
           text: 'Later, in 1826, an internal crisis forced the sultan to accede to Russia\'s demand for greater influence in the principalities.',
           lang: 'en',
@@ -41,7 +51,7 @@ export default defineEvent({
             source: 'loc-romania-country-study-1989',
             loc: { section: 'The Russian Protectorate', para: '4' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/romania/14.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/romania/14.htm' }
         }
       ]
     },

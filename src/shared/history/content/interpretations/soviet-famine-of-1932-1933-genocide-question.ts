@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'soviet-famine-of-1932-1933-genocide-question',
   about: ['event:soviet-famine-of-1932-1933'],
   topic: 'nature',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   framing: {
     id: 'q1',
     text: 'There is general agreement among scholars that the Holodomor resulted from the actions of Soviet authorities and was thus man-made and avoidable.',
@@ -55,6 +55,36 @@ export default defineInterpretation({
             url: 'https://web.archive.org/web/20250118111845/https://mfa.gov.ua/en/news/komentar-mzs-ukrayini-do-90-h-rokovin-golodomoru-1932-1933-rokiv-v-ukrayini'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q18',
+          text: 'The decisions made to ratchet up repressions against those who failed to meet the grain-delivery quotas, who were usually also accused of sabotage and counterrevolutionary activities, and the expansion of the list of those to be sought out and punished to include ‘nationalists’ highlights the national dimension to the new repressive policies.',
+          lang: 'en',
+          cite: {
+            source: 'ieu-klid-makuch-famine-genocide-of-1932-3',
+            loc: { section: 'Famine-Genocide of 1932–3', para: '41' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.encyclopediaofukraine.com/display.asp?linkpath=pages%5CF%5CA%5CFamine6Genocideof1932hD73.htm'
+          }
+        },
+        {
+          id: 'q19',
+          text: 'Stalin’s response was catastrophic for Ukraine. Under his urging',
+          lang: 'en',
+          cite: {
+            source: 'klid-2013-holodomor-and-un-genocide-convention-criteria',
+            loc: { section: 'Was the Holodomor a Genocide?', para: '6' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://holodomor.ca/resource/was-the-holodomor-a-genocide/'
+          }
+        }
       ]
     },
     {
@@ -92,6 +122,22 @@ export default defineInterpretation({
             url: 'https://web.archive.org/web/20241229203021/https://www.europarl.europa.eu/doceo/document/TA-9-2022-0449_EN.html'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q15',
+          text: 'Grain exports continued during the worst months of the famine, and Soviet government reserves contained enough grain to feed the starving. When aid was first authorized in February 1933, it was selective, and not nearly enough grain was released to save millions from starvation.',
+          lang: 'en',
+          cite: {
+            source: 'klid-2013-holodomor-and-un-genocide-convention-criteria',
+            loc: { section: 'Was the Holodomor a Genocide?', para: '13' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://holodomor.ca/resource/was-the-holodomor-a-genocide/'
+          }
+        }
       ]
     },
     {
@@ -113,6 +159,22 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://archive.org/download/investigationofu00unit_0/investigationofu00unit_0_djvu.txt'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q17',
+          text: 'It appears that Stalin viewed the CP(B)U leaders’ reluctance to support the centrally imposed grain procurements unconditionally, and lower-level Soviet Ukrainian officials’ widespread reluctance and resistance to carrying out procurements as a threat to the unity of the Soviet state. He therefore determined that a preventive strike was needed to repress and destroy those he believed would support Ukrainian autonomy or independence.',
+          lang: 'en',
+          cite: {
+            source: 'ieu-klid-makuch-famine-genocide-of-1932-3',
+            loc: { section: 'Famine-Genocide of 1932–3', para: '46' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.encyclopediaofukraine.com/display.asp?linkpath=pages%5CF%5CA%5CFamine6Genocideof1932hD73.htm'
           }
         }
       ]
@@ -149,6 +211,22 @@ export default defineInterpretation({
             }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://duma.gov.ru/news/1293/' }
+        }
+      ],
+      reception: [
+        {
+          id: 'q16',
+          text: 'The most affected regions in the Russian SFSR were the Northern Caucasia, including the Kuban, which bordered on the Ukrainian SSR, and the Lower Volga.',
+          lang: 'en',
+          cite: {
+            source: 'ieu-klid-makuch-famine-genocide-of-1932-3',
+            loc: { section: 'Famine-Genocide of 1932–3', para: '32' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.encyclopediaofukraine.com/display.asp?linkpath=pages%5CF%5CA%5CFamine6Genocideof1932hD73.htm'
+          }
         }
       ]
     },

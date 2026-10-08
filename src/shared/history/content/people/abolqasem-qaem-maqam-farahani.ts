@@ -81,7 +81,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q1',
-          text: 'They were replaced by a younger generation of ministers, of whom Mīrzā Abu’l-Qāsem Qāʾem-maqām and Mīrzā ʿAbd-Allāh Amīn-al-Dawla Eṣfahānī (qq.v.) were the most prominent.',
+          text: 'The last two decades of the shah’s reign witnessed the death of Mīrzā Safīʿ Māzandarānī, the influential grand vizier(d.1234/1818-19); Mīrzā Bozorg Farāhānī the Qāʾem-maqām, minister to ʿAbbās Mīrzā in Azarbaijan and perhaps the most capable statesman of the Fatḥ-ʿAlī Shah period (d. 1237/1821); Hājī Moḥammad-Ḥosayn Eṣfahānī Amīn-al-Dawla, the astute state accountant and, later, the grand vizier (d. 1239/1823), soon to be followed by the death of Mīrzā ʿAbd-al-Wahhāb Moʿtamad-al-Dawla Našāṭ in 1244/1828, depriving the shah of a close circle of trusted advisors. They were replaced by a younger generation of ministers, of whom Mīrzā Abu’l-Qāsem Qāʾem-maqām and Mīrzā ʿAbd-Allāh Amīn-al-Dawla Eṣfahānī (qq.v.) were the most prominent.',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-fath-ali-shah',
@@ -89,7 +89,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/fath-ali-shah'
           }
         },
@@ -161,12 +161,12 @@ export default definePerson({
       quotes: [
         {
           id: 'q6',
-          text: 'However, less than a year later, Moḥammad Shah, lured by the anti-Qāʾem-maqām coalition led by Āqāsī, felt confident enough to eliminate the highly independent vizier (Ṣafar, 1251/June, 1835) and shortly after appoint in his place his own confidant and spiritual guide.',
+          text: 'Upon Moḥammad Shah’s accession in Rabīʿa I, 1250/November, 1834, which he regarded as the realization of his tutor’s prognostications, Qāʾem-maqām assumed premiership, and this in effect guaranteed the consolidation of the throne through a troubled period of transition and in the face of fierce competition. However, less than a year later, Moḥammad Shah, lured by the anti-Qāʾem-maqām coalition led by Āqāsī, felt confident enough to eliminate the highly independent vizier (Ṣafar, 1251/June, 1835) and shortly after appoint in his place his own confidant and spiritual guide.',
           lang: 'en',
           cite: { source: 'iranica-amanat-aqasi', loc: { section: 'ĀQĀSĪ, ḤĀJJĪ MĪRZĀ', para: '4' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/aqasff-ujuli-mnsz-adras-ivxni-ca'
           }
         }

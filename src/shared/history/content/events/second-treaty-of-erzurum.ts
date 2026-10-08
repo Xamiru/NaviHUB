@@ -154,7 +154,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q7',
-          text: 'He appears to have been the most forceful member of the Iranian negotiating team, resisting attempts to exclude Moḥammara (present-day Ḵorramšahr) from Iranian sovereignty and to make Iran pay compensation for its military incursions into the area of Solaymānīya.',
+          text: 'More significant were the almost four years that he spent in Erzurum, participating in the work of a commission to delineate the Ottoman-Iranian frontier and settle certain other differences between the two states. He appears to have been the most forceful member of the Iranian negotiating team, resisting attempts to exclude Moḥammara (present-day Ḵorramšahr) from Iranian sovereignty and to make Iran pay compensation for its military incursions into the area of Solaymānīya.',
           lang: 'en',
           cite: {
             source: 'iranica-algar-amir-kabir',
@@ -162,7 +162,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/amir-e-kabir-mirza-taqi-khan'
           }
         }

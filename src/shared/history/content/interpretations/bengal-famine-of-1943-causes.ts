@@ -4,11 +4,11 @@ export default defineInterpretation({
   id: 'bengal-famine-of-1943-causes',
   about: ['event:bengal-famine-of-1943'],
   topic: 'causes',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'shortage-and-price-rise',
-      category: 'official',
+      category: 'contemporary',
       holders: [
         { kind: 'organization', name: 'Famine Inquiry Commission' }
       ],
@@ -39,7 +39,7 @@ export default defineInterpretation({
     },
     {
       id: 'government-of-bengal-failures',
-      category: 'official',
+      category: 'contemporary',
       holders: [
         { kind: 'organization', name: 'Famine Inquiry Commission' }
       ],
@@ -135,6 +135,19 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://api.parliament.uk/historic-hansard/commons/1943/nov/04/india-food-situation'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q8',
+          text: 'centering round the question whether responsibility for the calamity should be ascribed to God or man.',
+          lang: 'en',
+          cite: { source: 'famine-inquiry-commission-1945-report-on-bengal', loc: { page: '3' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://archive.org/download/dli.ernet.26318/26318-Famine%20Inquiry%20Commission%20Report%20On%20Bengal_djvu.txt'
           }
         }
       ]

@@ -48,7 +48,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q1',
-          text: 'It was developed by the French painter Jacques Daguerre (1787-1851) and involved exposing, through the lens of a camera, a silver-coated copper plate sensitized by iodine, then developing the image with vapor of mer­cury (for details of the process and its sources, see Daguerre).',
+          text: 'DAGUERREOTYPE, the first practical photo­graphic process, introduced into Persia in the early 1840s, shortly after its official presentation to the French Académie de Science in Paris in 1839. It was developed by the French painter Jacques Daguerre (1787-1851) and involved exposing, through the lens of a camera, a silver-coated copper plate sensitized by iodine, then developing the image with vapor of mer­cury (for details of the process and its sources, see Daguerre).',
           lang: 'en',
           cite: {
             source: 'iranica-adle-daguerreotype',
@@ -56,7 +56,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/daguerreotype'
           }
         }

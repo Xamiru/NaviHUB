@@ -187,7 +187,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q6',
-          text: 'It incorporated into the Russian empire almost all the Turkman populations in the latter region.',
+          text: 'The Treaty of Tehran in 1881 (text in Krausse, pp. 360-62) defined the line precisely, first along the Atrak as far as Čāt, from there following the base of the mountains to Loṭfābād in the Daragaz. It incorporated into the Russian empire almost all the Turkman populations in the latter region.',
           lang: 'en',
           cite: {
             source: 'iranica-de-planhol-boundaries-russia',
@@ -195,7 +195,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/boundaries-ii'
           }
         },

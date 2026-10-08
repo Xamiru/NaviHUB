@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'mexican-american-war-causes',
   about: ['event:mexican-american-war'],
   topic: 'causes',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'annexation-and-texan-claim',
@@ -113,6 +113,35 @@ export default defineInterpretation({
             at: '2026-10-08',
             url: 'https://millercenter.org/the-presidency/presidential-speeches/may-11-1846-war-message-congress'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q11',
+          text: 'While Mexico did not follow through with its threat to declare war if the United States annexed Texas, relations between the two nations remained tense due to Mexico’s disputed border with Texas.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-texas-annexation',
+            loc: {
+              section: 'The Annexation of Texas, the Mexican-American War, and the Treaty of Guadalupe-Hidalgo, 1845–1848',
+              para: '6'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1830-1860/texas-annexation'
+          }
+        },
+        {
+          id: 'q12',
+          text: 'Polk dispatched a special envoy, John Slidell, to Mexico City to settle the Texas boundary dispute and to arrange the purchase of California.',
+          lang: 'en',
+          cite: {
+            source: 'loc-mexico-country-study-1996',
+            loc: { section: 'The Mexican-American War', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/mexico/18.htm' }
         }
       ]
     },

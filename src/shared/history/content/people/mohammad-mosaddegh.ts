@@ -262,7 +262,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q6',
-          text: 'They shared the widely held belief in the extensive and insidious influence of Britain and considered the termination or radical reduction of such influence as essential to the affirmation of Persian national sovereignty.',
+          text: 'The primary objective of Moṣaddeq and his colleagues was to lend substance to Persia’s independence by asserting her sovereign rights over her natural sources of wealth, particularly oil. They shared the widely held belief in the extensive and insidious influence of Britain and considered the termination or radical reduction of such influence as essential to the affirmation of Persian national sovereignty.',
           lang: 'en',
           cite: {
             source: 'iranica-azimi-great-britain-v',
@@ -270,7 +270,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/great-britain-v/'
           }
         }
@@ -314,7 +314,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q7',
-          text: 'He was arrested on 20 August 1953 and later tried in a military court and banished to Aḥmadābād, a village he owned.',
+          text: 'Almost no resistance was offered by Mo-ṣaddeq’s earlier supporters. He was arrested on 20 August 1953 and later tried in a military court and banished to Aḥmadābād, a village he owned.',
           lang: 'en',
           cite: {
             source: 'iranica-yarshater-iranian-history-islamic-period-6',
@@ -324,7 +324,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/iran-ii2-islamic-period-page-6/'
           }
         }

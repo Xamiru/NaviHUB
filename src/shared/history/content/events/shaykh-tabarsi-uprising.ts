@@ -228,6 +228,20 @@ export default defineEvent({
       kind: 'course',
       quotes: [
         {
+          id: 'q11',
+          text: 'In July, 1848, a gathering of some eighty Babi activists, including Qorrat-al-ʿAyn and Mollā Moḥammad-ʿAlī Bārforūšī, formally proclaimed the advent of the qīāma.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-maceoin-babism-ii',
+            loc: { section: 'BABISM ii. Babi executions and uprisings', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/babism-index/babism-ii-babi-executions-and-uprisings'
+          }
+        },
+        {
           id: 'q3',
           text: 'Also in July, 1848, Bošrūʾī and a large body of followers left Mašhad, possibly headed for Azarbaijan to rescue the Bāb from prison.',
           lang: 'en',
@@ -237,7 +251,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/babism-index/babism-ii-babi-executions-and-uprisings'
           }
         },

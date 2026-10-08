@@ -86,13 +86,13 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'He received a mandate from the shah to dissolve parliament and rule for six months by cabinet decree. Amini loosened controls on the press, permitted the National Front and other political parties to resume activity, and ordered the arrest of a number of former senior officials on charges of corruption.',
+          text: 'Amini was known as an advocate of reform. He received a mandate from the shah to dissolve parliament and rule for six months by cabinet decree. Amini loosened controls on the press, permitted the National Front and other political parties to resume activity, and ordered the arrest of a number of former senior officials on charges of corruption.',
           lang: 'en',
           cite: {
             source: 'loc-iran-country-study-1987',
             loc: { section: 'THE SHAH\'S WHITE REVOLUTION', para: '3' }
           },
-          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/iran/18.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/iran/18.htm' }
         },
         {
           id: 'q3',

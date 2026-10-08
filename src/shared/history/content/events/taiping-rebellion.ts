@@ -198,12 +198,12 @@ export default defineEvent({
       quotes: [
         {
           id: 'q12',
-          text: 'This was Hung Siu-tsʽüan. He proclaimed himself as sent by heaven to drive out the Tatars, and to restore in his own person the succession to China. At the same time, having been converted to Christianity and professing to abhor the vices and sins of the age, he called on all the virtuous of the land to extirpate rulers who were standing examples of all that was base and vile in human nature. Crowds soon flocked to his standard. Tʽien-tê was deserted; and putting himself at the head of his followers (who abandoned the practice of shaving the head), Hung Siu-tsʽüan marched northwards and captured Wu-chʽang on the Yangtsze-kiang, the capital of Hu-peh.',
+          text: 'When, however, there appeared to be a possibility that, by force of arms and the persuasive influence of money, the imperialists would re-establish their supremacy, a leader presented himself in Kwang-si, whose energy of character, combined with great political and religious enthusiasm, speedily gained for him the suffrages of the discontented. This was Hung Siu-tsʽüan. He proclaimed himself as sent by heaven to drive out the Tatars, and to restore in his own person the succession to China. At the same time, having been converted to Christianity and professing to abhor the vices and sins of the age, he called on all the virtuous of the land to extirpate rulers who were standing examples of all that was base and vile in human nature. Crowds soon flocked to his standard. Tʽien-tê was deserted; and putting himself at the head of his followers (who abandoned the practice of shaving the head), Hung Siu-tsʽüan marched northwards and captured Wu-chʽang on the Yangtsze-kiang, the capital of Hu-peh.',
           lang: 'en',
           cite: { source: 'britannica-1911-china', loc: { section: 'CHINA: History' } },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/China'
           }
         }

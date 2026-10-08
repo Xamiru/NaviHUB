@@ -25,6 +25,8 @@ export function pathForEntity(
       return `/wrestling/match/${entityId}`
     case 'wrestlingWrestler':
       return `/wrestling/wrestler/${entityId}`
+    case 'wrestlingClip':
+      return `/wrestling/clips?clip=${entityId}`
     case 'footballCompetition':
       return `/football/competition/${entityId}`
     case 'footballTeam':
@@ -44,6 +46,7 @@ export const KIND_LABEL: Record<ListKind, string> = {
   wrestlingEvent: 'Wrestling events',
   wrestlingMatch: 'Wrestling matches',
   wrestlingWrestler: 'Wrestlers',
+  wrestlingClip: 'Wrestling clips',
   footballCompetition: 'Football competitions',
   footballTeam: 'Football teams',
   footballPerson: 'Football people',
@@ -59,6 +62,7 @@ export const KIND_NOUN: Record<ListKind, string> = {
   wrestlingEvent: 'event',
   wrestlingMatch: 'match',
   wrestlingWrestler: 'wrestler',
+  wrestlingClip: 'clip',
   footballCompetition: 'competition',
   footballTeam: 'team',
   footballPerson: 'person',

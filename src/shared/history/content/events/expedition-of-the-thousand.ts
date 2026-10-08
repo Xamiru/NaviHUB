@@ -251,8 +251,8 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
-          id: 'q7',
-          text: 'Their presence put an end to the plan for the invasion of the papal states, and Garibaldi unwillingly issued a decree for the plébiscite which was to sanction the incorporation of the Two Sicilies in the Italian realm.',
+          id: 'q16',
+          text: 'The march upon Naples became a triumphal progress, which the wiles of Francesco II. were powerless to arrest.',
           lang: 'en',
           cite: {
             source: 'britannica-1911-garibaldi-giuseppe',
@@ -260,7 +260,21 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Garibaldi,_Giuseppe'
+          }
+        },
+        {
+          id: 'q7',
+          text: 'Meanwhile the Italian troops had occupied the Marches, Umbria and the Abruzzi, a battalion of Bersaglieri reaching the Volturno in time to take part in the battle. Their presence put an end to the plan for the invasion of the papal states, and Garibaldi unwillingly issued a decree for the plébiscite which was to sanction the incorporation of the Two Sicilies in the Italian realm.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-garibaldi-giuseppe',
+            loc: { section: 'GARIBALDI, GIUSEPPE', para: '3' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Garibaldi,_Giuseppe'
           }
         }

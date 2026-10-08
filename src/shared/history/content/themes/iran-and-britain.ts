@@ -184,7 +184,8 @@ export default defineTheme({
         }
       }
     },
-    { ref: 'event:iranian-oil-consortium-agreement-1954' }
+    { ref: 'event:iranian-oil-consortium-agreement-1954' },
+    { ref: 'event:rushdie-fatwa' }
   ],
   related: [
     { ref: 'theme:iran-and-russia' },

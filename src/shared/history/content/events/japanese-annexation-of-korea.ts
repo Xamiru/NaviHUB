@@ -103,13 +103,13 @@ export default defineEvent({
         },
         {
           id: 'q2',
-          text: 'Japan then governed Korea under a residency general and subsequently under a governor general directly subordinate to Japanese prime ministers. All of the governor generals were high-ranking Japanese military officers.',
+          text: 'All of the governor generals were high-ranking Japanese military officers.',
           lang: 'en',
           cite: {
             source: 'loc-south-korea-country-study-1990',
             loc: { section: 'Korea Under Japanese Rule', para: '1' }
           },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/south-korea/7.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/south-korea/7.htm' }
         }
       ]
     },

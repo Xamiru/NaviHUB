@@ -71,6 +71,22 @@ export default defineInterpretation({
             url: 'https://www.archives.gov/research/jfk/select-committee-report/summary.html'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q7',
+          text: 'In 1979, a congressional investigation by the House Select Committee on Assassinations (HSCA) arrived at similar conclusions, additionally finding that one or both of James Earl Ray\'s brothers might have been his accomplices and that two racist St. Louis businessmen, who were dead by the time the HSCA probe began, may have put up a bounty for Dr. King\'s murder.',
+          lang: 'en',
+          cite: {
+            source: 'doj-2000-king-assassination-allegations',
+            loc: { section: 'Overview', para: '48' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.justice.gov/crt/overview-investigation-allegations-regarding-assassination-dr-martin-luther-king-jr'
+          }
+        }
       ]
     },
     {
@@ -111,8 +127,24 @@ export default defineInterpretation({
             url: 'https://www.justice.gov/crt/overview-investigation-allegations-regarding-assassination-dr-martin-luther-king-jr'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q8',
+          text: 'The jury adopted a verdict offered by the parties finding that Jowers and "others, including government agencies" participated in a conspiracy to assassinate Dr. King.',
+          lang: 'en',
+          cite: {
+            source: 'doj-2000-king-assassination-allegations',
+            loc: { section: 'Overview', para: '40' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.justice.gov/crt/overview-investigation-allegations-regarding-assassination-dr-martin-luther-king-jr'
+          }
+        }
       ]
     }
   ],
-  researched: '2026-10-07'
+  researched: '2026-10-09'
 })

@@ -134,7 +134,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q2',
-          text: 'Those hopes vanished in a matter of days as the newly independent nation descended into chaos. On July 5, Congolese soldiers in the Force Publique mutinied against their white Belgian commanders at the Thysville military base, seeking higher pay as well as greater opportunity and authority. The mutiny quickly spread to other bases and violence soon broke out across the nation. Thousands of Europeans (primarily Belgians) fled, and stories of atrocities against whites surfaced in newspapers around the globe. Unable to control the indigenous army (renamed the Congolese National Army), the Belgians brought in troops to restore order without seeking permission to do so from either Kasavubu or Lumumba. In response, the Congolese government appealed directly to the United Nations to provide troops and demanded the removal of Belgian troops.',
+          text: 'The Eisenhower administration had high hopes that the Republic of the Congo would form a stable, pro-Western, central government. Those hopes vanished in a matter of days as the newly independent nation descended into chaos. On July 5, Congolese soldiers in the Force Publique mutinied against their white Belgian commanders at the Thysville military base, seeking higher pay as well as greater opportunity and authority. The mutiny quickly spread to other bases and violence soon broke out across the nation. Thousands of Europeans (primarily Belgians) fled, and stories of atrocities against whites surfaced in newspapers around the globe. Unable to control the indigenous army (renamed the Congolese National Army), the Belgians brought in troops to restore order without seeking permission to do so from either Kasavubu or Lumumba. In response, the Congolese government appealed directly to the United Nations to provide troops and demanded the removal of Belgian troops.',
           lang: 'en',
           cite: {
             source: 'state-dept-milestones-congo-decolonization',
@@ -142,7 +142,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
             url: 'https://history.state.gov/milestones/1961-1968/congo-decolonization'
           }
         },

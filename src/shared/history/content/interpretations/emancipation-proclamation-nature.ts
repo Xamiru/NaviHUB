@@ -4,13 +4,14 @@ export default defineInterpretation({
   id: 'emancipation-proclamation-nature',
   about: ['event:emancipation-proclamation'],
   topic: 'nature',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'lincoln-central-act',
-      category: 'contemporary',
+      category: 'official',
       holders: [
-        { kind: 'participant', name: 'Abraham Lincoln', ref: 'person:abraham-lincoln' }
+        { kind: 'participant', name: 'Abraham Lincoln', ref: 'person:abraham-lincoln' },
+        { kind: 'state', name: 'United States' }
       ],
       statements: [
         {
@@ -24,6 +25,22 @@ export default defineInterpretation({
           provenance: {
             via: 'web',
             at: '2026-10-06',
+            url: 'https://www.nps.gov/articles/emancipation-and-the-quest-for-freedom.htm'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q10',
+          text: 'There was always the possibility that, after the war, the courts might still undo emancipation.',
+          lang: 'en',
+          cite: {
+            source: 'nps-guelzo-emancipation-and-the-quest-for-freedom',
+            loc: { section: 'Emancipation and the Quest for Freedom', para: '17' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
             url: 'https://www.nps.gov/articles/emancipation-and-the-quest-for-freedom.htm'
           }
         }
@@ -46,6 +63,22 @@ export default defineInterpretation({
             loc: { section: 'Proclamation by the Confederate President, General Orders No. 111' }
           },
           provenance: { via: 'web', at: '2026-10-08', url: 'https://www.freedmen.umd.edu/pow.htm' }
+        }
+      ],
+      reception: [
+        {
+          id: 'q11',
+          text: 'With this Proclamation he hoped to inspire all Black people, and enslaved people in the Confederacy in particular, to support the Union cause',
+          lang: 'en',
+          cite: {
+            source: 'nara-milestone-emancipation-proclamation',
+            loc: { section: 'Emancipation Proclamation (1863)', para: '4' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.archives.gov/milestone-documents/emancipation-proclamation'
+          }
         }
       ]
     },

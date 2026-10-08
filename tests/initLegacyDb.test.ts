@@ -160,7 +160,7 @@ describe('a live DB that predates newer columns', () => {
     db.exec(initSql)
     runMigrations(db)
     db.exec("INSERT INTO vn_reading_node(media_id,kind,title) VALUES(1,'chapter','Chapter one')")
-    for (const table of ['vn_reading_resume', 'vn_notebook', 'vn_text_capture', 'vn_release_cache', 'vn_edition', 'wrestling_journey', 'wrestling_journey_step', 'wrestling_journey_viewing']) {
+    for (const table of ['vn_reading_resume', 'vn_notebook', 'vn_text_capture', 'vn_release_cache', 'vn_edition', 'wrestling_journey', 'wrestling_journey_step', 'wrestling_journey_viewing', 'wrestling_clip', 'wrestling_clip_link', 'wrestling_clip_tag']) {
       expect(db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(table)).toEqual({ name: table })
     }
     expect(db.pragma('foreign_key_check')).toEqual([])

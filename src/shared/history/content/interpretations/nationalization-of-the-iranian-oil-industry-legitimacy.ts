@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'nationalization-of-the-iranian-oil-industry-legitimacy',
   about: ['event:nationalization-of-the-iranian-oil-industry'],
   topic: 'legitimacy',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'the-nation-will-not-submit',
@@ -52,6 +52,18 @@ export default defineInterpretation({
             url: 'https://api.parliament.uk/historic-hansard/commons/1951/may/01/persia-anglo-iranian-oil-company'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q5',
+          text: 'It challenged the legality of the oil nationalization and took its case against Iran to the International Court of Justice at The Hague. The court found in Iran\'s favor, but the dispute between Iran and the AIOC remained unsettled.',
+          lang: 'en',
+          cite: {
+            source: 'loc-iran-country-study-1987',
+            loc: { section: 'MOSSADEQ AND OIL NATIONALIZATION', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/iran/17.htm' }
+        }
       ]
     },
     {
@@ -75,6 +87,18 @@ export default defineInterpretation({
             at: '2026-10-08',
             url: 'https://archive.org/download/mission-for-my-country-mohammad-reza-pahlavi_202605/Mission%20For%20My%20Country%20-%20Mohammad%20Reza%20Pahlavi_djvu.txt'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q6',
+          text: 'Subsequent negotiations with the AIOC were unsuccessful, partly because General Ali Razmara, who became prime minister in June 1950, failed to persuade the oil company of the strength of nationalist feeling in the country and in the Majlis.',
+          lang: 'en',
+          cite: {
+            source: 'loc-iran-country-study-1987',
+            loc: { section: 'MOSSADEQ AND OIL NATIONALIZATION', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/iran/17.htm' }
         }
       ]
     },

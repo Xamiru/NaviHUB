@@ -119,6 +119,19 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
+          id: 'q7',
+          text: 'Nasser desired vehemently to change his country; he believed that the British and the British-controlled king and politicians would continue to harm the interests of the majority of the population. Nasser and the other Free Officers had no particular desire for a military career, but Nasser had perceived that military life offered upward mobility and a chance to participate in shaping the country\'s future.',
+          lang: 'en',
+          cite: {
+            source: 'loc-egypt-country-study-1990',
+            loc: {
+              section: 'The Revolution and the Early Years of the New Government: 1952-56',
+              para: '6'
+            }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/egypt/32.htm' }
+        },
+        {
           id: 'q3',
           text: 'Although Naguib headed the RCC and Mahir the civilian government, Nasser was the real power behind the RCC. The years between 1952 and 1954 witnessed a struggle for control of the government that Nasser ultimately won.',
           lang: 'en',

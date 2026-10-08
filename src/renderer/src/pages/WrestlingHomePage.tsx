@@ -9,6 +9,8 @@ import EmptyState from '../components/EmptyState'
 import Section from '../components/Section'
 import HubCard from '../components/HubCard'
 import WrestlingImportPanel from '../components/wrestling/WrestlingImportPanel'
+import CoverImage from '../components/CoverImage'
+import { CLIP_KIND_LABEL, clipImage } from '../components/wrestling/WrestlingClips'
 import { WRESTLING_PROMOTIONS } from '@shared/wrestling'
 
 const TIMELINE_FILTER = { sort: 'date' as const, limit: 8 }
@@ -26,6 +28,10 @@ export default function WrestlingHomePage(): JSX.Element {
   const { data: recent } = useQuery({
     queryKey: qk.wrestling.recent,
     queryFn: () => api.wrestling.recentlyAdded()
+  })
+  const { data: recentClips } = useQuery({
+    queryKey: qk.wrestling.recentClips(8),
+    queryFn: () => api.wrestling.recentClips(8)
   })
   const { data: years } = useQuery({
     queryKey: qk.wrestling.allYears,
@@ -164,6 +170,25 @@ export default function WrestlingHomePage(): JSX.Element {
                     title={m.showLabel ?? 'Loose match'}
                   >
                     {m.title}
+                  </Link>
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {recentClips && recentClips.length > 0 && (
+            <Section
+              title="Recent clips"
+              subtitle={<Link to="/wrestling/clips" className="hover:text-accent">All clips →</Link>}
+            >
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-3">
+                {recentClips.map((c) => (
+                  <Link key={c.id} to={`/wrestling/clips?clip=${c.id}`} className="group block">
+                    <div className="aspect-video overflow-hidden rounded bg-surface-raised">
+                      <CoverImage path={clipImage(c)} alt="" className="h-full w-full object-cover" thumbWidth={320} />
+                    </div>
+                    <p className="mt-1 truncate text-sm group-hover:text-accent">{c.title}</p>
+                    <p className="text-xs text-gray-400">{CLIP_KIND_LABEL[c.kind]}</p>
                   </Link>
                 ))}
               </div>

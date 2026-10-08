@@ -199,20 +199,6 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
-          id: 'q5',
-          text: 'Thus another opportunity to annex this long-coveted region was lost.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-kazemzadeh-anglo-iranian-relations-qajar',
-            loc: { section: 'ANGLO-IRANIAN RELATIONS ii. The Qajar Period', para: '23' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/anglo-iranian-relations-ii/'
-          }
-        },
-        {
           id: 'q6',
           text: 'Nuri was forced to comply with the British wishes.',
           lang: 'en',
@@ -227,6 +213,20 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
+          }
+        },
+        {
+          id: 'q5',
+          text: 'Thus another opportunity to annex this long-coveted region was lost.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-kazemzadeh-anglo-iranian-relations-qajar',
+            loc: { section: 'ANGLO-IRANIAN RELATIONS ii. The Qajar Period', para: '23' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/anglo-iranian-relations-ii/'
           }
         }
       ]

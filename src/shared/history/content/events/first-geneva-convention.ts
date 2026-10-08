@@ -209,7 +209,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q8',
-          text: 'This question, which for a long time was the monopoly of the state, later took on an inter- and transnational dimension during the nineteenth century, with the appearance of organizations such as the Red Cross (1859) and the signing of the Geneva Conventions (1864-2005).',
+          text: 'In France, genuine impetus was provided during the reign of Louis XIV, who wanted to give structure to the care provided to the war-wounded, notably through an edict in 1708. This question, which for a long time was the monopoly of the state, later took on an inter- and transnational dimension during the nineteenth century, with the appearance of organizations such as the Red Cross (1859) and the signing of the Geneva Conventions (1864-2005).',
           lang: 'en',
           cite: {
             source: 'ehne-douzou-army-medical-services',
@@ -217,7 +217,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://ehne.fr/en/encyclopedia/themes/wars-and-memories/combatants/army-medical-services'
           }
         }

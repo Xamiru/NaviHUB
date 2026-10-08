@@ -268,13 +268,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'The actual fighting was over almost before it began; the Israeli Air Corps on June 5 destroyed nearly the entire Egyptian Air Force on the ground. King Hussein of Jordan, misinformed by Nasser about Egyptian losses, authorized Jordanian artillery to fire on Jerusalem. Subsequently, both the Jordanians in the east and the Syrians in the north were quickly defeated.',
+          text: 'King Hussein of Jordan, misinformed by Nasser about Egyptian losses, authorized Jordanian artillery to fire on Jerusalem. Subsequently, both the Jordanians in the east and the Syrians in the north were quickly defeated.',
           lang: 'en',
           cite: {
             source: 'loc-israel-country-study-1988',
             loc: { section: '1967 AND AFTERWARD', para: '4' }
           },
-          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/israel/25.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/israel/25.htm' }
         }
       ]
     },

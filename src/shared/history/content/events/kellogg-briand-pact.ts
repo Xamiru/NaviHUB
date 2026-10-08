@@ -174,7 +174,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q6',
-          text: 'It soon became clear that there was no way to enforce the pact or sanction those who broke it; it also never fully defined what constituted “self-defense,” so there were many ways around its terms.',
+          text: 'Further threats to the Peace Agreement also came from fellow signatories Germany, Austria and Italy. It soon became clear that there was no way to enforce the pact or sanction those who broke it; it also never fully defined what constituted “self-defense,” so there were many ways around its terms.',
           lang: 'en',
           cite: {
             source: 'state-dept-milestones-kellogg-briand-pact',
@@ -182,7 +182,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://history.state.gov/milestones/1921-1936/kellogg'
           }
         },

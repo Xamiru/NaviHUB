@@ -148,13 +148,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'But when Lenin became temporarily incapacitated after a stroke in May 1922, the unity of the Politburo fractured, and a troika (triumvirate) formed by Stalin, Lev Kamenev, and Grigoriy Zinov\'yev assumed leadership in opposition to Trotsky.',
+          text: 'Although a collective of prominent communists nominally guided the party and the Soviet Union, Lenin commanded such prestige and authority that even such brilliant theoreticians as Trotsky and Nikolay Bukharin generally yielded to his will. But when Lenin became temporarily incapacitated after a stroke in May 1922, the unity of the Politburo fractured, and a troika (triumvirate) formed by Stalin, Lev Kamenev, and Grigoriy Zinov\'yev assumed leadership in opposition to Trotsky.',
           lang: 'en',
           cite: {
             source: 'loc-russia-country-study-1996',
             loc: { section: 'The Era of the New Economic Policy', para: '6' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/9.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/russia/9.htm' }
         },
         {
           id: 'q14',
@@ -196,6 +196,16 @@ export default defineEvent({
       kind: 'legacy',
       quotes: [
         {
+          id: 'q20',
+          text: 'As important as Lenin\'s activities were to the establishment of the Soviet Union, his legacy to the Soviet future was perhaps even more significant.',
+          lang: 'en',
+          cite: {
+            source: 'loc-russia-country-study-1996',
+            loc: { section: 'The Era of the New Economic Policy', para: '7' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/russia/9.htm' }
+        },
+        {
           id: 'q7',
           text: 'Thus, although the Soviet regime was not totalitarian when he died, Lenin had nonetheless laid the foundation upon which such a tyranny would later arise.',
           lang: 'en',
@@ -203,7 +213,7 @@ export default defineEvent({
             source: 'loc-russia-country-study-1996',
             loc: { section: 'The Era of the New Economic Policy', para: '7' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/9.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/russia/9.htm' }
         }
       ]
     }

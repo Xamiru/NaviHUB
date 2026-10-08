@@ -241,6 +241,20 @@ export default defineEvent({
       kind: 'background',
       quotes: [
         {
+          id: 'q16',
+          text: 'The rise of French influence in Persia, viewed as the prelude to an attack on India, had greatly alarmed the British, and the Franco-Russian rapprochement at Tilsit conveniently provided an opportunity for a now isolated Britain to resume its efforts in Persia, as reflected in the subsequent missions of John Malcolm (1807-8) and Harford Jones (1809).',
+          lang: 'en',
+          cite: {
+            source: 'iranica-daniel-golestan-treaty',
+            loc: { section: 'GOLESTĀN TREATY', para: '4' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/golestan-treaty/'
+          }
+        },
+        {
           id: 'q6',
           text: 'Then, in the third and final twist to this story, Napoleon invaded Russia in June 1812, making Russia and Britain allies once again. Britain, like France after Tilsit, was thus obliged to steer a course between antagonizing Russia and violating its commitments to Persia, with its best option being to broker a settlement of the conflict between the two.',
           lang: 'en',
@@ -250,7 +264,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/golestan-treaty/'
           }
         }

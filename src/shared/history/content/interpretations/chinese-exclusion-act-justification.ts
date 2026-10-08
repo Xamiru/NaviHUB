@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'chinese-exclusion-act-justification',
   about: ['event:chinese-exclusion-act'],
   topic: 'legitimacy',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'good-order-of-localities',
@@ -25,6 +25,22 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.archives.gov/milestone-documents/chinese-exclusion-act'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q5',
+          text: 'For American presidents and Congressmen addressing the question of Chinese exclusion, the challenge was to balance domestic attitudes and politics, which dictated an anti-Chinese policy, while maintaining good diplomatic relations with China',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-chinese-immigration',
+            loc: { section: 'Chinese Immigration and the Chinese Exclusion Acts', para: '8' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1866-1898/chinese-immigration'
           }
         }
       ]
@@ -85,6 +101,22 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.archives.gov/milestone-documents/chinese-exclusion-act'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q6',
+          text: 'The Chinese Exclusion Acts were not repealed until 1943, and then only in the interests of aiding the morale of a wartime ally during World War II.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-chinese-immigration',
+            loc: { section: 'Chinese Immigration and the Chinese Exclusion Acts', para: '10' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1866-1898/chinese-immigration'
           }
         }
       ]

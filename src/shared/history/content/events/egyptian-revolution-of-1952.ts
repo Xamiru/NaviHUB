@@ -79,7 +79,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Anwar as Sadat',
+      ref: 'person:anwar-sadat',
       role: 'participant',
       cites: [
         {

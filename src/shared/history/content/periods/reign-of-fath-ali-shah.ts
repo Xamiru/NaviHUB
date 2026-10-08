@@ -140,8 +140,8 @@ export default definePeriod({
       kind: 'legacy',
       quotes: [
         {
-          id: 'q6',
-          text: 'Yet the shah’s complacency, rooted in a culture of conquest, was never distant enough from the tribal norms and familial mores so as to allow, with few exceptions, the budding of a modern state, even to the extent that his Ottoman and Egyptian contemporaries were able to achieve.',
+          id: 'q7',
+          text: 'At the outset of his reign the shah still stood a fair chance to slow down, if not repel completely, the torrent of European military expansion and imperial diplomacy which began to impact his country. By the end of his reign, his compounding financial troubles and military and technological disadvantages brought his country to the brink of political collapse hastened by an ensuing war of succession after his death.',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-fath-ali-shah',
@@ -154,8 +154,8 @@ export default definePeriod({
           }
         },
         {
-          id: 'q7',
-          text: 'At the outset of his reign the shah still stood a fair chance to slow down, if not repel completely, the torrent of European military expansion and imperial diplomacy which began to impact his country. By the end of his reign, his compounding financial troubles and military and technological disadvantages brought his country to the brink of political collapse hastened by an ensuing war of succession after his death.',
+          id: 'q6',
+          text: 'Yet the shah’s complacency, rooted in a culture of conquest, was never distant enough from the tribal norms and familial mores so as to allow, with few exceptions, the budding of a modern state, even to the extent that his Ottoman and Egyptian contemporaries were able to achieve.',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-fath-ali-shah',

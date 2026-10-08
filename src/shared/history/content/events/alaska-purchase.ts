@@ -143,20 +143,6 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
-          id: 'q4',
-          text: 'This purchase ended Russia’s presence in North America and ensured U.S. access to the Pacific northern rim.',
-          lang: 'en',
-          cite: {
-            source: 'state-dept-milestones-purchase-of-alaska',
-            loc: { section: 'Purchase of Alaska, 1867', para: '3' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://history.state.gov/milestones/1866-1898/alaska-purchase'
-          }
-        },
-        {
           id: 'q5',
           text: 'Skeptics had dubbed the purchase of Alaska “Seward’s Folly,” but the former Secretary of State was vindicated when a major gold deposit was discovered in the Yukon in 1896, and Alaska became the gateway to the Klondike gold fields.',
           lang: 'en',
@@ -167,6 +153,20 @@ export default defineEvent({
           provenance: {
             via: 'web',
             at: '2026-10-06',
+            url: 'https://history.state.gov/milestones/1866-1898/alaska-purchase'
+          }
+        },
+        {
+          id: 'q4',
+          text: 'This purchase ended Russia’s presence in North America and ensured U.S. access to the Pacific northern rim.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-purchase-of-alaska',
+            loc: { section: 'Purchase of Alaska, 1867', para: '3' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
             url: 'https://history.state.gov/milestones/1866-1898/alaska-purchase'
           }
         },

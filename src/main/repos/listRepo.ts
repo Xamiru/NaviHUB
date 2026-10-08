@@ -43,6 +43,12 @@ export const KIND: Record<
     imageCol: 'e.photo_path',
     subCol: 'billed_from'
   },
+  wrestlingClip: {
+    table: 'wrestling_clip',
+    nameCol: 'title',
+    imageCol: 'e.frame_path',
+    subCol: 'kind'
+  },
   footballCompetition: {
     table: 'football_competition',
     nameCol: 'name',

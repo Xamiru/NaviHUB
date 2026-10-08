@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'truman-doctrine-soviet-role-in-greece',
   about: ['event:truman-doctrine'],
   topic: 'causes',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'support-free-peoples',
@@ -26,6 +26,22 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://avalon.law.yale.edu/20th_century/trudoc.asp'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q3',
+          text: 'In light of the deteriorating relationship with the Soviet Union and the appearance of Soviet meddling in Greek and Turkish affairs, the withdrawal of British assistance to Greece provided the necessary catalyst for the Truman Administration to reorient American foreign policy.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-truman-doctrine',
+            loc: { section: 'The Truman Doctrine, 1947', para: '5' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1945-1952/truman-doctrine'
           }
         }
       ]

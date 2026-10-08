@@ -129,6 +129,20 @@ export default defineEvent({
       kind: 'background',
       quotes: [
         {
+          id: 'q11',
+          text: 'In line with a proposal put forward by the British in September, 1869, the northern frontier of Afghanistan was fixed on the Amu Darya from Lake Zor Kōl',
+          lang: 'en',
+          cite: {
+            source: 'iranica-balland-boundaries-afghanistan',
+            loc: { section: 'BOUNDARIES iii. Boundaries of Afghanistan', para: '6' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/boundaries-iii'
+          }
+        },
+        {
           id: 'q1',
           text: 'This task was to be long and slow: It kept the Russian and British chancelleries busy from February, 1882, to January, 1888.',
           lang: 'en',

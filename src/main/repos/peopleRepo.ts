@@ -5,6 +5,7 @@ import * as tierListRepo from './tierListRepo'
 import type {
   Person,
   PersonCredit,
+  PersonCostar,
   CreditRole,
   MediaType,
   PersonDirectoryEntry,
@@ -194,6 +195,40 @@ export function credits(id: number): PersonCredit[] {
             description: r.ch_description
           })
   }))
+}
+
+// Co-stars: people credited with the same role and dub language on the same
+// titles as this person's character-bearing credits (so a seiyuu's co-stars are
+// other Japanese voices, not the English dub or the staff). Titles and
+// (person, title) pairs are de-duplicated before the self-join's rows multiply:
+// a prolific voice actor's raw join is ~10k rows, and counting DISTINCT over it
+// cost ten times as much. Both legs seek idx_credit_person / idx_credit_media.
+export function costars(id: number, limit = 12): PersonCostar[] {
+  const rows = getSqlite()
+    .prepare(
+      `WITH mine AS (
+         SELECT DISTINCT media_id, role, COALESCE(language, '') AS lang
+         FROM credit WHERE person_id = @id AND character_id IS NOT NULL
+       ), pairs AS (
+         SELECT DISTINCT other.person_id, other.media_id
+         FROM mine
+         JOIN credit other
+           ON other.media_id = mine.media_id
+          AND other.role = mine.role
+          AND COALESCE(other.language, '') = mine.lang
+          AND other.character_id IS NOT NULL
+         WHERE other.person_id != @id
+       ), counted AS (
+         SELECT person_id, COUNT(*) AS shared FROM pairs
+         GROUP BY person_id HAVING shared >= 2
+       )
+       SELECT p.*, counted.shared AS shared
+       FROM counted JOIN person p ON p.id = counted.person_id
+       ORDER BY counted.shared DESC, p.name ASC
+       LIMIT @limit`
+    )
+    .all({ id, limit }) as Record<string, unknown>[]
+  return rows.map((r) => ({ person: mapPerson(r), shared: r.shared as number }))
 }
 
 export function upsert(input: Partial<Person> & { name: string }): number {

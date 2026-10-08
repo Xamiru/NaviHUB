@@ -565,7 +565,7 @@ class Checker {
           }
           p.reception?.forEach((q, j) => this.quote(q, `${w}.reception[${j}]`, quotes))
           if (p.category === 'official' && !p.holders?.some((h) => OFFICIAL_HOLDERS.has(h.kind))) {
-            this.err('official-holder', `${w}: an official narrative needs a state, party or organization holder`)
+            this.err('official-holder', `${w}: a government claim needs a state, party or organization holder`)
           }
           if (p.standing) {
             if (!has(STANDING_LABELS, p.standing.label)) this.err('bad-enum', `${w}: unknown standing "${p.standing.label}"`)

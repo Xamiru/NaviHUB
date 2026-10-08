@@ -48,6 +48,15 @@ async function search(kind: ListKind, q: string): Promise<PickedEntity[]> {
     }))
   }
   if (kind === 'wrestlingMatch') return []
+  if (kind === 'wrestlingClip') {
+    const rows = await api.wrestling.clips({ search: q, limit: 40 })
+    return rows.map((c) => ({
+      entityId: c.id,
+      name: c.title,
+      imagePath: c.framePath,
+      mediaType: null
+    }))
+  }
   if (kind.startsWith('football')) {
     const rows = await api.football.search(q)
     if (kind === 'footballCompetition') {

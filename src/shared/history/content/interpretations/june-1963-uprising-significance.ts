@@ -59,6 +59,46 @@ export default defineInterpretation({
             url: 'https://archive.org/download/answer-to-history-by-shah-mohammad-reza-pahlavi/Answer%20to%20History%20by%20Shah%20Mohammad%20Reza%20Pahlavi_djvu.txt'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q8',
+          text: 'The recession, particularly affecting the migrant construction workers and the traditional merchants in the bāzār, rekindled the fire of social discontent, leading to political unrest throughout 1962-63 and, finally, mass demonstrations in June 1963.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-pesaran-economy-pahlavi',
+            loc: { section: 'ECONOMY ix. IN THE PAHLAVI PERIOD', para: '19' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/economy-ix/'
+          }
+        },
+        {
+          id: 'q9',
+          text: 'Many clerical leaders opposed land reform and the extension of suffrage to women. These leaders were also concerned about the extension of government and royal authority that the reforms implied.',
+          lang: 'en',
+          cite: {
+            source: 'loc-iran-country-study-1987',
+            loc: { section: 'THE SHAH\'S WHITE REVOLUTION', para: '6' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/iran/18.htm' }
+        },
+        {
+          id: 'q10',
+          text: 'repeatedly castigated the British for having instigated the riots of Ḵordād 1342 Š./June 1963, which Prime Minister ʿAlam had violently suppressed',
+          lang: 'en',
+          cite: {
+            source: 'iranica-azimi-great-britain-v',
+            loc: { section: 'GREAT BRITAIN v. British influence in Persia, 1941-79', para: '46' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/great-britain-v/'
+          }
+        }
       ]
     },
     {
@@ -102,6 +142,32 @@ export default defineInterpretation({
             at: '2026-10-07',
             url: 'https://web.archive.org/web/20250606181336/https://english.khamenei.ir/news/1799/Leader-s-Speech-on-24th-Demise-Anniversary-of-Imam-Khomeini-r-a'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q11',
+          text: 'But the above measures combined with the overall discontent of the traditional forces met with severe resistance from the religious establishment leading to major urban riots on 5 June 1963 in Tehran and a number of major provincial cities (Akhavi, pp. 117-29; Farmayan, pp. 104-6, 109).',
+          lang: 'en',
+          cite: {
+            source: 'iranica-sedghi-feminist-movements-pahlavi',
+            loc: { section: 'FEMINIST MOVEMENTS iii. IN THE PAHLAVI PERIOD', para: '16' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/feminist-movements-iii/'
+          }
+        },
+        {
+          id: 'q12',
+          text: 'In the years that followed the riots of June 1963, there was little overt political opposition.',
+          lang: 'en',
+          cite: {
+            source: 'loc-iran-country-study-1987',
+            loc: { section: 'Khomeini and the Renewed Opposition', para: '1' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/iran/20.htm' }
         }
       ]
     },
@@ -155,5 +221,5 @@ export default defineInterpretation({
       ]
     }
   ],
-  researched: '2026-10-07'
+  researched: '2026-10-09'
 })

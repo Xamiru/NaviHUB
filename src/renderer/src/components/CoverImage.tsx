@@ -19,6 +19,10 @@ interface Props {
   thumbWidth?: number
 }
 
+// Height-to-width ratio above which an image is full-body art, not a portrait
+// (AniList character images and box art sit around 1.4-1.5).
+const TALL_RATIO = 1.7
+
 // Shows a stored cover/photo, or a tasteful placeholder with the title initial.
 // The navimg URL is built synchronously (no per-image IPC); if the file is
 // missing on disk the <img> onError swaps to the placeholder — this replaces
@@ -34,11 +38,16 @@ export default function CoverImage({
   const url = useImageUrl(path)
   const [failed, setFailed] = useState(false)
   const [thumbFailed, setThumbFailed] = useState(false)
+  // Full-body character art (Bangumi's game characters are standing poses,
+  // often 1:2.6) cropped from the middle shows a torso; anchor it to the top
+  // so the slot shows the face. Ordinary portraits and covers stay centred.
+  const [tall, setTall] = useState(false)
 
   // A new path is a fresh chance to load — clear prior failures.
   useEffect(() => {
     setFailed(false)
     setThumbFailed(false)
+    setTall(false)
   }, [url])
 
   const thumb = url && !failed && thumbWidth ? thumbUrl(path, thumbWidth) : null
@@ -49,10 +58,14 @@ export default function CoverImage({
       <img
         src={src ?? undefined}
         alt={alt}
-        className={`object-cover bg-base-700 ${rounded} ${className}`}
+        className={`object-cover bg-base-700 ${tall ? 'object-top' : ''} ${rounded} ${className}`}
         loading="lazy"
         decoding="async"
         draggable={false}
+        onLoad={(e) => {
+          const img = e.currentTarget
+          setTall(img.naturalWidth > 0 && img.naturalHeight / img.naturalWidth > TALL_RATIO && !/\bobject-contain\b/.test(className))
+        }}
         onError={() => {
           if (thumb && !thumbFailed) setThumbFailed(true)
           else setFailed(true)

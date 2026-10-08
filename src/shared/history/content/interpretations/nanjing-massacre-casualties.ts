@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'nanjing-massacre-casualties',
   about: ['event:nanjing-massacre'],
   topic: 'casualties',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   framing: {
     id: 'q1',
     text: 'Interpretations of the Nanjing Incident in Japan are usually summarised as falling into three schools of thought,[12] defined by the number of people each argues were massacred in Nanjing',
@@ -44,6 +44,22 @@ export default defineInterpretation({
             url: 'https://english.www.gov.cn/news/202412/13/content_WS675bd237c6d0868f4e8edeb6.html'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q9',
+          text: 'Although there is real debate in Japan, no one there now accepts the figure of 300,000 victims as plausible, while in China the figure is set in concrete (in both senses of the word) at the entrance of the Memorial for the Compatriot [Chinese] Victims of the Japanese Massacre in Nanjing.',
+          lang: 'en',
+          cite: {
+            source: 'askew-2002-nanjing-incident-recent-research',
+            loc: { section: 'The Nanjing Incident: Recent Research and Trends', para: '54' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'http://www.japanesestudies.org.uk/articles/Askew.html'
+          }
+        }
       ]
     },
     {
@@ -62,6 +78,22 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://web.archive.org/web/20241227150748/https://www.mofa.go.jp/policy/q_a/faq16.html'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q10',
+          text: 'The problem is that the orthodox position is completely different in China and Japan, and within Japan itself there are three distinct orthodoxies.',
+          lang: 'en',
+          cite: {
+            source: 'askew-2002-nanjing-incident-recent-research',
+            loc: { section: 'The Nanjing Incident: Recent Research and Trends', para: '54' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'http://www.japanesestudies.org.uk/articles/Askew.html'
           }
         }
       ]

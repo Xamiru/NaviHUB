@@ -131,7 +131,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q3',
-          text: 'He had asserted that Iran’s most necessary reform was reorganization of the financial systems and the introduction of modern education, and Moẓaffar-al-dīn Shah supported his projects.',
+          text: 'Intrigues gradually blossomed, and Amīn-al-dawla, who had resigned from his post in Azarbaijan and was already in Tehran, was made wazīr-e aʿẓam or prime minister in Šawwāl, 1314/March, 1897; yet he was not able to function as such as long as Farmānfarmā, who wielded great influence, remained in office. Farmānfarmā’s exercise of authority had caused the resignation of the respectable minister of interior ʿAlī-qolī Khan Moḵber-al-dawla, and it was generally expected that Amīn-al-dawla would immediately seek the dismissal of Farmānfarmā. But he chose not to do so until Rabīʿ I, 1315/September, 1897 when he persuaded the shah to dismiss him and eventually to send him away to Fārs (Afżal-al-molk, Afżal al-tawārīḵ, pp. 142-46; F. Kazemzadeh, Russia and Britain, pp. 302-06). From a political viewpoint, Amīn-al-dawla now stood without challenger. He had the shah’s full confidence and was in a position to bring the entire machinery of the government under his own control. But he confesses that he “. . . moved about with reluctance, as if he was not responsible for the affairs of government . . .” (Ḵāṭerāt-e sīāsī, p. 234; cf. Afżal-al-molk, Afżal al-tawārīḵ, p. 145; Curzon, Persia I, p. 428). He had asserted that Iran’s most necessary reform was reorganization of the financial systems and the introduction of modern education, and Moẓaffar-al-dīn Shah supported his projects.',
           lang: 'en',
           cite: {
             source: 'iranica-farmayan-amin-al-dawla',
@@ -139,7 +139,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/amin-al-dawla-mirza-ali-khan'
           }
         },
@@ -178,7 +178,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q6',
-          text: 'He has been praised for his honesty and unpretentious, polished manners, while his inertia, irresoluteness, and relative lack of effectiveness in carrying out his administrative plans have been criticized.',
+          text: 'A man of letters, Amin-al-dawla knew the French language and, unlike many of his contemporaries, was acquainted with the state of affairs outside Iran. He has been praised for his honesty and unpretentious, polished manners, while his inertia, irresoluteness, and relative lack of effectiveness in carrying out his administrative plans have been criticized.',
           lang: 'en',
           cite: {
             source: 'iranica-farmayan-amin-al-dawla',
@@ -186,7 +186,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/amin-al-dawla-mirza-ali-khan'
           }
         },

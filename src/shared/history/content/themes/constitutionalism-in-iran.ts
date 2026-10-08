@@ -288,7 +288,11 @@ export default defineTheme({
       }
     },
     { ref: 'event:founding-of-the-freedom-movement-of-iran' },
-    { ref: 'event:white-revolution' }
+    { ref: 'event:white-revolution' },
+    { ref: 'event:founding-of-the-rastakhiz-party' },
+    { ref: 'event:1979-islamic-republic-referendum' },
+    { ref: 'event:constitution-of-the-islamic-republic-1979' },
+    { ref: 'polity:islamic-republic-of-iran' }
   ],
   related: [
     { ref: 'theme:womens-rights-in-iran' },

@@ -2,7 +2,7 @@ import { defineInterpretation } from '../../schema'
 
 export default defineInterpretation({
   id: '1954-guatemalan-coup-foreign-role',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   about: ['event:1954-guatemalan-coup'],
   topic: 'foreign-role',
   positions: [
@@ -34,9 +34,9 @@ export default defineInterpretation({
     },
     {
       id: 'us-official-record',
-      category: 'official',
+      category: 'scholarly',
       holders: [
-        { kind: 'state', name: 'United States (Office of the Historian, Department of State)' }
+        { kind: 'organization', name: 'Office of the Historian, U.S. Department of State' }
       ],
       statements: [
         {

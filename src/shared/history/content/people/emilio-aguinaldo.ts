@@ -32,6 +32,16 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
+          id: 'q4',
+          text: 'Aguinaldo and his government escaped, however, establishing a new capital at San Isidro in Nueva Ecija Province.',
+          lang: 'en',
+          cite: {
+            source: 'loc-philippines-country-study-1991',
+            loc: { section: 'War of Resistance', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/philippines/15.htm' }
+        },
+        {
           id: 'q2',
           text: 'With his best commander dead and his troops suffering continued defeats as American forces pushed into northern Luzon, Aguinaldo dissolved the regular army in November 1899 and ordered the establishment of decentralized guerrilla commands in each of several military zones.',
           lang: 'en',

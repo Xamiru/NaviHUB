@@ -94,6 +94,17 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
+          id: 'q8',
+          text: 'Truman first learned of the program to develop an atomic bomb, known as the Manhattan Project, shortly after becoming President in April 1945.',
+          lang: 'en',
+          cite: { source: 'millercenter-truman-key-events', loc: { section: 'Key Events' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://millercenter.org/president/truman/key-events'
+          }
+        },
+        {
           id: 'q6',
           text: 'On the morning of August 6, 1945, the United States dropped the first atomic bomb on the Japanese city of Hiroshima. A second atomic bomb was dropped on the city of Nagasaki three days later.',
           lang: 'en',

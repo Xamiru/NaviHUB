@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type Database from 'better-sqlite3'
 import { createTestDb } from './helpers'
-import { search, importBook } from '../src/main/openlibrary'
+import { search, importBook, olReleaseDate, openLibraryThrottle } from '../src/main/openlibrary'
 
 // Offline import of an Open Library work against the real schema: string work
 // ids, editions-median page count, authors as writer credits, capped subject
@@ -63,8 +63,19 @@ function workFixtures(overrides: Record<string, unknown> = {}): Record<string, u
 }
 
 beforeEach(() => {
+  openLibraryThrottle.intervalMs = 0
   db = createTestDb()
   fixtures = workFixtures()
+})
+
+describe('olReleaseDate', () => {
+  it('finds the year in Open Library free-text dates', () => {
+    expect(olReleaseDate('1937')).toBe('1937-01-01')
+    expect(olReleaseDate('September 21, 1937')).toBe('1937-01-01')
+    expect(olReleaseDate('Sep 1937')).toBe('1937-01-01')
+    expect(olReleaseDate('n.d.')).toBeNull()
+    expect(olReleaseDate(null)).toBeNull()
+  })
 })
 
 describe('search', () => {

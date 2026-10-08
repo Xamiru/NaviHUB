@@ -54,6 +54,22 @@ export default defineInterpretation({
             url: 'https://be.china-embassy.gov.cn/eng/zbjl/200903/t20090320_2088890.htm'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q6',
+          text: 'While these events do not constitute any real threat to Peiping’s control of the main towns of Tibet, the Chinese Communists will certainly be obliged to face guerrilla operations by rebellious Tibetans.',
+          lang: 'en',
+          cite: {
+            source: 'frus-1958-60-v19-d367-editorial-note-nsc-briefing-on-tibet',
+            loc: { section: '367. Editorial Note' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/historicaldocuments/frus1958-60v19/d367'
+          }
+        }
       ]
     },
     {
@@ -98,8 +114,24 @@ export default defineInterpretation({
             url: 'https://www.dalailama.com/messages/tibet/10th-march-archive/2009'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q7',
+          text: 'When the people of Lhasa became aware of these plans, thousands of Tibetans flocked to the city and took the Dalai Lama into protective custody. Disorders followed in Lhasa. A Chinese Communist strongpoint was captured.',
+          lang: 'en',
+          cite: {
+            source: 'frus-1958-60-v19-d367-editorial-note-nsc-briefing-on-tibet',
+            loc: { section: '367. Editorial Note' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/historicaldocuments/frus1958-60v19/d367'
+          }
+        }
       ]
     }
   ],
-  researched: '2026-10-07'
+  researched: '2026-10-09'
 })

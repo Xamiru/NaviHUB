@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'war-of-1812-causes',
   about: ['event:war-of-1812'],
   topic: 'causes',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'blockade-and-impressment',
@@ -171,6 +171,22 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-08',
             url: 'https://millercenter.org/the-presidency/presidential-speeches/june-1-1812-special-message-congress-foreign-policy-crisis-war'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q10',
+          text: 'Great Britain continued to stop American merchant ships to search for Royal Navy deserters, to impress American seamen on the high seas into the Royal Navy, and to enforce its blockade of neutral commerce.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-war-of-1812',
+            loc: { section: 'War of 1812–1815', para: '3' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1801-1829/war-of-1812'
           }
         }
       ]

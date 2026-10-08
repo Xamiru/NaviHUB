@@ -268,6 +268,16 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
+          id: 'q8',
+          text: 'The Geneva Agreements were viewed with doubt and dissatisfaction on all sides.',
+          lang: 'en',
+          cite: {
+            source: 'loc-vietnam-country-study-1987',
+            loc: { section: 'The Aftermath of Geneva', para: '1' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/vietnam/25.htm' }
+        },
+        {
           id: 'q6',
           text: 'The following day, peace talks on Indochina began in Geneva, attended by the DRV, the Associated State of Vietnam, Cambodia, Laos, France, Britain, China, the Soviet Union, and the United States. In July a compromise agreement was reached consisting of two documents: a cease-fire and a final declaration. The ceasefire agreement, which was signed only by France and the DRV, established a provisional military demarcation line at about the 17°N parallel and required the regroupment of all French military forces south of that line and of all Viet Minh military forces north of the line.',
           lang: 'en',
@@ -275,7 +285,7 @@ export default defineEvent({
             source: 'loc-vietnam-country-study-1987',
             loc: { section: 'Dien Bien Phu', para: '5' }
           },
-          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/vietnam/24.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/vietnam/24.htm' }
         },
         {
           id: 'q7',
@@ -290,16 +300,6 @@ export default defineEvent({
             at: '2026-10-07',
             url: 'https://history.state.gov/milestones/1953-1960/dien-bien-phu'
           }
-        },
-        {
-          id: 'q8',
-          text: 'The Geneva Agreements were viewed with doubt and dissatisfaction on all sides.',
-          lang: 'en',
-          cite: {
-            source: 'loc-vietnam-country-study-1987',
-            loc: { section: 'The Aftermath of Geneva', para: '1' }
-          },
-          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/vietnam/25.htm' }
         }
       ]
     }

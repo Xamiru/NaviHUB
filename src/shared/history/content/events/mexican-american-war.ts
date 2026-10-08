@@ -216,13 +216,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'In early 1845, the United States Congress passed a resolution in favor of the annexation of Texas, which prompted Mexico to sever diplomatic relations with the United States.',
+          text: 'The Mexican congress had never ratified Santa Anna\'s secret treaty with the Texans, and to underscore its opposition to Texas\'s independence, the Mexican congress passed a law that retroactively annulled any treaties signed by a Mexican negotiator while in captivity.',
           lang: 'en',
           cite: {
             source: 'loc-mexico-country-study-1996',
             loc: { section: 'The Mexican-American War', para: '1' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/mexico/18.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/mexico/18.htm' }
         },
         {
           id: 'q5',
@@ -299,6 +299,23 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
+          id: 'q12',
+          text: 'The question of whether slavery could expand throughout the United States continue to fester until the defeat of the Confederacy in 1865.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-texas-annexation',
+            loc: {
+              section: 'The Annexation of Texas, the Mexican-American War, and the Treaty of Guadalupe-Hidalgo, 1845–1848',
+              para: '13'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://history.state.gov/milestones/1830-1860/texas-annexation'
+          }
+        },
+        {
           id: 'q10',
           text: 'These events brought within the control of the United States the future states of Texas, California, Nevada, New Mexico, Arizona, Utah, Washington, and Oregon, as well as portions of what would later become Oklahoma, Colorado, Kansas, Wyoming, and Montana.',
           lang: 'en',
@@ -318,23 +335,6 @@ export default defineEvent({
         {
           id: 'q11',
           text: 'The war had another significant outcome.',
-          lang: 'en',
-          cite: {
-            source: 'state-dept-milestones-texas-annexation',
-            loc: {
-              section: 'The Annexation of Texas, the Mexican-American War, and the Treaty of Guadalupe-Hidalgo, 1845–1848',
-              para: '13'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://history.state.gov/milestones/1830-1860/texas-annexation'
-          }
-        },
-        {
-          id: 'q12',
-          text: 'The question of whether slavery could expand throughout the United States continue to fester until the defeat of the Confederacy in 1865.',
           lang: 'en',
           cite: {
             source: 'state-dept-milestones-texas-annexation',

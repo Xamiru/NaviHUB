@@ -114,13 +114,13 @@ export default definePerson({
       quotes: [
         {
           id: 'q3',
-          text: 'As congress deliberated, Iturbide realized that power was slipping from his hands and decided to stage a dramatic demonstration on his behalf.',
+          text: 'Iturbide realized that power was slipping from his hands and decided to stage a dramatic demonstration on his behalf.',
           lang: 'en',
           cite: {
             source: 'loc-mexico-country-study-1996',
             loc: { section: 'Empire and Early Republic, 1821-55', para: '2' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/mexico/14.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/mexico/14.htm' }
         },
         {
           id: 'q4',

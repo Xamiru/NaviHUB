@@ -3,6 +3,7 @@ import type { RefreshAspect } from '@shared/refresh'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
 import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
+import { createThrottle } from './requestThrottle'
 import type { ImportSearchResult, ImportSummary } from '@shared/types'
 
 // Open Library (openlibrary.org) — the free open book catalog. No API key;
@@ -19,8 +20,21 @@ const OL_UA = 'NaviHUB/0.1 (personal media tracker)'
 const MAX_TAGS = 10
 const MAX_AUTHORS = 6
 
+// Open Library allows an anonymous client one request a second (three with a
+// contact address in the User-Agent). One import is up to nine requests, so
+// every caller — dialog, refresh — books its slot from this one throttle.
+export const openLibraryThrottle = createThrottle(1000)
+
+// first_publish_date is free text: "1937", "September 21, 1937", "Sep 1937".
+export function olReleaseDate(v: unknown): string | null {
+  if (typeof v !== 'string') return null
+  const m = /\b(\d{4})\b/.exec(v)
+  return m ? `${m[1]}-01-01` : null
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 async function olGet(path: string, params: Record<string, string> = {}): Promise<any> {
+  await openLibraryThrottle.take()
   const url = new URL(`${BASE}${path}`)
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
   const res = await fetchWithRetry(url.toString(), {
@@ -175,10 +189,7 @@ export async function importBook(
   return db.transaction((): ImportSummary => {
     const title: string = w.title ?? 'Untitled'
     const synopsis = textOf(w.description)
-    const releaseDate =
-      typeof w.first_publish_date === 'string' && /^\d{4}/.test(w.first_publish_date)
-        ? `${w.first_publish_date.slice(0, 4)}-01-01`
-        : null
+    const releaseDate = olReleaseDate(w.first_publish_date)
 
     // ---- media (preserve personal tracking on re-import) ----
     const existing = db

@@ -122,13 +122,13 @@ export default definePerson({
       quotes: [
         {
           id: 'q4',
-          text: 'But Stalin countered their attacks on his position with his well-timed formulation of the theory of "socialism in one country."',
+          text: 'Belatedly recognizing Stalin\'s political power, Kamenev and Zinov\'yev made amends with Trotsky in order to join against their former partner. But Stalin countered their attacks on his position with his well-timed formulation of the theory of "socialism in one country."',
           lang: 'en',
           cite: {
             source: 'loc-russia-country-study-1996',
             loc: { section: 'The Era of the New Economic Policy', para: '10' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/9.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/russia/9.htm' }
         }
       ]
     },

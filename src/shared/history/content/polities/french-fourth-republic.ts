@@ -110,6 +110,20 @@ export default definePolity({
       kind: 'course',
       quotes: [
         {
+          id: 'q7',
+          text: 'Criticized even before it was introduced by General de Gaulle in his famous Bayeux speech on 16 June 1946, the Fourth Republic was built on fragile foundations: there were high numbers of protest votes and abstention, so high that the yes vote actually represented just 36% of registered voters.',
+          lang: 'en',
+          cite: {
+            source: 'elysee-constitution-of-27-october-1946',
+            loc: { section: 'The Constitution of 27 October 1946', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.elysee.fr/en/french-presidency/the-constitution-of-27-october-1946'
+          }
+        },
+        {
           id: 'q4',
           text: 'It is customary to attribute the ministerial instability of the Fourth Republic to the Constitution of 1946. In reality, the causes were external.',
           lang: 'en',

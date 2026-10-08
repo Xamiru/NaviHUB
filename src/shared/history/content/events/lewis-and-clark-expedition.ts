@@ -177,7 +177,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'It altered the imperial struggle for control of North America, particularly in the Pacific Northwest, by strengthening the U.S. claim to the areas now including the states of Oregon and Washington.',
+          text: 'The results and accomplishments of the Lewis and Clark Expedition were extensive. It altered the imperial struggle for control of North America, particularly in the Pacific Northwest, by strengthening the U.S. claim to the areas now including the states of Oregon and Washington.',
           lang: 'en',
           cite: {
             source: 'nps-missouri-national-recreational-river-lewis-and-clark',
@@ -185,7 +185,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.nps.gov/mnrr/learn/historyculture/the-lewis-and-clark-expedition.htm'
           }
         },

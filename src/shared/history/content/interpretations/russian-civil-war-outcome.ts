@@ -2,7 +2,7 @@ import { defineInterpretation } from '../../schema'
 
 export default defineInterpretation({
   id: 'russian-civil-war-outcome',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   about: ['event:russian-civil-war'],
   topic: 'outcome',
   positions: [
@@ -44,6 +44,18 @@ export default defineInterpretation({
             at: '2026-10-08',
             url: 'https://www.marxists.org/reference/archive/stalin/works/1939/x01/ch08.htm'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q4',
+          text: 'The Allied governments, lacking support for intervention from their nations\' war-weary citizenry, withdrew most of their forces by 1920.',
+          lang: 'en',
+          cite: {
+            source: 'loc-russia-country-study-1996',
+            loc: { section: 'Revolutions and Civil War', para: '23' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/russia/8.htm' }
         }
       ]
     },

@@ -301,20 +301,6 @@ export default defineEvent({
       kind: 'background',
       quotes: [
         {
-          id: 'q3',
-          text: 'Soon after Moṣaddeq’s appointment, the British began a pro­tracted effort to have him removed from power, impos­ing economic sanctions on Persia, conducting military maneuvers in the region, and undertaking a variety of covert political activities. The most important of the covert activities were an extensive effort in the sum­mer of 1330 Š./1951 to replace him with Sayyed Żīāʾ-­al-Dīn Ṭabāṭabāʾī; a similar effort a year later to replace him with Aḥmad Qawām (Qawām-al-Salṭana)',
-          lang: 'en',
-          cite: {
-            source: 'iranica-gasiorowski-coup-detat-1953',
-            loc: { section: 'COUP D’ETAT OF 1332 Š./1953', para: '2' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-07',
-            url: 'https://www.iranicaonline.org/articles/coup-detat-1953/'
-          }
-        },
-        {
           id: 'q4',
           text: 'From the outset, the British policy had been to deny Moṣaddeq any oil settlement which would differ in substance from a fifty-fifty share of the profits and would thus be likely to undermine oil arrangements elsewhere, a policy the Americans also broadly supported.',
           lang: 'en',
@@ -326,6 +312,20 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/great-britain-v/'
+          }
+        },
+        {
+          id: 'q3',
+          text: 'Soon after Moṣaddeq’s appointment, the British began a pro­tracted effort to have him removed from power, impos­ing economic sanctions on Persia, conducting military maneuvers in the region, and undertaking a variety of covert political activities. The most important of the covert activities were an extensive effort in the sum­mer of 1330 Š./1951 to replace him with Sayyed Żīāʾ-­al-Dīn Ṭabāṭabāʾī; a similar effort a year later to replace him with Aḥmad Qawām (Qawām-al-Salṭana)',
+          lang: 'en',
+          cite: {
+            source: 'iranica-gasiorowski-coup-detat-1953',
+            loc: { section: 'COUP D’ETAT OF 1332 Š./1953', para: '2' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/coup-detat-1953/'
           }
         },
         {

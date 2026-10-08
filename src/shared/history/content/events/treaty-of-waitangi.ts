@@ -103,20 +103,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.waitangitribunal.govt.nz/en/about/the-treaty/about-the-treaty'
           }
-        },
-        {
-          id: 'q2',
-          text: 'The treaty has two texts: one in te reo Māori and one in English.',
-          lang: 'en',
-          cite: {
-            source: 'waitangi-tribunal-about-the-treaty',
-            loc: { section: 'About the treaty', para: '12' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.waitangitribunal.govt.nz/en/about/the-treaty/about-the-treaty'
-          }
         }
       ]
     },

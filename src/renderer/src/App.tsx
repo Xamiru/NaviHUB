@@ -132,6 +132,7 @@ const WrestlingRatedPage = lazy(() => import('./pages/WrestlingRatedPage'))
 const WrestlingYearPage = lazy(() => import('./pages/WrestlingYearPage'))
 const WrestlingMatchRedirect = lazy(() => import('./pages/WrestlingMatchRedirect'))
 const WrestlingCollectionPage = lazy(() => import('./pages/WrestlingCollectionPage'))
+const WrestlingClipsPage = lazy(() => import('./pages/WrestlingClipsPage'))
 const FootballHomePage = lazy(() => import('./pages/FootballHomePage'))
 const HistoryHomePage = lazy(() => import('./pages/HistoryHomePage'))
 const HistoryArticlePage = lazy(() => import('./pages/HistoryArticlePage'))
@@ -581,6 +582,7 @@ export default function App() {
             <Route path="/wrestling" element={<WrestlingHomePage />} />
             <Route path="/wrestling/rated" element={<WrestlingRatedPage />} />
             <Route path="/wrestling/collection" element={<WrestlingCollectionPage />} />
+            <Route path="/wrestling/clips" element={<WrestlingClipsPage />} />
             <Route path="/wrestling/year/:year" element={<WrestlingYearPage />} />
             <Route path="/wrestling/match/:id" element={<WrestlingMatchRedirect />} />
             <Route path="/wrestling/p/:promo" element={<WrestlingPromotionPage />} />

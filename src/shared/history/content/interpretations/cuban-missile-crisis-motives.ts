@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'cuban-missile-crisis-motives',
   about: ['event:cuban-missile-crisis'],
   topic: 'motives',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'offensive-threat-to-the-hemisphere',
@@ -26,6 +26,22 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-08',
             url: 'https://history.state.gov/historicaldocuments/frus1961-63v06/d60'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q6',
+          text: 'Meanwhile, U.S. reconnaissance flights over Cuba indicated the Soviet missile sites were nearing operational readiness.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-cuban-missile-crisis',
+            loc: { section: 'The Cuban Missile Crisis, October 1962', para: '7' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1961-1968/cuban-missile-crisis'
           }
         }
       ]
@@ -61,6 +77,25 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-08',
             url: 'https://history.state.gov/historicaldocuments/frus1961-63v06/d65'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q7',
+          text: 'In April 1961, a short few months into his administration, Kennedy authorized a clandestine invasion of Cuba by a brigade of Cuban exiles.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-1961-1968-foreword',
+            loc: {
+              section: '1961–1968: The Presidencies of John F. Kennedy and Lyndon B. Johnson',
+              para: '5'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1961-1968/foreword'
           }
         }
       ]

@@ -95,6 +95,7 @@ const api: NaviApi = {
       ipcRenderer.invoke('people:list', search, role, mediaType, limit),
     get: (id) => ipcRenderer.invoke('people:get', id),
     credits: (id) => ipcRenderer.invoke('people:credits', id),
+    costars: (id, limit) => ipcRenderer.invoke('people:costars', id, limit),
     directory: (query) => ipcRenderer.invoke('people:directory', query),
     upsert: (input) => ipcRenderer.invoke('people:upsert', input),
     remove: (id) => ipcRenderer.invoke('people:remove', id)
@@ -291,6 +292,16 @@ const api: NaviApi = {
     cancel: () => ipcRenderer.invoke('bulk:cancel'),
     retryFailed: () => ipcRenderer.invoke('bulk:retryFailed'),
     undoLast: () => ipcRenderer.invoke('bulk:undoLast')
+  },
+  hardcover: {
+    search: (query) => ipcRenderer.invoke('hardcover:search', query),
+    import: (bookId) => ipcRenderer.invoke('hardcover:import', bookId)
+  },
+  books: {
+    editions: (mediaId) => ipcRenderer.invoke('books:editions', mediaId),
+    edition: (mediaId) => ipcRenderer.invoke('books:edition', mediaId),
+    chooseEdition: (mediaId, editionId) => ipcRenderer.invoke('books:chooseEdition', mediaId, editionId),
+    clearEdition: (mediaId) => ipcRenderer.invoke('books:clearEdition', mediaId)
   },
   openlibrary: {
     search: (query) => ipcRenderer.invoke('openlibrary:search', query),
@@ -679,6 +690,16 @@ const api: NaviApi = {
     updateLooseMatch: (id, input) => ipcRenderer.invoke('wrestling:updateLooseMatch', id, input),
     removeLooseMatch: (id) => ipcRenderer.invoke('wrestling:removeLooseMatch', id),
     recentlyAdded: () => ipcRenderer.invoke('wrestling:recentlyAdded'),
+    clips: (filter) => ipcRenderer.invoke('wrestling:clips', filter),
+    clipsFor: (kind, id) => ipcRenderer.invoke('wrestling:clipsFor', kind, id),
+    recentClips: (limit) => ipcRenderer.invoke('wrestling:recentClips', limit),
+    saveClip: (input) => ipcRenderer.invoke('wrestling:saveClip', input),
+    removeClip: (id) => ipcRenderer.invoke('wrestling:removeClip', id),
+    setClipFavorite: (id, favorite) => ipcRenderer.invoke('wrestling:setClipFavorite', id, favorite),
+    clipTags: () => ipcRenderer.invoke('wrestling:clipTags'),
+    clipTargets: (query) => ipcRenderer.invoke('wrestling:clipTargets', query),
+    pickClipFile: () => ipcRenderer.invoke('wrestling:pickClipFile'),
+    openClip: (id) => ipcRenderer.invoke('wrestling:openClip', id),
     startImport: (opts) => ipcRenderer.invoke('wrestling:startImport', opts),
     importStatus: () => ipcRenderer.invoke('wrestling:importStatus'),
     cancelImport: () => ipcRenderer.invoke('wrestling:cancelImport')

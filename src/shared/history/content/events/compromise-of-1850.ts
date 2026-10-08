@@ -135,6 +135,20 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
+          id: 'q8',
+          text: 'With the Compromise of 1850, Congress had addressed the immediate crisis created by the recent territorial expansion.',
+          lang: 'en',
+          cite: {
+            source: 'nara-milestone-compromise-of-1850',
+            loc: { section: 'Compromise of 1850 (1850)', para: '4' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.archives.gov/milestone-documents/compromise-of-1850'
+          }
+        },
+        {
           id: 'q6',
           text: 'But one aspect of the compromise – a strengthened fugitive slave act – soon began to threaten sectional peace.',
           lang: 'en',
@@ -144,7 +158,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.archives.gov/milestone-documents/compromise-of-1850'
           }
         },

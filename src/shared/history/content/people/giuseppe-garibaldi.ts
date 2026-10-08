@@ -116,7 +116,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q4',
-          text: 'Proceeding thence to Rome, he was entrusted by the Roman republic with the defence of San Pancrazio against the French, where he gained the victory of the 30th of April 1849, remaining all day in the saddle, although wounded in the side at the beginning of the fight.',
+          text: 'Landing at Nice on the 24th of June 1848, he placed his sword at the disposal of Charles Albert, and, after various difficulties with the Piedmontese war office, formed a volunteer army 3000 strong, but shortly after taking the field was obliged, by the defeat of Custozza, to flee to Switzerland. Proceeding thence to Rome, he was entrusted by the Roman republic with the defence of San Pancrazio against the French, where he gained the victory of the 30th of April 1849, remaining all day in the saddle, although wounded in the side at the beginning of the fight.',
           lang: 'en',
           cite: {
             source: 'britannica-1911-garibaldi-giuseppe',
@@ -124,7 +124,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Garibaldi,_Giuseppe'
           }
         },

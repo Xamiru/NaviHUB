@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'spanish-american-war-causes',
   about: ['event:spanish-american-war'],
   topic: 'causes',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'yellow-press-climate-not-sole-cause',
@@ -145,6 +145,22 @@ export default defineInterpretation({
             url: 'https://millercenter.org/the-presidency/presidential-speeches/april-11-1898-message-regarding-cuban-civil-war'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q13',
+          text: 'Thus, the war enabled the United States to establish its predominance in the Caribbean region and to pursue its strategic and economic interests in Asia.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-spanish-american-war',
+            loc: { section: 'The Spanish-American War, 1898', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1866-1898/spanish-american-war'
+          }
+        }
       ]
     },
     {
@@ -182,6 +198,22 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-08',
             url: 'https://history.state.gov/historicaldocuments/frus1898/d561'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q14',
+          text: 'The Spanish government rejected the U.S. ultimatum and immediately severed diplomatic relations with the United States.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-spanish-american-war',
+            loc: { section: 'The Spanish-American War, 1898', para: '5' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1866-1898/spanish-american-war'
           }
         }
       ]

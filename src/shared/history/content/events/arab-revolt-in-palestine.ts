@@ -112,13 +112,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'Thus, Britain\'s commitment to a Jewish homeland in Palestine dissipated, and the Mandate authorities pursued a policy of appeasement with respect to the Arabs.',
+          text: 'Britain\'s commitment to a Jewish homeland in Palestine dissipated, and the Mandate authorities pursued a policy of appeasement with respect to the Arabs.',
           lang: 'en',
           cite: {
             source: 'loc-israel-country-study-1988',
             loc: { section: 'The Palestinian Revolt', para: '2' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/israel/17.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/israel/17.htm' }
         },
         {
           id: 'q6',

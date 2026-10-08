@@ -24,6 +24,13 @@ const OCR = [
   /β\d/,
   /\b(?:toobtain|hisbeing|asone|onethird|anti-Alliedactivities)\b/
 ]
+/** A section that opens mid-story: a time step or reaction with nothing before it. */
+const MIDSTORY = /^(A (few|couple of) (days|weeks|months|years) later|(Some|Two|Three|Several) (days|weeks|months|years) later|Shortly (after|afterwards|thereafter)|Soon (after|afterwards|thereafter)|Later|Afterwards|After (this|that|which)|Upon (his|her|their|this|that)|Following (this|that)|The next|Next|Again|Once again|Finally|Eventually|Thereafter|Subsequently)\b/
+/**
+ * Outlets of a government's own propaganda. Their words may appear only as that
+ * government's claim inside an interpretation, never as facts or narration.
+ */
+const STATE_OUTLETS = /(^|\.)(khamenei\.ir|imam-khomeini\.ir|leader\.ir|president\.ir|irna\.ir|presstv\.ir|tasnimnews\.com|farsnews\.ir|mehrnews\.com)$/
 const OPENER_LANGS = new Set(['en', 'fa'])
 const RESULT_SECTIONS = new Set(['consequences', 'aftermath', 'legacy'])
 
@@ -75,6 +82,43 @@ export function lintCatalog(catalog: HistoryCatalog, entities: HistoryEntity[]):
 
   const imageUse = new Map<string, string[]>()
 
+  const outlet = (id: string): boolean => {
+    const url = catalog.sources.get(id)?.url
+    if (!url) return false
+    try {
+      return STATE_OUTLETS.test(new URL(url).hostname)
+    } catch {
+      return false
+    }
+  }
+  /** Every source a node cites, quotes and claims alike. */
+  const citedIn = (node: unknown, out: string[] = []): string[] => {
+    if (!node || typeof node !== 'object') return out
+    if (Array.isArray(node)) {
+      for (const n of node) citedIn(n, out)
+      return out
+    }
+    const o = node as Record<string, unknown>
+    if (typeof o.source === 'string' && o.loc) out.push(o.source)
+    for (const v of Object.values(o)) citedIn(v, out)
+    return out
+  }
+
+  for (const i of catalog.interpretations.values()) {
+    const ref = refOf('interpretation', i.id)
+    i.positions.forEach((p, n) => {
+      if (p.category === 'official' && !p.reception?.length) {
+        add('claim-unanswered', ref, `the government claim "${p.id}" has no independent assessment`, `positions[${n}]`)
+      }
+      // A government outlet speaks only for its government: in its own claim.
+      const elsewhere = p.category === 'official' ? citedIn(p.reception) : citedIn(p)
+      for (const id of new Set(elsewhere.filter(outlet))) {
+        add('state-outlet', ref, `${id} is cited outside its government's claim`, `positions[${n}]`)
+      }
+    })
+    for (const id of new Set(citedIn(i.framing).filter(outlet))) add('state-outlet', ref, `${id} frames the question`, 'framing')
+  }
+
   for (const e of entities) {
     if (!ARTICLE_KINDS.has(e.kind) || !('names' in e)) continue
     const ref = refOf(e.kind, e.id)
@@ -89,6 +133,15 @@ export function lintCatalog(catalog: HistoryCatalog, entities: HistoryEntity[]):
         if (CHRONOLOGY.test(first.text)) add('chronology-opener', ref, 'the opener is a chronology line', first.id)
       }
     }
+
+    for (const id of new Set(citedIn(e).filter(outlet))) add('state-outlet', ref, `${id} is cited as fact or narration`, id)
+
+    sections?.forEach((s, n) => {
+      const q = s.quotes[0]
+      if (s.kind !== 'overview' && q && (MIDSTORY.test(q.text) || /^[a-z]/.test(q.text) || (e.kind !== 'person' && DANGLING.test(q.text)))) {
+        add('section-opener', ref, `the ${s.kind} section opens mid-story`, q.id)
+      }
+    })
 
     const own = quotesOf(e)
     for (const q of own) {

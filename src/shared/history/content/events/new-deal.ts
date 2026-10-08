@@ -126,7 +126,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'However, the widespread suffering experienced during the Great Depression elicited congressional support for numerous proposals for a national old-age insurance system.',
+          text: 'Before the 1930s, support for the elderly was a matter of local, state, and family concern rather than a federal concern (except for veterans’ pensions). However, the widespread suffering experienced during the Great Depression elicited congressional support for numerous proposals for a national old-age insurance system.',
           lang: 'en',
           cite: {
             source: 'nara-milestone-social-security-act',
@@ -134,7 +134,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.archives.gov/milestone-documents/social-security-act'
           }
         },

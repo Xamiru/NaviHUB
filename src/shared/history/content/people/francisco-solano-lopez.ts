@@ -122,13 +122,13 @@ export default definePerson({
       quotes: [
         {
           id: 'q4',
-          text: 'She buried Solano Lopez with her own hands after the last battle in 1870 and died penniless some years later in Europe.',
+          text: 'Lynch bore Solano Lopez five sons, although the two never married. She became the largest landowner in Paraguay after Solano Lopez transferred most of the country and portions of Brazil to her name during the war, yet she retained practically nothing when the war ended. She buried Solano Lopez with her own hands after the last battle in 1870 and died penniless some years later in Europe.',
           lang: 'en',
           cite: {
             source: 'loc-paraguay-country-study-1988',
             loc: { section: 'Francisco Solano Lopez', para: '1' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/paraguay/10.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/paraguay/10.htm' }
         }
       ]
     }

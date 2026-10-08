@@ -39,6 +39,16 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
+          id: 'q5',
+          text: 'After a number of initial successes, Sucre\'s army was defeated at Ambato in the central Sierra and he appealed for assistance from San Martín, whose army was by now in Peru. With the arrival from the south of 1,400 fresh soldiers under the command of Andrés de Santa Cruz Calahumana, the fortunes of the patriotic army were again reversed. A string of victories culminated in the decisive Battle of Pichincha, on the slopes of the volcano of that name on the western outskirts of Quito, on May 24, 1822. A few hours after the victory by the patriots, the last president of the Audiencia of Quito signed a formal capitulation of his forces before Marshal Sucre. Ecuador was at last free of Spanish rule.',
+          lang: 'en',
+          cite: {
+            source: 'loc-ecuador-country-study-1989',
+            loc: { section: 'THE STRUGGLE FOR INDEPENDENCE', para: '6' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/ecuador/7.htm' }
+        },
+        {
           id: 'q2',
           text: 'They were years in which warfare dominated the affairs of Ecuador.',
           lang: 'en',

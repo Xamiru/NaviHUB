@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'armenian-genocide-recognition',
   about: ['event:armenian-genocide'],
   topic: 'naming',
-  researched: '2026-10-07',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'genocide-scholarly',
@@ -81,6 +81,18 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://bidenwhitehouse.archives.gov/briefing-room/statements-releases/2021/04/24/statement-by-president-joe-biden-on-armenian-remembrance-day/'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q15',
+          text: 'Yet it was a major event in early 20th-century European history. Perpetrated in the name of a nationalist ideology that was inspired by European models, the genocide of 1915-1916 represented a turning point',
+          lang: 'en',
+          cite: {
+            source: 'ehne-adjemian-armenian-genocide',
+            loc: { section: 'The Armenian Genocide' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'https://ehne.fr/en/node/21547' }
         }
       ]
     },

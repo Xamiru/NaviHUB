@@ -127,6 +127,16 @@ export default defineEvent({
       kind: 'background',
       quotes: [
         {
+          id: 'q13',
+          text: 'The Pernambuccan revolution in 1817 encouraged army officers in Portugal to conspire against the regency of British Marshal William Carr Beresford.',
+          lang: 'en',
+          cite: {
+            source: 'loc-brazil-country-study-1997',
+            loc: { section: 'The Kingdom of Portugal and Brazil, 1815-21', para: '4' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/brazil/10.htm' }
+        },
+        {
           id: 'q1',
           text: 'Then, in January 1821, Portuguese officers and troops, as well as Brazilian liberals, took over provincial governments in Bahia and Belém, and in late February, troops in Rio de Janeiro threw in with the movement and forced the king to take an oath to accept any constitution the Côrtes might write.',
           lang: 'en',
@@ -134,7 +144,7 @@ export default defineEvent({
             source: 'loc-brazil-country-study-1997',
             loc: { section: 'The Kingdom of Portugal and Brazil, 1815-21', para: '5' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/brazil/10.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/brazil/10.htm' }
         },
         {
           id: 'q2',

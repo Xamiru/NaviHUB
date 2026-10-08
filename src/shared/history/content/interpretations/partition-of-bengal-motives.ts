@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'partition-of-bengal-motives',
   about: ['event:partition-of-bengal-1905'],
   topic: 'motives',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'administration',
@@ -41,6 +41,18 @@ export default defineInterpretation({
             at: '2026-10-07',
             url: 'https://archive.org/download/in.ernet.dli.2015.207242/2015.207242.Speeches-By_djvu.txt'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q8',
+          text: 'An ill-conceived and hastily implemented action, the partition outraged Bengalis. Not only had the government failed to consult Indian public opinion but the action appeared to reflect the British resolve to "divide and rule."',
+          lang: 'en',
+          cite: {
+            source: 'loc-india-country-study-1995',
+            loc: { section: 'The Independence Movement', para: '4' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/india/19.htm' }
         }
       ]
     },

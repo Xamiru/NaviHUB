@@ -191,8 +191,8 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
-          id: 'q5',
-          text: 'However, increasingly radical opposition to the new nation state appeared in the wake of the proclamation of the kingdom of Italy in 1861.',
+          id: 'q6',
+          text: 'The watchword attributed to the Piedmontese patriot Massimo D’Azeglio in 1861—“We have made Italy. Now we must make Italians.”—explains the monarchy’s early implementation of a policy of nationalizing the masses.',
           lang: 'en',
           cite: {
             source: 'ehne-delpu-construction-of-nation-states-italy',
@@ -208,8 +208,8 @@ export default defineEvent({
           }
         },
         {
-          id: 'q6',
-          text: 'The watchword attributed to the Piedmontese patriot Massimo D’Azeglio in 1861—“We have made Italy. Now we must make Italians.”—explains the monarchy’s early implementation of a policy of nationalizing the masses.',
+          id: 'q5',
+          text: 'However, increasingly radical opposition to the new nation state appeared in the wake of the proclamation of the kingdom of Italy in 1861.',
           lang: 'en',
           cite: {
             source: 'ehne-delpu-construction-of-nation-states-italy',
@@ -220,7 +220,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://ehne.fr/en/encyclopedia/themes/political-europe/national-construction-and-european-issues/construction-nation-states-during-nineteenth-century-case-italy'
           }
         },

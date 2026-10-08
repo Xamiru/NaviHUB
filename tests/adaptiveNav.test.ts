@@ -186,6 +186,7 @@ describe('adaptive archive navigation', () => {
 it('exposes hobby-depth destinations through shared navigation', () => {
   expect(archiveContextForPath('/visual-novels/42').items.map((i) => i.to)).toContain('/visual-novels/discover')
   expect(archiveContextForPath('/wrestling/journeys').items.map((i) => i.to)).toContain('/wrestling/journeys')
+  expect(archiveContextForPath('/wrestling/clips').items.map((i) => i.to)).toContain('/wrestling/clips')
   expect(archiveContextForPath('/franchises/science-adventure').title).toBe('Franchises')
   expect(drawerItemsForArea('library').map((i) => i.to)).toContain('/franchises')
 })

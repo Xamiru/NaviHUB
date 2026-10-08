@@ -142,6 +142,20 @@ export default defineEvent({
       kind: 'background',
       quotes: [
         {
+          id: 'q12',
+          text: 'Persians made their first acquaintance with Freemasonry outside Persia, in India, and more importantly in Europe, and it was not until the first decade of the 20th century that a lodge regularly affiliated to one of the recognized European obediences appeared in the country.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-algar-freemasonry-qajar',
+            loc: { section: 'FREEMASONRY ii. In the Qajar Period', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/freemasonry-ii-in-the-qajar-period'
+          }
+        },
+        {
           id: 'q3',
           text: 'It suggests also that the term farāmūšī, for long current in Persia as a popular appellation for Freemasonry, as well as farāmūš-ḵāna (house of forgetfulness) designating a Masonic lodge, originated in India, passing from there not only to Persia but also to Central Asia;',
           lang: 'en',
@@ -151,7 +165,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/freemasonry-ii-in-the-qajar-period'
           }
         }

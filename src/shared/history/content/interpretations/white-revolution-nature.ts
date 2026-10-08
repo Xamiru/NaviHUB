@@ -45,6 +45,18 @@ export default defineInterpretation({
             url: 'https://archive.org/download/answer-to-history-by-shah-mohammad-reza-pahlavi/Answer%20to%20History%20by%20Shah%20Mohammad%20Reza%20Pahlavi_djvu.txt'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q8',
+          text: 'These measures earned the government considerable support among certain sectors of the population, but they did not deal immediately with sources of unrest. Economic conditions were still difficult for the poorer classes.',
+          lang: 'en',
+          cite: {
+            source: 'loc-iran-country-study-1987',
+            loc: { section: 'THE SHAH\'S WHITE REVOLUTION', para: '6' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/iran/18.htm' }
+        }
       ]
     },
     {
@@ -81,6 +93,22 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-07',
             url: 'https://web.archive.org/web/20260610181904/https://english.khamenei.ir/news/2116/Imam-Khomeini-s-Biography'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q9',
+          text: 'It was widely believed that the shah’s White Revolution and the land-reform program of the 1960s had been designed in detail by Americans, though in fact American officials had favored more moderate land reform',
+          lang: 'en',
+          cite: {
+            source: 'iranica-ashraf-conspiracy-theories',
+            loc: { section: 'CONSPIRACY THEORIES', para: '19' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/conspiracy-theories/'
           }
         }
       ]
@@ -147,5 +175,5 @@ export default defineInterpretation({
       ]
     }
   ],
-  researched: '2026-10-07'
+  researched: '2026-10-09'
 })

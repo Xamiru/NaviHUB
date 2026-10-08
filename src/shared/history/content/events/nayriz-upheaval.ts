@@ -141,6 +141,20 @@ export default defineEvent({
       kind: 'course',
       quotes: [
         {
+          id: 'q9',
+          text: 'There then followed two major conflicts between the Babis and their opponents in the towns of Zanjān (ca. May 13, 1850-ca. January 2, 1851) and Nayriz (May 27- June 21, 1850) respectively in the north and south of Persia, as well as a more limited confrontation in Yazd (January-February 1850)',
+          lang: 'en',
+          cite: {
+            source: 'iranica-smith-momen-martyrs-babi',
+            loc: { section: 'MARTYRS, BABI', para: '6' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/martyrs-babi-babi/'
+          }
+        },
+        {
           id: 'q4',
           text: 'Again, the local governor tried to settle matters by force, leading to an armed struggle between the Babis and regional troops.',
           lang: 'en',
@@ -150,7 +164,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/martyrs-babi-babi/'
           }
         },
@@ -167,12 +181,7 @@ export default defineEvent({
             at: '2026-10-08',
             url: 'https://www.iranicaonline.org/articles/martyrs-babi-babi/'
           }
-        }
-      ]
-    },
-    {
-      kind: 'aftermath',
-      quotes: [
+        },
         {
           id: 'q6',
           text: 'Eventually, resistance was overcome, about a hundred men being straightaway beheaded, others were imprisoned or eventually executed, whilst the women were given over to the soldiers, many eventually becoming beggars in Shiraz',
@@ -183,7 +192,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/martyrs-babi-babi/'
           }
         }

@@ -1967,6 +1967,42 @@ CREATE TABLE IF NOT EXISTS wrestling_journey_viewing (
 );
 CREATE INDEX IF NOT EXISTS idx_journey_viewing ON wrestling_journey_viewing(step_id);
 
+-- Wrestling clip shelf: personal highlights, promos, interviews and documentaries
+-- filed by hand from files already under wrestling.dir. kind is a frozen key
+-- (highlight | promo | interview | documentary). Links are FK-less on purpose:
+-- a re-import that drops an event or match must not delete the user's clip,
+-- so reads LEFT JOIN and tolerate a vanished target. A promotion is a frozen
+-- text id from shared/wrestling.ts, never a row. Personal → wiped on export.
+CREATE TABLE IF NOT EXISTS wrestling_clip (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ title TEXT NOT NULL,
+ kind TEXT NOT NULL,
+ local_path TEXT NOT NULL,
+ note TEXT NOT NULL DEFAULT '',
+ frame_path TEXT,
+ favorite INTEGER NOT NULL DEFAULT 0,
+ created_at TEXT NOT NULL DEFAULT (datetime('now')),
+ updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_wrestling_clip_kind ON wrestling_clip(kind, created_at);
+CREATE TABLE IF NOT EXISTS wrestling_clip_link (
+ clip_id INTEGER NOT NULL REFERENCES wrestling_clip(id) ON DELETE CASCADE,
+ entity_kind TEXT NOT NULL CHECK(entity_kind IN ('wrestler','event','match','promotion')),
+ entity_id INTEGER,
+ promotion_id TEXT,
+ CHECK((entity_kind = 'promotion' AND promotion_id IS NOT NULL AND entity_id IS NULL)
+    OR (entity_kind <> 'promotion' AND entity_id IS NOT NULL AND promotion_id IS NULL))
+);
+CREATE INDEX IF NOT EXISTS idx_wrestling_clip_link_clip ON wrestling_clip_link(clip_id);
+CREATE INDEX IF NOT EXISTS idx_wrestling_clip_link_entity ON wrestling_clip_link(entity_kind, entity_id);
+CREATE INDEX IF NOT EXISTS idx_wrestling_clip_link_promotion ON wrestling_clip_link(promotion_id);
+CREATE TABLE IF NOT EXISTS wrestling_clip_tag (
+ clip_id INTEGER NOT NULL REFERENCES wrestling_clip(id) ON DELETE CASCADE,
+ tag TEXT NOT NULL,
+ PRIMARY KEY(clip_id, tag)
+);
+CREATE INDEX IF NOT EXISTS idx_wrestling_clip_tag ON wrestling_clip_tag(tag);
+
 CREATE TABLE IF NOT EXISTS vn_text_capture (
  id INTEGER PRIMARY KEY AUTOINCREMENT,
  media_id INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
@@ -1987,6 +2023,17 @@ CREATE TABLE IF NOT EXISTS vn_edition (
   release_id TEXT,
   snapshot_json TEXT,
   notes TEXT NOT NULL DEFAULT ''
+);
+-- book_edition — the edition of a book the user reads (personal, one per
+-- title). `pages` is the progress total a re-import keeps over the work's own
+-- page count; snapshot_json holds the edition as the source described it.
+CREATE TABLE IF NOT EXISTS book_edition (
+  media_id INTEGER PRIMARY KEY REFERENCES media_item(id) ON DELETE CASCADE,
+  source TEXT NOT NULL,
+  edition_id TEXT NOT NULL,
+  pages INTEGER,
+  snapshot_json TEXT NOT NULL,
+  chosen_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 -- Personal playthroughs and listening collections. Existing sessions remain untouched.

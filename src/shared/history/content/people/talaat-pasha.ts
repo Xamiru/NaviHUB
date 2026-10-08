@@ -135,6 +135,17 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
+          id: 'q5',
+          text: 'An experienced minister of the interior, Talat presented his opinions to the government as those of the Central Committee, and his decisions to the committee as conditioned by the constraints of the government, in order to push through his will.',
+          lang: 'en',
+          cite: { source: 'eo1418-kieser-talat', loc: { section: 'Armenian Genocide', para: '-4' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://encyclopedia.1914-1918-online.net/article/pasha-talat/'
+          }
+        },
+        {
           id: 'q2',
           text: 'A few days later, in ciphered telegrams from 24 April to the provincial governors and the army, he defined the situation in Asia Minor as that of a general Armenian rebellion and of revolutionary committees that wished to establish self-determination and thus must be eliminated. Agencies of Talat’s ministry not only arrested the Armenian elites throughout the country, but organized the removal of most Armenians from eastern Asia Minor and western Anatolia in addition to the province of Edirne.',
           lang: 'en',

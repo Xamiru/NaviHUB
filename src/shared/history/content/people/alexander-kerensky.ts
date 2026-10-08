@@ -194,7 +194,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q7',
-          text: 'He spent the rest of his life in exile, reflecting on the failure of his government, which he blamed on the inability to establish peace.',
+          text: 'When the Assembly was forcibly closed down, Kerenskii was not given a role in the ineffectual moderate socialist resistance, but instead dispatched as an embarrassment on a diplomatic mission to London and Paris. He spent the rest of his life in exile, reflecting on the failure of his government, which he blamed on the inability to establish peace.',
           lang: 'en',
           cite: {
             source: 'eo1418-peeling-kerenskii',
@@ -202,7 +202,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://encyclopedia.1914-1918-online.net/article/kerenskii-aleksandr-fedorovich/'
           }
         }

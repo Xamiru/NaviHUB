@@ -98,7 +98,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'On Faṭemī’s suggestion, this group came to formalize itself as Jabha-ye mellī(National Front, Malekī, p. 56). Bāḵtar-e emrūz became its chief vehicle, promoting objectives such as electoral and press freedom, opposition to martial law or to the government of Ḥājī-ʿAlī Razmārā and, eventually, the nationalization of the oil industry, an initiative proposed by Fāṭemī to Moṣaddeq and the National Front (Moṣaddeq, pp. 229-30).',
+          text: 'Fāṭemī broached the issue of protesting against the government rigging of the elections for the Sixteenth Majles with Moṣaddeq (Moṣaddeq, pp. 245-46), helped to mobilize support, and in Mehr 1928 Š./October 1949 was one of a delegation selected to accompany Moṣaddeq in a sit-in (bast) at the royal palace protesting the conduct of the elections. On Faṭemī’s suggestion, this group came to formalize itself as Jabha-ye mellī(National Front, Malekī, p. 56). Bāḵtar-e emrūz became its chief vehicle, promoting objectives such as electoral and press freedom, opposition to martial law or to the government of Ḥājī-ʿAlī Razmārā and, eventually, the nationalization of the oil industry, an initiative proposed by Fāṭemī to Moṣaddeq and the National Front (Moṣaddeq, pp. 229-30).',
           lang: 'en',
           cite: {
             source: 'iranica-azimi-fatemi-hosayn',
@@ -106,7 +106,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/fatemi/'
           }
         },

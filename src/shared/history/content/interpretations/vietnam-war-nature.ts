@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'vietnam-war-nature',
   about: ['event:vietnam-war'],
   topic: 'nature',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'defending-south-vietnam-against-aggression',
@@ -35,6 +35,28 @@ export default defineInterpretation({
             at: '2026-10-08',
             url: 'https://millercenter.org/the-presidency/presidential-speeches/april-7-1965-address-johns-hopkins-university'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q6',
+          text: 'The VWP leadership concluded that only armed struggle would lead to success and called for an escalation of the war.',
+          lang: 'en',
+          cite: {
+            source: 'loc-vietnam-country-study-1987',
+            loc: { section: 'Escalation of the War', para: '1' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/vietnam/28.htm' }
+        },
+        {
+          id: 'q7',
+          text: 'Moreover, with the completion of the so-called Ho Chi Minh Trail through Laos, the number of PAVN troops infiltrated into the South began to increase.',
+          lang: 'en',
+          cite: {
+            source: 'loc-vietnam-country-study-1987',
+            loc: { section: 'Escalation of the War', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/vietnam/28.htm' }
         }
       ]
     },
@@ -72,6 +94,18 @@ export default defineInterpretation({
             at: '2026-10-08',
             url: 'https://tapchiqptd.vn/en/research-and-discussion/value-of-ho-chi-minhs-thought-nothing-is-more-precious-than-independence-and-freedom-in-th/9210.html'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q8',
+          text: 'Escalation of the war resulted in some immediate success for the struggle in the South. By 1964 a liberated zone had been established from the Central Highlands to the edge of the Mekong Delta, giving the communists control over more than half the total land area and about half the population of the South.',
+          lang: 'en',
+          cite: {
+            source: 'loc-vietnam-country-study-1987',
+            loc: { section: 'Escalation of the War', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/vietnam/28.htm' }
         }
       ]
     },

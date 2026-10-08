@@ -149,7 +149,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'Thus ended the Iranian period of the Nezārī Ismaʿili imamate.',
+          text: 'The way to the coast was blocked, so he traversed the Dašt-e Lūṭ to Qāʾen and thence crossed into Afghanistan. Thus ended the Iranian period of the Nezārī Ismaʿili imamate.',
           lang: 'en',
           cite: {
             source: 'iranica-algar-aqa-khan-mahallati',
@@ -157,7 +157,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/aqa-khan/aqa-khan-i-aqa-khan-i-ma%e1%b8%a5allati'
           }
         },

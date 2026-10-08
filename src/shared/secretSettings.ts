@@ -11,6 +11,7 @@ export const SECRET_SETTING_KEYS = [
   'github.token',
   'fanarttv.api_key',
   'steamgriddb.api_key',
+  'hardcover.token',
   // Legacy integrations remain protected even when their UI is unavailable.
   'rawg.api_key',
   'igdb.client_id',

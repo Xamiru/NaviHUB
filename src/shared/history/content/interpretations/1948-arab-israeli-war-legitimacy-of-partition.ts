@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: '1948-arab-israeli-war-legitimacy-of-partition',
   about: ['event:1948-arab-israeli-war'],
   topic: 'legitimacy',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'natural-right-and-un-resolution',
@@ -25,6 +25,19 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://avalon.law.yale.edu/20th_century/israel.asp'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q5',
+          text: 'The first stage started with the issuance, on 29 November 1947, of the UN Partition Plan of Palestine into a Jewish state and an Arab state.',
+          lang: 'en',
+          cite: { source: 'palquest-charif-the-nakba', loc: { section: 'The Nakba', para: '3' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.palquest.org/en/highlight/160/nakba'
           }
         }
       ]
@@ -48,6 +61,19 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://avalon.law.yale.edu/20th_century/plocov.asp'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q4',
+          text: 'It is estimated that the population of the Jewish state that would have been established according to the plan was approximately one million people, of which 42 percent were Arabs.',
+          lang: 'en',
+          cite: { source: 'palquest-charif-the-nakba', loc: { section: 'The Nakba', para: '3' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.palquest.org/en/highlight/160/nakba'
           }
         }
       ]

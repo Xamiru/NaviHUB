@@ -51,7 +51,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q1',
-          text: 'He had commanded the Seistan Force of the Indian army in Eastern Persia (Iran) and was tasked with preventing German and Ottoman infiltration into Afghanistan. His celebrated methods involved “retributive actions” against the hostile populace, including starving uncooperative “tribes” by seizing their livestock and burning their villages.',
+          text: 'Dyer had been mentioned in dispatches and made a Companion of the Order of the Bath for his heroic First World War service. He had commanded the Seistan Force of the Indian army in Eastern Persia (Iran) and was tasked with preventing German and Ottoman infiltration into Afghanistan. His celebrated methods involved “retributive actions” against the hostile populace, including starving uncooperative “tribes” by seizing their livestock and burning their villages.',
           lang: 'en',
           cite: {
             source: 'eo1418-singh-amritsar-massacre',
@@ -59,7 +59,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://encyclopedia.1914-1918-online.net/article/amritsar-massacre-of/'
           }
         }

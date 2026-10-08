@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'russian-revolution-of-1917-nature',
   about: ['event:russian-revolution-of-1917'],
   topic: 'nature',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'great-october-socialist-revolution',
@@ -40,6 +40,28 @@ export default defineInterpretation({
             at: '2026-10-08',
             url: 'https://www.marxists.org/reference/archive/stalin/works/1939/x01/ch07.htm'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q9',
+          text: 'Realizing that the time was ripe to seize power by force, Lenin returned to Petrograd in October and convinced a majority of the Bolshevik Central Committee, which had hoped to take power legally, to accept armed uprising in principle.',
+          lang: 'en',
+          cite: {
+            source: 'loc-russia-country-study-1996',
+            loc: { section: 'Revolutions and Civil War', para: '14' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/russia/8.htm' }
+        },
+        {
+          id: 'q10',
+          text: 'The actual insurrection--the Bolshevik Revolution--began on November 6, when Kerenskiy ordered the Bolshevik press closed.',
+          lang: 'en',
+          cite: {
+            source: 'loc-russia-country-study-1996',
+            loc: { section: 'Revolutions and Civil War', para: '15' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/russia/8.htm' }
         }
       ]
     },

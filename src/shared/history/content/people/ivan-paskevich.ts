@@ -40,7 +40,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q1',
-          text: 'By September, the Iranian advance was stopped and Ermolov was replaced by General Pashkevich.',
+          text: 'Ermolov was replaced by General Pashkevich.',
           lang: 'en',
           cite: {
             source: 'iranica-andreeva-russia-relations',
@@ -51,7 +51,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/russia-i-relations/'
           }
         },

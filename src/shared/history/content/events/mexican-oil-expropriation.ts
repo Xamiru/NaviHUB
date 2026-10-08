@@ -65,7 +65,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'However, in Article 27 of the Constitution of 1917, the Mexican Government asserted ownership of the “subsoil,” including any natural resources discovered below ground.',
+          text: 'Prior to expropriation in 1938, the oil industry in Mexico had been dominated by the Mexican Eagle Company (a subsidiary of the Royal Dutch/Shell Company), which accounted for over 60% of Mexican oil production, and by American-owned oil firms including Jersey Standard and Standard Oil Company of California (SOCAL – now Chevron), which accounted for approximately 30% of total production. However, in Article 27 of the Constitution of 1917, the Mexican Government asserted ownership of the “subsoil,” including any natural resources discovered below ground.',
           lang: 'en',
           cite: {
             source: 'state-dept-milestones-mexican-oil',
@@ -73,7 +73,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://history.state.gov/milestones/1937-1945/mexican-oil'
           }
         },

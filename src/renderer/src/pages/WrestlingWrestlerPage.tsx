@@ -12,6 +12,7 @@ import Tabs, { TabPanel } from '../components/Tabs'
 import CoverImage from '../components/CoverImage'
 import Markdown from '../components/Markdown'
 import AddToListMenu from '../components/AddToListMenu'
+import { WrestlingClipShelf } from '../components/wrestling/WrestlingClips'
 import FavoriteButton from '../components/FavoriteButton'
 import WrestlingMatchRow from '../components/wrestling/WrestlingMatchRow'
 import { wikipediaUrl } from '@shared/wikiLinks'
@@ -21,7 +22,7 @@ import EditorialDetailFrame from '../components/EditorialDetailFrame'
 // A career runs to thousands of matches; the repo pages and this batches again.
 const PAGE = 100
 
-type Tab = 'honours' | 'matches'
+type Tab = 'honours' | 'matches' | 'clips'
 
 function Fact({ label, value }: { label: string; value: string }): JSX.Element {
   return (
@@ -182,12 +183,15 @@ export default function WrestlingWrestlerPage(): JSX.Element {
             onChange={setTab}
             tabs={[
               { key: 'honours', label: `Honours${honourCount ? ` (${honourCount})` : ''}` },
-              { key: 'matches', label: `Matches${w.record.total ? ` (${w.record.total})` : ''}` }
+              { key: 'matches', label: `Matches${w.record.total ? ` (${w.record.total})` : ''}` },
+              { key: 'clips', label: 'Clips' }
             ]}
           />
 
           <TabPanel tabsId="wrestler-record" value={tab}>
-            {tab === 'honours' ? (
+            {tab === 'clips' ? (
+              <WrestlingClipShelf kind="wrestler" id={w.id} label={w.name} className="" />
+            ) : tab === 'honours' ? (
               w.honours.length === 0 ? (
                 <p className="text-sm text-gray-500">
                   No championships or accomplishments were found on this wrestler&apos;s article.

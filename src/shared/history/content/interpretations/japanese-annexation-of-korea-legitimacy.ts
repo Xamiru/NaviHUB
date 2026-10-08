@@ -2,7 +2,7 @@ import { defineInterpretation } from '../../schema'
 
 export default defineInterpretation({
   id: 'japanese-annexation-of-korea-legitimacy',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   about: ['event:japanese-annexation-of-korea'],
   topic: 'legitimacy',
   positions: [
@@ -26,6 +26,28 @@ export default defineInterpretation({
             at: '2026-10-08',
             url: 'https://history.state.gov/historicaldocuments/frus1910/d705'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q5',
+          text: 'The economic development taking place under Japanese rule, however, brought little benefit to the Koreans.',
+          lang: 'en',
+          cite: {
+            source: 'loc-south-korea-country-study-1990',
+            loc: { section: 'Korea Under Japanese Rule', para: '6' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/south-korea/7.htm' }
+        },
+        {
+          id: 'q6',
+          text: 'In the wake of the protest, Japan granted considerable latitude to Korea.',
+          lang: 'en',
+          cite: {
+            source: 'loc-south-korea-country-study-1990',
+            loc: { section: 'Korea Under Japanese Rule', para: '4' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/south-korea/7.htm' }
         }
       ]
     },
@@ -63,6 +85,18 @@ export default defineInterpretation({
             at: '2026-10-08',
             url: 'https://web.archive.org/web/2011/http://www.kantei.go.jp/foreign/kan/statement/201008/10danwa_e.html'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q7',
+          text: 'Korea underwent drastic changes under Japanese rule.',
+          lang: 'en',
+          cite: {
+            source: 'loc-south-korea-country-study-1990',
+            loc: { section: 'Korea Under Japanese Rule', para: '1' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/south-korea/7.htm' }
         }
       ]
     },

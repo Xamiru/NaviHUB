@@ -223,7 +223,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q8',
-          text: 'This historic decision marked the end of the "separate but equal" precedent set by the Supreme Court nearly 60 years earlier in Plessy v. Ferguson and served as a catalyst for the expanding civil rights movement during the decade of the 1950s.',
+          text: 'State-sanctioned segregation of public schools was a violation of the 14th amendment and was therefore unconstitutional. This historic decision marked the end of the "separate but equal" precedent set by the Supreme Court nearly 60 years earlier in Plessy v. Ferguson and served as a catalyst for the expanding civil rights movement during the decade of the 1950s.',
           lang: 'en',
           cite: {
             source: 'nara-milestone-brown-v-board-of-education',
@@ -231,7 +231,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
             url: 'https://www.archives.gov/milestone-documents/brown-v-board-of-education'
           }
         },

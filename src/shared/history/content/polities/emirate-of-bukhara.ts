@@ -127,13 +127,24 @@ export default definePolity({
       kind: 'background',
       quotes: [
         {
-          id: 'q3',
-          text: 'It is also the name of a Mongolian-Turkic dynasty that reigned over the Khanate of Bukhara from 1160/1747 (de jure since 1170/1756) until 1920.',
+          id: 'q8',
+          text: 'MANGHITS, self denomination of Mongol and Turkic tribes (Mangkut, Mānḡit, Manḡit, Manqit, Manqiṭ, Mangqit, Manḡut; also known as “Noḡay”) which played an eminent role in the Golden Horde, mainly nomadized in the Dašt-e Qepčāq, and from the 16th century onwards migrated partly to the Crimean Khanate and North Caucasus, and with the Shaybanid (Shibanid) dynasty partly invaded Transoxiana, and Ḵᵛārazm (see Bregel, 2000, pp.',
           lang: 'en',
           cite: { source: 'iranica-von-kugelgen-manghits', loc: { section: 'MANGHITS', para: '1' } },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/manghits'
+          }
+        },
+        {
+          id: 'q3',
+          text: '417-18; Trepavlov, 2001, passim ).It is also the name of a Mongolian-Turkic dynasty that reigned over the Khanate of Bukhara from 1160/1747 (de jure since 1170/1756) until 1920.',
+          lang: 'en',
+          cite: { source: 'iranica-von-kugelgen-manghits', loc: { section: 'MANGHITS', para: '1' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/manghits'
           }
         }

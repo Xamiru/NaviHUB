@@ -88,6 +88,23 @@ export default definePeriod({
       kind: 'consequences',
       quotes: [
         {
+          id: 'q5',
+          text: 'Moḥammad Shah’s expedition to Herat in 1838–39, to pacify the region and reassert Persian claim over the province, encountered further British opposition.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-amanat-great-britain-ii',
+            loc: {
+              section: 'GREAT BRITAIN ii. British influence in Persia in the 19th century',
+              para: '12'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
+          }
+        },
+        {
           id: 'q4',
           text: 'Soon after, the terms of the 1841 Treaty of Commerce gave Britain capitulatory advantages in custom duties and other areas on a par with those enjoyed by Russia after 27 years of Persian resistance (Hurewitz, II, p. 280).',
           lang: 'en',

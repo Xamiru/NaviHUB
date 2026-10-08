@@ -24,6 +24,20 @@ shape of existing files under `src/shared/history/content/`.
 - If the user handed you corrections (the Corrections page copies them), fix those first.
 - Run `npm run test:main -- tests/historyContent.test.ts` to see the current state and warnings.
 
+## The decade flow (2026-10-08)
+
+1. **List first.** The primary agent drafts the decade's events, people and states (about 25 events,
+   Iran deepest, every region considered) and settles it itself; the user does not need to approve
+   it (user, 2026-10-08), but the list is written down in the work folder before research starts.
+2. **Research delivers specs only.** Two agents research in parallel (Sonnet: judgement work) and
+   write spec files under `~/.cache/navihub-history-work/`; they never write content files.
+3. **One builder.** The primary agent builds each spec with `build_spec.py`; the validator and the
+   lint ratchet must pass. Edits to already committed pages go through one `edit.py` script run by
+   the primary agent, never by two agents at once.
+4. **Independent review.** A separate agent reads every built prominence-1 and Iran page and a
+   sample of the rest with the read-through brief (`~/.cache/navihub-history-work/review/REVIEW.md`)
+   and lists defects; the primary agent fixes them, reruns the gates and checks pages in the app.
+
 ## 1. Candidates (finding aids only)
 
 Wikipedia year and decade lists and Wikidata are **finding aids**: use them to find events, people,
@@ -127,8 +141,16 @@ they go further down the page, never first (user, 2026-10-07).
   birth and death when any source states them, offices, and a portrait.
 - **Native-script names** for every non-English subject (Persian for Iran events, Kurdish,
   Azerbaijani, Arabic, Chinese… as the subject's own).
-- **Memoirs and state sites are positions, not narration**: the Shah's books, Khamenei.ir, party
-  resolutions go in `official` positions or `in-their-words`.
+- **Governments and rulers make claims, not narratives.** A ruler's memoir or speech, a party
+  resolution or a state website (Khamenei.ir, imam-khomeini.ir, IRNA, Press TV…) is never cited for a
+  fact, a date or narration. Its words appear only as an `official` position (shown as
+  "Government claim") inside an interpretation, or in `in-their-words` on the speaker's own page.
+  Every government claim carries `reception`: a quoted independent assessment (historian,
+  encyclopedia, inquiry, rights organisation) of that claim. Lint: `state-outlet`,
+  `claim-unanswered`.
+- **Every section opens on its own**, not only the overview: a career section begins where the
+  career begins and names the person, never "A few days later…", "Shortly afterwards…" or a lone
+  late event (lint: `section-opener`, which catches only the time-step openers; read the rest).
 - **No repetition**: one quote per fact on a page.
 
 ## 3. Interpretations
@@ -136,13 +158,13 @@ they go further down the page, never first (user, 2026-10-07).
 For contested events (causes, responsibility, foreign roles, naming, casualties...), write an
 `Interpretation` with every notable position — **including the people the event happened to**
 (the Mexican view of 1846, the Japanese of Perry, the African of Berlin 1884, Soviet and Chinese
-official narratives) and the classic historiographic debates. A position's statements are its
+governments' claims) and the classic historiographic debates. A position's statements are its
 holders' own words (`official`/`contemporary` never carry a historian's paraphrase); one article
 is not sliced into several positions; reception goes on the position it answers; a conspiracy view
 is `fringe`, not `popular`; denial ranges stay in the interpretation, never in the infobox figures.
-Categories: scholarly, official or national narratives, contemporary, popular, revisionist,
-fringe. Each position: holders, their own quoted statements, a `category`.
-`standing` only with a supporting quote. **Fringe and revisionist positions need `reception`
+Categories: scholarly, official (a government's or ruler's claim, always with independent
+reception), contemporary, popular, revisionist, fringe. Each position: holders, their own quoted statements, a `category`.
+`standing` only with a supporting quote. **Fringe, revisionist and official positions need `reception`
 quotes** showing how scholars received them. Contested names go on the entity as name variants
 with `usedBy` and citations.
 
@@ -231,6 +253,13 @@ Both must pass. Read the printed warnings (orphan sources, events without quotes
 test includes the **quality lint ratchet**: new content must add no lint issue (the report shows
 what is new). Fix what you can of the old baseline as you touch pages, then rerun the report with
 `--write-baseline` (it only ever shrinks; never add new issues to it).
+
+The one exception is a `person-dates` issue no allowed source can fix: a living person (no death
+date), or a date that every source gives only as a Wikipedia note or a Hijri year range. Try the
+Library of Congress name authority record first (`id.loc.gov/authorities/names/<id>.marcxml.xml`,
+found through `suggest2?q=`; cite its heading or 046 field, never a 670 note that quotes
+Wikipedia). Only the primary agent baselines what is left, once, after every other fix, and reads
+the `lint.baseline.json` diff to confirm it adds exactly those keys and nothing else.
 
 ## 7. Report
 

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'atomic-bombings-of-hiroshima-and-nagasaki-decision',
   about: ['event:atomic-bombings-of-hiroshima-and-nagasaki', 'person:harry-s-truman'],
   topic: 'motives',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   framing: {
     id: 'q1',
     text: 'Scholars debate the extent to which Truman’s mention of the bomb at Potsdam and his use of the weapon in Japan represent atomic diplomacy.',
@@ -59,6 +59,22 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.trumanlibrary.gov/library/public-papers/93/statement-president-announcing-use-bomb-hiroshima'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q10',
+          text: 'Some U.S. policymakers hoped that the U.S. monopoly on nuclear technology and the demonstration of its destructive power in Japan might influence the Soviets to make concessions, either in Asia or in Europe.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-atomic-diplomacy',
+            loc: { section: 'Atomic Diplomacy', para: '4' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1945-1952/atomic'
           }
         }
       ]
@@ -158,7 +174,7 @@ export default defineInterpretation({
     },
     {
       id: 'city-of-hiroshima',
-      category: 'official',
+      category: 'scholarly',
       holders: [
         { kind: 'organization', name: 'City of Hiroshima' }
       ],

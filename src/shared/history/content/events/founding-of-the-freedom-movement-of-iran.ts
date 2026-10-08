@@ -53,7 +53,7 @@ export default defineEvent({
   ],
   participants: [
     {
-      name: 'Mehdi Bāzargān',
+      ref: 'person:mehdi-bazargan',
       role: 'leader',
       cites: [
         {
@@ -177,6 +177,20 @@ export default defineEvent({
       kind: 'aftermath',
       quotes: [
         {
+          id: 'q11',
+          text: 'One result of the occupation of the embassy was a surge in popular enthusiasm, contributing to the 98.2 percent approval vote in the referendum on the constitution that took place in December.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-algar-khomeini-life',
+            loc: { section: 'KHOMEINI i. Life', para: '68' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/'
+          }
+        },
+        {
           id: 'q5',
           text: 'This final alienation of the Freedom Movement was perhaps inevitable for other, more fundamental reasons.',
           lang: 'en',
@@ -186,7 +200,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/'
           }
         },

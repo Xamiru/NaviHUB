@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'anglo-persian-agreement-of-1919-nature',
   about: ['event:anglo-persian-agreement-of-1919'],
   topic: 'nature',
-  researched: '2026-10-07',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'virtual-protectorate',
@@ -76,6 +76,25 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/anglo-persian-agreement-1919'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q9',
+          text: 'As foreign secretary, Curzon shifted to the protectorate alternative, as evident in the 1919 Anglo-Persian agreement.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-amanat-great-britain-ii',
+            loc: {
+              section: 'GREAT BRITAIN ii. British influence in Persia in the 19th century',
+              para: '35'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
           }
         }
       ]

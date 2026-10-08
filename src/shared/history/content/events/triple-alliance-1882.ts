@@ -118,6 +118,16 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
+          id: 'q7',
+          text: 'Bismarck sincerely regarded the new German Empire as "satiated," that is, having no desire to expand further and hence posing no threat to its neighbors.',
+          lang: 'en',
+          cite: {
+            source: 'loc-germany-country-study-1995',
+            loc: { section: 'Bismarck\'s Foreign Policy', para: '1' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/germany/32.htm' }
+        },
+        {
           id: 'q6',
           text: 'His triumph, however, was a secret alliance he formed by means of the Reinsurance Treaty with Russia in 1887, although its terms violated the spirit of the treaty with Austria-Hungary.',
           lang: 'en',
@@ -125,7 +135,7 @@ export default defineEvent({
             source: 'loc-germany-country-study-1995',
             loc: { section: 'Bismarck\'s Foreign Policy', para: '2' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/32.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/germany/32.htm' }
         }
       ]
     }

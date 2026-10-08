@@ -126,6 +126,23 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
+          id: 'q9',
+          text: 'Teymūrtāš organized the Ministry of the court along modern functional lines.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-sheikholeslami-courts-and-courtiers-reza-shah',
+            loc: {
+              section: 'COURTS AND COURTIERS viii. In the reign of Reżā Shah Pahlavī',
+              para: '4'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/courts-and-courtiers-viii'
+          }
+        },
+        {
           id: 'q4',
           text: 'The mastermind of Persia’s foreign policy during that period, Reżā Shah’s minister of court, ʿAbd-al-Ḥosayn Teymūrtāš, counted on Germany as a mediator in his negotiations with Britain and Russia in view of a more independent position for Persia.',
           lang: 'en',

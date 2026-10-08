@@ -281,7 +281,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'It probably lost more than 500,000 casualties on top of those suffered at Verdun (the numbers are still disputed) and suffered a serious crisis of morale. The British suffered 420,000 and the French 202,000 casualties.',
+          text: 'The German army suffered heavily, sustaining losses it could not afford. It probably lost more than 500,000 casualties on top of those suffered at Verdun (the numbers are still disputed) and suffered a serious crisis of morale. The British suffered 420,000 and the French 202,000 casualties.',
           lang: 'en',
           cite: {
             source: 'eo1418-philpott-somme',
@@ -289,7 +289,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://encyclopedia.1914-1918-online.net/article/somme-battles-of/'
           }
         }

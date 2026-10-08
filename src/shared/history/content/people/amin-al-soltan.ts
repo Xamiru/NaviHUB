@@ -180,6 +180,20 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
+          id: 'q10',
+          text: 'The most important functions retained by Mīrzā ʿAlī-Aṣḡar Khan Amīn-al-solṭān were the ministries of court and interior, the offices of treasury, customs and royal granaries (see Amīn-al-dawla, Ḵāṭerāt, pp.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-calmard-atabak-e-azam',
+            loc: { section: 'ATĀBAK-E AʿẒAM, AMĪN-AL-SOLṬĀN', para: '2' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/atabak-e-azam'
+          }
+        },
+        {
           id: 'q4',
           text: 'Upon Āqā Ebrāhīm’s death, ʿAlī Khan Amīn al-dawla and Moḥammad-Ḥasan Eʿtemād-al-salṭana expected to succeed him, but, to their disappointment, the shah’s choice fell on Mīrzā ʿAlī-Aṣḡar Khan, who was then barely twenty-five',
           lang: 'en',
@@ -189,7 +203,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/atabak-e-azam'
           }
         },

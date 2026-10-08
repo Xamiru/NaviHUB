@@ -4,20 +4,9 @@ export default defineEvent({
   id: 'june-1963-uprising',
   names: [
     { text: 'June 1963 uprising', lang: 'en', role: 'primary' },
-    {
-      text: '15 Khordad uprising',
-      lang: 'en',
-      role: 'alternative',
-      cites: [
-        {
-          source: 'khamenei-ir-2013-06-04-speech-24th-demise-anniversary',
-          loc: { section: 'Leader’s Speech on 24th Demise Anniversary of Imam Khomeini', para: '7' }
-        }
-      ]
-    },
     { text: 'قیام ۱۵ خرداد', lang: 'fa', role: 'native', translit: 'Qiām-e 15 Ḵordād' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   type: 'uprising',
   start: {
     alts: [
@@ -34,10 +23,6 @@ export default defineEvent({
           {
             source: 'iranica-algar-khomeini-life',
             loc: { section: 'KHOMEINI i. Life', para: '37' }
-          },
-          {
-            source: 'khamenei-ir-imam-khomeini-biography',
-            loc: { section: 'Imam Khomeini’s Biography', para: '16' }
           }
         ]
       }
@@ -126,27 +111,7 @@ export default defineEvent({
       ]
     }
   ],
-  figures: [
-    {
-      key: 'deaths',
-      value: {
-        alts: [
-          {
-            value: { min: 400, qualifier: 'nearly' },
-            cites: [
-              {
-                source: 'khamenei-ir-imam-khomeini-biography',
-                loc: { section: 'Imam Khomeini’s Biography', para: '16' }
-              }
-            ],
-            heldBy: [
-              { kind: 'organization', name: 'Khamenei.ir' }
-            ]
-          }
-        ]
-      }
-    }
-  ],
+  figures: [],
   related: [
     {
       ref: 'event:white-revolution',

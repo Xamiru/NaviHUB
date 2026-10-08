@@ -196,20 +196,6 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
-          id: 'q6',
-          text: 'This episode, although underlining the limitations of British influence, did not make them any less adamant in their efforts to unseat Moṣaddeq, if necessary through a coup d’état.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-azimi-great-britain-v',
-            loc: { section: 'GREAT BRITAIN v. British influence in Persia, 1941-79', para: '25' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-07',
-            url: 'https://www.iranicaonline.org/articles/great-britain-v/'
-          }
-        },
-        {
           id: 'q7',
           text: 'The popular uprising which triumphantly reinstated the power and authority of both Kāšāni and Moṣaddeq convinced both men that they could, each independent of the other, lead the nationalization movement and resolve the domestic and international problems that resulted from it.',
           lang: 'en',
@@ -221,6 +207,20 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/kasani-abul-qasem/'
+          }
+        },
+        {
+          id: 'q6',
+          text: 'This episode, although underlining the limitations of British influence, did not make them any less adamant in their efforts to unseat Moṣaddeq, if necessary through a coup d’état.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-azimi-great-britain-v',
+            loc: { section: 'GREAT BRITAIN v. British influence in Persia, 1941-79', para: '25' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/great-britain-v/'
           }
         },
         {

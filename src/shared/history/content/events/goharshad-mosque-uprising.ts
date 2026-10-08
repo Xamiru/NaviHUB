@@ -15,26 +15,9 @@ export default defineEvent({
           loc: { section: 'KHORASAN xi. History in the Qajar and Pahlavi Periods', para: '37' }
         }
       ]
-    },
-    {
-      text: 'Goharshad Mosque Massacre',
-      lang: 'en',
-      role: 'contested',
-      usedBy: [
-        {
-          kind: 'state',
-          name: 'Islamic Republic of Iran (Office of the Supreme Leader, Khamenei.ir)'
-        }
-      ],
-      cites: [
-        {
-          source: 'khamenei-ir-2017-03-28-goharshad-mosque-speech',
-          loc: { section: 'Speech of 28 March 2017', para: '1' }
-        }
-      ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   type: 'uprising',
   start: {
     alts: [
@@ -57,10 +40,6 @@ export default defineEvent({
           {
             source: 'iranica-motavalli-haghighi-khorasan-qajar-pahlavi',
             loc: { section: 'KHORASAN xi. History in the Qajar and Pahlavi Periods', para: '37' }
-          },
-          {
-            source: 'khamenei-ir-2017-03-28-goharshad-mosque-speech',
-            loc: { section: 'Speech of 28 March 2017', para: '1' }
           }
         ]
       }

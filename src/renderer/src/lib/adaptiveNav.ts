@@ -324,6 +324,7 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
         { to: '/wrestling/rated', label: 'Rated' },
         { to: '/wrestling/journeys', label: 'Journeys' },
         { to: '/wrestling/collection', label: 'Collection' },
+        { to: '/wrestling/clips', label: 'Clips' },
         ...WRESTLING_PROMOTIONS.slice(0, 4).map((promotion) => ({
           to: `/wrestling/p/${promotion.id}`,
           label: promotion.short

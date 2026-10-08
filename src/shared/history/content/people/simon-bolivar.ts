@@ -90,13 +90,13 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'His brilliant career as a field general began in 1813 with the famous cry of "war to the death" against Venezuela\'s Spanish rulers that was followed by a lightning campaign through the Andes to capture Caracas.',
+          text: 'As a young man, Bolívar pledged himself to see a united Latin America, not simply his native Venezuela, liberated from Spanish rule. His brilliant career as a field general began in 1813 with the famous cry of "war to the death" against Venezuela\'s Spanish rulers that was followed by a lightning campaign through the Andes to capture Caracas.',
           lang: 'en',
           cite: {
             source: 'loc-venezuela-country-study-1990',
             loc: { section: 'The Epic of Independence', para: '6' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/venezuela/4.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/venezuela/4.htm' }
         },
         {
           id: 'q3',

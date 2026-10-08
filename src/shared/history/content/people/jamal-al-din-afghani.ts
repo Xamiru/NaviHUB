@@ -126,6 +126,20 @@ export default definePerson({
       kind: 'ideas',
       quotes: [
         {
+          id: 'q9',
+          text: 'In Cairo and elsewhere Afḡānī made use of a number of ideas and practices more prevalent in the Iranian Shiʿite world than in the Sunni world.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-keddie-afgani-jamal-al-din',
+            loc: { section: 'AFḠĀNĪ, JAMĀL-AL-DĪN', para: '6' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/afgani-jamal-al-din'
+          }
+        },
+        {
           id: 'q4',
           text: 'But from his first appearance in Afghanistan until his death, Afḡānī’s interests were much more political than religious.',
           lang: 'en',

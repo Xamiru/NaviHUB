@@ -148,7 +148,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'Despite his long tenure in Parliament, his role as statesman in British historiography tends to be either overlooked or under-rated, probably because his shortcomings as party leader and Prime Minister far outweighed his successes.',
+          text: 'Although he affected indifference towards politics, he actually spent most of his life working within the political realm. According to one calculation, he spent fifty-five years in Parliament, more than once as majority leader of the Conservative Party in the House of Commons or in opposition. During that time he assumed a variety of ministerial appointments, ultimately succeeding his ailing uncle to the leadership of the party and to the post of Prime Minister (1902-1905). Despite his long tenure in Parliament, his role as statesman in British historiography tends to be either overlooked or under-rated, probably because his shortcomings as party leader and Prime Minister far outweighed his successes.',
           lang: 'en',
           cite: {
             source: 'eo1418-seikaly-balfour',
@@ -159,7 +159,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://encyclopedia.1914-1918-online.net/article/balfour-arthur-james-balfour-earl-of/'
           }
         }

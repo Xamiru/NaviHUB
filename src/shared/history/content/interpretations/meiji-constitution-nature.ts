@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'meiji-constitution-nature',
   about: ['event:meiji-constitution'],
   topic: 'nature',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'immutable-gift-of-the-emperor',
@@ -40,6 +40,18 @@ export default defineInterpretation({
             at: '2026-10-06',
             url: 'https://en.wikisource.org/wiki/The_Constitution_of_Japan:_With_the_Laws_Appertaining_Thereto,_and_the_Imperial_Oath_and_Speech/Part_1'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q5',
+          text: 'The main leverage the Diet had was in its approval or disapproval of the budget, and it successfully wielded its authority henceforth.',
+          lang: 'en',
+          cite: {
+            source: 'loc-japan-country-study-1994',
+            loc: { section: 'The Development of Representative Government', para: '8' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/japan/25.htm' }
         }
       ]
     },

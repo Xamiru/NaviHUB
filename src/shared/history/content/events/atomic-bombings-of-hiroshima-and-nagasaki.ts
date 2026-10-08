@@ -162,6 +162,23 @@ export default defineEvent({
       kind: 'in-their-words',
       quotes: [
         {
+          id: 'q9',
+          text: 'SIXTEEN HOURS AGO an American airplane dropped one bomb on Hiroshima, an important Japanese Army base. That bomb had more power than 20,000 tons of T.N.T.',
+          lang: 'en',
+          cite: {
+            source: 'truman-1945-08-06-statement-announcing-use-of-a-bomb',
+            loc: {
+              section: 'Statement by the President Announcing the Use of the A-Bomb at Hiroshima',
+              para: '1'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.trumanlibrary.gov/library/public-papers/93/statement-president-announcing-use-bomb-hiroshima'
+          }
+        },
+        {
           id: 'q3',
           text: 'It is an atomic bomb. It is a harnessing of the basic power of the universe. The force from which the sun draws its power has been loosed against those who brought war to the Far East.',
           lang: 'en',

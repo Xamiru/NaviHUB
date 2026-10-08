@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: '1948-arab-israeli-war-palestinian-exodus',
   about: ['event:1948-arab-israeli-war'],
   topic: 'causes',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'planned-expulsion',
@@ -76,6 +76,19 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://avalon.law.yale.edu/20th_century/israel.asp'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q5',
+          text: 'Tiberias, which had 5,000 Arab residents, was the first of these to fall; its inhabitants were expelled on 18 April.',
+          lang: 'en',
+          cite: { source: 'palquest-charif-the-nakba', loc: { section: 'The Nakba', para: '7' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.palquest.org/en/highlight/160/nakba'
           }
         }
       ]

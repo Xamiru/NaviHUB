@@ -89,7 +89,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'He describes changes in the nature and evolution of Kurdish tribal society and the growing power of the sheikhs, notably of Ubaydullah (ʿObayd-Allāh), the leader of the great uprising of 1880.',
+          text: 'Gunter Behrendt, in Nationalismus in Kurdistan: Vorgeschichte, Entstehungsbedingungen und erste Manifestationen bis 1925 (Hamburg, 1993), devotes ample attention to the 19th-century background. He describes changes in the nature and evolution of Kurdish tribal society and the growing power of the sheikhs, notably of Ubaydullah (ʿObayd-Allāh), the leader of the great uprising of 1880.',
           lang: 'en',
           cite: {
             source: 'iranica-hitchins-kurds-modern-history',
@@ -97,7 +97,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/kurds-studies-of-modern-kurdish-history'
           }
         }

@@ -891,6 +891,24 @@ function ApiKeysSettings({
         }
       />
       <TextSetting
+        settingKey="hardcover.token"
+        data={data}
+        onSave={onSave}
+        title="Hardcover API token"
+        type="password"
+        secretStorage={secretStorage}
+        placeholder="Paste your Hardcover API token…"
+        description={
+          <>
+            Required to import books from Hardcover (series, characters, genres, editions). Create a
+            free account, then <span className="text-gray-400">hardcover.app → Settings → Hardcover
+            API → New API Key</span>; read-only permissions are enough, and you choose when it
+            expires. Open Library stays available without a token. Stored locally on this machine
+            only.
+          </>
+        }
+      />
+      <TextSetting
         settingKey="fanarttv.api_key"
         data={data}
         onSave={onSave}

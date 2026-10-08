@@ -120,8 +120,8 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
-          id: 'q7',
-          text: 'He succeeded in convincing the deputies that the peace was necessary, and it was (March 1, 1871) voted by more than five to one.',
+          id: 'q8',
+          text: 'Nevertheless the collapse of the empire was a great opportunity for Thiers, and it was worthily accepted. He undertook in the latter part of September and the first three weeks of October a circular tour to the different courts of Europe in the hope of obtaining some intervention, or at least some good offices. The mission was unsuccessful; but the negotiator was on its conclusion immediately charged with another — that of obtaining, if possible, an armistice directly from Prince Bismarck. The armistice having been arranged, and the opportunity having been thus obtained of electing a National Assembly, Thiers was chosen deputy by more than twenty constituencies (of which he preferred Paris), and was at once elected by the Assembly itself practically president, nominally chef du pouvoir exécutif.',
           lang: 'en',
           cite: {
             source: 'britannica-1911-thiers',
@@ -129,13 +129,13 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Thiers,_Louis_Adolphe'
           }
         },
         {
-          id: 'q8',
-          text: 'The armistice having been arranged, and the opportunity having been thus obtained of electing a National Assembly, Thiers was chosen deputy by more than twenty constituencies (of which he preferred Paris), and was at once elected by the Assembly itself practically president, nominally chef du pouvoir exécutif.',
+          id: 'q7',
+          text: 'He succeeded in convincing the deputies that the peace was necessary, and it was (March 1, 1871) voted by more than five to one.',
           lang: 'en',
           cite: {
             source: 'britannica-1911-thiers',
@@ -168,7 +168,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q10',
-          text: 'The president declared that he should take this as a vote of want of confidence; and in the debates which followed a vote of this character (though on a different formal issue, and proposed by M. Ernoul) was carried by 16 votes in a house of 704. Thiers at once resigned (May 24th).',
+          text: 'The year 1873 was, as a parliamentary year in France, occupied to a great extent with attacks on Thiers. In the early spring regulations were proposed, and on April 13th were carried, which were intended to restrict the executive and especially the parliamentary powers of the president. On the 27th of the same month a contested election in Paris, resulting in the return of the opposition candidate, M. Barodet, was regarded as a grave disaster for the Thiers government, and that government was not much strengthened by a dissolution and reconstitution of the cabinet on May 19th. Immediately afterwards the question was brought to a head by an interpellation moved by the duc de Broglie. The president declared that he should take this as a vote of want of confidence; and in the debates which followed a vote of this character (though on a different formal issue, and proposed by M. Ernoul) was carried by 16 votes in a house of 704. Thiers at once resigned (May 24th).',
           lang: 'en',
           cite: {
             source: 'britannica-1911-thiers',
@@ -176,7 +176,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Thiers,_Louis_Adolphe'
           }
         }

@@ -70,13 +70,13 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'After serving with bravery in the German army during World War I, he joined the right-wing Bavarian German Workers\' Party in 1919. The following year, the party changed its name to the National Socialist German Workers\' Party (National-Sozialistische Deutsche Arbeiterpartei--NSDAP). Its members were known as Nazis, a term derived from the German pronunciation of "National." In 1921 Hitler assumed leadership of the NSDAP.',
+          text: 'Hitler remained in Vienna until 1913, when he moved to Munich. After serving with bravery in the German army during World War I, he joined the right-wing Bavarian German Workers\' Party in 1919. The following year, the party changed its name to the National Socialist German Workers\' Party (National-Sozialistische Deutsche Arbeiterpartei--NSDAP). Its members were known as Nazis, a term derived from the German pronunciation of "National." In 1921 Hitler assumed leadership of the NSDAP.',
           lang: 'en',
           cite: {
             source: 'loc-germany-country-study-1995',
             loc: { section: 'Hitler and the Rise of National Socialism', para: '1' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/38.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/germany/38.htm' }
         },
         {
           id: 'q5',

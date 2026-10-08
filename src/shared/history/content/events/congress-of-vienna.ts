@@ -164,7 +164,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q8',
-          text: 'But they were gradually dividing into two irreconcilable parties upon the Saxon-Polish question. Alexander, exaggerating the part he had played in the final struggle, and with some vague idea of nationality in his brain, demanded that the whole of Poland should be added to the Russian dominions.',
+          text: 'Had the Four remained united in their views they would still have been irresistible. But they were gradually dividing into two irreconcilable parties upon the Saxon-Polish question. Alexander, exaggerating the part he had played in the final struggle, and with some vague idea of nationality in his brain, demanded that the whole of Poland should be added to the Russian dominions.',
           lang: 'en',
           cite: {
             source: 'britannica-1911-vienna-congress-of',
@@ -172,7 +172,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Vienna,_Congress_of'
           }
         }
@@ -231,8 +231,8 @@ export default defineEvent({
       kind: 'legacy',
       quotes: [
         {
-          id: 'q12',
-          text: 'Thus the congress of Vienna failed to institute any new system for securing the stability of the European polity, nor did it recognize those new forces of liberty and nationality which had really caused Napoleon\'s downfall. Following the tradition of all preceding congresses, it was mainly a scramble for territory and power. Territories were distributed among the powers with no consideration for the feelings of their inhabitants, and in general the right of the strongest prevailed.',
+          id: 'q13',
+          text: 'Europe was not ready for the recognition of nationality and liberalism. What it wanted most of all was peace, and by establishing something like a territorial equilibrium the congress did much to win that breathing space which was the cardinal need of all.',
           lang: 'en',
           cite: {
             source: 'britannica-1911-vienna-congress-of',
@@ -245,8 +245,8 @@ export default defineEvent({
           }
         },
         {
-          id: 'q13',
-          text: 'Europe was not ready for the recognition of nationality and liberalism. What it wanted most of all was peace, and by establishing something like a territorial equilibrium the congress did much to win that breathing space which was the cardinal need of all.',
+          id: 'q12',
+          text: 'Thus the congress of Vienna failed to institute any new system for securing the stability of the European polity, nor did it recognize those new forces of liberty and nationality which had really caused Napoleon\'s downfall. Following the tradition of all preceding congresses, it was mainly a scramble for territory and power. Territories were distributed among the powers with no consideration for the feelings of their inhabitants, and in general the right of the strongest prevailed.',
           lang: 'en',
           cite: {
             source: 'britannica-1911-vienna-congress-of',
@@ -254,7 +254,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Vienna,_Congress_of'
           }
         }

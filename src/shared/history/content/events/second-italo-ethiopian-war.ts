@@ -144,13 +144,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'Nonetheless, it became clear that Italy wished to expand and link its holdings in the Horn of Africa. Moreover, the international climate of the mid-1930s provided Italy with the expectation that aggression could be undertaken with impunity. Determined to provoke a casus belli, the Mussolini regime began deliberately exploiting the minor provocations that arose in its relations with Ethiopia.',
+          text: 'As late as September 29, 1934, Rome affirmed its 1928 treaty of friendship with Ethiopia. Nonetheless, it became clear that Italy wished to expand and link its holdings in the Horn of Africa. Moreover, the international climate of the mid-1930s provided Italy with the expectation that aggression could be undertaken with impunity. Determined to provoke a casus belli, the Mussolini regime began deliberately exploiting the minor provocations that arose in its relations with Ethiopia.',
           lang: 'en',
           cite: {
             source: 'loc-ethiopia-country-study-1991',
             loc: { section: 'Mussolini\'s Invasion and the Italian Occupation', para: '1' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/ethiopia/19.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/ethiopia/19.htm' }
         }
       ]
     },

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'morant-bay-rebellion-nature',
   about: ['event:morant-bay-rebellion'],
   topic: 'nature',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'rebellion-against-whites',
@@ -119,7 +119,7 @@ export default defineInterpretation({
     },
     {
       id: 'revolt-against-oppression',
-      category: 'official',
+      category: 'scholarly',
       holders: [
         { kind: 'organization', name: 'National Library of Jamaica' }
       ],

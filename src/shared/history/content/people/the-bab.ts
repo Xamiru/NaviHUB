@@ -198,7 +198,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q8',
-          text: 'He was, accordingly, brought to Tabrīz at the end of June, 1850, and executed by firing squad in the barracks square there at noon on either July 8 or 9.',
+          text: 'The struggle between a group of Babis and state forces in Māzandarān (September, 1848-May, 1849) caused considerable anxiety in the early months of Nāṣer-al-Dīn Shah’s reign, but its eventual suppression and the fact that it had been restricted to a rural area lessened the fear of the government. When, however, violence broke out in the urban centers of Neyrīz and Zanjān in May, 1850, Mīrzā Taqī Khan Amīr Neẓām decided to take the extreme step of having the Bāb put to death. He was, accordingly, brought to Tabrīz at the end of June, 1850, and executed by firing squad in the barracks square there at noon on either July 8 or 9.',
           lang: 'en',
           cite: {
             source: 'iranica-maceoin-bab',
@@ -206,7 +206,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/bab-ali-mohammad-sirazi'
           }
         },

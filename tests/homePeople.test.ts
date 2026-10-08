@@ -66,3 +66,30 @@ describe('person credits', () => {
     expect(credit).toMatchObject({ castPosition: 3, castSize: 3 })
   })
 })
+
+describe('person co-stars', () => {
+  it('counts shared titles per same-role, same-language colleague, two or more only', () => {
+    const shows = ['A', 'B', 'C'].map((title) => mediaRepo.create({ mediaType: 'anime', title }))
+    const [me, partner, once, dub, staff] = ['Me', 'Partner', 'Once', 'Dub', 'Staff'].map((name) =>
+      peopleRepo.upsert({ name })
+    )
+    const character = (): number =>
+      db.prepare('INSERT INTO character (name) VALUES (?)').run('c').lastInsertRowid as number
+    const credit = (media: number, person: number, opts: { role?: string; lang?: string; ch?: boolean }) =>
+      db
+        .prepare('INSERT INTO credit (media_id, person_id, role, language, character_id) VALUES (?, ?, ?, ?, ?)')
+        .run(media, person, opts.role ?? 'voice_actor', opts.lang ?? 'Japanese', opts.ch === false ? null : character())
+    for (const show of shows) {
+      credit(show, me, {})
+      credit(show, partner, {})
+      credit(show, partner, {}) // a second character on the same title still counts once
+      credit(show, dub, { lang: 'English' })
+      credit(show, staff, { role: 'director', ch: false })
+    }
+    credit(shows[0], once, {})
+
+    expect(peopleRepo.costars(me)).toEqual([
+      { person: expect.objectContaining({ id: partner, name: 'Partner' }), shared: 3 }
+    ])
+  })
+})

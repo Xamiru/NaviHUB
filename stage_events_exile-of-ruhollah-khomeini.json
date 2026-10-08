@@ -1,0 +1,290 @@
+{
+ "v": 1,
+ "kind": "event",
+ "id": "exile-of-ruhollah-khomeini",
+ "names": [
+  {
+   "text": "Exile of Ruhollah Khomeini",
+   "lang": "en",
+   "role": "primary"
+  },
+  {
+   "text": "تبعید روح‌الله خمینی",
+   "lang": "fa",
+   "role": "native"
+  }
+ ],
+ "researched": "2026-10-09",
+ "type": "other",
+ "start": {
+  "alts": [
+   {
+    "value": {
+     "d": "1964-11-04"
+    },
+    "cites": [
+     {
+      "source": "iranica-algar-khomeini-life",
+      "loc": {
+       "section": "KHOMEINI i. Life",
+       "para": "39"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "regions": [
+  "iran",
+  "mena"
+ ],
+ "prominence": 2,
+ "places": [
+  {
+   "ref": "place:qom",
+   "cites": [
+    {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "39"
+     }
+    }
+   ]
+  },
+  {
+   "ref": "place:bursa",
+   "cites": [
+    {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "39"
+     }
+    }
+   ]
+  },
+  {
+   "ref": "place:najaf",
+   "cites": [
+    {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "40"
+     }
+    },
+    {
+     "source": "loc-iran-country-study-1987",
+     "loc": {
+      "section": "State and Society, 1964-74",
+      "para": "5"
+     }
+    }
+   ]
+  }
+ ],
+ "partOf": [
+  {
+   "ref": "period:reign-of-mohammad-reza-shah"
+  }
+ ],
+ "polities": [
+  {
+   "ref": "polity:pahlavi-iran"
+  }
+ ],
+ "participants": [
+  {
+   "ref": "person:ruhollah-khomeini",
+   "role": "victim",
+   "cites": [
+    {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "39"
+     }
+    }
+   ]
+  }
+ ],
+ "related": [
+  {
+   "ref": "event:status-of-forces-agreement-of-1964",
+   "rel": "response-to",
+   "cites": [
+    {
+     "source": "loc-iran-country-study-1987",
+     "loc": {
+      "section": "State and Society, 1964-74",
+      "para": "5"
+     }
+    },
+    {
+     "source": "iranica-algar-khomeini-life",
+     "loc": {
+      "section": "KHOMEINI i. Life",
+      "para": "38"
+     }
+    }
+   ]
+  }
+ ],
+ "hero": {
+  "url": "https://upload.wikimedia.org/wikipedia/commons/7/74/%D8%AE%D9%85%DB%8C%D9%86%DB%8C_%D8%AF%D8%B1_%D8%B9%D8%B1%D8%A7%D9%82.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:%D8%AE%D9%85%DB%8C%D9%86%DB%8C_%D8%AF%D8%B1_%D8%B9%D8%B1%D8%A7%D9%82.jpg",
+  "credit": {
+   "institution": "Imam Khomeini Information Portal (payegah-e ettela-rasani-ye Emam Khomeini)"
+  },
+  "license": {
+   "id": "public-domain"
+  }
+ },
+ "sections": [
+  {
+   "kind": "overview",
+   "quotes": [
+    {
+     "id": "q1",
+     "text": "Shortly before dawn on 4 November 1964, a detachment of commandos surrounded Khomeini’s house in Qom and took him directly to Mehrābād airport for immediate deportation to Turkey, a choice of destination reflecting the security cooperation existing between Iran and Turkey.",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-algar-khomeini-life",
+      "loc": {
+       "section": "KHOMEINI i. Life",
+       "para": "39"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-07",
+      "url": "https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/"
+     }
+    },
+    {
+     "id": "q2",
+     "text": "Khomeini was arrested again in November, within days of the sermon, and sent into exile in Turkey. In October 1965, he was permitted to take up residence in the city of An Najaf, Iraq--the site of numerous Shia shrines--where he was to remain for the next thirteen years.",
+     "lang": "en",
+     "cite": {
+      "source": "loc-iran-country-study-1987",
+      "loc": {
+       "section": "State and Society, 1964-74",
+       "para": "5"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-07",
+      "url": "http://countrystudies.us/iran/19.htm"
+     }
+    }
+   ]
+  },
+  {
+   "kind": "course",
+   "quotes": [
+    {
+     "id": "q3",
+     "text": "The United States was complicit in this decision, if not responsible for it; a letter from Stuart W. Rockwell, deputy head of the American mission in Tehran, to the State Department, dated 6 November, spelled it out with the imperial arrogance that continued to inform American policy for decades: “At last we have been able to get rid of the mischievous old man who has been putting a spoke into our wheels. The local bigwig [i.e., the shah] has ordered his expulsion. At present he’s living in a second-rate Turkish hotel” (fascimile of letter in Ruḥāni, Nahżat-e Emām Ḵomeini, II, p. 957). The hope of both the United States and the shah was no doubt that once exiled, Khomeini would fade from popular memory.",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-algar-khomeini-life",
+      "loc": {
+       "section": "KHOMEINI i. Life",
+       "para": "39"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-07",
+      "url": "https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/"
+     }
+    },
+    {
+     "id": "q4",
+     "text": "On 12 November, he was transferred to Bursa and lodged initially in the home of Ali Çetiner, a Persian-speaking official of the Turkish security apparatus.",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-algar-khomeini-life",
+      "loc": {
+       "section": "KHOMEINI i. Life",
+       "para": "39"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-07",
+      "url": "https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/"
+     }
+    },
+    {
+     "id": "q5",
+     "text": "On 6 October 1965, Khomeini was able to leave Turkey for Najaf, a more congenial place of exile as a center of Shiʿi learning and pilgrimage. By acquiescing in this move, the Iranian government wished to quell or lessen the continuing disquiet among his followers in Iran at his banishment. But it was also hoped once there, he would either be overshadowed by the prestigious scholars resident there, or spend his energies on confronting them, a hope that was to be disappointed.",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-algar-khomeini-life",
+      "loc": {
+       "section": "KHOMEINI i. Life",
+       "para": "40"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-07",
+      "url": "https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/"
+     }
+    }
+   ]
+  },
+  {
+   "kind": "aftermath",
+   "quotes": [
+    {
+     "id": "q6",
+     "text": "The banishment of its most forceful leader, Ruḥ-Allāh Khomeini, to Iraq did not weaken the movement, contrary to the Persian government’s expectations. It was, in fact, strengthened by the increasing involvement of the government with the United States and the purchase of enormous amount of armament from that country, which the shah’s opponents construed as hisbeing a stooge of the United States.",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-yarshater-iranian-history-islamic-period-6",
+      "loc": {
+       "section": "IRAN ii. IRANIAN HISTORY (2) Islamic period, Moḥammad Reza Shah (1941-79)"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-07",
+      "url": "https://www.iranicaonline.org/articles/iran-ii2-islamic-period-page-6/"
+     }
+    }
+   ]
+  }
+ ],
+ "course": [
+  {
+   "date": {
+    "alts": [
+     {
+      "value": {
+       "d": "1965-10-06"
+      },
+      "cites": [
+       {
+        "source": "iranica-algar-khomeini-life",
+        "loc": {
+         "section": "KHOMEINI i. Life",
+         "para": "40"
+        }
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "furtherReading": [
+  {
+   "source": "ruhani-1977-barresi-va-tahlili-az-nehzat-e-imam-khomeini",
+   "perspective": "iranian"
+  }
+ ]
+}

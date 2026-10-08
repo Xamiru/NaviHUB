@@ -160,7 +160,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'These two clauses, which undoubtedly violated the sovereign rights of Persia, were implemented during the Second World War.',
+          text: 'For the Soviet government, the safety of the frontiers was of more importance, and in exchange for the refusal from all claims to the property of the Tsarist Russia, clauses 5 and 6 were included in the treaty. These two clauses excluded the possibility for organizations or individuals engaged in armed struggle against the government of either country to reside or operate on the territory of the other country (clause 5), and envisaged the possibility of the Soviet troops entering Iranian territory if the Persian government proved unable to avert this threat (clause 6). These two clauses, which undoubtedly violated the sovereign rights of Persia, were implemented during the Second World War.',
           lang: 'en',
           cite: {
             source: 'iranica-mamedova-russia-iranian-soviet-relations',
@@ -168,7 +168,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/russia-ii-iranian-soviet-relations-1917-1991/'
           }
         },

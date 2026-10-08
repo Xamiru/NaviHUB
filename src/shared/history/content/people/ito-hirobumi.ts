@@ -102,7 +102,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'For a year these two friends remained in London studying English methods,',
+          text: 'Ito felt that his knowledge of foreigners, if it was to be thorough, should be sought for in Europe, and with the connivance of Choshu he, in company with Inouye and three other young men of the same rank as himself, determined to risk their lives by committing the then capital offence of visiting a foreign country. With great secrecy they made their way to Nagasaki, where they concluded an arrangement with the agent of Messrs Jardine, Matheson & Co. for passages on board a vessel which was about to sail for Shanghai (1863). At that port the adventurers separated, three of their number taking ship as passengers to London, while Ito and Inouye preferred to work their passages before the mast in the “Pegasus,” bound for the same destination. For a year these two friends remained in London studying English methods,',
           lang: 'en',
           cite: {
             source: 'britannica-1911-ito-hirobumi',
@@ -110,7 +110,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Ito,_Hirobumi,_Prince'
           }
         }
@@ -160,7 +160,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q6',
-          text: 'But on the 26th of October, when on a visit to Harbin, he was shot dead by a Korean assassin.',
+          text: 'In September 1907 he was advanced to the rank of prince. He retired from his post in Korea in July 1909, and became president of the privy council in Japan. But on the 26th of October, when on a visit to Harbin, he was shot dead by a Korean assassin.',
           lang: 'en',
           cite: {
             source: 'britannica-1911-ito-hirobumi',
@@ -168,7 +168,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Ito,_Hirobumi,_Prince'
           }
         }

@@ -157,6 +157,22 @@ export default defineInterpretation({
             url: 'https://obamawhitehouse.archives.gov/the-press-office/remarks-president-cairo-university-6-04-09'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q24',
+          text: 'The strengthening of the influence of the USA in Iran had a negative impact on the bilateral relations, especially after the US-initiated coup of 1953, which deposed the government of Moṣaddeq',
+          lang: 'en',
+          cite: {
+            source: 'iranica-mamedova-russia-iranian-soviet-relations',
+            loc: { section: 'RUSSIA ii. IRANIAN-SOVIET RELATIONS (1917-1991)', para: '22' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/russia-ii-iranian-soviet-relations-1917-1991/'
+          }
+        }
       ]
     },
     {
@@ -368,5 +384,5 @@ export default defineInterpretation({
       ]
     }
   ],
-  researched: '2026-10-07'
+  researched: '2026-10-09'
 })

@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Ruhollah Khomeini', lang: 'en', role: 'primary' },
     { text: 'روح‌الله خمینی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   born: {
     alts: [
       {
@@ -20,18 +20,6 @@ export default definePerson({
         heldBy: [
           { kind: 'scholar', name: 'Hamid Algar' }
         ]
-      },
-      {
-        value: { d: '1900-05-17' },
-        cites: [
-          {
-            source: 'khamenei-ir-imam-khomeini-biography',
-            loc: { section: 'Imam Khomeini’s Biography', para: '1' }
-          }
-        ],
-        heldBy: [
-          { kind: 'organization', name: 'Khamenei.ir' }
-        ]
       }
     ]
   },
@@ -43,10 +31,6 @@ export default definePerson({
           {
             source: 'iranica-algar-khomeini-life',
             loc: { section: 'KHOMEINI i. Life', para: '129' }
-          },
-          {
-            source: 'khamenei-ir-imam-khomeini-biography',
-            loc: { section: 'Imam Khomeini’s Biography', para: '53' }
           }
         ]
       }
@@ -178,31 +162,50 @@ export default definePerson({
           }
         }
       ]
-    },
-    {
-      kind: 'memory',
-      quotes: [
-        {
-          id: 'q1',
-          text: 'Imam Ayatollah Seyed Ruhollah Musavi Khomeini (May 17, 1900 – June 3, 1989) was a Muslim cleric and Marja, and the political leader of the 1979 Islamic Revolution of Iran which overthrew Mohammad Reza Pahlavi, the last Shah of Iran.',
-          lang: 'en',
-          cite: {
-            source: 'khamenei-ir-imam-khomeini-biography',
-            loc: { section: 'Imam Khomeini’s Biography', para: '1' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-07',
-            url: 'https://web.archive.org/web/20260610181904/https://english.khamenei.ir/news/2116/Imam-Khomeini-s-Biography'
-          }
-        }
-      ]
     }
   ],
   furtherReading: [
     {
       source: 'ruhani-1977-barresi-va-tahlili-az-nehzat-e-imam-khomeini',
       perspective: 'iranian'
+    }
+  ],
+  offices: [
+    {
+      title: 'Supreme Leader',
+      polity: 'polity:islamic-republic-of-iran',
+      start: {
+        alts: [
+          {
+            value: { d: '1979-02-11' },
+            cites: [
+              {
+                source: 'frus-1977-80-v11p1-persons',
+                loc: { section: 'Persons', para: '167' }
+              }
+            ]
+          }
+        ]
+      },
+      cites: [
+        {
+          source: 'loc-iran-country-study-1987',
+          loc: { section: 'THE REVOLUTION', para: '3' }
+        }
+      ],
+      end: {
+        alts: [
+          {
+            value: { d: '1989-06-03' },
+            cites: [
+              {
+                source: 'iranica-algar-khomeini-life',
+                loc: { section: 'KHOMEINI i. Life', para: '129' }
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 })

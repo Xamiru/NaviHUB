@@ -2376,6 +2376,27 @@ export const wrestlingJourneyViewing = sqliteTable('wrestling_journey_viewing', 
   watchedOn: text('watched_on').notNull(), notes: text('notes').notNull().default('')
 }, (t) => ({ byStep: index('idx_journey_viewing').on(t.stepId) }))
 
+export const wrestlingClip = sqliteTable('wrestling_clip', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  title: text('title').notNull(), kind: text('kind').notNull(), localPath: text('local_path').notNull(),
+  note: text('note').notNull().default(''), framePath: text('frame_path'),
+  favorite: integer('favorite').notNull().default(0),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`)
+}, (t) => ({ byKind: index('idx_wrestling_clip_kind').on(t.kind, t.createdAt) }))
+export const wrestlingClipLink = sqliteTable('wrestling_clip_link', {
+  clipId: integer('clip_id').notNull().references(() => wrestlingClip.id, { onDelete: 'cascade' }),
+  entityKind: text('entity_kind').notNull(), entityId: integer('entity_id'), promotionId: text('promotion_id')
+}, (t) => ({
+  byClip: index('idx_wrestling_clip_link_clip').on(t.clipId),
+  byEntity: index('idx_wrestling_clip_link_entity').on(t.entityKind, t.entityId),
+  byPromotion: index('idx_wrestling_clip_link_promotion').on(t.promotionId)
+}))
+export const wrestlingClipTag = sqliteTable('wrestling_clip_tag', {
+  clipId: integer('clip_id').notNull().references(() => wrestlingClip.id, { onDelete: 'cascade' }),
+  tag: text('tag').notNull()
+}, (t) => ({ pk: primaryKey({ columns: [t.clipId, t.tag] }), byTag: index('idx_wrestling_clip_tag').on(t.tag) }))
+
 export const vnTextCapture = sqliteTable('vn_text_capture', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   mediaId: integer('media_id').notNull().references(() => mediaItem.id, { onDelete: 'cascade' }),
@@ -2393,6 +2414,16 @@ export const vnEdition = sqliteTable('vn_edition', {
   releaseId: text('release_id'),
   snapshotJson: text('snapshot_json'),
   notes: text('notes').notNull().default('')
+})
+
+// The edition of a book the user reads (personal); pages = the progress total.
+export const bookEdition = sqliteTable('book_edition', {
+  mediaId: integer('media_id').primaryKey().references(() => mediaItem.id, { onDelete: 'cascade' }),
+  source: text('source').notNull(),
+  editionId: text('edition_id').notNull(),
+  pages: integer('pages'),
+  snapshotJson: text('snapshot_json').notNull(),
+  chosenAt: text('chosen_at').notNull().default(sql`(datetime('now'))`)
 })
 
 export const gamePlaythrough = sqliteTable('game_playthrough', {

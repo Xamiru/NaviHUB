@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'hay-bunau-varilla-treaty-rights',
   about: ['event:separation-of-panama-from-colombia', 'event:construction-of-the-panama-canal'],
   topic: 'legitimacy',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   framing: {
     id: 'q1',
     text: 'Major disagreements arose concerning the rights granted to the United States by the treaty of 1903 and the Panamanian constitution of 1904.',
@@ -46,6 +46,18 @@ export default defineInterpretation({
             url: 'https://history.state.gov/historicaldocuments/frus1904/d574'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q8',
+          text: 'Within this territory Washington gained "all the rights, power, and authority . . . which the United States would possess and exercise if it were the sovereign . . . to the entire exclusion" of Panama.',
+          lang: 'en',
+          cite: {
+            source: 'loc-panama-country-study-1987',
+            loc: { section: 'The 1903 Treaty and Qualified Independence', para: '6' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/panama/8.htm' }
+        }
       ]
     },
     {
@@ -77,6 +89,18 @@ export default defineInterpretation({
             at: '2026-10-07',
             url: 'https://history.state.gov/historicaldocuments/frus1904/d565'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q9',
+          text: 'Ironically, however, friction resulting from the events of 1903 was greatest between the United States and Panama.',
+          lang: 'en',
+          cite: {
+            source: 'loc-panama-country-study-1987',
+            loc: { section: 'The 1903 Treaty and Qualified Independence', para: '8' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/panama/8.htm' }
         }
       ]
     }

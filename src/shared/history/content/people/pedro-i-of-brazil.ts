@@ -110,7 +110,7 @@ export default definePerson({
             source: 'loc-brazil-country-study-1997',
             loc: { section: 'The Empire, 1822-89', para: '16' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/brazil/11.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/brazil/11.htm' }
         }
       ]
     },

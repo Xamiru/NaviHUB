@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'first-opium-war-causes',
   about: ['event:first-opium-war'],
   topic: 'causes',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'poison-trade',
@@ -40,6 +40,25 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://sourcebooks.fordham.edu/mod/1839lin2.asp'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q10',
+          text: 'Unlike Great Britain, the United States agreed that anyone involved in the opium trade or the smuggling of contraband would be prosecuted under Chinese law',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-opening-to-china-1',
+            loc: {
+              section: 'The Opening to China Part I: the First Opium War, the United States, and the Treaty of Wangxia, 1839–1844',
+              para: '7'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1830-1860/china-1'
           }
         }
       ]
@@ -136,6 +155,25 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-08',
             url: 'https://api.parliament.uk/historic-hansard/commons/1840/apr/07/war-with-china'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q11',
+          text: 'Settling this financial problem eventually led to the First Opium War between Great Britain and China, from 1839 to 1842.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-opening-to-china-1',
+            loc: {
+              section: 'The Opening to China Part I: the First Opium War, the United States, and the Treaty of Wangxia, 1839–1844',
+              para: '4'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1830-1860/china-1'
           }
         }
       ]

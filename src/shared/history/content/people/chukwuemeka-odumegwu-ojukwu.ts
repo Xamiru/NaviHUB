@@ -36,6 +36,16 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
+          id: 'q4',
+          text: 'On May 30, Ojukwu answered the federal decree with the proclamation of the independent Republic of Biafra, named after the Bight of Biafra.',
+          lang: 'en',
+          cite: {
+            source: 'loc-nigeria-country-study-1991',
+            loc: { section: 'Civil War', para: '7' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/nigeria/23.htm' }
+        },
+        {
           id: 'q2',
           text: 'General Odumegwu Ojukwu has been faulted, notably by Ken Saro-Wiwa and Dr. Nnamdi Azikiwe, for rejecting peace overtures from the federal government. Both Saro-Wiwa and Azikiwe believe that Ojukwu stage-managed the Eastern Region Constituent Assembly to authorize him to declare secession.',
           lang: 'en',

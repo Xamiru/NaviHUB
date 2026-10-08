@@ -4,6 +4,7 @@ import type { VnCaptureInput, VnCapture, VnCaptureSummary } from './types'
 import type { WrestlingJourneySummary, WrestlingJourneyInput, WrestlingJourneyDetail, WrestlingJourneyStepInput, WrestlingJourneyTarget } from './types'
 import type { VnReadingOverview, VnReadingNodeInput, VnReadingResume, VnNoteInput, VnNotePage } from './types'
 import type { BangumiCandidate, ExternalLinkSource, GameCastResult, GameLinksState, GameUpgradePlan, GameUpgradeStatus, GameWorkSummary } from './types'
+import type { BookEdition, ChosenBookEdition } from './types'
 // The typed surface exposed on window.api. Both preload (which implements the
 // bridge) and the renderer (which consumes it) import this so they never drift.
 
@@ -28,6 +29,7 @@ import type {
   LibraryTimeStats,
   Person,
   PersonCredit,
+  PersonCostar,
   PersonDirectoryQuery,
   PersonDirectoryEntry,
   Company,
@@ -316,6 +318,11 @@ import type {
   WrestlingImportStatus,
   WrestlingLinkTarget,
   WrestlingLooseMatchInput,
+  WrestlingClip,
+  WrestlingClipEntityKind,
+  WrestlingClipFilter,
+  WrestlingClipInput,
+  WrestlingClipTarget,
   WrestlingMatchLocation,
   WrestlingMatchWithEvent,
   WrestlingOverview,
@@ -466,6 +473,9 @@ export interface NaviApi {
     ): Promise<Person[]>
     get(id: number): Promise<Person | null>
     credits(id: number): Promise<PersonCredit[]>
+    // The people who most often act or voice beside this person (two or more
+    // shared titles), most shared first.
+    costars(id: number, limit?: number): Promise<PersonCostar[]>
     // Everyone with `role` on titles of one media type, with their works there.
     directory(query: PersonDirectoryQuery): Promise<PersonDirectoryEntry[]>
     upsert(input: Partial<Person> & { name: string }): Promise<number>
@@ -770,6 +780,17 @@ export interface NaviApi {
     // Deletes the titles the last run created, except any tracked, scored,
     // favorited or annotated since. Last run only, and only until the app quits.
     undoLast(): Promise<{ removed: number; kept: number }>
+  }
+  hardcover: {
+    search(query: string): Promise<ImportSearchResult[]>
+    import(bookId: number): Promise<ImportSummary>
+  }
+  books: {
+    // The edition picker (Hardcover rows only) and the user's chosen edition.
+    editions(mediaId: number): Promise<BookEdition[]>
+    edition(mediaId: number): Promise<ChosenBookEdition | null>
+    chooseEdition(mediaId: number, editionId: number): Promise<ChosenBookEdition>
+    clearEdition(mediaId: number): Promise<void>
   }
   openlibrary: {
     search(query: string): Promise<ImportSearchResult[]>
@@ -1390,6 +1411,18 @@ export interface NaviApi {
     updateLooseMatch(matchId: number, input: WrestlingLooseMatchInput): Promise<void>
     removeLooseMatch(matchId: number): Promise<void>
     recentlyAdded(): Promise<{ events: WrestlingEvent[]; loose: WrestlingMatchWithEvent[] }>
+
+    // Clip shelf: personal footage under wrestling.dir, linked to wiki entities.
+    clips(filter?: WrestlingClipFilter): Promise<WrestlingClip[]>
+    clipsFor(kind: WrestlingClipEntityKind, id: number | string): Promise<WrestlingClip[]>
+    recentClips(limit?: number): Promise<WrestlingClip[]>
+    saveClip(input: WrestlingClipInput): Promise<WrestlingClip>
+    removeClip(id: number): Promise<void>
+    setClipFavorite(id: number, favorite: boolean): Promise<void>
+    clipTags(): Promise<{ tag: string; count: number }[]>
+    clipTargets(query: string): Promise<WrestlingClipTarget[]>
+    pickClipFile(): Promise<{ localPath: string; title: string } | null>
+    openClip(id: number): Promise<void>
 
     startImport(opts?: {
       promotions?: WrestlingPromotionId[]

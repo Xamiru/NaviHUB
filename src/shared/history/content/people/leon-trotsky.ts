@@ -116,7 +116,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q4',
-          text: 'It was here that after several failed assassination attempts, one of Stalin’s agents murdered Trotsky in his study.',
+          text: 'Trotsky never abandoned revolutionary politics, continuing to write and organize and eventually forming a new Fourth International. He was forced to move country of residence frequently until finally finding refuge in Mexico. It was here that after several failed assassination attempts, one of Stalin’s agents murdered Trotsky in his study.',
           lang: 'en',
           cite: {
             source: 'eo1418-thatcher-trotsky',
@@ -124,7 +124,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://encyclopedia.1914-1918-online.net/article/trotsky-leon/'
           }
         }

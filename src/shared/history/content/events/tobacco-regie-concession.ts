@@ -324,7 +324,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q8',
-          text: 'However, they also remained adamant on the Persian payment of a huge 500,000 Pounds Sterling cancellation penalty claimed by the Regie to be financed in 1892 through a loan from the Imperial Bank of Persia. As collateral the Bank secured the revenue from the customs of the Persian Gulf ports, the first of such revenues to be held as security for payment of foreign loans in the forthcoming decades.',
+          text: 'Lascelles and the Foreign Office to turn a blind eye to Amin-al-Solṭān’s expedient switch to become a Russophile. However, they also remained adamant on the Persian payment of a huge 500,000 Pounds Sterling cancellation penalty claimed by the Regie to be financed in 1892 through a loan from the Imperial Bank of Persia. As collateral the Bank secured the revenue from the customs of the Persian Gulf ports, the first of such revenues to be held as security for payment of foreign loans in the forthcoming decades.',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-great-britain-ii',
@@ -335,7 +335,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
           }
         },

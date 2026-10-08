@@ -155,16 +155,6 @@ export default defineEvent({
       kind: 'causes',
       quotes: [
         {
-          id: 'q5',
-          text: 'Two years later, talks between the United States consul in Singapore and Acehnese representatives gave Batavia the pretext for opening hostilities.',
-          lang: 'en',
-          cite: {
-            source: 'loc-indonesia-country-study-1993',
-            loc: { section: 'Dutch Expansion in Sumatra', para: '3' }
-          },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/indonesia/12.htm' }
-        },
-        {
           id: 'q6',
           text: 'Doubtless there was provocation, for the sultan of Achin had not kept to the understanding that he was to guarantee immunity from piracy to foreign traders; but the necessity for war was greatly doubted, even in Holland.',
           lang: 'en',
@@ -174,6 +164,16 @@ export default defineEvent({
             at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Achin'
           }
+        },
+        {
+          id: 'q5',
+          text: 'Two years later, talks between the United States consul in Singapore and Acehnese representatives gave Batavia the pretext for opening hostilities.',
+          lang: 'en',
+          cite: {
+            source: 'loc-indonesia-country-study-1993',
+            loc: { section: 'Dutch Expansion in Sumatra', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/indonesia/12.htm' }
         }
       ]
     },

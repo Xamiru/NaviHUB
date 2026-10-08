@@ -67,6 +67,16 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
+          id: 'q4',
+          text: 'Revering the emperor as a symbol of unity, extremists wrought violence and death against the bakufu and han authorities and foreigners.',
+          lang: 'en',
+          cite: {
+            source: 'loc-japan-country-study-1994',
+            loc: { section: 'Decline of the Tokugawa', para: '9' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/japan/21.htm' }
+        },
+        {
           id: 'q1',
           text: 'Finally, in 1867, the emperor died and was succeeded by his minor son Mutsuhito; Keiki reluctantly became head of the Tokugawa house and shogun.',
           lang: 'en',
@@ -74,7 +84,7 @@ export default definePerson({
             source: 'loc-japan-country-study-1994',
             loc: { section: 'Decline of the Tokugawa', para: '9' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/japan/21.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/japan/21.htm' }
         },
         {
           id: 'q2',

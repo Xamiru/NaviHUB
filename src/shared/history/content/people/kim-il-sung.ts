@@ -146,13 +146,13 @@ export default definePerson({
       quotes: [
         {
           id: 'q7',
-          text: 'His prime assets were his background, his skills at organization, and his ideology.',
+          text: 'Kim\'s emergence and that of the Kim system dated from mid-1946, by which time he had placed close, loyal allies at the heart of power. His prime assets were his background, his skills at organization, and his ideology.',
           lang: 'en',
           cite: {
             source: 'loc-north-korea-country-study-1993',
             loc: { section: 'ORIGINS OF THE DPRK', para: '12' }
           },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/north-korea/14.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/north-korea/14.htm' }
         }
       ]
     }

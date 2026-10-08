@@ -11,6 +11,7 @@ import CoverImage from '../components/CoverImage'
 import Markdown from '../components/Markdown'
 import WrestlingMatchRow from '../components/wrestling/WrestlingMatchRow'
 import WrestlingFilesSection from '../components/wrestling/WrestlingFilesSection'
+import { WrestlingClipShelf } from '../components/wrestling/WrestlingClips'
 import WrestlingChronologyNav from '../components/wrestling/WrestlingChronology'
 import TorrentSearchDialog from '../components/TorrentSearchDialog'
 import AddToListMenu from '../components/AddToListMenu'
@@ -185,6 +186,8 @@ export default function WrestlingEventPage(): JSX.Element {
           </Section>
 
           <WrestlingFilesSection eventId={event.id} />
+
+          <WrestlingClipShelf kind="event" id={event.id} label={event.name} />
 
           {chrono && <WrestlingChronologyNav {...chrono} />}
         </div>

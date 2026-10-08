@@ -131,7 +131,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q2',
-          text: 'This land was of course in no way virgin territory. A number of peoples lived there, especially the Herero—whose language belongs to the Bantu language family—and the Nama, who speak a Khoisan language, to the south.',
+          text: 'A number of peoples lived there, especially the Herero—whose language belongs to the Bantu language family—and the Nama, who speak a Khoisan language, to the south.',
           lang: 'en',
           cite: {
             source: 'ehne-patin-herero-and-nama',
@@ -139,7 +139,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://ehne.fr/en/encyclopedia/themes/europe-europeans-and-world/europe-and-colonial-wars/massacre-herero-and-nama-a-colonial-laboratory-genocide'
           }
         },
@@ -178,7 +178,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'It is estimated that 80% of the Herero and 50% of the Nama were killed by the Germans.',
+          text: 'The fighting continued, and prompted the Nama to rebel as well, under the leadership of Hendrik Witbooi. They suffered the same fate as the Herero. It is estimated that 80% of the Herero and 50% of the Nama were killed by the Germans.',
           lang: 'en',
           cite: {
             source: 'ehne-patin-herero-and-nama',
@@ -186,7 +186,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://ehne.fr/en/encyclopedia/themes/europe-europeans-and-world/europe-and-colonial-wars/massacre-herero-and-nama-a-colonial-laboratory-genocide'
           }
         },
@@ -244,7 +244,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q9',
-          text: 'This includes being unreserved and unflinching in naming the events of the German colonial period in what is now Namibia and in particular the atrocities between 1904 and 1908.',
+          text: 'Our aim was and remains to find a shared path towards genuine reconciliation in memory of the victims. This includes being unreserved and unflinching in naming the events of the German colonial period in what is now Namibia and in particular the atrocities between 1904 and 1908.',
           lang: 'en',
           cite: {
             source: 'german-foreign-office-namibia-2021',
@@ -255,7 +255,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.auswaertiges-amt.de/en/newsroom/news/-/2463598'
           }
         },

@@ -107,7 +107,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Deng Xiaoping',
+      ref: 'person:deng-xiaoping',
       role: 'victim',
       cites: [
         {
@@ -240,13 +240,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q18',
-          text: 'These were also accompanied by the rehabilitation of those persons who had been persecuted or fallen into disgrace in 1966-68.',
+          text: 'Efforts to depoliticize and promote professionalism were intensified within the PLA. These were also accompanied by the rehabilitation of those persons who had been persecuted or fallen into disgrace in 1966-68.',
           lang: 'en',
           cite: {
             source: 'loc-china-country-study-1987',
             loc: { section: 'The Cultural Revolution, 1966-76', para: '16' }
           },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/china/28.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/china/28.htm' }
         }
       ]
     },

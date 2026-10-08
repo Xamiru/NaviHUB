@@ -269,10 +269,10 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'This was seen as a means of funding his Aswan Dam project, a key element of Egypt\'s planned industrialisation, which the Americans had refused to back.',
+          text: 'In July 1956, the Egyptian leader, Colonel Gamal Abdel Nasser, announced the nationalisation of the Franco-British Suez Canal Company. This was seen as a means of funding his Aswan Dam project, a key element of Egypt\'s planned industrialisation, which the Americans had refused to back.',
           lang: 'en',
           cite: { source: 'nam-suez-crisis', loc: { section: 'Suez Crisis', para: '7' } },
-          provenance: { via: 'web', at: '2026-10-07', url: 'https://www.nam.ac.uk/explore/suez-crisis' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'https://www.nam.ac.uk/explore/suez-crisis' }
         },
         {
           id: 'q4',

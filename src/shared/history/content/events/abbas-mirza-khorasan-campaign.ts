@@ -204,6 +204,20 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
+          id: 'q8',
+          text: 'When Moḥammad Mīrzā succeeded Fatḥ-ʿAlī Shah in 1834 and tried to continue that task in the east which Āqā Moḥammad Shah had already begun, he was checked by British intervention, just as his father had been thwarted by Russia on the Aras.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-busse-abbas-mirza',
+            loc: { section: 'ʿABBĀS MĪRZĀ QAJAR', para: '7' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/abbas-mirza'
+          }
+        },
+        {
           id: 'q6',
           text: 'However, news of ʿAbbās’s death in Mašhad in November 1833 compelled Moḥammad Mirzā to lift the siege and return to the capital, where he was installed as the new crown prince.',
           lang: 'en',
@@ -213,7 +227,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/herat-vi'
           }
         },
@@ -229,20 +243,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/herat-vi'
-          }
-        },
-        {
-          id: 'q8',
-          text: 'When Moḥammad Mīrzā succeeded Fatḥ-ʿAlī Shah in 1834 and tried to continue that task in the east which Āqā Moḥammad Shah had already begun, he was checked by British intervention, just as his father had been thwarted by Russia on the Aras.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-busse-abbas-mirza',
-            loc: { section: 'ʿABBĀS MĪRZĀ QAJAR', para: '7' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/abbas-mirza'
           }
         }
       ]

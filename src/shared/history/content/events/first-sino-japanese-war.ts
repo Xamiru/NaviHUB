@@ -199,7 +199,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q21',
-          text: 'It is impossible to estimate the Chinese losses in the war. The Japanese lost 4177 men by death in action or by sickness, and 56,862 were wounded or disabled by sickness, exclusive of the losses in the Formosa and Pescadores expeditions.',
+          text: 'The Japanese lost 4177 men by death in action or by sickness, and 56,862 were wounded or disabled by sickness, exclusive of the losses in the Formosa and Pescadores expeditions.',
           lang: 'en',
           cite: {
             source: 'britannica-1911-chino-japanese-war',
@@ -207,7 +207,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Chino-Japanese_War'
           }
         }

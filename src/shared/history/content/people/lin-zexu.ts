@@ -354,7 +354,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q12',
-          text: 'His purpose was laudable, and his long letter addressed to Queen Victoria on the subject (written in August 1839) is full of righteous indignation. But he showed little appreciation of the real grievances under which all trade had long been conducted.',
+          text: 'Lin Tsê-hsü was now at the zenith of his power, and the objective he set for himself, namely the destruction of the opium traffic, seemed to have been achieved. His purpose was laudable, and his long letter addressed to Queen Victoria on the subject (written in August 1839) is full of righteous indignation. But he showed little appreciation of the real grievances under which all trade had long been conducted.',
           lang: 'en',
           cite: {
             source: 'hummel-1943-eminent-chinese-lin-tse-hsu',
@@ -362,7 +362,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/Eminent_Chinese_of_the_Ch%27ing_Period/Lin_Ts%C3%AA-hs%C3%BC'
           }
         },

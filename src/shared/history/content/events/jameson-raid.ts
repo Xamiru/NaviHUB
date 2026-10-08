@@ -116,6 +116,16 @@ export default defineEvent({
       kind: 'background',
       quotes: [
         {
+          id: 'q10',
+          text: 'The discovery of gold on the Witwatersrand greatly increased Boer-British tensions.',
+          lang: 'en',
+          cite: {
+            source: 'loc-south-africa-country-study-1996',
+            loc: { section: 'British Imperialism and the Afrikaners', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/south-africa/16.htm' }
+        },
+        {
           id: 'q1',
           text: 'These economic tensions lay at the base of a political issue: the right of English speakers to have the vote.',
           lang: 'en',

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'paris-commune-nature',
   about: ['event:paris-commune'],
   topic: 'nature',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'working-class-government',
@@ -59,6 +59,22 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.elysee.fr/la-presidence/adolphe-thiers'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q4',
+          text: 'During the week of 21-28 May 1871, between 20, 000 and 30, 000 Parisians were killed in the repression of the Paris Commune',
+          lang: 'en',
+          cite: {
+            source: 'loc-guide-paris-commune-1871',
+            loc: { section: 'The Paris Commune and the Franco-Prussian War of 1871', para: '143' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://guides.loc.gov/women-in-the-french-revolution/revolutions-rebellions/paris-commune-franco-prussian-war-1871'
           }
         }
       ]

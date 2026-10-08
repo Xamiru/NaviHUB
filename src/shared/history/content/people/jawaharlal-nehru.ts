@@ -105,13 +105,13 @@ export default definePerson({
       quotes: [
         {
           id: 'q3',
-          text: 'His guiding principles were nationalism, anticolonialism, internationalism, and nonalignment.',
+          text: 'Nehru demonstrated tremendous enthusiasm for India\'s moral leadership, especially among the newly independent Asian and African nations, in a world polarized by Cold War ideology and threatened by nuclear weapons. His guiding principles were nationalism, anticolonialism, internationalism, and nonalignment.',
           lang: 'en',
           cite: {
             source: 'loc-india-country-study-1995',
             loc: { section: 'Jawaharlal Nehru', para: '3' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/india/23.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/india/23.htm' }
         },
         {
           id: 'q4',

@@ -112,16 +112,6 @@ export default defineEvent({
       kind: 'course',
       quotes: [
         {
-          id: 'q4',
-          text: 'Once again a Habsburg emperor became king of Hungary, but the compromise strictly limited his power over the country\'s internal affairs, and the Hungarian government assumed control over its domestic affairs.',
-          lang: 'en',
-          cite: {
-            source: 'loc-hungary-country-study-1989',
-            loc: { section: 'DUAL MONARCHY', para: '3' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/hungary/23.htm' }
-        },
-        {
           id: 'q5',
           text: 'The compromise also returned Transylvania, Vojvodina, and the military frontier to Hungary\'s jurisdiction.',
           lang: 'en',
@@ -130,22 +120,22 @@ export default defineEvent({
             loc: { section: 'DUAL MONARCHY', para: '3' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/hungary/23.htm' }
+        },
+        {
+          id: 'q4',
+          text: 'Once again a Habsburg emperor became king of Hungary, but the compromise strictly limited his power over the country\'s internal affairs, and the Hungarian government assumed control over its domestic affairs.',
+          lang: 'en',
+          cite: {
+            source: 'loc-hungary-country-study-1989',
+            loc: { section: 'DUAL MONARCHY', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/hungary/23.htm' }
         }
       ]
     },
     {
       kind: 'consequences',
       quotes: [
-        {
-          id: 'q6',
-          text: 'However, the new government faced severe economic problems and the growing restiveness of ethnic minorities.',
-          lang: 'en',
-          cite: {
-            source: 'loc-hungary-country-study-1989',
-            loc: { section: 'DUAL MONARCHY', para: '1' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/hungary/23.htm' }
-        },
         {
           id: 'q7',
           text: 'At Franz Joseph\'s insistence, Hungary and Croatia reached a similar compromise in 1868, giving the Croats a special status in Hungary.',
@@ -155,6 +145,16 @@ export default defineEvent({
             loc: { section: 'DUAL MONARCHY', para: '4' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/hungary/23.htm' }
+        },
+        {
+          id: 'q6',
+          text: 'However, the new government faced severe economic problems and the growing restiveness of ethnic minorities.',
+          lang: 'en',
+          cite: {
+            source: 'loc-hungary-country-study-1989',
+            loc: { section: 'DUAL MONARCHY', para: '1' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/hungary/23.htm' }
         },
         {
           id: 'q8',

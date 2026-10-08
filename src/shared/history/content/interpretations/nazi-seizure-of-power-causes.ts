@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'nazi-seizure-of-power-causes',
   about: ['event:nazi-seizure-of-power'],
   topic: 'causes',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'depression-and-desperation',
@@ -87,6 +87,28 @@ export default defineInterpretation({
             at: '2026-10-08',
             url: 'https://www.marxists.org/reference/archive/dimitrov/works/1935/08_02.htm'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q7',
+          text: 'The vote shares of the SPD and the Center Party fluctuated somewhat yet remained much as they had been in 1928, when the SPD held a large plurality of 153 seats in the Reichstag and the Center Party held sixty-one, third after the DNVP\'s seventy-three seats.',
+          lang: 'en',
+          cite: {
+            source: 'loc-germany-country-study-1995',
+            loc: { section: 'Hitler and the Rise of National Socialism', para: '7' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/germany/38.htm' }
+        },
+        {
+          id: 'q8',
+          text: 'The gains of the NSDAP came at the expense of the other right-wing parties.',
+          lang: 'en',
+          cite: {
+            source: 'loc-germany-country-study-1995',
+            loc: { section: 'Hitler and the Rise of National Socialism', para: '7' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/germany/38.htm' }
         }
       ]
     },

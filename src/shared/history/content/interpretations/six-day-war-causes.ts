@@ -40,6 +40,36 @@ export default defineInterpretation({
             url: 'https://web.archive.org/web/2015id_/http://mfa.gov.il/MFA/AboutIsrael/History/Pages/HISTORY-%20The%20State%20of%20Israel.aspx'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q8',
+          text: 'While the administration’s response to Samu‘ helped prevent further Israeli reprisals against Jordan, it failed to address the underlying problem of Palestinian cross-border attacks. By the spring of 1967, the Israelis were retaliating forcefully against Syria, whose leaders demanded that Egypt intervene on their behalf.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-arab-israeli-war-1967',
+            loc: { section: 'The 1967 Arab-Israeli War', para: '7' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1961-1968/arab-israeli-war-1967'
+          }
+        },
+        {
+          id: 'q9',
+          text: 'However, U.S. efforts to preserve the regional balance of power were soon undermined by Fatah and other Palestinian guerilla organizations, which began attacking targets inside Israel. The Johnson administration tried to intercede with Fatah’s Syrian patrons and to prevent Israeli retaliation against Jordan, from which most Palestinian raids were launched.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-arab-israeli-war-1967',
+            loc: { section: 'The 1967 Arab-Israeli War', para: '6' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1961-1968/arab-israeli-war-1967'
+          }
+        }
       ]
     },
     {
@@ -68,6 +98,18 @@ export default defineInterpretation({
             loc: { section: 'Remembering the Naksa, or setback, of 1967', para: '2' }
           },
           provenance: { via: 'web', at: '2026-10-07', url: 'https://english.wafa.ps/Pages/Details/129536' }
+        }
+      ],
+      reception: [
+        {
+          id: 'q10',
+          text: 'After only six days of fighting, Israel had radically altered the political map of the region. By June 13, Israeli forces had captured the Golan Heights from Syria, Sinai and the Gaza Strip from Egypt, and all of Jerusalem and the West Bank from Jordan. The new territories more than doubled the size of pre1967 Israel',
+          lang: 'en',
+          cite: {
+            source: 'loc-israel-country-study-1988',
+            loc: { section: '1967 AND AFTERWARD', para: '5' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/israel/25.htm' }
         }
       ]
     },
@@ -124,5 +166,5 @@ export default defineInterpretation({
       ]
     }
   ],
-  researched: '2026-10-07'
+  researched: '2026-10-09'
 })

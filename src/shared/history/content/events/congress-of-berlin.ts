@@ -142,13 +142,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'But Britain and Austria-Hungary, believing that the new state would extend Russian influence too far into the Balkans, exerted strong diplomatic pressure that reshaped the Treaty of San Stefano four months later into the Treaty of Berlin.',
+          text: 'Britain and Austria-Hungary, believing that the new state would extend Russian influence too far into the Balkans, exerted strong diplomatic pressure that reshaped the Treaty of San Stefano four months later into the Treaty of Berlin.',
           lang: 'en',
           cite: {
             source: 'loc-bulgaria-country-study-1992',
             loc: { section: 'BULGARIAN INDEPENDENCE', para: '23' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/bulgaria/10.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/bulgaria/10.htm' }
         },
         {
           id: 'q11',

@@ -92,7 +92,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'The wait finally ended in March 1964 when, on the eve of the Persian New Year, Prime Minister Amir Asad-Allāh ʿAlam bitterly and begrudgingly submitted his resignation',
+          text: 'Prime Minister Amir Asad-Allāh ʿAlam bitterly and begrudgingly submitted his resignation',
           lang: 'en',
           cite: {
             source: 'iranica-milani-hoveyda',
@@ -100,7 +100,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
             url: 'https://web.archive.org/web/20261002185029/https://www.iranicaonline.org/articles/hoveyda-amir-abbas/'
           }
         },

@@ -219,7 +219,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'This controversial approach eliminated the 2/3 majority needed to ratify a treaty; as a result, the necessary support for annexation was in place.',
+          text: 'The pro-annexation forces in Congress submitted a proposal to annex the Hawaiian Islands by joint resolution, which required only a simple majority vote in both houses. This controversial approach eliminated the 2/3 majority needed to ratify a treaty; as a result, the necessary support for annexation was in place.',
           lang: 'en',
           cite: {
             source: 'nara-milestone-joint-resolution-annexing-hawaii',
@@ -230,7 +230,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.archives.gov/milestone-documents/joint-resolution-for-annexing-the-hawaiian-islands'
           }
         }

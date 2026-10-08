@@ -117,7 +117,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q3',
-          text: 'Alexander III. determined to adopt the opposite policy. He at once cancelled the ukaz before it was published, and in the manifesto announcing his accession to the throne he let it be very clearly understood that he had no intention of limiting or weakening the autocratic power which he had inherited from his ancestors.',
+          text: 'In the last years of his reign, Alexander II. had been much exercised by the spread of Nihilist doctrines and the increasing number of anarchist conspiracies, and for some time he had hesitated between strengthening the hands of the executive and making concessions to the widespread political aspirations of the educated classes. Finally he decided in favour of the latter course, and on the very day of his death he signed a ukaz, creating a number of consultative commissions which might have been easily transformed into an assembly of notables. Alexander III. determined to adopt the opposite policy. He at once cancelled the ukaz before it was published, and in the manifesto announcing his accession to the throne he let it be very clearly understood that he had no intention of limiting or weakening the autocratic power which he had inherited from his ancestors.',
           lang: 'en',
           cite: {
             source: 'britannica-1911-alexander-iii-tsar',
@@ -125,7 +125,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Alexander_III._(tsar)'
           }
         },
@@ -168,7 +168,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Alexander_III._(tsar)'
           }
         }

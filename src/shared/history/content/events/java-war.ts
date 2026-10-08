@@ -86,13 +86,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'But the reforms of Daendels and Raffles threatened this arrangement.',
+          text: 'Variations on this pattern were found throughout Java, with local adaptations. But the reforms of Daendels and Raffles threatened this arrangement.',
           lang: 'en',
           cite: {
             source: 'loc-indonesia-country-study-1993',
             loc: { section: 'The Java War and Cultivation System', para: '1' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/indonesia/11.htm' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/indonesia/11.htm' }
         },
         {
           id: 'q2',

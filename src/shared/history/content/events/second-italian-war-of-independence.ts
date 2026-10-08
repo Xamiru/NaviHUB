@@ -165,8 +165,8 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
-          id: 'q6',
-          text: 'His consent to the annexation of the Central Italian states, in exchange for Savoy and Nice (Treaty of Turin, March 24, 1860) exposed him to violent attacks on the part of the ultramontanes, whose slave he had practically been since 1848.',
+          id: 'q7',
+          text: 'After Magenta (June 4, 1859), it was the fears of the Catholics and the messages of the empress which, even more than the threats of Prussia, checked him in his triumph and forced him into the armistice of Villafranca (July 11, 1859).',
           lang: 'en',
           cite: {
             source: 'britannica-1911-napoleon-iii',
@@ -174,7 +174,21 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Napoleon_III.'
+          }
+        },
+        {
+          id: 'q6',
+          text: 'But the spread of the Italian revolution and the movement for annexation forced him again to intervene. He appealed to the Left against the Catholics, by the amnesty of the 17th of April 1859. His consent to the annexation of the Central Italian states, in exchange for Savoy and Nice (Treaty of Turin, March 24, 1860) exposed him to violent attacks on the part of the ultramontanes, whose slave he had practically been since 1848.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-napoleon-iii',
+            loc: { section: 'NAPOLEON III.', para: '23' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Napoleon_III.'
           }
         },

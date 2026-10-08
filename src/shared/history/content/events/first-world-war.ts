@@ -318,8 +318,22 @@ export default defineEvent({
       kind: 'casualties',
       quotes: [
         {
+          id: 'q21',
+          text: 'The problem of sick soldiers is much more difficult to resolve.',
+          lang: 'en',
+          cite: {
+            source: 'eo1418-prost-war-losses',
+            loc: { section: 'Definitions and Evaluation of Soldiers Killed', para: '2' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://encyclopedia.1914-1918-online.net/article/war-losses/'
+          }
+        },
+        {
           id: 'q6',
-          text: 'It shows that the Allied armies’ losses were higher than those of the Central Powers by more than 1 million men due to the high numbers of war dead in Romanian and Serbian forces, both of whom fought in very difficult conditions.',
+          text: 'The following table of military war losses has been constructed based on these assumptions. It shows that the Allied armies’ losses were higher than those of the Central Powers by more than 1 million men due to the high numbers of war dead in Romanian and Serbian forces, both of whom fought in very difficult conditions.',
           lang: 'en',
           cite: {
             source: 'eo1418-prost-war-losses',
@@ -327,7 +341,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://encyclopedia.1914-1918-online.net/article/war-losses/'
           }
         },

@@ -110,7 +110,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'It had been supposed that such a vessel was unsinkable, and the tragedy raised numerous questions as to methods of ship construction, and additional provision of life-saving equipment.',
+          text: 'At 2:20 A.M. on April 15, that great White Star liner, the largest afloat, on her maiden voyage, went to the bottom of the Atlantic in lat. 41º 46\' N., long. 50º 14\' W., about 2¾ h. after striking at full speed on an iceberg, with a loss of 1,513 souls out of 2,224 on board.[1] It had been supposed that such a vessel was unsinkable, and the tragedy raised numerous questions as to methods of ship construction, and additional provision of life-saving equipment.',
           lang: 'en',
           cite: {
             source: 'britannica-1922-titanic-disaster',
@@ -118,7 +118,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1922_Encyclop%C3%A6dia_Britannica/%E2%80%9CTitanic%E2%80%9D_Disaster,_1912'
           }
         },

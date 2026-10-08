@@ -160,7 +160,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q7',
-          text: 'It had to be approved by 20 Ordibehešt, because that was the day the government intended to abolish the capitulations, which provided a major incentive to the deputies.',
+          text: 'The legal chef d’oeuvre of Dāvar was the Civil Code (Qānun-e madani) of 1928, composed of 995 articles. It was an improved version of the temporary law of 1911, and was submitted to Majles on 18 Ordibehešt 1307/8 May 1928. It had to be approved by 20 Ordibehešt, because that was the day the government intended to abolish the capitulations, which provided a major incentive to the deputies.',
           lang: 'en',
           cite: {
             source: 'iranica-floor-judicial-system-20th-century',
@@ -171,7 +171,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/judicial-and-legal-systems-v-judicial-system-in-the-20th-century/'
           }
         },

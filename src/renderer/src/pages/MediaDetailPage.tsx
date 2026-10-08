@@ -63,6 +63,7 @@ import SynopsisText from '../components/theme/SynopsisText'
 import StandStats from '../components/theme/StandStats'
 import { standParameters } from '../lib/standStats'
 import { useAppTheme } from '../lib/useAppTheme'
+import BookFacts from '../components/BookFacts'
 
 type DetailTab = 'overview' | 'cast' | 'video' | 'media' | 'achievements' | 'art'
 
@@ -169,6 +170,9 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   // Open Library rating stored pre-scaled to 0–100 (stars × 20) at import.
   const olRaw = metaNum('olRating')
   const olScore = olRaw != null ? ((olRaw / 100) * scoreMax).toFixed(1) : null
+  // Hardcover rating, pre-scaled to 0–100 (stars × 20) at import like Open Library's.
+  const hcRaw = metaNum('hcRating')
+  const hcScore = hcRaw != null ? ((hcRaw / 100) * scoreMax).toFixed(1) : null
 
   // One filled action per screen. For a game/VN with a linked executable that is
   // Play — you launch far more often than you log an hour — and the log button
@@ -204,9 +208,12 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
       {rottenTomatoes != null && <StatInline label="Rotten Tomatoes" value={`${rottenTomatoes}%`} />}
       {metacritic != null && <StatInline label="Metacritic" value={`${metacritic} / 100`} />}
       {olScore != null && <StatInline label="Open Library" value={`${olScore} / ${scoreMax}`} />}
+      {hcScore != null && <StatInline label="Hardcover" value={`${hcScore} / ${scoreMax}`} />}
     </>
   )
-  const hasCommunityScore = [anilistAvg, vndbScore, imdb, rottenTomatoes, metacritic, olScore].some((v) => v != null)
+  const hasCommunityScore = [anilistAvg, vndbScore, imdb, rottenTomatoes, metacritic, olScore, hcScore].some(
+    (v) => v != null
+  )
   const season = cfg.key === 'anime' ? seasonForItem(m) : null
   const releaseYear = m.releaseDate?.match(/^\d{4}/)?.[0] ?? null
   const eyebrow = [
@@ -774,6 +781,7 @@ function FactsColumn({
         <p className={fact}>Released</p>
         <p className="mt-1 text-white">{m.releaseDate ?? '—'}</p>
       </div>
+      {m.mediaType === 'book' && <BookFacts m={m} />}
       {season && (
         <div>
           <p className={fact}>Season</p>

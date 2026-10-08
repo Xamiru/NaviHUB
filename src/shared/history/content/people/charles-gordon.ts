@@ -105,6 +105,20 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
+          id: 'q7',
+          text: 'He returned to England towards the end of 1858, and was then selected for the appointment of adjutant and field-works instructor at the Royal Engineers’ establishment, and took up his new duties at Chatham after promotion to the rank of captain in April 1859.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-gordon-charles-george',
+            loc: { section: 'GORDON, CHARLES GEORGE', para: '2' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Gordon,_Charles_George'
+          }
+        },
+        {
           id: 'q2',
           text: 'But his stay in England In China.was brief, for in 1860 war was declared against China, and Gordon was ordered out there, arriving at Tientsin in September.',
           lang: 'en',

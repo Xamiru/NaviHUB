@@ -73,6 +73,7 @@ const NAV_ITEMS: PaletteItem[] = [
   { key: 'nav-wrestling', label: 'Wrestling', hint: 'Go to', to: '/wrestling' },
   { key: 'nav-wrestling-rated', label: 'Highest-rated matches', hint: 'Wrestling', to: '/wrestling/rated' },
   { key: 'nav-wrestling-collection', label: 'Wrestling collection', hint: 'Wrestling', to: '/wrestling/collection' },
+  { key: 'nav-wrestling-clips', label: 'Wrestling clips', hint: 'Wrestling', to: '/wrestling/clips' },
   ...WRESTLING_PROMOTIONS.map((p) => ({
     key: `nav-wrestling-${p.id}`,
     label: p.name,

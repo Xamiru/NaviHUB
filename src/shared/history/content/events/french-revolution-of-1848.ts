@@ -138,7 +138,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q16',
-          text: 'It was now the turn of the Republic, and it was proclaimed by Lamartine in the name of the provisional government elected by the Chamber under the pressure of the mob.',
+          text: 'In face of the insurrection which had now taken possession of the whole capital, Louis Philippe decided to abdicate in favour of his grandson, the comte de Paris. But it was too late also to be content with the regency of the duchess of Orleans. It was now the turn of the Republic, and it was proclaimed by Lamartine in the name of the provisional government elected by the Chamber under the pressure of the mob.',
           lang: 'en',
           cite: {
             source: 'britannica-1911-france-history',
@@ -146,7 +146,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/France/History'
           }
         },

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'kingdom-of-hawaii-overthrow-legitimacy',
   about: ['polity:kingdom-of-hawaii'],
   topic: 'legitimacy',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'monarchy-forfeited-by-its-own-act',
@@ -28,7 +28,7 @@ export default defineInterpretation({
     },
     {
       id: 'contrary-to-the-will-of-native-hawaiians',
-      category: 'official',
+      category: 'scholarly',
       holders: [
         { kind: 'organization', name: 'National Archives and Records Administration' }
       ],

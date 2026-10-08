@@ -104,7 +104,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'His downfall ended the monopoly of the Fārs notables over the nascent Qajar administration in the southern provinces and allowed the shah greater control over appointments, revenue, and his private life.',
+          text: 'The advice purportedly given by Āqā Moḥammad Khan to his nephew that, once securely on the throne, he should “not allow the gray head of Ḥajī Ebrāhīm, who had betrayed his first master, to go down in peace to grave” (Watson, p. 128) may be treated as apocryphal, reaffirming the familiar practice of “viziericide” to which many of Ebrāhīm Khan’s predecessors, and at least two of his successors, were subjected. His downfall ended the monopoly of the Fārs notables over the nascent Qajar administration in the southern provinces and allowed the shah greater control over appointments, revenue, and his private life.',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-fath-ali-shah',
@@ -112,7 +112,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/fath-ali-shah'
           }
         }

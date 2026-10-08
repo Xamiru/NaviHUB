@@ -4,11 +4,11 @@ export default defineInterpretation({
   id: 'second-world-war-origins',
   about: ['event:second-world-war'],
   topic: 'causes',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'premeditated-nazi-aggression',
-      category: 'official',
+      category: 'scholarly',
       holders: [
         { kind: 'organization', name: 'International Military Tribunal (Nuremberg)' }
       ],
@@ -106,6 +106,18 @@ export default defineInterpretation({
             url: 'http://en.kremlin.ru/events/president/news/63527'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q8',
+          text: 'Immediately after the German occupation of Bohemia and Moravia, Britain and France finally became convinced of Hitler\'s expansionist objectives',
+          lang: 'en',
+          cite: {
+            source: 'loc-germany-country-study-1995',
+            loc: { section: 'The Third Reich: Foreign Policy', para: '6' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/germany/40.htm' }
+        }
       ]
     },
     {
@@ -128,6 +140,18 @@ export default defineInterpretation({
             at: '2026-10-08',
             url: 'https://web.archive.org/web/20241227154400/https://www.europarl.europa.eu/doceo/document/TA-9-2019-0021_EN.html'
           }
+        }
+      ],
+      reception: [
+        {
+          id: 'q9',
+          text: 'Hitler, who had decided to attack Poland despite the guarantees of Britain and France to defend that country, soon responded to the changed Soviet stance.',
+          lang: 'en',
+          cite: {
+            source: 'loc-russia-country-study-1996',
+            loc: { section: 'Transformation and Terror', para: '23' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/russia/10.htm' }
         }
       ]
     }

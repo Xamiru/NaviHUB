@@ -174,16 +174,6 @@ export default defineEvent({
       kind: 'causes',
       quotes: [
         {
-          id: 'q6',
-          text: 'Also current in Paris at that time was the rationalization that France had a civilizing mission--a duty to bring the benefits of its superior culture to the less fortunate lands of Asia and Africa.',
-          lang: 'en',
-          cite: {
-            source: 'loc-vietnam-country-study-1987',
-            loc: { section: 'UNDER FRENCH RULE', para: '1' }
-          },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/vietnam/15.htm' }
-        },
-        {
           id: 'q7',
           text: 'The missionaries, however, had served only as an initial excuse for French intervention in Vietnam; military and economic interests soon became the primary reasons for remaining there.',
           lang: 'en',
@@ -192,6 +182,16 @@ export default defineEvent({
             loc: { section: 'UNDER FRENCH RULE', para: '2' }
           },
           provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/vietnam/15.htm' }
+        },
+        {
+          id: 'q6',
+          text: 'Meanwhile, fear was growing in Paris that if France withdrew the British would move in. Also current in Paris at that time was the rationalization that France had a civilizing mission--a duty to bring the benefits of its superior culture to the less fortunate lands of Asia and Africa.',
+          lang: 'en',
+          cite: {
+            source: 'loc-vietnam-country-study-1987',
+            loc: { section: 'UNDER FRENCH RULE', para: '1' }
+          },
+          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/vietnam/15.htm' }
         }
       ]
     },

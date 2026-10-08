@@ -143,7 +143,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q6',
-          text: 'Their seminal accomplishment encompassed not only the breakthrough first flight of an airplane, but also the equally important achievement of establishing the foundation of aeronautical engineering.',
+          text: 'The Wrights pioneered many of the basic tenets and techniques of modern aeronautical engineering, such as the use of a wind tunnel and flight testing as design tools. Their seminal accomplishment encompassed not only the breakthrough first flight of an airplane, but also the equally important achievement of establishing the foundation of aeronautical engineering.',
           lang: 'en',
           cite: {
             source: 'nasm-1903-wright-flyer',
@@ -151,7 +151,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://airandspace.si.edu/collection-objects/1903-wright-flyer/nasm_A19610048000'
           }
         },

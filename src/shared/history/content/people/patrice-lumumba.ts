@@ -65,6 +65,20 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
+          id: 'q5',
+          text: 'Unable to control the indigenous army (renamed the Congolese National Army), the Belgians brought in troops to restore order without seeking permission to do so from either Kasavubu or Lumumba. In response, the Congolese government appealed directly to the United Nations to provide troops and demanded the removal of Belgian troops.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-congo-decolonization',
+            loc: { section: 'The Congo, Decolonization, and the Cold War, 1960–1965', para: '3' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1961-1968/congo-decolonization'
+          }
+        },
+        {
           id: 'q2',
           text: 'Lumumba was invited to visit Washington in late July, in the hopes that the United States could exert a moderating influence on the prime minister. The visit underscored the futility of that effort.',
           lang: 'en',

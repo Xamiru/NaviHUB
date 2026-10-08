@@ -235,20 +235,6 @@ export default defineEvent({
       kind: 'aftermath',
       quotes: [
         {
-          id: 'q8',
-          text: 'They were all released by the Qavām government under pressure from ulama and religious leaders and influential merchants, after a short trial',
-          lang: 'en',
-          cite: {
-            source: 'iranica-amini-kasravi-assassination',
-            loc: { section: 'KASRAVI, AḤMAD ii. Assassination of Kasravi', para: '10' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://www.iranicaonline.org/articles/kasravi-ahmad-ii/'
-          }
-        },
-        {
           id: 'q9',
           text: 'With the exception of a few articles in left-leaning newspapers, Kasravi’s murder was treated with silence by secular intellectuals and the press. But the response of religious groups and ulama was euphoric (Šarif Rāzi, I, 1954, pp. 200-201). Nawwāb and his Fedāʾiān group were treated as heroes of Islam and the šariʿa',
           lang: 'en',
@@ -259,6 +245,20 @@ export default defineEvent({
           provenance: {
             via: 'web',
             at: '2026-10-08',
+            url: 'https://www.iranicaonline.org/articles/kasravi-ahmad-ii/'
+          }
+        },
+        {
+          id: 'q8',
+          text: 'They were all released by the Qavām government under pressure from ulama and religious leaders and influential merchants, after a short trial',
+          lang: 'en',
+          cite: {
+            source: 'iranica-amini-kasravi-assassination',
+            loc: { section: 'KASRAVI, AḤMAD ii. Assassination of Kasravi', para: '10' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/kasravi-ahmad-ii/'
           }
         },
@@ -283,7 +283,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q11',
-          text: 'This episode marks an important turning point for the Fedāʾīān. The publicity surrounding the event was fueled by fiery speeches, broadsheets, and newspaper accounts announcing the existence of the Fedāʾīān and their activities to “purify” Persia from anti-Islamic practices. The tacit approval of the leading cleric of Najaf, Ayatollah Ḥājj Āqā Ḥosayn Qomī, of the assassination of Kasrawī and his demand for the acquittal of the Emāmī brothers helped to legitimize the Fedāʾīān and gave the organization ample opportunity to recruit new members and broaden the scope of its activities',
+          text: 'Undaunted by his initial failure, Nawwāb arranged successfully for two of his followers, the brothers Sayyed Ḥosayn and Sayyed ʿAlī-Moḥammad Emāmī, to murder Kasrawī and his secretary on 11 March 1946 at the Ministry of Justice (Davānī, pp. 2, 195-98; Šarīf Rāzī, pp. 8, 278-84; ʿErāqī, pp. 19-28; Amīnī, pp. 129-30). This episode marks an important turning point for the Fedāʾīān. The publicity surrounding the event was fueled by fiery speeches, broadsheets, and newspaper accounts announcing the existence of the Fedāʾīān and their activities to “purify” Persia from anti-Islamic practices. The tacit approval of the leading cleric of Najaf, Ayatollah Ḥājj Āqā Ḥosayn Qomī, of the assassination of Kasrawī and his demand for the acquittal of the Emāmī brothers helped to legitimize the Fedāʾīān and gave the organization ample opportunity to recruit new members and broaden the scope of its activities',
           lang: 'en',
           cite: {
             source: 'iranica-kazemi-fedaian-e-eslam',
@@ -291,7 +291,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/fedaian-e-esla/'
           }
         }

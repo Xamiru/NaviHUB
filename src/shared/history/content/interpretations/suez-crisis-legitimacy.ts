@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'suez-crisis-legitimacy',
   about: ['event:suez-crisis'],
   topic: 'legitimacy',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'separate-the-belligerents',
@@ -40,6 +40,22 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-08',
             url: 'https://api.parliament.uk/historic-hansard/commons/1956/oct/30/egypt-and-israel-1'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q8',
+          text: 'Moreover, the United States voted for U.N. resolutions publicly condemning the invasion and approving the creation of a U.N. peacekeeping force.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-suez-crisis',
+            loc: { section: 'The Suez Crisis, 1956', para: '5' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1953-1960/suez'
           }
         }
       ]

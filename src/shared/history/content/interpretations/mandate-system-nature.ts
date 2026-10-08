@@ -40,6 +40,22 @@ export default defineInterpretation({
             url: 'https://avalon.law.yale.edu/20th_century/leagcov.asp'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q9',
+          text: 'By establishing the mandate system, the League of Nations both undermined and underpinned colonialism – it was foremost the colonised peoples who, hoping for self-determination, were bitterly disappointed',
+          lang: 'en',
+          cite: {
+            source: 'eo1418-ziegerhofer-league-of-nations',
+            loc: { section: 'League of Nations' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://encyclopedia.1914-1918-online.net/article/league-of-nations/'
+          }
+        }
       ]
     },
     {
@@ -149,5 +165,5 @@ export default defineInterpretation({
       ]
     }
   ],
-  researched: '2026-10-08'
+  researched: '2026-10-09'
 })

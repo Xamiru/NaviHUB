@@ -178,7 +178,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q7',
-          text: 'However, Lakota leaders such as Sitting Bull and Crazy Horse rejected the reservation system. Likewise, many roving bands of hunters and warriors did not sign the 1868 treaty. They felt no obligation to conform to its restrictions, or to limit their hunting to the unceded hunting land assigned by the treaty. Their forays off the set aside lands brought them into conflict with settlers and enemy tribes outside the treaty boundaries.',
+          text: 'Lakota leaders such as Sitting Bull and Crazy Horse rejected the reservation system. Likewise, many roving bands of hunters and warriors did not sign the 1868 treaty. They felt no obligation to conform to its restrictions, or to limit their hunting to the unceded hunting land assigned by the treaty. Their forays off the set aside lands brought them into conflict with settlers and enemy tribes outside the treaty boundaries.',
           lang: 'en',
           cite: {
             source: 'nps-libi-story-of-the-battle',
@@ -186,7 +186,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://www.nps.gov/libi/learn/historyculture/battle-story.htm'
           }
         },

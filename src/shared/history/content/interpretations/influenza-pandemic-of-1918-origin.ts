@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'influenza-pandemic-of-1918-origin',
   about: ['event:influenza-pandemic-of-1918'],
   topic: 'causes',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'military-camps-and-troop-movements',
@@ -45,7 +45,7 @@ export default defineInterpretation({
     },
     {
       id: 'no-consensus',
-      category: 'official',
+      category: 'scholarly',
       holders: [
         { kind: 'organization', name: 'Centers for Disease Control and Prevention' }
       ],

@@ -156,10 +156,10 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'However, he completely underestimated his well-armed Boer opponents, most of whom were highly skilled marksmen and adept at using cover. A series of British defeats soon ensued.',
+          text: 'The British commander, Major-General Sir George Pomeroy-Colley, gathered a force to relieve the surrounded forts. However, he completely underestimated his well-armed Boer opponents, most of whom were highly skilled marksmen and adept at using cover. A series of British defeats soon ensued.',
           lang: 'en',
           cite: { source: 'nam-transvaal-war', loc: { section: 'Transvaal War', para: '14' } },
-          provenance: { via: 'web', at: '2026-10-06', url: 'https://www.nam.ac.uk/explore/transvaal-war' }
+          provenance: { via: 'web', at: '2026-10-09', url: 'https://www.nam.ac.uk/explore/transvaal-war' }
         },
         {
           id: 'q5',

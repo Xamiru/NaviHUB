@@ -11,6 +11,7 @@ import * as tmdb from './tmdb'
 import * as vndb from './vndb'
 import * as steam from './steam'
 import * as openlibrary from './openlibrary'
+import * as hardcover from './hardcover'
 import * as themes from './themes'
 import * as hltb from './hltb'
 import * as gamesCatalog from './gamesCatalog'
@@ -42,6 +43,7 @@ const SOURCE_DELAY_MS: Record<string, number> = {
   vndb: 600,
   steam: 1600, // Steam documents ~200 requests / 5 min / IP
   openlibrary: 300,
+  hardcover: 0, // hardcover.gql's shared throttle spaces every request
   rawg: 800, // local catalog, but a 'length' or full pass asks HowLongToBeat
   launchbox: 300 // local catalog; cover downloads and Bangumi pace themselves
 }
@@ -49,7 +51,7 @@ const SOURCE_DELAY_MS: Record<string, number> = {
 // Quick sources first: an AniList pass takes hours, and a mixed run should not
 // hold minutes of TMDB or Steam work behind it.
 const SOURCE_ORDER_SQL = `CASE m.external_source
-    WHEN 'rawg' THEN 0 WHEN 'launchbox' THEN 0 WHEN 'openlibrary' THEN 1 WHEN 'steam' THEN 2 WHEN 'tmdb' THEN 3
+    WHEN 'rawg' THEN 0 WHEN 'launchbox' THEN 0 WHEN 'openlibrary' THEN 1 WHEN 'hardcover' THEN 1 WHEN 'steam' THEN 2 WHEN 'tmdb' THEN 3
     WHEN 'vndb' THEN 4 WHEN 'anilist' THEN 6 ELSE 5 END`
 
 const SOURCE_NAMES: Record<string, string> = {
@@ -58,6 +60,7 @@ const SOURCE_NAMES: Record<string, string> = {
   vndb: 'VNDB',
   steam: 'Steam',
   openlibrary: 'Open Library',
+  hardcover: 'Hardcover',
   rawg: 'The RAWG catalog',
   launchbox: 'The games catalog'
 }
@@ -154,6 +157,9 @@ export function estimateTitleSeconds(
       return s + (full ? 4.5 : 2.6)
     case 'openlibrary':
       return s + 2
+    case 'hardcover':
+      // A full pass also asks Wikidata (about five spaced requests).
+      return s + (full ? 6 : 1.1)
     case 'rawg':
       return s + (full ? 2.8 : 0.8)
     case 'launchbox':
@@ -237,6 +243,9 @@ export async function refreshOne(row: RefreshRow, aspects: RefreshAspect[]): Pro
     case 'openlibrary':
       await openlibrary.importBook(row.external_id, { only: metadataOnly })
       return true
+    case 'hardcover':
+      await hardcover.importBook(Number(row.external_id), { only: metadataOnly })
+      return true
     case 'rawg':
       await gamesCatalog.importGame(Number(row.external_id), { only: metadataOnly })
       return true
@@ -304,6 +313,9 @@ async function fullImport(row: RefreshRow, withOmdb: boolean): Promise<void> {
       return
     case 'openlibrary':
       await openlibrary.importBook(row.external_id)
+      return
+    case 'hardcover':
+      await hardcover.importBook(id)
       return
     case 'rawg':
       await gamesCatalog.importGame(id)

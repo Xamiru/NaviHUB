@@ -91,8 +91,8 @@ export default defineEvent({
       kind: 'course',
       quotes: [
         {
-          id: 'q3',
-          text: 'It was signed in parallel with a second treaty which set up the European Atomic Energy Community (Euratom).',
+          id: 'q4',
+          text: 'The treaty abolished quotas (i.e. ceilings on imports) and customs duties between its 6 signatories.',
           lang: 'en',
           cite: {
             source: 'eurlex-summary-treaty-of-rome-eec',
@@ -105,8 +105,8 @@ export default defineEvent({
           }
         },
         {
-          id: 'q4',
-          text: 'The treaty abolished quotas (i.e. ceilings on imports) and customs duties between its 6 signatories.',
+          id: 'q3',
+          text: 'It was signed in parallel with a second treaty which set up the European Atomic Energy Community (Euratom).',
           lang: 'en',
           cite: {
             source: 'eurlex-summary-treaty-of-rome-eec',

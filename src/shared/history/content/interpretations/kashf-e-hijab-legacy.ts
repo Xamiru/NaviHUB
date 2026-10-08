@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'kashf-e-hijab-legacy',
   about: ['event:kashf-e-hijab'],
   topic: 'legacy',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'authoritarian-modernization',
@@ -148,6 +148,36 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://web.archive.org/web/20240930004224id_/https://english.khamenei.ir/news/5803/The-massacre-of-Goharshad-Mosque-by-Pahlavi-should-be-narrated'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q8',
+          text: 'The insistence that women give up the veil, the attempt to purity Persian of Arabic loanwords, the uncovering of plots against Reżā Shah’s life, and even the establishment of a national bank (Bānk-e mellī-e Īrān) and the issuing of paper currency were all supposedly intended to contaminate Persian culture, foment conflict with the Arabs, ensure control by the shah, and plunder Persian gold and silver supplies',
+          lang: 'en',
+          cite: {
+            source: 'iranica-ashraf-conspiracy-theories',
+            loc: { section: 'CONSPIRACY THEORIES', para: '10' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/conspiracy-theories/'
+          }
+        },
+        {
+          id: 'q9',
+          text: 'The main reaction to women’s rights came from conservative clerical establishment and the newly formed fundamentalist organization of the Devotees of Islam (Fedāʾīān-e Eslām; q.v.) who demanded a return to the veil in public and attempted to bloc women’s suffrage as initiated by left-wing groups and liberal nationalist elements in the National Front (Jabha-ye mellī; Akhavi, pp. 60-72).',
+          lang: 'en',
+          cite: {
+            source: 'iranica-sedghi-feminist-movements-pahlavi',
+            loc: { section: 'FEMINIST MOVEMENTS iii. IN THE PAHLAVI PERIOD', para: '10' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/feminist-movements-iii/'
           }
         }
       ]

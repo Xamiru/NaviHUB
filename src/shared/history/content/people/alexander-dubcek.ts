@@ -79,6 +79,20 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
+          id: 'q4',
+          text: 'In April the KSC Presidium adopted the Action Program that had been drafted by a coalition headed by Dubcek and made up of reformers, moderates, centrists, and conservatives. The program proposed a "new model of socialism," profoundly "democratic" and "national," that is, adapted to Czechoslovak conditions.',
+          lang: 'en',
+          cite: {
+            source: 'loc-czechoslovakia-country-study-1987',
+            loc: { section: 'The Prague Spring, 1968', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'http://countrystudies.us/czech-republic/40.htm'
+          }
+        },
+        {
           id: 'q2',
           text: 'Dubcek carried the reform movement a step further in the direction of liberalism. After Novotny\'s fall, censorship was lifted.',
           lang: 'en',

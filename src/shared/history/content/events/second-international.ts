@@ -136,6 +136,20 @@ export default defineEvent({
       kind: 'legacy',
       quotes: [
         {
+          id: 'q6',
+          text: 'The socialists of the Second International debated two different strategies for opposing war: international arbitration and a general strike.',
+          lang: 'en',
+          cite: {
+            source: 'ehne-marcobelli-socialists-and-peace',
+            loc: { section: 'The Socialists and Peace', para: '7' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://ehne.fr/en/encyclopedia/themes/international-relations/cultures-peace/socialists-and-peace'
+          }
+        },
+        {
           id: 'q5',
           text: 'It was the issue of war that ultimately led to the permanent disintegration of the Second International,',
           lang: 'en',
@@ -145,7 +159,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://ehne.fr/en/encyclopedia/themes/international-relations/cultures-peace/socialists-and-peace'
           }
         }

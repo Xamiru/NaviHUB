@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   type: 'reform',
   start: {
     alts: [
@@ -27,10 +27,6 @@ export default defineEvent({
           {
             source: 'iranica-saidi-sirjani-clothing-pahlavi',
             loc: { section: 'CLOTHING xi. In the Pahlavi and post-Pahlavi periods', para: '8' }
-          },
-          {
-            source: 'khamenei-ir-2019-01-06-hijab-ban-atrocities',
-            loc: { section: '6 major atrocities', para: '2' }
           }
         ]
       },

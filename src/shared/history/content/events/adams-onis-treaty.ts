@@ -176,6 +176,20 @@ export default defineEvent({
       kind: 'in-their-words',
       quotes: [
         {
+          id: 'q7',
+          text: 'There shall be a firm and inviolable peace and sincere friendship between the United States and their citizens and His Catholic Majesty, his successors and subjects, without exception of persons or places.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-adams-onis-treaty',
+            loc: { section: 'Treaty of Amity, Settlement, and Limits, Art. 2' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://avalon.law.yale.edu/19th_century/sp1819.asp'
+          }
+        },
+        {
           id: 'q5',
           text: 'His Catholic Majesty cedes to the United States, in full property and sovereignty, all the territories which belong to him, situated to the eastward of the Mississippi, known by the name of East and West Florida.',
           lang: 'en',

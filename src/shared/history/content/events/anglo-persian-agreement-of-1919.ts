@@ -237,12 +237,12 @@ export default defineEvent({
       kind: 'course',
       quotes: [
         {
-          id: 'q6',
-          text: 'It took six months of secret negotiations for the preparation of the Agreement which was announced on 9 August 1919.',
+          id: 'q7',
+          text: 'According to the Iranian Constitution (article XIV), no agreement was binding, and operative unless confirmed by the Parliament, but both the British and the Persian governments immediately proceeded as if the agreement had been in fact approved by the Parliament and were operative.',
           lang: 'en',
           cite: {
             source: 'iranica-fatemi-anglo-persian-agreement-1919',
-            loc: { section: 'ANGLO-PERSIAN AGREEMENT OF 1919', para: '5' }
+            loc: { section: 'ANGLO-PERSIAN AGREEMENT OF 1919', para: '15' }
           },
           provenance: {
             via: 'web',
@@ -251,12 +251,12 @@ export default defineEvent({
           }
         },
         {
-          id: 'q7',
-          text: 'According to the Iranian Constitution (article XIV), no agreement was binding, and operative unless confirmed by the Parliament, but both the British and the Persian governments immediately proceeded as if the agreement had been in fact approved by the Parliament and were operative.',
+          id: 'q6',
+          text: 'It took six months of secret negotiations for the preparation of the Agreement which was announced on 9 August 1919.',
           lang: 'en',
           cite: {
             source: 'iranica-fatemi-anglo-persian-agreement-1919',
-            loc: { section: 'ANGLO-PERSIAN AGREEMENT OF 1919', para: '15' }
+            loc: { section: 'ANGLO-PERSIAN AGREEMENT OF 1919', para: '5' }
           },
           provenance: {
             via: 'web',
@@ -284,20 +284,6 @@ export default defineEvent({
       kind: 'aftermath',
       quotes: [
         {
-          id: 'q9',
-          text: 'Finally what destroyed the agreement was the allegation that Prime Minister Woṯūq-al-dawla, the Minister of Finance Akbar Mīrzā Ṣārem-al-dawla, and the Minister of Foreign Affairs Fīrūz Mīrzā Noṣrat-al-dawla, collectively referred to in the British sources as “The Triumvirate,” had received a sum of β131,000 to secure the ratification of the Agreement by the Majlis.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-fatemi-anglo-persian-agreement-1919',
-            loc: { section: 'ANGLO-PERSIAN AGREEMENT OF 1919', para: '16' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/anglo-persian-agreement-1919'
-          }
-        },
-        {
           id: 'q10',
           text: 'In 1921, the fourth Majles would firmly refuse to sanction the Agreement, thwarting absolute British imperial rule in Persia (Katouzian, passim; Fatemi, pp. 10-120; Ghani, pp. 46-80; Bennett, pp. 123-28).',
           lang: 'en',
@@ -309,6 +295,20 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/great-britain-iii'
+          }
+        },
+        {
+          id: 'q9',
+          text: 'Finally what destroyed the agreement was the allegation that Prime Minister Woṯūq-al-dawla, the Minister of Finance Akbar Mīrzā Ṣārem-al-dawla, and the Minister of Foreign Affairs Fīrūz Mīrzā Noṣrat-al-dawla, collectively referred to in the British sources as “The Triumvirate,” had received a sum of β131,000 to secure the ratification of the Agreement by the Majlis.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-fatemi-anglo-persian-agreement-1919',
+            loc: { section: 'ANGLO-PERSIAN AGREEMENT OF 1919', para: '16' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/anglo-persian-agreement-1919'
           }
         },
         {

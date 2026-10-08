@@ -293,7 +293,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q10',
-          text: 'Shortly afterwards, he died of heart failure',
+          text: 'Forūḡī turned down this offer, however, as the conditions proved unacceptable (Enteẓām, pp. 186-87). Shortly afterwards, he died of heart failure',
           lang: 'en',
           cite: {
             source: 'iranica-azimi-afshar-forughi-mohammad-ali',
@@ -301,7 +301,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/forugi-mohammad-ali/'
           }
         }

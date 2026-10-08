@@ -90,7 +90,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'He was born in the segregated south of Atlanta, Georgia and after graduating from Morehouse College, Crozer Theological Seminary, and Boston University he entered the Christian ministry.',
+          text: 'Martin Luther King, Jr. (1929-1968) was the nation\'s most prominent leader in the 20th century struggle for civil rights. He was born in the segregated south of Atlanta, Georgia and after graduating from Morehouse College, Crozer Theological Seminary, and Boston University he entered the Christian ministry.',
           lang: 'en',
           cite: {
             source: 'nps-dr-martin-luther-king-jr',
@@ -98,7 +98,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-09',
             url: 'https://home.nps.gov/people/martinlutherkingjr.htm'
           }
         }

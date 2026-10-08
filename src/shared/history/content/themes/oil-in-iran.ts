@@ -186,7 +186,10 @@ export default defineTheme({
         }
       }
     },
-    { ref: 'event:founding-of-opec' }
+    { ref: 'event:founding-of-opec' },
+    { ref: 'event:tehran-agreement-1971' },
+    { ref: 'event:1973-oil-crisis' },
+    { ref: 'event:iran-iraq-war' }
   ],
   related: [
     { ref: 'theme:iran-and-britain' },
@@ -238,6 +241,20 @@ export default defineTheme({
       kind: 'consequences',
       quotes: [
         {
+          id: 'q15',
+          text: 'On 7 March 1951 Razmārā was assassinated, and within several days a bill to nationalize the oil industry was passed.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-kazemi-anglo-persian-oil-company',
+            loc: { section: 'ANGLO-PERSIAN OIL COMPANY', para: '12' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/anglo-persian-oil-company/'
+          }
+        },
+        {
           id: 'q3',
           text: 'Thus the British company, first as Anglo-Persian, then as Anglo-Iranian Oil, operated in Iran for forty-two years, during thirty-nine of which it was the most important oil producer, refiner and exporter in the Persian Gulf area. During those thirty-nine years (1912-51, FIGURE 1, FIGURE 2) it exported a total of 338 million tons of oil from Iran for which it paid Iran ₤118,000,000 representing an average of about 7 shillings per ton. According to an estimate made by the author of Persian Oil the Anglo-Iranian’s total investment in Iran amounted to ₤21,656,252 of which ₤5,000,000 was provided by the British government. In return for this investment the company’s stockholders received ₤115,000,000 in dividends, of which ₤49,000,000 went to the British government apart from the sum of ₤175,000,000 which was paid to it as tax.',
           lang: 'en',
@@ -256,6 +273,20 @@ export default defineTheme({
     {
       kind: 'legacy',
       quotes: [
+        {
+          id: 'q16',
+          text: 'In the years following nationalization, the exercise of effective control over the exploitation of petroleum resources had been at the forefront of NIOC’s agenda and had shaped its approach to international petroleum agreements.The 1957 Petroleum Act initially provided the vehicle for the achievement of these objectives.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-mina-oil-agreements',
+            loc: { section: 'OIL AGREEMENTS IN IRAN', para: '104' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/oil-agreements-in-iran/'
+          }
+        },
         {
           id: 'q4',
           text: 'Finally with de facto changes in the contractual relationship with the Consortium Members and signing of the Sale and Purchase Agreement in 1973 followed by enactment of a new Petroleum Act and conclusion of several Risk Service Contracts in 1974, NIOC had, at last, reached its long cherished objective of full and complete control of the Iranian Oil Industry and resources.',

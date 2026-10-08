@@ -40,7 +40,11 @@ const FIXED_WIPES = [
   'DELETE FROM music_track_personal',
   'DELETE FROM music_smart_playlist',
   'DELETE FROM vn_edition',
+  'DELETE FROM book_edition',
   'DELETE FROM vn_text_capture',
+  'DELETE FROM wrestling_clip_tag',
+  'DELETE FROM wrestling_clip_link',
+  'DELETE FROM wrestling_clip',
   'DELETE FROM wrestling_journey_viewing',
   'DELETE FROM wrestling_journey_step',
   'DELETE FROM wrestling_journey',
@@ -151,7 +155,7 @@ const FIXED_WIPES = [
       'sync.token','sync.device','sync.port',
       'jackett.url','jackett.api_key','jackett.start_cmd',
       'qbittorrent.url','qbittorrent.username','qbittorrent.password',
-      'github.token','fanarttv.api_key','steamgriddb.api_key','checklist.seeded','jp.knownBaseline')
+      'github.token','fanarttv.api_key','steamgriddb.api_key','hardcover.token','checklist.seeded','jp.knownBaseline')
      OR key LIKE 'japanese.seeded%' OR key LIKE 'franchise.%'
      OR key LIKE 'football.entitlement.%'
      OR key LIKE 'learning.evidence.v1.%'`
@@ -294,6 +298,7 @@ function filterPolymorphicCollections(db, hasTable) {
     wrestlingEvent: 'wrestling_event',
     wrestlingMatch: 'wrestling_match',
     wrestlingWrestler: 'wrestling_wrestler',
+    wrestlingClip: 'wrestling_clip',
     footballCompetition: 'football_competition',
     footballTeam: 'football_team',
     footballPerson: 'football_person',

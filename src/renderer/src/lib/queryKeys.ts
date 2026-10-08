@@ -60,6 +60,12 @@ export const qk = {
     overview: (id: number) => ['vnReading', 'overview', id] as const,
     notes: (id: number, page: number) => ['vnReading', 'notes', id, page] as const
   },
+  // Hardcover's edition list for a book: a network read, deliberately outside
+  // the ['media'] prefix so library mutations never refetch it.
+  books: {
+    all: ['books'] as const,
+    editions: (mediaId: number) => ['books', 'editions', mediaId] as const
+  },
   media: {
     all: ['media'] as const,
     lists: ['media', 'list'] as const,
@@ -77,7 +83,10 @@ export const qk = {
     activityHeatmap: ['media', 'activityHeatmap'] as const,
     // Under ['media'] on purpose: ticking an episode logs media progress, so the
     // detail page's own invalidation has to reach the season grid too.
-    tvSeasons: (mediaId: number) => ['media', 'tvSeasons', mediaId] as const
+    tvSeasons: (mediaId: number) => ['media', 'tvSeasons', mediaId] as const,
+    // The user's chosen edition of a book (book_edition) — personal state that
+    // a media mutation may change (choosing one rewrites the page total).
+    bookEdition: (mediaId: number) => ['media', 'bookEdition', mediaId] as const
   },
   mediaCounts: {
     all: ['media-counts'] as const,
@@ -104,6 +113,7 @@ export const qk = {
     ...entity('people'),
     homeTop: ['people', 'homeTop'] as const,
     credits: (personId: number) => ['people', 'credits', personId] as const,
+    costars: (personId: number) => ['people', 'costars', personId] as const,
     directory: (query: import('@shared/types').PersonDirectoryQuery) =>
       ['people', 'directory', query] as const
   },
@@ -420,6 +430,13 @@ export const qk = {
     files: (eventId: number) => ['wrestling', 'files', eventId] as const,
     loose: ['wrestling', 'loose'] as const,
     recent: ['wrestling', 'recent'] as const,
+    clips: (filter: import('@shared/types').WrestlingClipFilter) =>
+      ['wrestling', 'clips', filter] as const,
+    clipsFor: (kind: import('@shared/types').WrestlingClipEntityKind, id: number | string) =>
+      ['wrestling', 'clipsFor', kind, id] as const,
+    recentClips: (limit: number) => ['wrestling', 'recentClips', limit] as const,
+    clipTags: ['wrestling', 'clipTags'] as const,
+    clipTargets: (q: string) => ['wrestling', 'clipTargets', q] as const,
     importStatus: ['wrestling', 'importStatus'] as const
   },
   football: {

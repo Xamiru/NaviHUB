@@ -1,0 +1,263 @@
+{
+ "v": 1,
+ "kind": "person",
+ "id": "ali-khamenei",
+ "names": [
+  {
+   "text": "Ali Khamenei",
+   "lang": "en",
+   "role": "primary"
+  },
+  {
+   "text": "علی خامنه‌ای",
+   "lang": "fa",
+   "role": "native"
+  },
+  {
+   "text": "Ali Khamenehi",
+   "lang": "en",
+   "role": "alternative",
+   "cites": [
+    {
+     "source": "loc-iran-country-study-1987",
+     "loc": {
+      "section": "Terror and Repression",
+      "para": "4"
+     }
+    }
+   ]
+  }
+ ],
+ "researched": "2026-10-09",
+ "born": {
+  "alts": [
+   {
+    "value": {
+     "d": "1939-07-16"
+    },
+    "cites": [
+     {
+      "source": "lc-names-khamenei-ali-n87935094",
+      "loc": {
+       "section": "Khamenei, Ali"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "bornIn": {
+  "ref": "place:mashhad",
+  "cites": []
+ },
+ "regions": [
+  "iran"
+ ],
+ "roles": [
+  "cleric",
+  "politician",
+  "head-of-state"
+ ],
+ "offices": [
+  {
+   "title": "President of Iran",
+   "polity": "polity:islamic-republic-of-iran",
+   "start": {
+    "alts": [
+     {
+      "value": {
+       "d": "1981-10-02"
+      },
+      "cites": [
+       {
+        "source": "loc-iran-country-study-1987",
+        "loc": {
+         "section": "Terror and Repression",
+         "para": "4"
+        }
+       },
+       {
+        "source": "iranica-yarshater-chronology-part-4",
+        "loc": {
+         "section": "Chronology of Iranian History Part 4"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "end": {
+    "alts": [
+     {
+      "value": {
+       "d": "1989"
+      },
+      "cites": [
+       {
+        "source": "iranica-yarshater-chronology-part-4",
+        "loc": {
+         "section": "Chronology of Iranian History Part 4"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "cites": [
+    {
+     "source": "loc-iran-country-study-1987",
+     "loc": {
+      "section": "Terror and Repression",
+      "para": "4"
+     }
+    },
+    {
+     "source": "loc-iran-country-study-1987",
+     "loc": {
+      "section": "Consolidation of the Revolution",
+      "para": "3"
+     }
+    }
+   ]
+  },
+  {
+   "title": "Supreme Leader of Iran",
+   "polity": "polity:islamic-republic-of-iran",
+   "start": {
+    "alts": [
+     {
+      "value": {
+       "d": "1989"
+      },
+      "cites": [
+       {
+        "source": "iranica-yarshater-chronology-part-4",
+        "loc": {
+         "section": "Chronology of Iranian History Part 4"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "cites": [
+    {
+     "source": "iranica-yarshater-chronology-part-4",
+     "loc": {
+      "section": "Chronology of Iranian History Part 4"
+     }
+    },
+    {
+     "source": "iranica-arjomand-constitution-of-the-islamic-republic",
+     "loc": {
+      "section": "CONSTITUTION OF THE ISLAMIC REPUBLIC",
+      "para": "33"
+     }
+    }
+   ]
+  }
+ ],
+ "portrait": {
+  "url": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Ali_Khamenei_crop.jpg",
+  "page": "https://commons.wikimedia.org/wiki/File:Ali_Khamenei_crop.jpg",
+  "credit": {
+   "institution": "Khamenei.ir"
+  },
+  "license": {
+   "id": "cc-by",
+   "version": "4.0",
+   "url": "https://creativecommons.org/licenses/by/4.0"
+  }
+ },
+ "sections": [
+  {
+   "kind": "career",
+   "quotes": [
+    {
+     "id": "q3",
+     "text": "Sayyed-ʿAli Ḵāmeneʾi, president of the Islamic Republic, is elected Supreme Leader (wali-e faqih) by the Assembly of Experts.",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-yarshater-chronology-part-4",
+      "loc": {
+       "section": "Chronology of Iranian History Part 4"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-08",
+      "url": "https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-4/"
+     }
+    },
+    {
+     "id": "q4",
+     "text": "In a new round of elections on October 2, Hojjatoleslam Ali Khamenehi was elected president.",
+     "lang": "en",
+     "cite": {
+      "source": "loc-iran-country-study-1987",
+      "loc": {
+       "section": "Terror and Repression",
+       "para": "4"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-08",
+      "url": "http://countrystudies.us/iran/26.htm"
+     }
+    },
+    {
+     "id": "q5",
+     "text": "In 1985 it elected Khamenehi, who was virtually unchallenged, to another four-year term as president.",
+     "lang": "en",
+     "cite": {
+      "source": "loc-iran-country-study-1987",
+      "loc": {
+       "section": "Consolidation of the Revolution",
+       "para": "3"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-08",
+      "url": "http://countrystudies.us/iran/27.htm"
+     }
+    },
+    {
+     "id": "q6",
+     "text": "The Assembly of experts met the following morning and after a long session elected Ḵāmenaʾī as Khomeini’s successor by a majority of sixty votes out of seventy-four.",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-arjomand-constitution-of-the-islamic-republic",
+      "loc": {
+       "section": "CONSTITUTION OF THE ISLAMIC REPUBLIC",
+       "para": "33"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-08",
+      "url": "https://www.iranicaonline.org/articles/constitution-of-the-islamic-republic"
+     }
+    },
+    {
+     "id": "q7",
+     "text": "On 18 July 1988, President Khamene’i in a letter to Secretary-General Pérez de Cuéllar announced that Iran had accepted United Nations Security Council Resolution 598, which called for an immediate cease-fire.",
+     "lang": "en",
+     "cite": {
+      "source": "iranica-gieling-iraq-vii-iran-iraq-war",
+      "loc": {
+       "section": "IRAQ vii. IRAN-IRAQ WAR",
+       "para": "45"
+      }
+     },
+     "provenance": {
+      "via": "web",
+      "at": "2026-10-08",
+      "url": "https://www.iranicaonline.org/articles/iraq-vii-iran-iraq-war"
+     }
+    }
+   ]
+  }
+ ]
+}

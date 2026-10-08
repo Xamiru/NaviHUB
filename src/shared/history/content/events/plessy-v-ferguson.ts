@@ -152,8 +152,8 @@ export default defineEvent({
       kind: 'legacy',
       quotes: [
         {
-          id: 'q5',
-          text: 'It was not until the Supreme Court’s decision in Brown v. Board of Education and congressional civil rights acts of the 1950s and 1960s that systematic segregation under state law was ended.',
+          id: 'q6',
+          text: 'For Homer Plessy, the remedies came too late.',
           lang: 'en',
           cite: {
             source: 'nara-milestone-plessy-v-ferguson',
@@ -166,8 +166,8 @@ export default defineEvent({
           }
         },
         {
-          id: 'q6',
-          text: 'For Homer Plessy, the remedies came too late.',
+          id: 'q5',
+          text: 'It was not until the Supreme Court’s decision in Brown v. Board of Education and congressional civil rights acts of the 1950s and 1960s that systematic segregation under state law was ended.',
           lang: 'en',
           cite: {
             source: 'nara-milestone-plessy-v-ferguson',

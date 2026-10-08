@@ -5,6 +5,7 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { useDebouncedValue, useIncrementalList } from '../lib/hooks'
 import PageHeader from '../components/PageHeader'
+import { WrestlingClipShelf } from '../components/wrestling/WrestlingClips'
 import PageStatus from '../components/PageStatus'
 import EmptyState from '../components/EmptyState'
 import CoverImage from '../components/CoverImage'
@@ -105,6 +106,8 @@ export default function WrestlingPromotionPage(): JSX.Element {
         title={cfg.short}
         subtitle={`${cfg.name} · ${events?.length ?? 0} events in the current chronology`}
       />
+
+      <WrestlingClipShelf kind="promotion" id={cfg.id} label={cfg.short} hideWhenEmpty className="mb-8" />
 
       <div className="mb-5 space-y-4">
         <Field label="Search events" hiddenLabel className="max-w-md">

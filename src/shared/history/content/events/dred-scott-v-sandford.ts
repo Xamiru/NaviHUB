@@ -124,12 +124,7 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.archives.gov/milestone-documents/dred-scott-v-sandford'
           }
-        }
-      ]
-    },
-    {
-      kind: 'consequences',
-      quotes: [
+        },
         {
           id: 'q5',
           text: 'This decision moved the nation a step closer to the Civil War.',
@@ -140,7 +135,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.archives.gov/milestone-documents/dred-scott-v-sandford'
           }
         }

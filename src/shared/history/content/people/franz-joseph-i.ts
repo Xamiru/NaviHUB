@@ -145,7 +145,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'All the preparations were made with the utmost secrecy; on the 2nd of December 1848, in the archiepiscopal palace at Olmütz, whither the court had fled from Vienna, the emperor abdicated. His brother resigned his rights of succession to his son, and Francis Joseph was proclaimed emperor.',
+          text: 'During the disturbances of 1848, Francis Joseph spent some time in Italy, where, under Radetzky, at the battle of St Lucia, he had his first experience of warfare. At the end of that year, after the rising of Vienna and capture of the city by Windischgrätz, it was clearly desirable that there should be a more vigorous ruler at the head of the empire, and Ferdinand, now that the young archduke was of age, was able to carry out the abdication which he and his wife had long desired. All the preparations were made with the utmost secrecy; on the 2nd of December 1848, in the archiepiscopal palace at Olmütz, whither the court had fled from Vienna, the emperor abdicated. His brother resigned his rights of succession to his son, and Francis Joseph was proclaimed emperor.',
           lang: 'en',
           cite: {
             source: 'britannica-1911-francis-joseph-i',
@@ -153,7 +153,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Francis_Joseph_I.'
           }
         },
@@ -192,7 +192,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q5',
-          text: 'It was only in the year 1916 that his faculties began to fail.',
+          text: 'All the preparations for Francis Ferdinand\'s accession were made. But the old Emperor recovered; and his physical as well as his mental energy improved from year to year, so that he was able in the first two years of the World War to transact fully all the business of government. It was only in the year 1916 that his faculties began to fail.',
           lang: 'en',
           cite: {
             source: 'britannica-1922-francis-joseph-i',
@@ -200,7 +200,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-09',
             url: 'https://en.wikisource.org/wiki/1922_Encyclop%C3%A6dia_Britannica/Francis_Joseph_I.'
           }
         },

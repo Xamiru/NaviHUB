@@ -93,14 +93,14 @@ export default definePeriod({
       kind: 'aftermath',
       quotes: [
         {
-          id: 'q3',
-          text: 'He was eventually driven from Syria by the sultan\'s forces.',
+          id: 'q5',
+          text: 'A British fleet bombarded Beirut in September 1840, and an Anglo-Turkish force landed, causing uprisings against the Egyptian forces.',
           lang: 'en',
           cite: {
-            source: 'loc-syria-country-study-1987',
-            loc: { section: 'Ottoman Empire', para: '10' }
+            source: 'loc-egypt-country-study-1990',
+            loc: { section: 'Muhammad Ali, 1805-48', para: '9' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/syria/7.htm' }
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/egypt/21.htm' }
         },
         {
           id: 'q4',
@@ -113,14 +113,14 @@ export default definePeriod({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/jordan/6.htm' }
         },
         {
-          id: 'q5',
-          text: 'A British fleet bombarded Beirut in September 1840, and an Anglo-Turkish force landed, causing uprisings against the Egyptian forces.',
+          id: 'q3',
+          text: 'He was eventually driven from Syria by the sultan\'s forces.',
           lang: 'en',
           cite: {
-            source: 'loc-egypt-country-study-1990',
-            loc: { section: 'Muhammad Ali, 1805-48', para: '9' }
+            source: 'loc-syria-country-study-1987',
+            loc: { section: 'Ottoman Empire', para: '10' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/egypt/21.htm' }
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/syria/7.htm' }
         }
       ]
     }

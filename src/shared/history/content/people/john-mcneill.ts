@@ -57,6 +57,23 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
+          id: 'q2',
+          text: 'Dr. John MacNeill, who was appointed as the British minister in Tehran in 1836, built his career in part on developing a network of contacts and informers among the Qajar ruling house and officials.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-amanat-great-britain-ii',
+            loc: {
+              section: 'GREAT BRITAIN ii. British influence in Persia in the 19th century',
+              para: '18'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
+          }
+        },
+        {
           id: 'q1',
           text: 'The crown prince was constantly treated by his personal physicians, the Englishman MacNeill and Cormick; in 1238/1822-23 a Persian doctor, Moḥammad Mīrzā Eṣfahānī, was also consulted.',
           lang: 'en',
@@ -68,23 +85,6 @@ export default definePerson({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/abbas-mirza'
-          }
-        },
-        {
-          id: 'q2',
-          text: 'Earlier another physician, Dr. John MacNeill, who was appointed as the British minister in Tehran in 1836, built his career in part on developing a network of contacts and informers among the Qajar ruling house and officials.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-amanat-great-britain-ii',
-            loc: {
-              section: 'GREAT BRITAIN ii. British influence in Persia in the 19th century',
-              para: '18'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
           }
         },
         {
@@ -122,7 +122,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q5',
-          text: 'This led to a great enhancement of the British status and later prompted British envoys, John McNeill and Justin Sheil, to adopt a condescending attitude toward Persia at a time when Persian confidence was at its nadir (Watson, pp. 234-35; Yapp, pp. 110-12).',
+          text: 'In the wake of his disastrous defeat, the crown prince ʿAbbās Mirzā and his Tabriz administration had to rely even more heavily on the British envoy, John Macdonald Kinneir, for financial and diplomatic assistance. This led to a great enhancement of the British status and later prompted British envoys, John McNeill and Justin Sheil, to adopt a condescending attitude toward Persia at a time when Persian confidence was at its nadir (Watson, pp. 234-35; Yapp, pp. 110-12).',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-great-britain-ii',
@@ -133,7 +133,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
           }
         }

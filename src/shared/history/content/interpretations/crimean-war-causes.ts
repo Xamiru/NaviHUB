@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'crimean-war-causes',
   about: ['event:crimean-war'],
   topic: 'causes',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'resisting-russian-aggression',
@@ -57,6 +57,19 @@ export default defineInterpretation({
             url: 'https://api.parliament.uk/historic-hansard/commons/1854/mar/31/war-with-russia-the-queens-message'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q10',
+          text: 'The primary object of the war had thus easily been obtained. But Great Britain and France were by no means content with a triumph that left untouched the vast resources of an enemy who was certain to employ them at the next opportunity.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-crimean-war', loc: { section: 'CRIMEAN WAR', para: '2' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Crimean_War'
+          }
+        }
       ]
     },
     {
@@ -79,6 +92,19 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://api.parliament.uk/historic-hansard/commons/1854/mar/31/war-with-russia-the-queens-message'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q11',
+          text: 'The two nations felt that Sevastopol, the home of the Black Sea fleet, the port whence Admiral Nachimov had sailed for Sinope, must be crippled for some years at least',
+          lang: 'en',
+          cite: { source: 'britannica-1911-crimean-war', loc: { section: 'CRIMEAN WAR', para: '2' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Crimean_War'
           }
         }
       ]

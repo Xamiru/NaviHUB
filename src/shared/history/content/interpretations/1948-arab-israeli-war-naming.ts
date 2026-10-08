@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: '1948-arab-israeli-war-naming',
   about: ['event:1948-arab-israeli-war'],
   topic: 'naming',
-  researched: '2026-10-06',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'war-of-independence',
@@ -39,6 +39,36 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-06',
             url: 'https://web.archive.org/web/2015id_/http://mfa.gov.il/MFA/AboutIsrael/History/Pages/HISTORY-%20The%20State%20of%20Israel.aspx'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q5',
+          text: 'After Israel declared its independence on May 14, 1948, the fighting intensified with other Arab forces joining the Palestinian Arabs in attacking territory in the former Palestinian mandate.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-arab-israeli-war-of-1948',
+            loc: { section: 'The Arab-Israeli War of 1948', para: '5' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1945-1952/arab-israeli-war'
+          }
+        },
+        {
+          id: 'q6',
+          text: 'British trained forces from Transjordan eventually intervened in the conflict, but only in areas that had been designated as part of the Arab state under the United Nations Partition Plan and the corpus separatum of Jerusalem.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-arab-israeli-war-of-1948',
+            loc: { section: 'The Arab-Israeli War of 1948', para: '5' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1945-1952/arab-israeli-war'
           }
         }
       ]

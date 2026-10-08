@@ -238,6 +238,20 @@ export default defineEvent({
       kind: 'aftermath',
       quotes: [
         {
+          id: 'q7',
+          text: 'In 1266/1850, bast was abolished, for example, at the Masǰed-e Šāh in Tehran, although it was restored after the downfall of Amīr Kabīr.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-algar-amir-kabir',
+            loc: { section: 'AMĪR KABĪR, MĪRZĀ TAQĪ KHAN', para: '11' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/amir-e-kabir-mirza-taqi-khan'
+          }
+        },
+        {
           id: 'q6',
           text: 'Later on, however, the Foreign Office was exceptionally vocal in its strong condemnation of Nāṣer-al-Din Shah for the murder.',
           lang: 'en',
@@ -250,22 +264,8 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
-          }
-        },
-        {
-          id: 'q7',
-          text: 'In 1266/1850, bast was abolished, for example, at the Masǰed-e Šāh in Tehran, although it was restored after the downfall of Amīr Kabīr.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-algar-amir-kabir',
-            loc: { section: 'AMĪR KABĪR, MĪRZĀ TAQĪ KHAN', para: '11' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/amir-e-kabir-mirza-taqi-khan'
           }
         }
       ]

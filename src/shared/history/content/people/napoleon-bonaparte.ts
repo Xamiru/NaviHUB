@@ -159,7 +159,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q5',
-          text: 'His final words before his death on 5 May 1821 were of Josephine and the army.',
+          text: 'Napoleon’s moods swung between bouts of depression, during which time he would refuse to leave Longwood, and periods of intense activity, including the conception of a new garden. His final words before his death on 5 May 1821 were of Josephine and the army.',
           lang: 'en',
           cite: {
             source: 'fondation-napoleon-timeline-consulate-first-empire',
@@ -169,7 +169,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.napoleon.org/en/young-historians/napodoc/timeline-consulate1st-french-empire/'
           }
         }

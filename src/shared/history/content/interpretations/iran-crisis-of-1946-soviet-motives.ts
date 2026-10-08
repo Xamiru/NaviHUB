@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'iran-crisis-of-1946-soviet-motives',
   about: ['event:iran-crisis-of-1946'],
   topic: 'motives',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   positions: [
     {
       id: 'soviet-stated-grounds',
@@ -40,6 +40,24 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-08',
             url: 'https://history.state.gov/historicaldocuments/frus1946v07/d224'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q8',
+          text: 'The pressure was particularly threatening because of the continued presence of Soviet troops in Azarbaijan and northern Persia, even after the war had ended and contrary to an agreement signed by Josef Stalin, Winston Churchill, and Franklin D. Roosevelt in their Tehran Conference of 1943. Whereas the British and the Americans had accordingly withdrawn their troops, the Soviets stayed on and encouraged a separatist movement in Azerbijan headed by Jaʿfar Piševari',
+          lang: 'en',
+          cite: {
+            source: 'iranica-yarshater-iranian-history-islamic-period-6',
+            loc: {
+              section: 'IRAN ii. IRANIAN HISTORY (2) Islamic period, Moḥammad Reza Shah (1941-79)'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/iran-ii2-islamic-period-page-6/'
           }
         }
       ]

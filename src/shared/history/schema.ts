@@ -230,7 +230,9 @@ export const POSITION_CATEGORIES = {
   /** Held at the time by participants or observers, in their own words. */
   contemporary: 'Contemporary view',
   scholarly: 'Scholarly',
-  official: 'Official narrative',
+  /** A government's or ruler's statement: a claim, never a neutral account. The
+   * key predates the label and is frozen in content files. */
+  official: 'Government claim',
   popular: 'Popular view',
   revisionist: 'Revisionist',
   fringe: 'Fringe'
@@ -259,7 +261,7 @@ export const HOLDER_KINDS = {
   public: 'Public'
 } as const
 export type HolderKind = keyof typeof HOLDER_KINDS
-/** A holder that can voice an official narrative. */
+/** A holder that can voice a government claim. */
 export const OFFICIAL_HOLDERS: ReadonlySet<HolderKind> = new Set(['state', 'party', 'organization'])
 
 export const DISCIPLINES = {

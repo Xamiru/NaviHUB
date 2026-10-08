@@ -122,7 +122,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q3',
-          text: 'Like his father, he believed that the Russian border should align with the Kura and Aras rivers.',
+          text: 'Paul was assassinated, and his son Alexander (r. 1801-25) became the new Russian emperor (Allen, pp. 214-15). Like his father, he believed that the Russian border should align with the Kura and Aras rivers.',
           lang: 'en',
           cite: {
             source: 'iranica-andreeva-russia-relations',
@@ -133,7 +133,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/russia-i-relations/'
           }
         },

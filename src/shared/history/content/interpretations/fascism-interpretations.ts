@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'fascism-interpretations',
   about: ['event:march-on-rome', 'period:fascist-italy'],
   topic: 'nature',
-  researched: '2026-10-08',
+  researched: '2026-10-09',
   framing: {
     id: 'q1',
     text: 'Dès son apparition, les interprétations des contemporains se multiplient sur les origines du fascisme.',
@@ -56,6 +56,22 @@ export default defineInterpretation({
             url: 'https://it.wikisource.org/wiki/La_dottrina_del_fascismo'
           }
         }
+      ],
+      reception: [
+        {
+          id: 'q13',
+          text: 'Le fascisme est une idéologie nationaliste qui repose sur des valeurs réactionnaires (opposées au progrès) et sur le projet d’une transformation totale de la société et de l’individu, tout en rejetant les libertés démocratiques par divers moyens comme la violence.',
+          lang: 'fr',
+          cite: {
+            source: 'ehne-toson-quest-ce-que-le-fascisme',
+            loc: { section: 'Qu’est-ce que le fascisme ? Définition et histoire', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://ehne.fr/fr/encyclopedie/th%C3%A9matiques/l\'europe-politique/les-modeles-politiques-pour-faire-l\'europe/qu\'est-ce-que-le-fascisme-definition-et-histoire'
+          }
+        }
       ]
     },
     {
@@ -80,6 +96,22 @@ export default defineInterpretation({
             via: 'web',
             at: '2026-10-07',
             url: 'https://www.marxists.org/reference/archive/dimitrov/works/1935/08_02.htm'
+          }
+        }
+      ],
+      reception: [
+        {
+          id: 'q14',
+          text: 'Le point névralgique de l’idéologie du fascisme réside dans la quête de la régénération morale et physique de la nation italienne',
+          lang: 'fr',
+          cite: {
+            source: 'ehne-toson-quest-ce-que-le-fascisme',
+            loc: { section: 'Qu’est-ce que le fascisme ? Définition et histoire', para: '7' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://ehne.fr/fr/encyclopedie/th%C3%A9matiques/l\'europe-politique/les-modeles-politiques-pour-faire-l\'europe/qu\'est-ce-que-le-fascisme-definition-et-histoire'
           }
         }
       ]
