@@ -8,31 +8,10 @@ import { DrawerSlider } from './ReaderSettingsDrawer'
 // controls, not the shell, and still exports the PopoverRow/PopoverOption
 // primitives both readers build their rows from.
 
-export type BookTheme = 'dark' | 'black' | 'sepia' | 'paper'
-export type BookFont = 'sans' | 'serif'
+// The prefs themselves live in lib/readerPrefs.ts so Settings can edit them.
+export { BOOK_DEFAULTS, type BookFont, type BookPrefs, type BookTheme } from '../../lib/readerPrefs'
+import type { BookFont, BookPrefs, BookTheme } from '../../lib/readerPrefs'
 
-export interface BookPrefs {
-  fontSize: number // px
-  lineHeight: number
-  maxWidth: number // px, horizontal mode text measure
-  vertical: boolean
-  theme: BookTheme
-  font: BookFont
-  // Dim the whole reading column for night reading. Separate from `theme`:
-  // the paper and sepia pages are bright by design, and turning them down is
-  // not the same choice as switching to the black one.
-  brightness: number // 0.3 – 1
-}
-
-export const BOOK_DEFAULTS: BookPrefs = {
-  fontSize: 18,
-  lineHeight: 1.9,
-  maxWidth: 700,
-  vertical: false,
-  theme: 'dark',
-  font: 'sans',
-  brightness: 1
-}
 export const LINE_HEIGHTS = [1.6, 1.9, 2.2]
 export const WIDTHS = [600, 700, 850, 1100]
 export const BOOK_SERIF_STACK = "'Noto Serif JP', Georgia, 'Times New Roman', serif"

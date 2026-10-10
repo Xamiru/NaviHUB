@@ -412,7 +412,7 @@ export const MOVIE: MediaConfig = {
     { to: '/actors', label: 'Actors', role: 'actor' },
     { to: '/directors', label: 'Directors', role: 'director' }
   ],
-  sidebarLabel: 'Movies / TV', // short enough not to wrap in the mono sidebar
+  sidebarLabel: 'Movies & TV', // short enough not to wrap in the mono sidebar
   hasVideoLibrary: true,
   videoTabLabel: 'Video',
   listTabs: [

@@ -38,7 +38,7 @@ export default function TorrentsPage(): React.JSX.Element {
           title="Jackett is not configured"
           body="Set its URL and API key before starting an indexer search."
           action={
-            <Link className="btn-primary" to="/settings?tab=integrations">
+            <Link className="btn-primary" to="/settings?tab=tools">
               Open integration settings
             </Link>
           }

@@ -1,11 +1,13 @@
 import { app, dialog, BrowserWindow, nativeImage } from 'electron'
-import { join, extname, basename, dirname } from 'path'
+import { join, extname, basename, dirname, isAbsolute } from 'path'
 import {
   closeSync,
+  constants as fsConstants,
   copyFileSync,
   existsSync,
   mkdirSync,
   openSync,
+  promises as fsp,
   readFileSync,
   readSync,
   renameSync,
@@ -54,7 +56,7 @@ export function audioDirSetting(): string | null {
   return getSetting('audio.dir')?.trim() || null
 }
 
-function audioDir(): string {
+export function audioDir(): string {
   const custom = getSetting('audio.dir')?.trim()
   // Unset, theme audio shares the media folder, so it moves with it.
   return custom && custom.length ? custom : mediaRoot()
@@ -690,6 +692,43 @@ export async function saveImageAs(
   const target = res.filePath.toLowerCase().endsWith('.png') ? res.filePath : `${res.filePath}.png`
   writeFileSync(target, Buffer.from(bytes))
   return target
+}
+
+// Settings folder fields' Browse…: a native folder picker attached to the
+// window that asked (see saveImageAs on why the parent matters). Returns the
+// absolute folder, or null on cancel.
+export async function chooseFolder(
+  parent: BrowserWindow | null,
+  title: string,
+  defaultPath?: string
+): Promise<string | null> {
+  const options = {
+    title,
+    defaultPath: defaultPath && isAbsolute(defaultPath) ? defaultPath : undefined,
+    properties: ['openDirectory', 'createDirectory'] as ('openDirectory' | 'createDirectory')[]
+  }
+  const res = parent ? await dialog.showOpenDialog(parent, options) : await dialog.showOpenDialog(options)
+  if (res.canceled || !res.filePaths[0]) return null
+  return res.filePaths[0]
+}
+
+// Whether a saved folder setting still points at a usable folder, so Settings
+// can warn before every file under it silently fails to open.
+export async function folderStatus(
+  path: string
+): Promise<{ exists: boolean; isDirectory: boolean; writable: boolean }> {
+  if (!path.trim() || !isAbsolute(path)) return { exists: false, isDirectory: false, writable: false }
+  try {
+    const info = await fsp.stat(path)
+    if (!info.isDirectory()) return { exists: true, isDirectory: false, writable: false }
+    const writable = await fsp.access(path, fsConstants.W_OK).then(
+      () => true,
+      () => false
+    )
+    return { exists: true, isDirectory: true, writable }
+  } catch {
+    return { exists: false, isDirectory: false, writable: false }
+  }
 }
 
 // Writes raw bytes (a pasted screenshot, or a frame grabbed off the video

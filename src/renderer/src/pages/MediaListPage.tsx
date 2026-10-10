@@ -19,26 +19,21 @@ import MediaFilterPanel, {
   type MediaFilters
 } from '../components/MediaFilterPanel'
 import { seasonForItem, seasonLabel } from '@shared/season'
-import { loadListLayout, loadListSort, saveListLayout, saveListSort, type ListLayout } from '../lib/listSortPrefs'
+import {
+  LIBRARY_SORTS,
+  loadListLayout,
+  loadListSort,
+  saveListLayout,
+  saveListSort,
+  type ListLayout
+} from '../lib/listSortPrefs'
 import { useLogProgress } from '../lib/logProgress'
 import type { MediaListFilter, MediaSort, MediaSummary } from '@shared/types'
 import { Field } from '../components/Field'
 
 // Sort menu. `random` is a seeded shuffle — it has no direction, so the page
 // swaps the direction toggle for a Shuffle button that re-seeds it.
-const SORTS: { value: MediaSort; label: string }[] = [
-  { value: 'updated', label: 'Last updated' },
-  { value: 'added', label: 'Recently added' },
-  { value: 'title', label: 'Title' },
-  { value: 'score', label: 'Your score' },
-  { value: 'communityScore', label: 'Community score' },
-  { value: 'release', label: 'Release date' },
-  { value: 'progress', label: 'Progress' },
-  { value: 'units', label: 'Length' },
-  { value: 'timesConsumed', label: 'Times consumed' },
-  { value: 'random', label: 'Random' }
-]
-
+const SORTS = LIBRARY_SORTS
 const SORT_VALUES = SORTS.map((s) => s.value)
 
 const newSeed = (): number => Math.floor(Math.random() * 1_000_000)

@@ -38,7 +38,12 @@ export const QUIZ_POOL_METHODS = {
   castPool: (filter: QuizLibFilter) => quizRepo.castPool(filter),
   synopsisPool: (filter: QuizSynopsisFilter) => quizRepo.synopsisPool(filter),
   vaQuestions: (filter: QuizLibFilter, count: number, seed: number) =>
-    buildVaQuizQuestions(vaPoolFor(filter), count, seed)
+    buildVaQuizQuestions(vaPoolFor(filter), count, seed),
+  // Settings → Maintenance "Check database". Not a quiz read, but the same
+  // shape: it reads every page of the library database, so it runs on this
+  // process's read-only connection instead of blocking main.
+  quickCheck: () =>
+    (getSqlite().pragma('quick_check') as { quick_check: string }[]).map((row) => row.quick_check)
 }
 
 export type QuizPoolMethods = typeof QUIZ_POOL_METHODS

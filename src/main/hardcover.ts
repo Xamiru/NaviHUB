@@ -11,6 +11,7 @@ import { adaptationsOf, findBookItem } from './bookAdaptations'
 import { adaptationEdge, type Adaptation } from './bookAdaptationsCore'
 import {
   authorizationHeader,
+  cleanToken,
   BOOK_QUERY,
   CHARACTERS_QUERY,
   EDITIONS_QUERY,
@@ -58,7 +59,7 @@ const COVER_EDGE = 1000
 export async function gql(query: string, variables: Record<string, unknown>): Promise<any> {
   const token = settingsRepo.get(HARDCOVER_TOKEN_KEY)?.trim()
   if (!token) {
-    throw new Error('Add a Hardcover API token in Settings → Integrations before importing books.')
+    throw new Error('Add a Hardcover API token in Settings → Accounts & keys before importing books.')
   }
   await hardcoverThrottle.take()
   const res = await fetchWithRetry(HARDCOVER_ENDPOINT, {
@@ -79,7 +80,12 @@ export async function gql(query: string, variables: Record<string, unknown>): Pr
   } catch {
     body = null
   }
-  if (!res.ok) throw new Error(errorMessage(res.status, body))
+  if (!res.ok) {
+    const message = errorMessage(res.status, body)
+    // Never the token itself: only its length, which tells a truncated paste apart.
+    if (res.status === 401) logWarn('http', `hardcover: 401 with a ${cleanToken(token).length}-character token: ${message}`)
+    throw new Error(message)
+  }
   const gqlError = graphqlErrorMessage(body?.errors)
   if (gqlError) throw new Error(gqlError)
   return body?.data ?? null

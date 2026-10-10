@@ -37,6 +37,10 @@ const NOT_IN_REPO = new Set([
   'achievements.json',
   'latest-linux.yml',
   'app-update.yml',
+  // Files inside a library backup and the restore marker in userData
+  // (libraryBackupCore.ts), written at runtime.
+  'manifest.json',
+  'restore-pending.json',
   // Remote API endpoints that happen to end in .json.
   'basic_servant.json',
   'basic_equip.json',

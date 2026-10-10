@@ -10,12 +10,15 @@ import { Group, Pill } from '../components/PillGroup'
 import { vaAppearanceKey } from '@shared/vaQuiz'
 import { quizSeed } from '@shared/quizCore'
 import type { QuizLibFilter } from '@shared/types'
+import { loadQuizDefaults } from '../lib/quizPrefs'
 
 export default function VaQuizPage() {
   const completedStatuses = useAllCompletedStatuses()
   const [scope, setScope] = usePersistedState<'consumed' | 'all'>('quizVaScope', 'consumed')
   const [length, setLength] = usePersistedState<number>('quizVaLength', 10)
-  const [timerEnabled, setTimerEnabled] = usePersistedState('quizVaTimer', true)
+  // Seeds a fresh visit only (Settings → Readers & quizzes).
+  const [quizDefaults] = useState(loadQuizDefaults)
+  const [timerEnabled, setTimerEnabled] = usePersistedState('quizVaTimer', quizDefaults.timer)
   const [round, setRound] = useState(0)
   const [questions, setQuestions] = useState<McQuestion[] | null>(null)
   const [settingsSnapshot, setSettingsSnapshot] = useState<Record<string, unknown>>({})

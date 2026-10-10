@@ -774,7 +774,9 @@ const api: NaviApi = {
     bumpUiScale: (direction) => ipcRenderer.invoke('app:bumpUiScale', direction),
     setMenuBarVisible: (visible) => ipcRenderer.invoke('app:setMenuBarVisible', visible),
     pendingOpen: () => ipcRenderer.invoke('app:pendingOpen'),
-    pendingRoute: () => ipcRenderer.invoke('app:pendingRoute')
+    pendingRoute: () => ipcRenderer.invoke('app:pendingRoute'),
+    startupNotices: () => ipcRenderer.invoke('app:startupNotices'),
+    about: () => ipcRenderer.invoke('app:about')
   },
   activity: {
     status: () => ipcRenderer.invoke('activity:status')
@@ -796,7 +798,13 @@ const api: NaviApi = {
     status: () => ipcRenderer.invoke('storage:status'),
     chooseFolder: (root) => ipcRenderer.invoke('storage:chooseFolder', root),
     move: (root, to) => ipcRenderer.invoke('storage:move', root, to),
-    open: (root) => ipcRenderer.invoke('storage:open', root)
+    open: (root) => ipcRenderer.invoke('storage:open', root),
+    usage: () => ipcRenderer.invoke('storage:usage'),
+    clearCache: (key) => ipcRenderer.invoke('storage:clearCache', key),
+    checkDatabase: () => ipcRenderer.invoke('storage:checkDatabase'),
+    compactPending: () => ipcRenderer.invoke('storage:compactPending'),
+    setCompactOnLaunch: (on) => ipcRenderer.invoke('storage:setCompactOnLaunch', on),
+    openDataFolder: () => ipcRenderer.invoke('storage:openDataFolder')
   },
   libraryExport: {
     preview: (options) => ipcRenderer.invoke('libraryExport:preview', options),
@@ -804,7 +812,20 @@ const api: NaviApi = {
     status: () => ipcRenderer.invoke('libraryExport:status'),
     cancel: () => ipcRenderer.invoke('libraryExport:cancel'),
     reveal: () => ipcRenderer.invoke('libraryExport:reveal')
+  },  backup: {
+    estimate: () => ipcRenderer.invoke('backup:estimate'),
+    start: (options) => ipcRenderer.invoke('backup:start', options),
+    status: () => ipcRenderer.invoke('backup:status'),
+    cancel: () => ipcRenderer.invoke('backup:cancel'),
+    reveal: () => ipcRenderer.invoke('backup:reveal'),
+    chooseRestore: () => ipcRenderer.invoke('backup:chooseRestore'),
+    startRestore: () => ipcRenderer.invoke('backup:startRestore'),
+    discardRestore: () => ipcRenderer.invoke('backup:discardRestore'),
+    safetyCopies: () => ipcRenderer.invoke('backup:safetyCopies'),
+    restoreSafetyCopy: (id) => ipcRenderer.invoke('backup:restoreSafetyCopy', id),
+    deleteSafetyCopy: (id) => ipcRenderer.invoke('backup:deleteSafetyCopy', id)
   },
+
   updates: {
     status: () => ipcRenderer.invoke('update:status'),
     check: () => ipcRenderer.invoke('update:check'),
@@ -815,7 +836,8 @@ const api: NaviApi = {
   settings: {
     all: () => ipcRenderer.invoke('settings:all'),
     secretStorage: () => ipcRenderer.invoke('settings:secretStorage'),
-    set: (key, value) => ipcRenderer.invoke('settings:set', key, value)
+    set: (key, value) => ipcRenderer.invoke('settings:set', key, value),
+    testKey: (key) => ipcRenderer.invoke('settings:testKey', key)
   },
   refresh: {
     preview: (req) => ipcRenderer.invoke('refresh:preview', req),
@@ -829,6 +851,8 @@ const api: NaviApi = {
     pickImage: () => ipcRenderer.invoke('files:pickImage'),
     resolveUrl: (relPath) => ipcRenderer.invoke('files:resolveUrl', relPath),
     saveBytes: (bytes, ext, subdir) => ipcRenderer.invoke('files:saveBytes', bytes, ext, subdir),
+    chooseFolder: (title, defaultPath) => ipcRenderer.invoke('files:chooseFolder', title, defaultPath),
+    folderStatus: (path) => ipcRenderer.invoke('files:folderStatus', path),
     saveImageAs: (bytes, defaultName) => ipcRenderer.invoke('files:saveImageAs', bytes, defaultName)
   }
 }

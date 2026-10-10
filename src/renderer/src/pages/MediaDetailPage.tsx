@@ -165,8 +165,9 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   // VNDB rating is 0–100 like AniList's, scaled to the user's score range.
   const vndbRaw = metaNum('vndbRating')
   const vndbScore = vndbRaw != null ? ((vndbRaw / 100) * scoreMax).toFixed(1) : null
-  // Metacritic (games, via RAWG) stays its familiar 0–100 score.
-  const metacritic = metaNum('metacritic')
+  // Metacritic stays its familiar 0–100 score: games store it as `metacritic`,
+  // movies/TV as OMDb's `metascore`.
+  const metacritic = metaNum('metacritic') ?? metaNum('metascore')
   // Open Library rating stored pre-scaled to 0–100 (stars × 20) at import.
   const olRaw = metaNum('olRating')
   const olScore = olRaw != null ? ((olRaw / 100) * scoreMax).toFixed(1) : null

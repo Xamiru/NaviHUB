@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { searchSettings } from '../src/renderer/src/lib/settingsCatalog'
 
 const component = readFileSync(
   new URL('../src/renderer/src/components/LibraryExportSettings.tsx', import.meta.url),
@@ -36,9 +37,11 @@ describe('library export renderer contract', () => {
   })
 
   it('is discoverable through Settings search', () => {
-    for (const term of ['export', 'backup', 'transfer', 'privacy', 'portable', 'zip']) {
-      expect(settings).toContain(`'${term}'`)
+    for (const term of ['export', 'transfer', 'privacy', 'portable', 'zip']) {
+      expect(searchSettings(term).map((card) => card.title), term).toContain('Library export')
     }
+    // A restorable copy is the backup card's job; export stays the shareable one.
+    expect(searchSettings('backup')[0].title).toBe('Backup and restore')
     expect(settings).toContain('<LibraryExportSettings />')
   })
 })

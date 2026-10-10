@@ -282,7 +282,7 @@ describe('importBook', () => {
     await expect(importBook(312460)).rejects.toThrow(/Add a Hardcover API token/)
     token = 'tok'
     status = 401
-    await expect(search('dune')).rejects.toThrow(/expired or revoked/)
+    await expect(search('dune')).rejects.toThrow(/rejected the API token \(invalid_token\)/)
   })
 })
 

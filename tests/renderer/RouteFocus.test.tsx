@@ -62,8 +62,8 @@ describe('route focus', () => {
         <Shell />
       </MemoryRouter>
     )
-    await user.click(screen.getByRole('button', { name: 'Library' }))
-    await user.click(within(screen.getByRole('dialog', { name: 'Library' })).getByRole('link', { name: 'Music' }))
+    await user.click(screen.getByRole('button', { name: 'Local' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'Local' })).getByRole('link', { name: 'Music' }))
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Music library' })).toHaveFocus())
   })
 })

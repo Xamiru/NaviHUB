@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useNavigate } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/lib/hooks', async (importOriginal) => {
@@ -31,5 +31,31 @@ describe('Topbar navigation', () => {
     fireEvent.resize(window)
     await user.click(screen.getByRole('button', { name: 'Show more navigation links' }))
     expect(scrollBy).toHaveBeenCalledWith({ left: 240, behavior: 'smooth' })
+  })
+
+  it('clears the search box when navigation leaves the results page', async () => {
+    const user = userEvent.setup()
+    function BackFromSearch() {
+      const navigate = useNavigate()
+      return (
+        <button type="button" onClick={() => navigate(-1)}>
+          Go back
+        </button>
+      )
+    }
+    render(
+      <MemoryRouter
+        initialEntries={['/anime', '/search?q=lain']}
+        initialIndex={1}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Topbar />
+        <BackFromSearch />
+      </MemoryRouter>
+    )
+    const box = screen.getByRole('textbox', { name: 'Search library' })
+    expect(box).toHaveValue('lain')
+    await user.click(screen.getByRole('button', { name: 'Go back' }))
+    expect(box).toHaveValue('')
   })
 })

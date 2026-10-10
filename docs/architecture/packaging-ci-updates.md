@@ -3,11 +3,11 @@
 > Reference detail. The rules an agent must not break live in
 > [CLAUDE.md](../../CLAUDE.md#hard-invariants) — this file is the "how and why" narrative.
 
-**Covers** — electron-builder config, the Windows cross-build traps, the derived-version release workflow, electron-updater, the sanitized library export.
+**Covers** — electron-builder config, the Windows cross-build traps, the derived-version release workflow, electron-updater, the sanitized library export, full backups and restore.
 
-**Key files** — `electron-builder.yml`, `.github/workflows/release.yml`, `scripts/dist-win.sh`, `src/main/updater.ts` + `updaterCore.ts`, `src/main/libraryExport.ts`, `scripts/export-library.cjs`, `scripts/sanitizeSql.cjs`
+**Key files** — `electron-builder.yml`, `.github/workflows/release.yml`, `scripts/dist-win.sh`, `src/main/updater.ts` + `updaterCore.ts`, `src/main/libraryExport.ts`, `src/main/libraryBackup.ts` + `libraryBackupCore.ts` + `libraryBackupFiles.ts`, `src/main/startupMaintenance.ts`, `scripts/export-library.cjs`, `scripts/sanitizeSql.cjs`
 
-**Tests** — `updater`, `exportSanitize`, `libraryExport`, `libraryExportUi`
+**Tests** — `updater`, `exportSanitize`, `libraryExport`, `libraryExportUi`, `libraryBackup`, `storageMaintenance`, `renderer/BackupSettings`
 
 ---
 
@@ -27,8 +27,15 @@ Renderer packages that Vite bundles into `out/renderer` stay in `devDependencies
 
 ## Library export
 
-**Library export:** `scripts/sanitizeSql.cjs` is the single privacy authority for both export paths. The older `scripts/export-library.cjs` command keeps its privacy-safe default bundle, while Settings → Keys & Folders → Library export exposes section, asset and optional personal-tracking policies without requiring npm on the destination PC. New personal/tracking columns or tables MUST be added to the sanitizer and `tests/exportSanitize.test.ts` or they leak into exports.
+**Library export:** `scripts/sanitizeSql.cjs` is the single privacy authority for both export paths. The older `scripts/export-library.cjs` command keeps its privacy-safe default bundle, while Settings → Backup & about → Library export exposes section, asset and optional personal-tracking policies without requiring npm on the destination PC. New personal/tracking columns or tables MUST be added to the sanitizer and `tests/exportSanitize.test.ts` or they leak into exports.
 
 The in-app runner in `src/main/libraryExport.ts` uses SQLite's online backup API, so an open WAL database produces one consistent copied `navihub.db`. Only that copy is sanitized. Excluded media sections cascade out before orphaned graph entities and polymorphic list entries are pruned. Spotify playlist snapshots are optional and preserve source metadata only: ordinary playlist/local scan rows are deleted and every `matched_track_id` is cleared. Managed `media/` covers and configured anime-theme `audio/` are copied only when the sanitized database still references them; local music, manga, book, video and wrestling files are never candidates.
 
 Exports are assembled beside the chosen destination as an unmistakable partial path, then atomically renamed to a unique timestamped folder or ZIP. ZIP uses the packaged `archiver` dependency in streaming store mode, so large bundles do not enter renderer or main-process memory. Destination checks reject NaviHUB's data and theme-audio source trees, and a best-effort free-space check accounts for both staging and ZIP output. Cancellation is available through the dialog and Tasks, removes partial output, and is called before database teardown on quit. `libraryExport:status` is polled; there is no push channel. A successful result remains in module state for the app session and includes `README.txt` plus a non-sensitive JSON manifest.
+
+## Backup and restore
+
+A backup (Settings → Backup & about, 2026-10-10) is the opposite of an export: the whole unsanitized database (tracking, notes, learning evidence, playlists, settings and still-encrypted keys) plus the Media, History archive and `jpaudio` (mined-sentence clips) folders, the theme-song folder when `audio.dir` gives it its own location (otherwise theme songs are already in Media), and Pictures when ticked, in one store ZIP with a `manifest.json` of kind `navihub-backup`. It exists because the PC and laptop libraries have no sync; carrying a library between them is backup on one, restore on the other. The database is snapshotted with the online backup API and the folders are zipped in place, so a backup needs room for one copy. A backup folder (an extracted ZIP) restores by choosing its `manifest.json`.
+
+Restore never edits the live database. `chooseRestore` validates the manifest (a library export, a newer format or a newer app version is refused, since migrations only run forward) and stages the backup's database under `userData/restore-staging`. `startRestore` refuses while any task runs, copies the backup's images into this machine's own roots **additively** (any existing file under the same name is kept whatever its size, because Pictures and History archive names are reused; nothing is deleted or overwritten; each root is `resolve()`d before the containment check so a trailing-slash setting still matches), then merges settings into the STAGED copy: every key in `MACHINE_LOCAL_SETTING_KEYS` keeps this machine's value (folders, tool paths, local service URLs, UI scale), and a key whose backup envelope cannot be decrypted here keeps this machine's working one. It writes `restore-pending.json` and restarts. At the next launch `startupMaintenance.ts` runs before `initDatabase()`: it quick-checks the staged file, moves the live database (with its `-wal`/`-shm`) into `userData/backups/before-restore-<time>/`, moves the staged one into place and leaves a toast; any failure puts the original back. Normal init then migrates an older backup forward. Each replaced library is listed under the card with Put back (the same staged swap, so the current library becomes a safety copy in turn) and Delete. The same startup hook runs the Maintenance card's "Compact on next launch" VACUUM. Absolute per-title paths (game executables, linked folders) restore as they were and only work on the machine they came from.
+

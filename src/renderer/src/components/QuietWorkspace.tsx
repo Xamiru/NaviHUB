@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { settingSlug } from '../lib/settingSlug'
 
 export default function QuietWorkspace({
   title,
@@ -14,7 +15,8 @@ export default function QuietWorkspace({
   className?: string
 }) {
   return (
-    <section className={`card mb-6 p-5 sm:p-6 ${className}`}>
+    // data-setting is the anchor Settings search scrolls to and highlights.
+    <section data-setting={settingSlug(title)} className={`card mb-6 p-5 sm:p-6 ${className}`}>
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line-subtle pb-4">
         <div className="min-w-0">
           <h2 className="text-lg font-semibold text-ink">{title}</h2>

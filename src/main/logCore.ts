@@ -31,6 +31,8 @@ const REDACTIONS: [RegExp, string][] = [
   // API-Football uses a nonstandard authorization header. http.ts does not log
   // headers today, but defense-in-depth keeps future diagnostics safe.
   [/(x-apisports-key"?\s*[:=]\s*"?)[^\s"',}]+/gi, '$1***'],
+  // Same for Gemini and Anthropic, whose keys travel in headers (key tests).
+  [/(x-(?:goog-)?api-key"?\s*[:=]\s*"?)[^\s"',}]+/gi, '$1***'],
   // GitHub PATs, which the updater takes as a setting and could echo in an error
   [/\bghp_[A-Za-z0-9]{16,}/g, 'ghp_***'],
   [/\bgithub_pat_[A-Za-z0-9_]{16,}/g, 'github_pat_***']

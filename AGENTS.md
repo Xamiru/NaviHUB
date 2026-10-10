@@ -211,7 +211,7 @@ Provider secrets keep their existing setting keys but are stored as versioned El
 - Music, Spotify, player and quiz behavior has dense subsystem contracts in [`docs/architecture/music-quiz.md`](docs/architecture/music-quiz.md). Before changing those paths, read the relevant sections and preserve their matching rules, persistent state, queue and cancellation semantics, source identities, spoiler boundaries, deterministic dealing, scoring/session policy, metadata masking and tournament-resume behavior unless the user's task explicitly changes them.
 - Cross-cutting quiz invariants remain here: time-attack kinds belong in `quizRepo.SCORE_RANKED_KINDS` and log correct/attempted; each page uses one guarded `endGame()` funnel and decides personal best before invalidating history; central pools default to consumed content; shared builders own injected seeded randomness; party/tournament sessions never enter solo personal-best calculations; image/audio loading gates timers and broken assets use unscored replacements.
 - HomePage resolves per-type statuses positionally from settings via `statusesFrom` (lib/hooks.ts) — first = in-progress, second = completed, last = planned — so renamed statuses keep the Home strips working. Don't reintroduce `defaultStatuses[i]` lookups. The Settings editor anchors those three roles, inserts new statuses before planned, and checks for titles using a status before renaming or removing it; preserve those guards so tracking values do not become unreachable. Saving a status list also invalidates `qk.media.homeOverview`, whose main-process projection groups titles by those saved positions.
-- **After a save or delete, navigate with `replace: true`** so the mutated form/detail route leaves the history stack. Four separate bug reports came from this: Back returning to the edit page after saving, Back landing in the manga reader, Back needing two clicks, Back going to the wrong list after a delete. A page whose subject was **deleted** leaves through `useLeaveDeleted()` (`lib/navState.ts`) instead: it goes back to the nearest earlier history entry that still exists (so a replaced parent never sits twice in the stack) and replaces with a fallback only when there is none. It walks the current browser tab's own history entries. `BackButton` and the readers ask `useCanGoBack()` and take a `fallback` for a page opened as a tab's first entry.
+- **After a save or delete, navigate with `replace: true`** so the mutated form/detail route leaves the history stack. Four separate bug reports came from this: Back returning to the edit page after saving, Back landing in the manga reader, Back needing two clicks, Back going to the wrong list after a delete. A page whose subject was **deleted** leaves through `useLeaveDeleted()` (`lib/navState.ts`) instead: it goes back to the nearest earlier history entry that still exists (so a replaced parent never sits twice in the stack) and replaces with a fallback only when there is none. It walks the current browser tab's own history entries. `BackButton`, `ParentBackLink` (every `PageHeader back={{to,label}}` crumb) and the readers go back through the tab's history and take a `fallback` for a page opened as a tab's first entry; an in-page Back control never jumps to a fixed parent list.
 - Shared UI primitives, the Lain theme and the dialog conventions are catalogued in [`docs/architecture/ui-conventions.md`](docs/architecture/ui-conventions.md) — **reuse before writing new ones**.
 
 ## Performance rules
@@ -266,17 +266,19 @@ Break one of these and something silently corrupts, leaks, or fails to start. Th
 | a Japanese `QuizKind` literal | `JP_QUIZ_KINDS` in `repos/japaneseRepo.ts` | otherwise the stats page's Journey count silently skips it — guarded by `tests/jpQuizKindsSync.test.ts` |
 | a `TaskKind` literal passed to `tasks.create` | the `TaskKind` union in `shared/types.ts` | string-matched, **both directions** — guarded by `tests/taskKindSync.test.ts` |
 | anything in `src/main/**` | it must not call `console.*` | there is no console in a packaged build; use `logInfo/logWarn/logError` from `logBus.ts`. Guarded by `tests/noConsole.test.ts` |
+| a setting key that holds a machine path, tool location or local service URL | `MACHINE_LOCAL_SETTING_KEYS` in `src/main/libraryBackupCore.ts` | a restore would otherwise carry another machine's folders over; guarded by `tests/libraryBackup.test.ts` |
+| a Settings card (a `SettingCard`/`TextSetting`/`QuietWorkspace` title under `pages/settings/`) | its entry in `lib/settingsCatalog.ts` | it is otherwise unsearchable and has no anchor; guarded by `tests/settingsCatalog.test.ts` |
 | a provider credential setting | `SECRET_SETTING_KEYS`, the Settings input, and `scripts/sanitizeSql.cjs` | otherwise plaintext can reach the renderer/export or a secret may bypass migration; guarded by `tests/secretStorage.test.ts` |
 
 ### The before-quit registry
 
-`src/main/index.ts` — **eighteen calls, and the order is load-bearing**:
+`src/main/index.ts` — **nineteen calls, and the order is load-bearing**:
 
 ```
 settleAllTasksOnQuit
 → cancelActiveFootballSync → cancelHistoryJobs
 → killActiveMusicDownload → killActiveUpdate
-→ killActiveOcr → cancelActiveLibraryExport → cancelActiveStorageMove → cancelSlideshowSync → killSqlSandbox → stopQuizPools → stopAchievementWatcher → finalizeActiveGameSession
+→ killActiveOcr → cancelActiveLibraryExport → cancelActiveLibraryBackup → cancelActiveStorageMove → cancelSlideshowSync → killSqlSandbox → stopQuizPools → stopAchievementWatcher → finalizeActiveGameSession
 → closeDatabase → closeCatalogDb → closeLaunchboxDb → closeDictDb
 → stopFileSink
 ```
@@ -288,6 +290,10 @@ settleAllTasksOnQuit
 `cancelHistoryJobs()` follows it: History archive copies and downloads write under a `.partial` name and record their row only after the rename, so aborting them leaves no half file and no row.
 
 `cancelActiveLibraryExport()` precedes every database close: an in-app export owns a live SQLite backup and temporary sibling output, so shutdown aborts the task and removes partial files before teardown.
+
+`cancelActiveLibraryBackup()` follows it: a backup ZIP is written under a `.partial` name and a restore copies each image through a temporary name, so aborting leaves neither half-written. A restore that already staged its swap completes at the next launch.
+
+**The startup counterpart.** `runStartupMaintenance()` (`src/main/startupMaintenance.ts`) runs in `whenReady` immediately before `initDatabase()` and is the only code that touches `navihub.db` with no connection open: it applies a staged restore (`restore-pending.json`; the replaced library moves to `userData/backups/`, any failure puts it back) and the requested "Compact on next launch" VACUUM. Each leaves a notice the window toasts on load. Never open the database before it. Detail: [packaging-ci-updates.md](docs/architecture/packaging-ci-updates.md) "Backup and restore".
 
 `cancelActiveStorageMove()` stops a pictures/media folder move between files; the move switches its setting only after a complete verified copy, so quitting leaves the library on its old folder.
 

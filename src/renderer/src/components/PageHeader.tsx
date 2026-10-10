@@ -1,13 +1,14 @@
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
 import BackButton from './BackButton'
+import ParentBackLink from './ParentBackLink'
 
 // The standard page header: back affordance, title row, subtitle, actions.
 // Encodes the app's back convention so pages stop hand-rolling it:
 //   back="history"     → sticky BackButton (detail/form sub-pages — returns
 //                        wherever the user actually came from)
-//   back={{to, label}} → quiet fixed-parent breadcrumb (section sub-pages that
-//                        always belong to one hub, e.g. everything → /japanese)
+//   back={{to, label}} → quiet breadcrumb that still goes BACK to the previous
+//                        page; `to` is the fallback on a tab's first page and
+//                        `label` shows only when that parent is where Back lands
 //   back omitted       → plain header (hubs, list pages)
 export default function PageHeader({
   title,
@@ -30,9 +31,11 @@ export default function PageHeader({
       {back === 'history' && <BackButton />}
       <div className={`${className} border-b border-line-subtle pb-4`}>
         {back && back !== 'history' && (
-          <Link to={back.to} className="text-sm text-ink-muted hover:text-ink-secondary">
-            ← {back.label}
-          </Link>
+          <ParentBackLink
+            to={back.to}
+            label={back.label}
+            className="text-sm text-ink-muted hover:text-ink-secondary"
+          />
         )}
         {eyebrow && (
           <div className={`flex flex-wrap items-center gap-1.5 ${back && back !== 'history' ? 'mt-1' : ''}`}>

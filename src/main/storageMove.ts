@@ -323,7 +323,7 @@ export function start(root: StorageRoot, to: string): void {
   const handle = tasks.create({
     kind: 'storageMove',
     label: `Moving the ${STORAGE_LABEL[root]}`,
-    route: '/settings?tab=data',
+    route: '/settings?tab=storage',
     controls: {
       // Only the copy can stop; once the setting points at the new folder the
       // cleanup always finishes.

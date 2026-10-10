@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import AppMark from './AppMark'
 import {
+  AREA_LABELS,
+  RAIL_AREAS,
   archiveAreaForPath,
+  directRouteForArea,
   drawerRouteForPath,
   drawerItemsForArea,
   type ArchiveArea,
@@ -13,17 +16,10 @@ import { SIDEBAR_HIDDEN_SETTING, parseHiddenSections } from '../lib/sidebarSecti
 import { APP_THEME_SETTING } from '@shared/appTheme'
 import { resolveAppTheme } from '../lib/theme'
 
-const AREA_LABELS: Record<ArchiveArea, string> = {
-  home: 'Home',
-  library: 'Library',
-  play: 'Play',
-  learn: 'Learn',
-  system: 'System'
-}
 const EXPANDED_SETTING = 'sidebar.expanded'
 
 function railClass(active: boolean): string {
-  return `relative flex h-14 w-full items-center justify-center px-2 text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors ${
+  return `relative flex h-12 w-full items-center justify-center px-2 text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors ${
     active
       ? 'bg-signal-live/10 text-signal-live shadow-[inset_3px_0_0_0_rgb(var(--signal-live))]'
       : 'text-ink-muted hover:bg-surface-raised/70 hover:text-ink'
@@ -36,6 +32,17 @@ function drawerLinkClass(active: boolean): string {
       ? 'border-signal-live/35 bg-signal-live/10 text-signal-live'
       : 'border-transparent text-ink-secondary hover:border-line-strong hover:bg-surface-raised/70 hover:text-ink'
   }`
+}
+
+// Consecutive items that share a `group` render under one subheading.
+function groupedItems(items: ArchiveNavItem[]): { group?: string; items: ArchiveNavItem[] }[] {
+  const out: { group?: string; items: ArchiveNavItem[] }[] = []
+  for (const item of items) {
+    const last = out[out.length - 1]
+    if (last && last.group === item.group) last.items.push(item)
+    else out.push({ group: item.group, items: [item] })
+  }
+  return out
 }
 
 function DrawerLink({ item, active }: { item: ArchiveNavItem; active: boolean }) {
@@ -60,7 +67,7 @@ function ExpandedNavigation({
 }): JSX.Element {
   return (
     <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-3" aria-label="Primary navigation">
-      {(['home', 'library', 'play', 'learn', 'system'] as ArchiveArea[]).map((area) => {
+      {([...RAIL_AREAS, 'system'] as ArchiveArea[]).map((area) => {
         const items = visibleItems(area)
         if (items.length === 0) return null
         const current = drawerRouteForPath(pathname, items.map((item) => item.to))
@@ -69,19 +76,26 @@ function ExpandedNavigation({
             <h2 className="px-3 pb-1 text-xs font-semibold uppercase tracking-[0.14em] text-ink-muted">
               {AREA_LABELS[area]}
             </h2>
-            {items.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={`block rounded px-3 py-2 text-sm transition-colors ${
-                  current === item.to
-                    ? 'bg-signal-live/10 text-signal-live'
-                    : 'text-ink-secondary hover:bg-surface-raised/70 hover:text-ink'
-                }`}
-                aria-current={current === item.to ? 'page' : undefined}
-              >
-                {item.label}
-              </Link>
+            {groupedItems(items).map((block) => (
+              <div key={block.group ?? block.items[0].to}>
+                {block.group && (
+                  <h3 className="px-3 pb-0.5 pt-2 text-xs text-ink-muted">{block.group}</h3>
+                )}
+                {block.items.map((item) => (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={`block rounded px-3 py-2 text-sm transition-colors ${
+                      current === item.to
+                        ? 'bg-signal-live/10 text-signal-live'
+                        : 'text-ink-secondary hover:bg-surface-raised/70 hover:text-ink'
+                    }`}
+                    aria-current={current === item.to ? 'page' : undefined}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
             ))}
           </div>
         )
@@ -136,11 +150,20 @@ function NavigationDrawer({
         </button>
       </div>
       <nav
-        className="flex-1 space-y-1 overflow-y-auto p-3"
+        className="flex-1 space-y-2 overflow-y-auto p-3"
         aria-label={`${AREA_LABELS[area]} navigation`}
       >
-        {items.map((item) => (
-          <DrawerLink key={item.to} item={item} active={current === item.to} />
+        {groupedItems(items).map((block) => (
+          <div key={block.group ?? block.items[0].to} className="space-y-1">
+            {block.group && (
+              <h3 className="px-3.5 pb-0.5 pt-3 text-xs font-semibold uppercase tracking-[0.14em] text-ink-muted first:pt-0">
+                {block.group}
+              </h3>
+            )}
+            {block.items.map((item) => (
+              <DrawerLink key={item.to} item={item} active={current === item.to} />
+            ))}
+          </div>
         ))}
       </nav>
       <div className="border-t border-line-subtle px-5 py-4 text-xs leading-relaxed text-ink-muted">
@@ -213,12 +236,18 @@ export default function Sidebar() {
         <ExpandedNavigation pathname={location.pathname} visibleItems={visibleItems} />
       ) : (
         <>
-          <nav className="flex-1 py-3" aria-label="Primary navigation">
-            <NavLink to="/" end className={railClass(currentArea === 'home')}>
-              Home
-            </NavLink>
-            {(['library', 'play', 'learn'] as ArchiveArea[]).map((area) => {
-              if (visibleItems(area).length === 0) return null
+          <nav className="flex-1 overflow-y-auto py-3" aria-label="Primary navigation">
+            {RAIL_AREAS.map((area) => {
+              const items = visibleItems(area)
+              if (items.length === 0) return null
+              const direct = directRouteForArea(area)
+              if (direct) {
+                return (
+                  <NavLink key={area} to={direct} className={railClass(currentArea === area)}>
+                    {AREA_LABELS[area]}
+                  </NavLink>
+                )
+              }
               const open = openArea === area
               return (
                 <button

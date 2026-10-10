@@ -3,7 +3,8 @@ import { join } from 'path'
 import { createReadStream } from 'fs'
 import { stat } from 'fs/promises'
 import { Readable } from 'stream'
-import { initDatabase, closeDatabase } from './db/connection'
+import { initDatabase, closeDatabase, getDbPath } from './db/connection'
+import { runStartupMaintenance } from './startupMaintenance'
 import { closeDictDb } from './dict/dictDb'
 import { registerIpc } from './ipc'
 import { absoluteMediaPath } from './files'
@@ -22,6 +23,7 @@ import {
 import { killActiveUpdate } from './updater'
 import { killActiveOcr } from './mokuroRun'
 import { cancelActiveLibraryExport } from './libraryExport'
+import { cancelActiveLibraryBackup } from './libraryBackup'
 import { cancelActiveStorageMove, pinPicturesDir } from './storageMove'
 import { cancelSlideshowSync } from './pictureLibrary'
 import { killSqlSandbox } from './sqlSandbox'
@@ -210,6 +212,8 @@ app.whenReady().then(async () => {
     logError('app', `unhandled rejection: ${reason instanceof Error ? (reason.stack ?? reason.message) : String(reason)}`)
   })
 
+  // Compact / restore need the database file with no connection open.
+  runStartupMaintenance(app.getPath('userData'), getDbPath())
   initDatabase()
   pinPicturesDir()
   await initializeSecretStorage()
@@ -354,6 +358,10 @@ app.on('before-quit', () => {
   // Export output is staged under a .partial name; abort and remove it before
   // the process exits so it can never be mistaken for a complete bundle.
   cancelActiveLibraryExport()
+  // A backup ZIP is written under a .partial name and a restore copies each
+  // image through a temporary name; aborting leaves neither half-written. A
+  // restore that already staged its swap finishes at the next launch.
+  cancelActiveLibraryBackup()
   // A folder move only switches its setting after a complete copy, so stopping
   // it here leaves the library on its old folder (storageMove.ts).
   cancelActiveStorageMove()

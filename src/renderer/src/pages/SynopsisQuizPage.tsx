@@ -13,6 +13,7 @@ import { MEDIA_CONFIGS } from '../lib/mediaConfig'
 import type { QuizSynopsisFilter } from '@shared/types'
 import { quizSeed } from '@shared/quizCore'
 import { buildSynopsisQuizQuestions } from '@shared/synopsisQuiz'
+import { loadQuizDefaults } from '../lib/quizPrefs'
 
 // Default scope: the watched-media types. Every type with synopses is one
 // click away; the choice persists like every other setup option.
@@ -27,7 +28,9 @@ export default function SynopsisQuizPage() {
   const [listSource, setListSource] = usePersistedState<'safe' | 'completed'>('quizSynList', 'safe')
   const [textOnly, setTextOnly] = usePersistedState('quizSynTextOnly', false)
   const [length, setLength] = usePersistedState<number>('quizSynLength', 10)
-  const [timerEnabled, setTimerEnabled] = usePersistedState('quizSynTimer', true)
+  // Seeds a fresh visit only (Settings → Readers & quizzes).
+  const [quizDefaults] = useState(loadQuizDefaults)
+  const [timerEnabled, setTimerEnabled] = usePersistedState('quizSynTimer', quizDefaults.timer)
 
   const [round, setRound] = useState(0)
   const [questions, setQuestions] = useState<McQuestion[] | null>(null)

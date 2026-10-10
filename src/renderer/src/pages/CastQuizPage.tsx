@@ -12,13 +12,16 @@ import { Group, Pill } from '../components/PillGroup'
 import { buildCastQuizQuestions } from '@shared/castQuiz'
 import { quizSeed } from '@shared/quizCore'
 import type { QuizLibFilter } from '@shared/types'
+import { loadQuizDefaults } from '../lib/quizPrefs'
 
 export default function CastQuizPage() {
   const qc = useQueryClient()
   const completedStatuses = useAllCompletedStatuses()
   const [scope, setScope] = usePersistedState<'consumed' | 'all'>('quizCastScope', 'consumed')
   const [length, setLength] = usePersistedState<number>('quizCastLength', 10)
-  const [timerEnabled, setTimerEnabled] = usePersistedState('quizCastTimer', true)
+  // Seeds a fresh visit only (Settings → Readers & quizzes).
+  const [quizDefaults] = useState(loadQuizDefaults)
+  const [timerEnabled, setTimerEnabled] = usePersistedState('quizCastTimer', quizDefaults.timer)
   const [round, setRound] = useState(0)
   const [questions, setQuestions] = useState<McQuestion[] | null>(null)
   const [settingsSnapshot, setSettingsSnapshot] = useState<Record<string, unknown>>({})

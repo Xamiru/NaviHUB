@@ -10,7 +10,7 @@ import Section from '../Section'
 // Installed predicates mirror DictionarySettings (SettingsPage): Yomitan packs
 // by title prefix, the bespoke packs by their nullable info invokes.
 
-const SETTINGS_LINK = '/settings?tab=japanese'
+const SETTINGS_LINK = '/settings?tab=learning'
 
 export default function SetupChecklist() {
   const dictsQ = useQuery({ queryKey: qk.dict.list, queryFn: () => api.dict.list() })

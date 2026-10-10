@@ -57,7 +57,8 @@ export default function LibraryExportSettings(): React.JSX.Element {
         title="Library export"
         description="Create a portable, privacy-controlled copy of your imported library. Logs, credentials, machine paths and large local collections are always excluded."
         actions={
-          <button className="btn-primary" onClick={() => setOpen(true)}>
+          // Ghost: on Backup & about the one filled button is "Back up now".
+          <button className="btn-ghost" onClick={() => setOpen(true)}>
             {status?.running ? 'View export' : 'Export library…'}
           </button>
         }

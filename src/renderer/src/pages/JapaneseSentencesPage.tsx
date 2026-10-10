@@ -50,7 +50,7 @@ export default function JapaneseSentencesPage() {
           title="Sentence bank not installed"
           body="These games are built from the offline Tatoeba sentences — install them in Settings → Dictionaries."
           action={
-            <Link to="/settings?tab=japanese" className="btn-primary">
+            <Link to="/settings?tab=learning" className="btn-primary">
               Open Settings
             </Link>
           }

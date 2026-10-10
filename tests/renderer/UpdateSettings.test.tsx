@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { UpdateSettings } from '@/pages/SettingsPage'
+import { UpdateSettings } from '@/pages/settings/AboutSettings'
 import type { SecretStorageState } from '../../src/shared/types'
 import { expectNoAxeViolations } from './accessibility'
 

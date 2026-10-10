@@ -58,7 +58,7 @@ export function thumbCacheName(sourceRel: string, width: number, version = ''): 
   return `${hash}-${width}.jpg`
 }
 
-function thumbsDir(): string {
+export function thumbsDir(): string {
   return join(app.getPath('userData'), 'thumbs')
 }
 

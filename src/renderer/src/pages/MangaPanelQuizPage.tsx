@@ -11,6 +11,7 @@ import { Group, Pill } from '../components/PillGroup'
 import { quizSeed } from '@shared/quizCore'
 import { buildMangaPanelQuestions } from '@shared/mangaPanelQuiz'
 import { mediaUrl } from '@shared/mediaUrl'
+import { loadQuizDefaults } from '../lib/quizPrefs'
 
 // Manga panel quiz: a random page from a locally-linked series appears —
 // name the manga it belongs to. Eligibility is every series with attached
@@ -19,7 +20,9 @@ export default function MangaPanelQuizPage() {
   const qc = useQueryClient()
   const [listSource, setListSource] = usePersistedState<'consumed' | 'all'>('quizPanelList', 'consumed')
   const [length, setLength] = usePersistedState<number>('quizPanelLength', 10)
-  const [timerEnabled, setTimerEnabled] = usePersistedState('quizPanelTimer', true)
+  // Seeds a fresh visit only (Settings → Readers & quizzes).
+  const [quizDefaults] = useState(loadQuizDefaults)
+  const [timerEnabled, setTimerEnabled] = usePersistedState('quizPanelTimer', quizDefaults.timer)
 
   const [round, setRound] = useState(0)
   const [questions, setQuestions] = useState<McQuestion[] | null>(null)

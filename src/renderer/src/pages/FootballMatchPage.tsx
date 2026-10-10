@@ -2,6 +2,7 @@ import { Fragment, memo, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import PageStatus from '../components/PageStatus'
+import ParentBackLink from '../components/ParentBackLink'
 import FavoriteButton from '../components/FavoriteButton'
 import AddToListMenu from '../components/AddToListMenu'
 import Tabs, { TabPanel } from '../components/Tabs'
@@ -245,7 +246,7 @@ export default function FootballMatchPage() {
 
   return (
     <div className="mx-auto max-w-[1350px] px-6 py-6" style={footballCompetitionStyle(data.competitionKey)}>
-      <Link to={`/football/season/${data.seasonId}`} className="text-xs text-ink-muted hover:text-ink">← {eraName} {data.seasonLabel}</Link>
+      <ParentBackLink to={`/football/season/${data.seasonId}`} label={`${eraName} ${data.seasonLabel}`} className="text-xs text-ink-muted hover:text-ink" />
       <section className="card mt-3 overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 bg-[rgb(var(--football-c)/0.2)] px-5 py-2.5">
           <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-ink">

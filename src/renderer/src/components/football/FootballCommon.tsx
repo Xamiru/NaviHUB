@@ -2,6 +2,7 @@ import { memo, useEffect, useState, type CSSProperties, type ReactNode } from 'r
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import CoverImage from '../CoverImage'
+import ParentBackLink from '../ParentBackLink'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
 import { formatFootballScore } from '@shared/football'
@@ -417,7 +418,7 @@ export function FootballHero({
       <div className="absolute inset-0" style={{ background: tint }} aria-hidden="true" />
       <div className="football-grid-lines absolute inset-0 opacity-[0.05]" aria-hidden="true" />
       <div className="relative mx-auto max-w-[1500px] px-6 pb-7 pt-6">
-        {back && <Link to={back.to} className="text-xs text-ink-muted hover:text-ink">← {back.label}</Link>}
+        {back && <ParentBackLink to={back.to} label={back.label} className="text-xs text-ink-muted hover:text-ink" />}
         {children}
       </div>
     </div>

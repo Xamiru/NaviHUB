@@ -17,6 +17,24 @@ export interface ListSort {
 
 export const DEFAULT_LIST_SORT: ListSort = { sort: 'updated', dir: 'desc' }
 
+// The library sort menu, shared by MediaListPage and Settings' list defaults.
+export const LIBRARY_SORTS: { value: MediaSort; label: string }[] = [
+  { value: 'updated', label: 'Last updated' },
+  { value: 'added', label: 'Recently added' },
+  { value: 'title', label: 'Title' },
+  { value: 'score', label: 'Your score' },
+  { value: 'communityScore', label: 'Community score' },
+  { value: 'release', label: 'Release date' },
+  { value: 'progress', label: 'Progress' },
+  { value: 'units', label: 'Length' },
+  { value: 'timesConsumed', label: 'Times consumed' },
+  { value: 'random', label: 'Random' }
+]
+
+// The scope Settings writes: what a library uses until it has a choice of
+// its own. Stored in the same blobs as the per-type entries.
+export const DEFAULT_SCOPE = '*'
+
 const KEY = 'library.listSort'
 
 function loadAll(): Record<string, Partial<ListSort> | undefined> {
@@ -34,9 +52,11 @@ function loadAll(): Record<string, Partial<ListSort> | undefined> {
 // since been renamed (or that this page never offered) must not come back as a
 // blank <select>, so it falls back rather than being restored.
 export function loadListSort(scope: string, allowed?: readonly MediaSort[]): ListSort {
-  const saved = loadAll()[scope]
-  const sort = saved?.sort
-  const dir = saved?.dir
+  const all = loadAll()
+  const saved = all[scope]
+  const fallback = scope === DEFAULT_SCOPE ? undefined : all[DEFAULT_SCOPE]
+  const sort = saved?.sort ?? fallback?.sort
+  const dir = saved?.dir ?? fallback?.dir
   const ok = typeof sort === 'string' && (!allowed || allowed.includes(sort))
   return {
     sort: ok ? (sort as MediaSort) : DEFAULT_LIST_SORT.sort,
@@ -64,7 +84,8 @@ const LAYOUT_KEY = 'library.listLayout'
 export function loadListLayout(scope: string): ListLayout {
   try {
     const all = JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? '{}')
-    return all?.[scope] === 'list' ? 'list' : 'grid'
+    const saved = all?.[scope] ?? all?.[DEFAULT_SCOPE]
+    return saved === 'list' ? 'list' : 'grid'
   } catch {
     return 'grid'
   }
@@ -76,5 +97,19 @@ export function saveListLayout(scope: string, layout: ListLayout): void {
     localStorage.setItem(LAYOUT_KEY, JSON.stringify({ ...(all && typeof all === 'object' ? all : {}), [scope]: layout }))
   } catch {
     // A full or disabled localStorage must never break the list.
+  }
+}
+
+// Settings → "Use the default everywhere": drops every library's own sort and
+// layout so each falls back to the DEFAULT_SCOPE entry again.
+export function clearListOverrides(): void {
+  for (const key of [KEY, LAYOUT_KEY]) {
+    try {
+      const all = JSON.parse(localStorage.getItem(key) ?? '{}')
+      const kept = all && typeof all === 'object' && DEFAULT_SCOPE in all ? { [DEFAULT_SCOPE]: all[DEFAULT_SCOPE] } : {}
+      localStorage.setItem(key, JSON.stringify(kept))
+    } catch {
+      // A full or disabled localStorage must never break Settings.
+    }
   }
 }

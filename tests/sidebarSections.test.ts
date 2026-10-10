@@ -49,7 +49,7 @@ describe('sidebarSectionDefs', () => {
   })
 
   it('resolves labels from sectionDef', () => {
-    expect(sectionDef('quiz')).toMatchObject({ label: 'Quiz', group: 'play' })
+    expect(sectionDef('quiz')).toMatchObject({ label: 'Quiz', group: 'quiz' })
     expect(sectionDef('nope')).toBeUndefined()
   })
 })

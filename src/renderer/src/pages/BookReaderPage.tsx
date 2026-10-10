@@ -11,11 +11,8 @@ import MiningPanel from '../components/reader/MiningPanel'
 import BarButton from '../components/reader/BarButton'
 import ShortcutHelp from '../components/reader/ShortcutHelp'
 import Dialog from '../components/Dialog'
-import BookSettingsGroups, {
-  BOOK_DEFAULTS,
-  BOOK_SERIF_STACK,
-  type BookPrefs
-} from '../components/reader/BookSettingsPopover'
+import BookSettingsGroups, { BOOK_SERIF_STACK } from '../components/reader/BookSettingsPopover'
+import { loadBookReaderPrefs, saveBookReaderPrefs, type BookPrefs } from '../lib/readerPrefs'
 import ReaderSettingsDrawer from '../components/reader/ReaderSettingsDrawer'
 import { PrevIcon, NextIcon } from '../components/PlayerIcons'
 import type { EpubTocEntry, MangaChapter } from '@shared/types'
@@ -23,6 +20,7 @@ import type { EpubTocEntry, MangaChapter } from '@shared/types'
 // only Chromium's woff2 format, avoiding unused woff fallbacks in installers.
 // Same family name, so BOOK_SERIF_STACK is unchanged.
 import './BookReaderFonts.css'
+import { BOOK_READER_SHORTCUTS } from '../lib/shortcuts'
 
 // Immersive EPUB (light novel) reader — the book sibling of MangaReaderPage,
 // routed chrome-free from App.tsx. "Pages" are the book's spine documents,
@@ -32,27 +30,7 @@ import './BookReaderFonts.css'
 // mine-to-SRS panel as the manga reader: toggle ⛏, tap a paragraph, save the
 // word with this novel as its source.
 
-const PREFS_KEY = 'book.readerPrefs'
-
-function loadPrefs(): BookPrefs {
-  try {
-    return { ...BOOK_DEFAULTS, ...JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') }
-  } catch {
-    return BOOK_DEFAULTS
-  }
-}
-
-const SHORTCUTS = [
-  { keys: ['←', '→'], label: 'Previous / next section' },
-  { keys: ['Space'], label: 'Scroll a screenful (Shift = back)' },
-  { keys: ['↑', '↓'], label: 'Scroll a little' },
-  { keys: ['Home', 'End'], label: 'First / last section' },
-  { keys: ['T'], label: 'Table of contents' },
-  { keys: ['V'], label: 'Vertical ↔ horizontal text' },
-  { keys: ['+', '−'], label: 'Text size' },
-  { keys: ['M'], label: 'Mine words (then tap a paragraph)' },
-  { keys: ['Esc'], label: 'Close panels / back to series' }
-]
+const SHORTCUTS = BOOK_READER_SHORTCUTS
 
 // "manga/<dir>/<Book>.epub/<entry>" → the navimg prefix up to the epub + the
 // in-zip entry path (mirrors the main process's splitArchivePath).
@@ -84,11 +62,11 @@ export default function BookReaderPage() {
   const nextChapter = chIndex >= 0 && chIndex < chapters.length - 1 ? chapters[chIndex + 1] : null
 
   // ---- prefs ----
-  const [prefs, setPrefs] = useState<BookPrefs>(loadPrefs)
+  const [prefs, setPrefs] = useState<BookPrefs>(loadBookReaderPrefs)
   const setPref = useCallback(<K extends keyof BookPrefs>(k: K, v: BookPrefs[K]) => {
     setPrefs((p) => {
       const next = { ...p, [k]: v }
-      localStorage.setItem(PREFS_KEY, JSON.stringify(next))
+      saveBookReaderPrefs(next)
       return next
     })
   }, [])

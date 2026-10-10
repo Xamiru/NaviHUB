@@ -186,3 +186,32 @@ export function secretStorageState(): SecretStorageState {
     unreadable: [...unreadable]
   }
 }
+
+// ---- backup restore ---------------------------------------------------------
+// A restore moves ENCRYPTED rows between databases and never sees plaintext:
+// it keeps this machine's working envelope where the backup's cannot be read
+// here (libraryBackupCore.planSettingsMerge).
+
+// The current database's stored secret rows, exactly as stored.
+export function storedSecretEnvelopes(): Map<SecretSettingKey, string> {
+  return new Map(rawSecretRows().filter((row) => row.value).map((row) => [row.key, row.value]))
+}
+
+// Whether this machine's keychain can open a stored value (an envelope from
+// a backup, possibly made on another machine). Plaintext legacy rows count
+// as readable: startup protects them on the next launch.
+export async function canReadStoredSecret(value: string): Promise<boolean> {
+  const encrypted = decodeSecretEnvelope(value)
+  if (!encrypted) return value.length > 0
+  if (!available) return false
+  try {
+    await activeBackend.decrypt(encrypted)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function isSecretUnreadable(key: SecretSettingKey): boolean {
+  return unreadable.has(key)
+}

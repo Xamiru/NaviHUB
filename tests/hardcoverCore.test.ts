@@ -57,10 +57,12 @@ describe('requests', () => {
     expect(authorizationHeader('abc')).toBe('Bearer abc')
     expect(authorizationHeader('  Bearer abc ')).toBe('Bearer abc')
     expect(authorizationHeader('bearer abc')).toBe('Bearer abc')
+    expect(authorizationHeader('"Authorization: Bearer ab\ncd"')).toBe('Bearer abcd')
+    expect(authorizationHeader("  'abc'  ")).toBe('Bearer abc')
   })
 
   it('turns HTTP and GraphQL failures into readable messages', () => {
-    expect(errorMessage(401, { error: 'invalid_token' })).toMatch(/expired or revoked.*Settings/)
+    expect(errorMessage(401, { error: 'invalid_token', error_description: 'token expired' })).toMatch(/\(token expired\).*Settings/)
     expect(errorMessage(403, { error: 'insufficient_scope', error_description: 'needs books:read' })).toMatch(
       /needs books:read/
     )

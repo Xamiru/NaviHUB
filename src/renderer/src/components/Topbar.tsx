@@ -36,9 +36,13 @@ export default function Topbar() {
   )
 
   useEffect(() => {
+    // Mirror the search page's query; anywhere else the box starts empty, so a
+    // Back from results does not leave a stale term behind.
     if (location.pathname === '/search') {
       const params = new URLSearchParams(location.search)
       setQ(params.get('q') ?? '')
+    } else {
+      setQ('')
     }
   }, [location])
 

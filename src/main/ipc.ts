@@ -1,3 +1,7 @@
+import * as storageUsage from './storageUsage'
+import * as startupMaintenance from './startupMaintenance'
+import * as keyTest from './keyTest'
+import { isTestableKey } from '@shared/keyTests'
 import * as playthroughs from './repos/playthroughRepo'
 import * as musicJournal from './repos/musicJournalRepo'
 import * as musicSmart from './repos/musicSmartRepo'
@@ -7,7 +11,7 @@ import * as journeys from './repos/wrestlingJourneyRepo'
 import * as journeyFiles from './wrestling/journeyFiles'
 import * as vnReading from './repos/vnReadingRepo'
 import * as spotifyRecovery from './musicSpotifyRecovery'
-import { ipcMain, shell, BrowserWindow } from 'electron'
+import { app, ipcMain, shell, BrowserWindow } from 'electron'
 import { clampUiScale, parseUiScale } from '@shared/uiScale'
 import * as mediaRepo from './repos/mediaRepo'
 import * as tvRepo from './repos/tvRepo'
@@ -88,6 +92,7 @@ import { getActivity, withActivity } from './progress'
 import * as logBus from './logBus'
 import * as logFile from './logFile'
 import * as libraryExport from './libraryExport'
+import * as libraryBackup from './libraryBackup'
 import * as tasks from './tasks'
 import * as appMenu from './appMenu'
 import * as updater from './updater'
@@ -982,6 +987,26 @@ export function registerIpc(): void {
   ipcMain.handle('libraryExport:cancel', () => libraryExport.cancel())
   ipcMain.handle('libraryExport:reveal', () => libraryExport.reveal())
 
+  // ---- backup ----
+  ipcMain.handle('backup:estimate', () => libraryBackup.estimate())
+  ipcMain.handle('backup:start', (event, options: { includePictures?: unknown }) =>
+    libraryBackup.startBackup(
+      { includePictures: options?.includePictures === true },
+      BrowserWindow.fromWebContents(event.sender)
+    )
+  )
+  ipcMain.handle('backup:status', () => libraryBackup.getStatus())
+  ipcMain.handle('backup:cancel', () => libraryBackup.cancel())
+  ipcMain.handle('backup:reveal', () => libraryBackup.revealBackup())
+  ipcMain.handle('backup:chooseRestore', (event) =>
+    libraryBackup.chooseRestore(BrowserWindow.fromWebContents(event.sender))
+  )
+  ipcMain.handle('backup:startRestore', () => libraryBackup.startRestore())
+  ipcMain.handle('backup:discardRestore', () => libraryBackup.discardRestore())
+  ipcMain.handle('backup:safetyCopies', () => libraryBackup.safetyCopies())
+  ipcMain.handle('backup:restoreSafetyCopy', (_e, id: string) => libraryBackup.restoreSafetyCopy(id))
+  ipcMain.handle('backup:deleteSafetyCopy', (_e, id: string) => libraryBackup.deleteSafetyCopy(id))
+
   // ---- storage (moving the pictures/media roots) ----
   ipcMain.handle('storage:paths', () => storageMove.paths())
   ipcMain.handle('storage:status', () => storageMove.getStatus())
@@ -991,6 +1016,23 @@ export function registerIpc(): void {
   ipcMain.handle('storage:move', (_e, root, to) => storageMove.start(root, to))
   ipcMain.handle('storage:open', async (_e, root) => {
     await shell.openPath(await storageMove.ensureRoot(root))
+  })
+  ipcMain.handle('storage:usage', () => storageUsage.usage())
+  ipcMain.handle('storage:clearCache', (_e, key: 'thumbnails' | 'subtitles') =>
+    storageUsage.clearCache(key)
+  )
+  ipcMain.handle('storage:checkDatabase', () => storageUsage.checkDatabase())
+  ipcMain.handle('storage:compactPending', () =>
+    startupMaintenance.compactPending(app.getPath('userData'))
+  )
+  ipcMain.handle('storage:setCompactOnLaunch', (_e, on: boolean) => {
+    const dir = app.getPath('userData')
+    if (on) startupMaintenance.requestCompact(dir)
+    else startupMaintenance.cancelCompact(dir)
+    return startupMaintenance.compactPending(dir)
+  })
+  ipcMain.handle('storage:openDataFolder', async () => {
+    await shell.openPath(app.getPath('userData'))
   })
 
   // ---- in-app updates ----
@@ -1270,6 +1312,17 @@ export function registerIpc(): void {
   // contract as pendingOpen, and drained by the same poll in OpenFileHandler —
   // a menu item cannot push to the renderer (tests/pushBridge.test.ts).
   ipcMain.handle('app:pendingRoute', () => appMenu.takePendingRoute())
+  ipcMain.handle('app:startupNotices', () => startupMaintenance.takeStartupNotices())
+  ipcMain.handle('app:about', () => ({
+    version: app.getVersion(),
+    electron: process.versions.electron,
+    chrome: process.versions.chrome,
+    node: process.versions.node,
+    platform: process.platform,
+    arch: process.arch,
+    dataFolder: app.getPath('userData'),
+    logFolder: logFile.logDir()
+  }))
   ipcMain.handle('app:setUiScale', (_e, scale) => {
     const factor = clampUiScale(Number(scale))
     // The pop-out player widget is excluded from UI zoom (and the menu bar
@@ -1304,6 +1357,10 @@ export function registerIpc(): void {
   ipcMain.handle('settings:set', (_e, key: string, value: string) =>
     isSecretSettingKey(key) ? secretStorage.setSecret(key, value) : settingsRepo.set(key, value)
   )
+  ipcMain.handle('settings:testKey', (_e, key: string) => {
+    if (!isTestableKey(key)) throw new Error(`Not a testable key: ${key}`)
+    return keyTest.testKey(key)
+  })
 
   // ---- files ----
   ipcMain.handle('files:pickImage', () => files.pickImage())
@@ -1311,6 +1368,10 @@ export function registerIpc(): void {
   ipcMain.handle('files:saveBytes', (_e, bytes, ext, subdir) =>
     files.saveMediaBytes(bytes, ext, subdir)
   )
+  ipcMain.handle('files:chooseFolder', (e, title: string, defaultPath?: string) =>
+    files.chooseFolder(BrowserWindow.fromWebContents(e.sender), title, defaultPath)
+  )
+  ipcMain.handle('files:folderStatus', (_e, path: string) => files.folderStatus(path))
   ipcMain.handle('files:saveImageAs', (_e, bytes, defaultName) =>
     files.saveImageAs(BrowserWindow.fromWebContents(_e.sender), bytes, defaultName)
   )

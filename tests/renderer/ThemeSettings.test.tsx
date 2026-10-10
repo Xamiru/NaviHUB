@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { APP_THEME_OPTIONS, APP_THEME_VARIANT_OPTIONS } from '@shared/appTheme'
-import { ThemeSettings } from '@/pages/SettingsPage'
+import { ThemeSettings } from '@/pages/settings/AppearanceSettings'
 import AppMark from '@/components/AppMark'
 import { expectNoAxeViolations } from './accessibility'
 

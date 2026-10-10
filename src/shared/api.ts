@@ -1,3 +1,4 @@
+import type { TestableKey } from './keyTests'
 import type { GameRun, GameRunInput, GameRunHistory, GameRunNoteInput, MusicTrackPersonal, MusicSmartInput, MusicSmartPlaylist, MusicSmartRules, MusicSmartPreview } from './types'
 import type { VnDiscoverFilter, VnDiscoverPage, VnTagResult, VnEditionDetail } from './types'
 import type { VnCaptureInput, VnCapture, VnCaptureSummary } from './types'
@@ -39,6 +40,16 @@ import type {
   TagWithCounts,
   SettingsMap,
   SecretStorageState,
+  KeyTestResult,
+  FolderStatus,
+  StorageUsage,
+  MaintenanceResult,
+  AppAbout,
+  LibraryBackupEstimate,
+  LibraryBackupOptions,
+  LibraryBackupStatus,
+  RestorePreview,
+  SafetyCopy,
   CastEntry,
   CharacterAppearance,
   CreditRole,
@@ -1546,6 +1557,11 @@ export interface NaviApi {
     // A route parked by the native Tools menu (Tasks / Logs). RETURNS AND
     // CLEARS, like pendingOpen — main has no way to push a navigation.
     pendingRoute(): Promise<string | null>
+    // What startup maintenance did before the window opened (compact,
+    // restore). RETURNS AND CLEARS, like pendingOpen.
+    startupNotices(): Promise<MaintenanceResult[]>
+    // Settings → Backup & about: versions and folders of this build.
+    about(): Promise<AppAbout>
   }
   activity: {
     // The current long-running main-process task (imports, theme fetches);
@@ -1585,6 +1601,14 @@ export interface NaviApi {
     // Starts the move (poll status); throws with a readable reason when refused.
     move(root: StorageRootKey, to: string): Promise<void>
     open(root: StorageRootKey): Promise<void>
+    // Settings → Folders & storage: sizes on request, cache clearing, the
+    // integrity check, and VACUUM scheduled for the next launch.
+    usage(): Promise<StorageUsage>
+    clearCache(key: 'thumbnails' | 'subtitles'): Promise<MaintenanceResult>
+    checkDatabase(): Promise<MaintenanceResult>
+    compactPending(): Promise<boolean>
+    setCompactOnLaunch(on: boolean): Promise<boolean>
+    openDataFolder(): Promise<void>
   }
   libraryExport: {
     preview(options: LibraryExportOptions): Promise<LibraryExportPreview>
@@ -1592,6 +1616,25 @@ export interface NaviApi {
     status(): Promise<LibraryExportStatus>
     cancel(): Promise<void>
     reveal(): Promise<void>
+  }
+  // Full, restorable backups (src/main/libraryBackup.ts). Unlike exports they
+  // keep everything; a restore replaces the library after keeping it as a
+  // safety copy, then restarts the app.
+  backup: {
+    estimate(): Promise<LibraryBackupEstimate>
+    // Native folder picker, then the backup runs as a task (poll status).
+    start(options: LibraryBackupOptions): Promise<{ started: boolean }>
+    status(): Promise<LibraryBackupStatus>
+    cancel(): Promise<void>
+    reveal(): Promise<void>
+    // Native file picker; checks the backup and stages its database. null on cancel.
+    chooseRestore(): Promise<RestorePreview | null>
+    // Copies images, keeps this machine's settings, then restarts the app.
+    startRestore(): Promise<void>
+    discardRestore(): Promise<void>
+    safetyCopies(): Promise<SafetyCopy[]>
+    restoreSafetyCopy(id: string): Promise<void>
+    deleteSafetyCopy(id: string): Promise<void>
   }
   updates: {
     // In-app updates from GitHub Releases (src/main/updater.ts). Online work is
@@ -1609,6 +1652,8 @@ export interface NaviApi {
     all(): Promise<SettingsMap>
     secretStorage(): Promise<SecretStorageState>
     set(key: string, value: string): Promise<void>
+    // One free request with the SAVED credential (see @shared/keyTests).
+    testKey(key: TestableKey): Promise<KeyTestResult>
   }
   // Library Refresh: re-run each title's importer writing only the chosen
   // aspects. See @shared/refresh.ts — a partial refresh never touches child
@@ -1637,5 +1682,9 @@ export interface NaviApi {
     // The parent window is attached so focus returns to the app. Returns the
     // path written, or null if cancelled. The '.png' extension is appended.
     saveImageAs(bytes: Uint8Array, defaultName: string): Promise<string | null>
+    // Settings folder fields: a parented folder picker (null on cancel) and a
+    // check that a saved folder still exists.
+    chooseFolder(title: string, defaultPath?: string): Promise<string | null>
+    folderStatus(path: string): Promise<FolderStatus>
   }
 }

@@ -2926,3 +2926,12 @@ html[data-theme='seinfeld'] .home-resume.sf-episode { display: flex; overflow: h
   .history-stage .hover-card { animation: hist-card-in 140ms ease-out; }
 }
 @keyframes hist-card-in { from { opacity: 0; transform: translateY(6px) scale(0.98); } }
+
+/* Settings search: the card a result opened is outlined for a moment
+   (SettingsPage revealCard). The outline itself is the signal; only its
+   fade is motion, so reduced motion keeps the outline and drops the fade. */
+[data-setting] { transition: box-shadow 0s; }
+[data-setting].setting-flash { box-shadow: 0 0 0 2px rgb(var(--signal-live)); }
+@media (prefers-reduced-motion: no-preference) {
+  [data-setting] { transition: box-shadow 600ms ease-out; }
+}

@@ -196,7 +196,7 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
                 <button
                   className="btn-ghost py-1 px-3"
                   disabled={busy}
-                  title="Run mokuro on every volume without OCR, so its text becomes tappable in the reader (needs mokuro installed — see Settings → Integrations)"
+                  title="Run mokuro on every volume without OCR, so its text becomes tappable in the reader (needs mokuro installed — see Settings → Tools)"
                   onClick={() => void startOcr()}
                 >
                   Run OCR ({ocrMissing})

@@ -192,7 +192,7 @@ function launch(
   const handle = tasks.create({
     kind: 'libraryExport',
     label: 'Exporting library',
-    route: '/settings?tab=data',
+    route: '/settings?tab=about',
     controls: {
       cancel: () => controller.abort(),
       pauseNote: 'Library exports cannot be paused'

@@ -24,8 +24,21 @@ export default function OpenFileHandler(): null {
 
   useEffect(() => {
     let cancelled = false
+    let noticesRead = false
 
     async function collect(): Promise<void> {
+      // What startup maintenance did before the window opened (a compact or a
+      // restore). Returns-and-clears in main, so one read per mount is enough.
+      if (!noticesRead) {
+        noticesRead = true
+        try {
+          const notices = await api.app.startupNotices()
+          if (!cancelled) for (const n of notices) toast(n.message, n.ok ? 'success' : 'error')
+        } catch {
+          /* ignore — a missing notice never blocks opening files */
+        }
+      }
+
       // Navigation parked by the native Tools menu. Rides this existing poll
       // rather than adding one of its own, and returns-AND-clears so repeated
       // ticks are idempotent.

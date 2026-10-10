@@ -1,12 +1,27 @@
 import { WRESTLING_PROMOTIONS } from '@shared/wrestling'
 import { MEDIA_CONFIGS } from './mediaConfig'
 
-export type ArchiveArea = 'home' | 'library' | 'play' | 'learn' | 'system'
+export type ArchiveArea = 'home' | 'library' | 'local' | 'archives' | 'learn' | 'quiz' | 'system'
+
+// Rail order, top to bottom. System sits apart at the foot of the rail.
+export const RAIL_AREAS: ArchiveArea[] = ['home', 'library', 'local', 'archives', 'learn', 'quiz']
+
+export const AREA_LABELS: Record<ArchiveArea, string> = {
+  home: 'Home',
+  library: 'Library',
+  local: 'Local',
+  archives: 'Archives',
+  learn: 'Learn',
+  quiz: 'Quiz',
+  system: 'System'
+}
 
 export interface ArchiveNavItem {
   to: string
   label: string
   visibilityKey?: string
+  // Subheading inside a drawer or the expanded list; consecutive items share one.
+  group?: string
 }
 
 export interface ArchiveContext {
@@ -21,46 +36,67 @@ const HOME_ITEMS: ArchiveNavItem[] = [
   { to: '/stats', label: 'Stats', visibilityKey: 'stats' }
 ]
 
-const MEDIA_DRAWER_ITEMS: ArchiveNavItem[] = [
+const LIBRARY_DRAWER_ITEMS: ArchiveNavItem[] = [
   ...MEDIA_CONFIGS.filter((cfg) => !cfg.hideFromSidebar).map((cfg) => ({
     to: cfg.basePath,
     label: cfg.sidebarLabel ?? cfg.plural,
-    visibilityKey: cfg.key
+    visibilityKey: cfg.key,
+    group: 'Media'
   })),
-  { to: '/franchises', label: 'Franchises' },
-  { to: '/music', label: 'Music', visibilityKey: 'music' },
-  { to: '/pictures', label: 'Pictures', visibilityKey: 'pictures' },
-  { to: '/wrestling', label: 'Wrestling', visibilityKey: 'wrestling' },
-  { to: '/football', label: 'Football', visibilityKey: 'football' },
-  { to: '/lists', label: 'Lists', visibilityKey: 'lists' },
-  { to: '/tags', label: 'Tags', visibilityKey: 'tags' }
+  { to: '/people', label: 'Voice Actors', group: 'Connections' },
+  { to: '/actors', label: 'Actors', group: 'Connections' },
+  { to: '/studios', label: 'Studios', group: 'Connections' },
+  { to: '/lists', label: 'Lists', visibilityKey: 'lists', group: 'Organise' },
+  { to: '/tags', label: 'Tags', visibilityKey: 'tags', group: 'Organise' }
 ]
 
-const PLAY_DRAWER_ITEMS: ArchiveNavItem[] = [
-  { to: '/quiz', label: 'Quiz', visibilityKey: 'quiz' }
+const LOCAL_DRAWER_ITEMS: ArchiveNavItem[] = [
+  { to: '/music', label: 'Music', visibilityKey: 'music' },
+  { to: '/pictures', label: 'Pictures', visibilityKey: 'pictures' }
+]
+
+const ARCHIVES_DRAWER_ITEMS: ArchiveNavItem[] = [
+  { to: '/franchises', label: 'Franchises' },
+  { to: '/history', label: 'History', visibilityKey: 'history' },
+  { to: '/wrestling', label: 'Wrestling', visibilityKey: 'wrestling' },
+  { to: '/football', label: 'Football', visibilityKey: 'football' }
 ]
 
 const LEARN_DRAWER_ITEMS: ArchiveNavItem[] = [
   { to: '/japanese', label: 'Japanese', visibilityKey: 'japanese' },
   { to: '/english', label: 'English', visibilityKey: 'english' },
-  { to: '/programming', label: 'Programming', visibilityKey: 'programming' },
-  { to: '/history', label: 'History', visibilityKey: 'history' }
+  { to: '/programming', label: 'Programming', visibilityKey: 'programming' }
 ]
+
+// Quiz is a direct rail link, not a drawer; this list exists for the expanded
+// sidebar and for the hidden-section filter.
+const QUIZ_ITEMS: ArchiveNavItem[] = [{ to: '/quiz', label: 'Quiz', visibilityKey: 'quiz' }]
 
 const SYSTEM_DRAWER_ITEMS: ArchiveNavItem[] = [
-  { to: '/tasks', label: 'Tasks' },
-  { to: '/tasks/logs', label: 'Logs' },
-  { to: '/bulk', label: 'Bulk Import' },
-  { to: '/torrents', label: 'Torrents' },
-  { to: '/settings', label: 'Settings' }
+  { to: '/bulk', label: 'Bulk Import', group: 'Get content' },
+  { to: '/torrents', label: 'Torrents', group: 'Get content' },
+  { to: '/tasks', label: 'Tasks', group: 'Upkeep' },
+  { to: '/tasks/logs', label: 'Logs', group: 'Upkeep' },
+  { to: '/settings', label: 'Settings', group: 'Upkeep' }
 ]
 
+const DRAWER_ITEMS: Record<ArchiveArea, ArchiveNavItem[]> = {
+  home: HOME_ITEMS,
+  library: LIBRARY_DRAWER_ITEMS,
+  local: LOCAL_DRAWER_ITEMS,
+  archives: ARCHIVES_DRAWER_ITEMS,
+  learn: LEARN_DRAWER_ITEMS,
+  quiz: QUIZ_ITEMS,
+  system: SYSTEM_DRAWER_ITEMS
+}
+
 export function drawerItemsForArea(area: ArchiveArea): ArchiveNavItem[] {
-  if (area === 'home') return HOME_ITEMS
-  if (area === 'library') return MEDIA_DRAWER_ITEMS
-  if (area === 'play') return PLAY_DRAWER_ITEMS
-  if (area === 'learn') return LEARN_DRAWER_ITEMS
-  return SYSTEM_DRAWER_ITEMS
+  return DRAWER_ITEMS[area]
+}
+
+// The rail areas that are a single destination render as a link, never a drawer.
+export function directRouteForArea(area: ArchiveArea): string | null {
+  return area === 'quiz' ? '/quiz' : null
 }
 
 export function bestArchiveRoute(pathname: string, routes: string[]): string | null {
@@ -73,9 +109,25 @@ export function bestArchiveRoute(pathname: string, routes: string[]): string | n
   )
 }
 
+// Routes with no drawer entry of their own, and the entry that stands for them.
+const DRAWER_PARENTS: [string, string][] = [
+  ['/now-playing', '/music'],
+  ['/actors', '/movies'],
+  ['/directors', '/movies'],
+  ['/authors', '/books'],
+  ['/artists', '/anime'],
+  ['/mangaka', '/manga']
+]
+
 export function drawerRouteForPath(pathname: string, routes: string[]): string | null {
   const direct = bestArchiveRoute(pathname, routes)
   if (direct) return direct
+
+  const parent = DRAWER_PARENTS.find(
+    ([route, target]) =>
+      (pathname === route || pathname.startsWith(`${route}/`)) && routes.includes(target)
+  )
+  if (parent) return parent[1]
 
   const media = MEDIA_CONFIGS.find(
     (cfg) => pathname === cfg.basePath || pathname.startsWith(`${cfg.basePath}/`)
@@ -90,44 +142,20 @@ export function drawerRouteForPath(pathname: string, routes: string[]): string |
   )
 }
 
+function underAny(pathname: string, routes: string[]): boolean {
+  return routes.some((route) => pathname === route || pathname.startsWith(`${route}/`))
+}
+
 export function archiveAreaForPath(pathname: string): ArchiveArea {
+  if (underAny(pathname, ['/settings', '/tasks', '/bulk', '/torrents'])) return 'system'
+  if (underAny(pathname, ['/japanese', '/english', '/programming'])) return 'learn'
+  if (underAny(pathname, ['/franchises', '/history', '/wrestling', '/football'])) return 'archives'
+  if (underAny(pathname, ['/music', '/pictures', '/now-playing'])) return 'local'
+  if (underAny(pathname, ['/quiz'])) return 'quiz'
   if (
-    pathname.startsWith('/settings') ||
-    pathname.startsWith('/tasks') ||
-    pathname.startsWith('/bulk') ||
-    pathname.startsWith('/torrents')
-  ) {
-    return 'system'
-  }
-  if (
-    pathname.startsWith('/japanese') ||
-    pathname.startsWith('/english') ||
-    pathname.startsWith('/programming') ||
-    pathname === '/history' ||
-    pathname.startsWith('/history/')
-  ) {
-    return 'learn'
-  }
-  if (pathname.startsWith('/quiz')) return 'play'
-  if (
-    MEDIA_CONFIGS.some(
-      (cfg) => pathname === cfg.basePath || pathname.startsWith(`${cfg.basePath}/`)
-    ) ||
-    MEDIA_DRAWER_ITEMS.some(
-      (item) => pathname === item.to || pathname.startsWith(`${item.to}/`)
-    ) ||
-    [
-      '/people',
-      '/actors',
-      '/directors',
-      '/authors',
-      '/artists',
-      '/mangaka',
-      '/studios',
-      '/characters',
-      '/now-playing',
-      '/read'
-    ].some((path) => pathname === path || pathname.startsWith(`${path}/`))
+    underAny(pathname, MEDIA_CONFIGS.map((cfg) => cfg.basePath)) ||
+    underAny(pathname, LIBRARY_DRAWER_ITEMS.map((item) => item.to)) ||
+    underAny(pathname, ['/actors', '/directors', '/authors', '/artists', '/mangaka', '/characters', '/read'])
   ) {
     return 'library'
   }
@@ -148,8 +176,7 @@ function mediaContext(pathname: string): ArchiveContext | null {
         { to: '/authors', label: 'Authors' },
         { to: '/mangaka', label: 'Mangaka' },
         { to: '/artists', label: 'Artists' },
-        { to: '/studios', label: 'Studios' },
-        { to: '/characters', label: 'Characters' }
+        { to: '/studios', label: 'Studios' }
       ]
     }
   }
@@ -372,7 +399,11 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
     pathname.startsWith('/torrents') ||
     pathname.startsWith('/settings')
   ) {
-    return { title: 'System', descriptor: 'Tasks and settings', items: SYSTEM_DRAWER_ITEMS }
+    return {
+      title: 'System',
+      descriptor: 'Tasks and settings',
+      items: SYSTEM_DRAWER_ITEMS.map(({ to, label }) => ({ to, label }))
+    }
   }
 
   if (pathname === '/franchises' || pathname.startsWith('/franchises/')) {
@@ -384,7 +415,9 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
         { to: '/anime', label: 'Anime' },
         { to: '/visual-novels', label: 'Visual Novels' },
         { to: '/games', label: 'Games' },
-        { to: '/movies', label: 'Movies' }
+        { to: '/movies', label: 'Movies' },
+        { to: '/books', label: 'Books' },
+        { to: '/manga', label: 'Manga' }
       ]
     }
   }

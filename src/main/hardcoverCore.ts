@@ -2,7 +2,7 @@
 // documents, request building and every parser, with no network, database or
 // electron import, so tests cover the response shapes exhaustively.
 //
-// The API is GraphQL behind a personal access token (Settings → Integrations).
+// The API is GraphQL behind a personal access token (Settings → Accounts & keys).
 // Its docs list the fields but not the JSON inside the `cached_*` and `links`
 // columns or the search `results` object, so every parser here is defensive:
 // unknown shapes yield nothing rather than throwing. Search results come from
@@ -113,7 +113,7 @@ export const SERIES_QUERY = `query SeriesBooks($id: Int!, $limit: Int!) {
 
 // book_characters' own columns are undocumented; this is a separate request so
 // a schema mismatch costs the characters, never the book.
-export const CHARACTERS_QUERY = `query BookCharacters($id: Int!, $limit: Int!) {
+export const CHARACTERS_QUERY = `query BookCharacters($id: bigint!, $limit: Int!) {
   book_characters(where: { book_id: { _eq: $id } }, limit: $limit) {
     character { id name biography }
   }
@@ -154,14 +154,27 @@ export const TOP_QUERY = `query Top($where: books_bool_exp!, $orderBy: [books_or
 
 // ---------------- Requests ----------------
 
-// Hardcover's settings page shows the token with or without the "Bearer "
-// prefix depending on its age; the header always needs exactly one.
+// Whatever was pasted, reduce it to the bare token: a copied "Bearer " prefix,
+// a whole "Authorization: Bearer …" header line, surrounding quotes, and any
+// whitespace (a token never contains any, but a copy from a wrapped box can).
+export function cleanToken(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^["'`]+|["'`]+$/g, '')
+    .replace(/^authorization\s*:\s*/i, '')
+    .replace(/^bearer\s+/i, '')
+    .replace(/\s+/g, '')
+}
+
+// The header always carries exactly one "Bearer " prefix.
 export function authorizationHeader(token: string): string {
-  return `Bearer ${token.trim().replace(/^bearer\s+/i, '')}`
+  return `Bearer ${cleanToken(token)}`
 }
 
 // GraphQL failures come back with HTTP 200 and an `errors` array; HTTP errors
-// carry `{ error, error_description }`. Both become one readable message.
+// carry `{ error, error_description }`. Both become one readable message, and
+// Hardcover's own reason is always kept — "expired" and "malformed" need
+// different fixes.
 export function errorMessage(status: number, body: any): string {
   const detail =
     (typeof body?.error_description === 'string' && body.error_description) ||
@@ -169,7 +182,7 @@ export function errorMessage(status: number, body: any): string {
     (typeof body?.error === 'string' && body.error) ||
     ''
   if (status === 401) {
-    return 'Hardcover rejected the API token (expired or revoked). Replace it in Settings → Integrations.'
+    return `Hardcover rejected the API token${detail ? ` (${detail})` : ''}. Create a new key at hardcover.app → Settings → Hardcover API and paste it in Settings → Accounts & keys.`
   }
   if (status === 403) {
     return `Hardcover refused the request${detail ? `: ${detail}` : ''}. Check the token's permissions.`

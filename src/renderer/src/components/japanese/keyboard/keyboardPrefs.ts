@@ -15,7 +15,7 @@ export const KEYBOARD_DEFAULTS: JpKeyboardPrefs = { layout: 'gojuon', romajiHint
 
 const PREFS_KEY = 'jp.keyboardPrefs'
 
-function loadPrefs(): JpKeyboardPrefs {
+export function loadJpKeyboardPrefs(): JpKeyboardPrefs {
   try {
     return { ...KEYBOARD_DEFAULTS, ...JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') }
   } catch {
@@ -27,13 +27,22 @@ export function useJpKeyboardPrefs(): [
   JpKeyboardPrefs,
   <K extends keyof JpKeyboardPrefs>(k: K, v: JpKeyboardPrefs[K]) => void
 ] {
-  const [prefs, setPrefs] = useState<JpKeyboardPrefs>(loadPrefs)
+  const [prefs, setPrefs] = useState<JpKeyboardPrefs>(loadJpKeyboardPrefs)
   const setPref = useCallback(<K extends keyof JpKeyboardPrefs>(k: K, v: JpKeyboardPrefs[K]) => {
     setPrefs((p) => {
       const next = { ...p, [k]: v }
-      localStorage.setItem(PREFS_KEY, JSON.stringify(next))
+      saveJpKeyboardPrefs(next)
       return next
     })
   }, [])
   return [prefs, setPref]
+}
+
+// Settings → Learning edits the same prefs the keyboard remembers.
+export function saveJpKeyboardPrefs(prefs: JpKeyboardPrefs): void {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs))
+  } catch {
+    // A full or disabled localStorage must never block typing.
+  }
 }

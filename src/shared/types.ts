@@ -1640,6 +1640,32 @@ export interface CharacterAppearance {
 
 export type SettingsMap = Record<string, string>
 
+// Settings → Backup & about: the running build and where it keeps things.
+export interface AppAbout {
+  version: string
+  electron: string
+  chrome: string
+  node: string
+  platform: string
+  arch: string
+  dataFolder: string
+  logFolder: string
+}
+
+// Settings folder fields: whether a saved path is still a usable folder.
+export interface FolderStatus {
+  exists: boolean
+  isDirectory: boolean
+  writable: boolean
+}
+
+// Settings → Accounts & keys "Test": one cheap, quota-free request with the
+// SAVED key. `message` never contains the key.
+export interface KeyTestResult {
+  ok: boolean
+  message: string
+}
+
 export interface SecretStorageState {
   available: boolean
   backend: string
@@ -3665,6 +3691,8 @@ export type TaskKind =
   | 'historyAttach'
   | 'historyDownload'
   | 'libraryExport'
+  | 'libraryBackup'
+  | 'libraryRestore'
   | 'storageMove'
   | 'pictureSlideshow'
 // Achievement fetches deliberately have NO kind of their own: they run through
@@ -3757,6 +3785,42 @@ export interface StoragePaths {
 
 export type StorageMovePhase = 'idle' | 'copying' | 'cleaning' | 'done' | 'cancelled' | 'error'
 
+// Settings → Folders & storage: what NaviHUB keeps on disk, measured on
+// request (a walk over Media or Pictures can take seconds).
+export type StorageUsageKey =
+  | 'database'
+  | 'dictionaries'
+  | 'catalogs'
+  | 'media'
+  | 'pictures'
+  | 'history'
+  | 'thumbnails'
+  | 'subtitles'
+  | 'logs'
+  | 'backups'
+
+export interface StorageUsageEntry {
+  key: StorageUsageKey
+  label: string
+  path: string
+  bytes: number
+  files: number
+  // Whether the "Clear" action applies (regenerated caches only).
+  clearable: boolean
+}
+
+export interface StorageUsage {
+  dataFolder: string
+  entries: StorageUsageEntry[]
+  measuredAt: number
+}
+
+// Result of a maintenance action, shown on the Maintenance card.
+export interface MaintenanceResult {
+  ok: boolean
+  message: string
+}
+
 export interface StorageMoveStatus {
   running: boolean
   root: StorageRootKey | null
@@ -3769,6 +3833,70 @@ export interface StorageMoveStatus {
   // verification) — the new folder is complete either way.
   leftovers: number
   error: string | null
+}
+
+// Settings → Backup & about: full, restorable backups (unlike exports, which
+// are sanitized and one-way).
+export type LibraryBackupPhase =
+  | 'idle'
+  | 'choosing'
+  | 'measuring'
+  | 'snapshotting'
+  | 'packing'
+  | 'copying'
+  | 'merging'
+  | 'restarting'
+  | 'done'
+  | 'cancelled'
+  | 'error'
+
+export interface LibraryBackupStatus {
+  id: string | null
+  kind: 'backup' | 'restore' | null
+  running: boolean
+  phase: LibraryBackupPhase
+  message: string | null
+  done: number
+  total: number
+  percent: number | null
+  outputPath: string | null
+  error: string | null
+}
+
+export interface LibraryBackupOptions {
+  includePictures: boolean
+}
+
+// Sizes shown before a backup starts, so the Pictures choice is informed.
+export interface LibraryBackupEstimate {
+  database: number
+  media: number
+  history: number
+  pictures: number
+  // Japanese mining/learning audio, always included.
+  jpaudio: number
+  // The separate theme-song folder; 0 when theme songs live under Media.
+  audio: number
+}
+
+// What a chosen backup contains, shown for confirmation before restoring.
+export interface RestorePreview {
+  createdAt: string
+  appVersion: string
+  machine: string
+  sameMachine: boolean
+  titles: number
+  files: number
+  bytes: number
+  includes: { media: boolean; history: boolean; pictures: boolean; jpaudio: boolean; audio: boolean }
+}
+
+// A library a restore replaced, kept so the restore can be undone.
+export interface SafetyCopy {
+  id: string
+  createdAt: string
+  replacedBy: string
+  bytes: number
 }
 
 export interface LibraryExportStatus {

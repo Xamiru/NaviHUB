@@ -87,7 +87,7 @@ export default function FootballSyncPage() {
         title="Football setup"
         subtitle="Three steps build the whole archive. Each runs in the background; you can pause, leave the page or quit, and it picks up where it stopped."
         back={{ to: '/football', label: 'Football Archive' }}
-        actions={<Link to="/settings?tab=data" className="btn-ghost">Keys and folders</Link>}
+        actions={<Link to="/settings?tab=keys" className="btn-ghost">Accounts and keys</Link>}
       />
 
       <section className="card mb-8 overflow-hidden">

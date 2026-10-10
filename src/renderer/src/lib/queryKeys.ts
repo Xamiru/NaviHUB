@@ -142,7 +142,17 @@ export const qk = {
     // Settings → Folders: the pictures/media roots and a running move.
     all: ['storage'] as const,
     paths: ['storage', 'paths'] as const,
-    status: ['storage', 'status'] as const
+    status: ['storage', 'status'] as const,
+    // Measured on request only (enabled: false + refetch), never on mount.
+    usage: ['storage', 'usage'] as const,
+    compactPending: ['storage', 'compactPending'] as const
+  },
+  backup: {
+    // Settings → Backup & about. Status polls while a backup or restore runs.
+    all: ['backup'] as const,
+    estimate: ['backup', 'estimate'] as const,
+    status: ['backup', 'status'] as const,
+    safetyCopies: ['backup', 'safetyCopies'] as const
   },
   libraryExport: {
     all: ['libraryExport'] as const,
@@ -478,6 +488,11 @@ export const qk = {
     // In-app updater (Settings → Tools). Status polls while checking/downloading.
     all: ['update'] as const,
     status: ['update', 'status'] as const
+  },
+  app: {
+    // Settings → Backup & about: versions and folders of the running build.
+    all: ['app'] as const,
+    about: ['app', 'about'] as const
   },
   games: {
     runs: (id: number) => ['games', 'runs', id] as const,

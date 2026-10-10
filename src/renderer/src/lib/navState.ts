@@ -115,6 +115,16 @@ export function useCanGoBack(): () => boolean {
   return useCallback(() => tabHistoryOf(navigator)?.canGoBack ?? false, [navigator])
 }
 
+// The entry Back would land on in the current browser tab, or null on a tab's
+// first page. Read at click/render time; the tab's history is not React state.
+export function usePreviousEntry(): () => { pathname: string; search: string } | null {
+  const { navigator } = useContext(UNSAFE_NavigationContext)
+  return useCallback(() => {
+    const tab = tabHistoryOf(navigator)
+    return tab && tab.index > 0 ? tab.entries[tab.index - 1] : null
+  }, [navigator])
+}
+
 // Leaves a page whose subject was just deleted: back to the nearest earlier
 // entry that still exists (so Back afterwards never revisits the deleted page
 // or lands on a duplicate), or — with no such entry — replace it with `fallback`.

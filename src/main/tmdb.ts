@@ -90,6 +90,16 @@ function omdbKey(): string | null {
   return settingsRepo.get('omdb.api_key')?.trim() || null
 }
 
+// OMDb refusals ("Invalid API key!", "Request limit reached!") used to vanish
+// silently, leaving a whole refresh without scores and no clue why. Each
+// distinct reason is logged once per session, not once per title.
+const omdbWarned = new Set<string>()
+function warnOmdb(reason: string): void {
+  if (omdbWarned.has(reason)) return
+  omdbWarned.add(reason)
+  logWarn('http', `tmdb: OMDb scores skipped: ${reason}`)
+}
+
 async function fetchOmdb(imdbId: string | null | undefined): Promise<Record<string, number> | null> {
   const key = omdbKey()
   if (!key || !imdbId) return null
@@ -100,9 +110,13 @@ async function fetchOmdb(imdbId: string | null | undefined): Promise<Record<stri
     const res = await fetchWithRetry(url.toString(), {
       maxResponseBytes: MAX_API_RESPONSE_BYTES
     })
-    if (!res.ok) return null
-    const d = await res.json()
-    if (d.Response === 'False') return null
+    const d = await res.json().catch(() => null)
+    if (!res.ok || d?.Response === 'False') {
+      // A title OMDb simply doesn't know is normal; anything else is the key or quota.
+      const reason = String(d?.Error ?? `HTTP ${res.status}`)
+      if (!/not found/i.test(reason)) warnOmdb(reason)
+      return null
+    }
     const patch: Record<string, number> = {}
     const rating = parseFloat(d.imdbRating)
     if (Number.isFinite(rating)) patch.imdbRating = rating

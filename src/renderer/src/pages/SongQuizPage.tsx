@@ -35,6 +35,7 @@ import {
   shouldStopQuizTrack
 } from '@shared/quizAudioCore'
 import { useTabLeaveGuard } from '../lib/browserTabs'
+import { loadQuizDefaults, SONG_SNIPPET_CHOICES } from '../lib/quizPrefs'
 
 type Phase = 'setup' | 'play' | 'summary'
 type ListSource = 'consumed' | 'all'
@@ -52,7 +53,7 @@ const TIMER_SECONDS = 20
 const AUTONEXT_MS = 3500
 const OFFSET_MAX_FRACTION = 0.6 // never start a clip past 60% of the song
 const ARCADE_LIVES = 3
-const SNIPPET_CHOICES = [0, 10, 15, 20] // seconds; 0 = play the full clip
+const SNIPPET_CHOICES = SONG_SNIPPET_CHOICES // seconds; 0 = play the full clip
 
 const EMPTY_STATS: Stats = { score: 0, correct: 0, total: 0, streak: 0, best: 0 }
 
@@ -90,10 +91,12 @@ export default function SongQuizPage() {
   // Selected era keys (multi-select); empty = every decade.
   const [eras, setEras] = usePersistedState<string[]>('quizEras', [])
   const [length, setLength] = usePersistedState<number>('quizLength', 10) // 0 = endless
-  const [timerEnabled, setTimerEnabled] = usePersistedState('quizTimer', true)
-  const [offsetEnabled, setOffsetEnabled] = usePersistedState('quizOffset', true)
-  const [snippet, setSnippet] = usePersistedState('quizSnippet', 0) // 0 = full clip
-  const [autoNext, setAutoNext] = usePersistedState('quizAutoNext', true)
+  // Seeds a fresh visit only (Settings → Readers & quizzes).
+  const [quizDefaults] = useState(loadQuizDefaults)
+  const [timerEnabled, setTimerEnabled] = usePersistedState('quizTimer', quizDefaults.timer)
+  const [offsetEnabled, setOffsetEnabled] = usePersistedState('quizOffset', quizDefaults.songOffset)
+  const [snippet, setSnippet] = usePersistedState('quizSnippet', quizDefaults.songSnippet) // 0 = full clip
+  const [autoNext, setAutoNext] = usePersistedState('quizAutoNext', quizDefaults.songAutoNext)
 
   const [phase, setPhase] = useState<Phase>('setup')
   useTabLeaveGuard(phase === 'play', 'run')

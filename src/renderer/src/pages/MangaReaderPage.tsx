@@ -15,6 +15,14 @@ import { PrevIcon, NextIcon } from '../components/PlayerIcons'
 import { PopoverRow, PopoverOption } from '../components/reader/BookSettingsPopover'
 import ReaderSettingsDrawer, { DrawerSlider } from '../components/reader/ReaderSettingsDrawer'
 import type { MangaChapter, MokuroBlock } from '@shared/types'
+import {
+  loadMangaReaderPrefs,
+  saveMangaReaderPrefs,
+  type MangaReaderFit,
+  type MangaReaderMode,
+  type MangaReaderPrefs
+} from '../lib/readerPrefs'
+import { MANGA_READER_SHORTCUTS } from '../lib/shortcuts'
 
 // Immersive local manga reader (routed chrome-free from App.tsx).
 // Modes: single page, double spread (with cover offset + landscape pages shown
@@ -22,58 +30,13 @@ import type { MangaChapter, MokuroBlock } from '@shared/types'
 // Mokuro OCR sidecars (if present) overlay tappable text; tapping opens the
 // mining panel (tokenize → offline dictionary → save to SRS with this manga as source).
 
-type Mode = 'single' | 'double' | 'vertical'
-type Fit = 'height' | 'width' | 'original'
-type Direction = 'rtl' | 'ltr'
-
-interface ReaderPrefs {
-  mode: Mode
-  fit: Fit
-  direction: Direction
-  coverOffset: boolean
-  zoom: number
-  // Dim the page for night reading. A CSS filter on the reading column, so it
-  // costs nothing and never touches the stored image.
-  brightness: number // 0.3 – 1
-  // Space between pages in scroll mode. 0 is the seamless webtoon look; a few
-  // px separates the pages of a scanned volume.
-  gap: number // px
-}
-
-const PREFS_KEY = 'manga.readerPrefs'
-const DEFAULTS: ReaderPrefs = {
-  mode: 'single',
-  fit: 'height',
-  direction: 'rtl',
-  coverOffset: true,
-  zoom: 1,
-  brightness: 1,
-  gap: 0
-}
-
-function loadPrefs(): ReaderPrefs {
-  try {
-    return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') }
-  } catch {
-    return DEFAULTS
-  }
-}
+type Mode = MangaReaderMode
+type Fit = MangaReaderFit
+type ReaderPrefs = MangaReaderPrefs
 
 const FIT_CYCLE: Fit[] = ['height', 'width', 'original']
 
-const SHORTCUTS = [
-  { keys: ['←', '→'], label: 'Turn page (direction-aware)' },
-  { keys: ['Space'], label: 'Next page (Shift = previous)' },
-  { keys: ['Home', 'End'], label: 'First / last page' },
-  { keys: ['S', 'D', 'V'], label: 'Single / double / scroll mode' },
-  { keys: ['F'], label: 'Cycle fit: height, width, original' },
-  { keys: ['R'], label: 'Reading direction RTL ↔ LTR' },
-  { keys: ['C'], label: 'Cover page alone (double mode)' },
-  { keys: ['O'], label: 'OCR overlay on/off' },
-  { keys: ['M'], label: 'Mine words (tap a speech bubble)' },
-  { keys: ['+', '−', '0'], label: 'Zoom in / out / reset' },
-  { keys: ['Esc'], label: 'Close panels / back to series' }
-]
+const SHORTCUTS = MANGA_READER_SHORTCUTS
 
 export default function MangaReaderPage() {
   const {
@@ -110,11 +73,11 @@ export default function MangaReaderPage() {
   const nextChapter = chIndex >= 0 && chIndex < chapters.length - 1 ? chapters[chIndex + 1] : null
 
   // ---- prefs ----
-  const [prefs, setPrefs] = useState<ReaderPrefs>(loadPrefs)
+  const [prefs, setPrefs] = useState<ReaderPrefs>(loadMangaReaderPrefs)
   const setPref = useCallback(<K extends keyof ReaderPrefs>(k: K, v: ReaderPrefs[K]) => {
     setPrefs((p) => {
       const next = { ...p, [k]: v }
-      localStorage.setItem(PREFS_KEY, JSON.stringify(next))
+      saveMangaReaderPrefs(next)
       return next
     })
   }, [])
@@ -234,7 +197,7 @@ export default function MangaReaderPage() {
     setPrefs((p) => {
       const z = Math.min(4, Math.max(0.5, Math.round(p.zoom * factor * 100) / 100))
       const next = { ...p, zoom: z }
-      localStorage.setItem(PREFS_KEY, JSON.stringify(next))
+      saveMangaReaderPrefs(next)
       return next
     })
   }, [])

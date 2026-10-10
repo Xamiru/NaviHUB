@@ -13,7 +13,8 @@ import { MEDIA_CONFIGS } from './mediaConfig'
 
 export const SIDEBAR_HIDDEN_SETTING = 'sidebar.hidden'
 
-export type SidebarGroup = 'core' | 'library' | 'play' | 'learn'
+// Mirrors the sidebar's rail areas (lib/adaptiveNav.ts) so Settings groups chips the same way.
+export type SidebarGroup = 'core' | 'library' | 'local' | 'archives' | 'learn' | 'quiz'
 
 export interface SidebarSectionDef {
   key: string
@@ -38,17 +39,17 @@ export function sidebarSectionDefs(): SidebarSectionDef[] {
     { key: 'checklist', label: 'Checklist', group: 'core' },
     { key: 'stats', label: 'Stats', group: 'core' },
     ...mediaDefs(),
-    { key: 'music', label: 'Music', group: 'library' },
-    { key: 'pictures', label: 'Pictures', group: 'library' },
-    { key: 'wrestling', label: 'Wrestling', group: 'library' },
-    { key: 'football', label: 'Football', group: 'library' },
     { key: 'lists', label: 'Lists', group: 'library' },
     { key: 'tags', label: 'Tags', group: 'library' },
-    { key: 'quiz', label: 'Quiz', group: 'play' },
+    { key: 'music', label: 'Music', group: 'local' },
+    { key: 'pictures', label: 'Pictures', group: 'local' },
+    { key: 'history', label: 'History', group: 'archives' },
+    { key: 'wrestling', label: 'Wrestling', group: 'archives' },
+    { key: 'football', label: 'Football', group: 'archives' },
     { key: 'japanese', label: 'Japanese', group: 'learn' },
     { key: 'english', label: 'English', group: 'learn' },
     { key: 'programming', label: 'Programming', group: 'learn' },
-    { key: 'history', label: 'History', group: 'learn' }
+    { key: 'quiz', label: 'Quiz', group: 'quiz' }
   ]
 }
 

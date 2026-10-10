@@ -6,7 +6,9 @@ import {
   archiveContextForPath,
   bestArchiveRoute,
   drawerRouteForPath,
-  drawerItemsForArea
+  drawerItemsForArea,
+  directRouteForArea,
+  RAIL_AREAS
 } from '../src/renderer/src/lib/adaptiveNav'
 
 const sidebarSource = readFileSync(
@@ -19,18 +21,23 @@ describe('adaptive archive navigation', () => {
     ['/', 'home'],
     ['/checklist', 'home'],
     ['/anime/42', 'library'],
-    ['/franchises/science-adventure', 'library'],
+    ['/franchises/science-adventure', 'archives'],
     ['/visual-novels/discover', 'library'],
-    ['/wrestling/journeys/1', 'library'],
+    ['/wrestling/journeys/1', 'archives'],
     ['/tv', 'library'],
     ['/tv/42/edit', 'library'],
-    ['/football/match/42', 'library'],
-    ['/pictures/albums/3', 'library'],
-    ['/quiz/song', 'play'],
+    ['/football/match/42', 'archives'],
+    ['/pictures/albums/3', 'local'],
+    ['/music/liked', 'local'],
+    ['/now-playing', 'local'],
+    ['/people/42', 'library'],
+    ['/characters/9', 'library'],
+    ['/read/7', 'library'],
+    ['/quiz/song', 'quiz'],
     ['/japanese/review', 'learn'],
     ['/programming/sql', 'learn'],
-    ['/history', 'learn'],
-    ['/history/event/1953-iranian-coup', 'learn'],
+    ['/history', 'archives'],
+    ['/history/event/1953-iranian-coup', 'archives'],
     ['/historyx', 'home'],
     ['/tasks/logs', 'system'],
     ['/settings', 'system']
@@ -39,7 +46,7 @@ describe('adaptive archive navigation', () => {
   })
 
   it('keeps every drawer destination unique', () => {
-    for (const area of ['home', 'library', 'play', 'learn', 'system'] as const) {
+    for (const area of [...RAIL_AREAS, 'system'] as const) {
       const routes = drawerItemsForArea(area).map((item) => item.to)
       expect(new Set(routes).size).toBe(routes.length)
     }
@@ -48,11 +55,11 @@ describe('adaptive archive navigation', () => {
   it('keeps every operational destination inside one System drawer', () => {
     const items = drawerItemsForArea('system')
     expect(items).toEqual([
-      { to: '/tasks', label: 'Tasks' },
-      { to: '/tasks/logs', label: 'Logs' },
-      { to: '/bulk', label: 'Bulk Import' },
-      { to: '/torrents', label: 'Torrents' },
-      { to: '/settings', label: 'Settings' }
+      { to: '/bulk', label: 'Bulk Import', group: 'Get content' },
+      { to: '/torrents', label: 'Torrents', group: 'Get content' },
+      { to: '/tasks', label: 'Tasks', group: 'Upkeep' },
+      { to: '/tasks/logs', label: 'Logs', group: 'Upkeep' },
+      { to: '/settings', label: 'Settings', group: 'Upkeep' }
     ])
     const routes = items.map((item) => item.to)
     expect(drawerRouteForPath('/tasks/active', routes)).toBe('/tasks')
@@ -103,7 +110,8 @@ describe('adaptive archive navigation', () => {
     const ctx = archiveContextForPath('/history/person/mohammad-mosaddegh')
     expect(ctx).toMatchObject({ title: 'History', descriptor: 'World chronicle' })
     expect(ctx.items.map((i) => i.to)).toEqual(['/history', '/history/map', '/history/themes', '/history/sources', '/history/my', '/history/corrections'])
-    expect(drawerItemsForArea('learn').map((i) => i.to)).toContain('/history')
+    expect(drawerItemsForArea('archives').map((i) => i.to)).toContain('/history')
+    expect(drawerItemsForArea('learn').map((i) => i.to)).not.toContain('/history')
   })
 
   it('uses the consolidated quiz context while direct game routes remain hub-owned', () => {
@@ -168,7 +176,7 @@ describe('adaptive archive navigation', () => {
     ])
   })
 
-  it('maps hidden TV routes to the visible Movies / TV drawer destination', () => {
+  it('maps hidden TV routes to the visible Movies & TV drawer destination', () => {
     const routes = drawerItemsForArea('library').map((item) => item.to)
     expect(drawerRouteForPath('/tv', routes)).toBe('/movies')
     expect(drawerRouteForPath('/tv/42/edit', routes)).toBe('/movies')
@@ -188,5 +196,65 @@ it('exposes hobby-depth destinations through shared navigation', () => {
   expect(archiveContextForPath('/wrestling/journeys').items.map((i) => i.to)).toContain('/wrestling/journeys')
   expect(archiveContextForPath('/wrestling/clips').items.map((i) => i.to)).toContain('/wrestling/clips')
   expect(archiveContextForPath('/franchises/science-adventure').title).toBe('Franchises')
-  expect(drawerItemsForArea('library').map((i) => i.to)).toContain('/franchises')
+  expect(drawerItemsForArea('archives').map((i) => i.to)).toContain('/franchises')
+})
+
+it('groups drawers by kind and keeps no single-item drawer', () => {
+  const groups = (area: Parameters<typeof drawerItemsForArea>[0]) => [
+    ...new Set(drawerItemsForArea(area).map((i) => i.group))
+  ]
+  expect(groups('library')).toEqual(['Media', 'Connections', 'Organise'])
+  expect(groups('system')).toEqual(['Get content', 'Upkeep'])
+  expect(drawerItemsForArea('local').map((i) => i.to)).toEqual(['/music', '/pictures'])
+  expect(drawerItemsForArea('archives').map((i) => i.to)).toEqual([
+    '/franchises',
+    '/history',
+    '/wrestling',
+    '/football'
+  ])
+  for (const area of RAIL_AREAS) {
+    if (directRouteForArea(area)) continue
+    expect(drawerItemsForArea(area).length).toBeGreaterThan(1)
+  }
+  expect(directRouteForArea('quiz')).toBe('/quiz')
+})
+
+it('reaches Checklist and Stats from the compact rail through the Home drawer', () => {
+  expect(directRouteForArea('home')).toBeNull()
+  expect(drawerItemsForArea('home').map((i) => i.to)).toEqual(['/', '/checklist', '/stats'])
+})
+
+describe('navigation against the real route table', () => {
+  const app = readFileSync(
+    fileURLToPath(new URL('../src/renderer/src/App.tsx', import.meta.url)),
+    'utf8'
+  )
+  const routes = [...app.matchAll(/path="([^"]+)"/g)].map((m) => m[1]).filter((p) => p !== '*')
+  const concrete = (route: string) => route.replace(/:[a-zA-Z]+/g, '7')
+  const routed = routes.map((r) => new RegExp(`^${r.replace(/:[a-zA-Z]+/g, '[^/]+')}$`))
+  // Chromeless readers, Home's own pages, search and redirect-only legacy URLs.
+  const homeOrChromeless = /^\/($|search|stats|checklist|read\/|guides)/
+
+  it('links every drawer and Topbar destination to a routed page', () => {
+    const items = [...RAIL_AREAS, 'system' as const].flatMap((area) => drawerItemsForArea(area))
+    for (const route of routes) items.push(...archiveContextForPath(concrete(route)).items)
+    const dead = [...new Set(items.map((item) => item.to))].filter(
+      (to) => !routed.some((re) => re.test(to))
+    )
+    expect(dead).toEqual([])
+  })
+
+  it('places every routed page in a sidebar area with a highlighted drawer entry', () => {
+    const orphans = routes
+      .filter((route) => !homeOrChromeless.test(route))
+      .map(concrete)
+      .filter((path) => {
+        const area = archiveAreaForPath(path)
+        const entry = drawerRouteForPath(path, drawerItemsForArea(area).map((i) => i.to))
+        // A character has no directory page; Library stays lit on the rail.
+        if (path.startsWith('/characters/')) return area !== 'library'
+        return area === 'home' || entry === null
+      })
+    expect(orphans).toEqual([])
+  })
 })
