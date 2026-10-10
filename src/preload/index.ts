@@ -105,6 +105,7 @@ const api: NaviApi = {
       ipcRenderer.invoke('companies:list', search, mediaType, limit),
     get: (id) => ipcRenderer.invoke('companies:get', id),
     media: (id) => ipcRenderer.invoke('companies:media', id),
+    collaborators: (id, limit) => ipcRenderer.invoke('companies:collaborators', id, limit),
     upsert: (input) => ipcRenderer.invoke('companies:upsert', input),
     remove: (id) => ipcRenderer.invoke('companies:remove', id)
   },

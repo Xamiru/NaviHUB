@@ -93,7 +93,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Boris Yeltsin',
+      ref: 'person:boris-yeltsin',
       role: 'participant',
       cites: [
         {

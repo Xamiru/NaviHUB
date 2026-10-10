@@ -1,8 +1,8 @@
 import { getSqlite } from '../db/connection'
-import { mapCompany, mapMedia } from './mappers'
+import { mapCompany, mapMedia, mapPerson } from './mappers'
 import * as listRepo from './listRepo'
 import * as tierListRepo from './tierListRepo'
-import type { Company, MediaItem, MediaType } from '@shared/types'
+import type { Company, CompanyCollaborator, MediaItem, MediaType } from '@shared/types'
 
 // Sorted by how many distinct works they're linked to (most prolific first).
 // `mediaType` scopes the list to companies linked to works of that type (e.g.
@@ -50,6 +50,53 @@ export function media(id: number): MediaItem[] {
     )
     .all(id)
     .map(mapMedia)
+}
+
+// Frequent collaborators: crew (credits without a character) on two or more of
+// this company's works. (person, title, role) triples are de-duplicated first,
+// then the top people get their role labels, most frequent first. Labels match
+// crewRoleLabel (source text, else the role with spaces). `pairs` is
+// MATERIALIZED because both `counted` and `labels` read it. Seeks
+// idx_mc_company then idx_credit_media.
+export function collaborators(id: number, limit = 12): CompanyCollaborator[] {
+  const rows = getSqlite()
+    .prepare(
+      `WITH works AS (SELECT media_id FROM media_company WHERE company_id = @id),
+       pairs AS MATERIALIZED (
+         SELECT DISTINCT c.person_id, c.media_id, COALESCE(c.role_note, REPLACE(c.role, '_', ' ')) AS label
+         FROM works JOIN credit c ON c.media_id = works.media_id
+         WHERE c.character_id IS NULL
+       ),
+       counted AS (
+         SELECT person_id, COUNT(DISTINCT media_id) AS shared FROM pairs
+         GROUP BY person_id HAVING shared >= 2
+         ORDER BY shared DESC, person_id ASC LIMIT @limit
+       ),
+       labels AS (
+         SELECT pairs.person_id, pairs.label, COUNT(*) AS n
+         FROM pairs JOIN counted ON counted.person_id = pairs.person_id
+         GROUP BY pairs.person_id, pairs.label
+       )
+       SELECT p.*, counted.shared AS shared, labels.label AS label
+       FROM counted
+       JOIN person p ON p.id = counted.person_id
+       JOIN labels ON labels.person_id = counted.person_id
+       ORDER BY counted.shared DESC, p.name ASC, labels.n DESC, labels.label ASC`
+    )
+    .all({ id, limit }) as Record<string, unknown>[]
+  const byPerson = new Map<number, CompanyCollaborator>()
+  for (const r of rows) {
+    const personId = r.id as number
+    const seen = byPerson.get(personId)
+    if (seen) seen.roles.push(r.label as string)
+    else
+      byPerson.set(personId, {
+        person: mapPerson(r),
+        shared: r.shared as number,
+        roles: [r.label as string]
+      })
+  }
+  return [...byPerson.values()]
 }
 
 export function upsert(input: Partial<Company> & { name: string }): number {

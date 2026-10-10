@@ -49,14 +49,14 @@ export default defineTheme({
     { ref: 'event:battle-of-adwa' },
     { ref: 'event:herero-and-nama-genocide' },
     {
-      ref: 'event:amritsar-massacre',
+      ref: 'event:paris-peace-conference',
       quote: {
-        id: 'q7',
-        text: 'The Amritsar Massacre became a symbol of British oppression and augured a new era of Indian resistance.',
+        id: 'q8',
+        text: 'By that time, however, it was becoming clear that the Paris Peace Conference, rather than constructing a new world order based on self-determination, was largely aiming to restore the old imperial one, at least outside of Europe.',
         lang: 'en',
         cite: {
           source: 'eo1418-manela-wilsonian-moment',
-          loc: { section: 'The Colonial World Mobilized', para: '5' }
+          loc: { section: 'The Colonial World Mobilized', para: '6' }
         },
         provenance: {
           via: 'web',
@@ -66,14 +66,14 @@ export default defineTheme({
       }
     },
     {
-      ref: 'event:paris-peace-conference',
+      ref: 'event:amritsar-massacre',
       quote: {
-        id: 'q8',
-        text: 'By that time, however, it was becoming clear that the Paris Peace Conference, rather than constructing a new world order based on self-determination, was largely aiming to restore the old imperial one, at least outside of Europe.',
+        id: 'q7',
+        text: 'The Amritsar Massacre became a symbol of British oppression and augured a new era of Indian resistance.',
         lang: 'en',
         cite: {
           source: 'eo1418-manela-wilsonian-moment',
-          loc: { section: 'The Colonial World Mobilized', para: '6' }
+          loc: { section: 'The Colonial World Mobilized', para: '5' }
         },
         provenance: {
           via: 'web',
@@ -166,7 +166,8 @@ export default defineTheme({
       }
     },
     { ref: 'event:independence-of-ghana' },
-    { ref: 'event:congo-crisis' }
+    { ref: 'event:congo-crisis' },
+    { ref: 'event:handover-of-hong-kong' }
   ],
   related: [
     { ref: 'theme:the-cold-war' },

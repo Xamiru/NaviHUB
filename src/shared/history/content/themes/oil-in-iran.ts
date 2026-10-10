@@ -189,7 +189,9 @@ export default defineTheme({
     { ref: 'event:founding-of-opec' },
     { ref: 'event:tehran-agreement-1971' },
     { ref: 'event:1973-oil-crisis' },
-    { ref: 'event:iran-iraq-war' }
+    { ref: 'event:iran-iraq-war' },
+    { ref: 'event:tanker-war' },
+    { ref: 'event:us-sanctions-on-iran-1995-1996' }
   ],
   related: [
     { ref: 'theme:iran-and-britain' },

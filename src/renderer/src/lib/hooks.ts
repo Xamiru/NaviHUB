@@ -4,7 +4,7 @@ import { api } from './api'
 import { qk } from './queryKeys'
 import { mediaUrl } from '@shared/mediaUrl'
 import { MEDIA_CONFIGS, statusesExceptPlanned } from './mediaConfig'
-import type { SecretStorageState, SettingsMap } from '@shared/types'
+import type { MediaType, SecretStorageState, SettingsMap } from '@shared/types'
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -51,6 +51,12 @@ export function statusesFrom(
   } catch {
     return cfg.defaultStatuses
   }
+}
+
+// Each type's "completed" status — the second saved status, resolved
+// positionally so a renamed status still counts.
+export function completedStatusByType(settings: SettingsMap | undefined): Map<MediaType, string> {
+  return new Map(MEDIA_CONFIGS.map((cfg) => [cfg.key, statusesFrom(settings, cfg)[1]] as const))
 }
 
 // Reads a media type's configurable status list (settings key + fallback come

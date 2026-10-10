@@ -120,7 +120,8 @@ export const qk = {
   companies: {
     ...entity('companies'),
     homeTop: ['companies', 'homeTop'] as const,
-    media: (companyId: number) => ['companies', 'media', companyId] as const
+    media: (companyId: number) => ['companies', 'media', companyId] as const,
+    collaborators: (companyId: number) => ['companies', 'collaborators', companyId] as const
   },
   characters: {
     ...entity('characters'),

@@ -100,7 +100,9 @@ function Panel({ tabsId, item, tabbed }: { tabsId: string; item: HistoryInterpre
             )}
             {p.reception && p.reception.length > 0 && (
               <div className="mt-3 rounded-md border border-line-subtle bg-base-800/70 p-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">How scholars received it</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
+                  {p.category === 'official' ? 'Independent assessment' : 'How scholars received it'}
+                </p>
                 <div className="mt-2 space-y-2">
                   {p.reception.map((q) => (
                     <QuoteBlock key={q.id} quote={q} size="sm" />

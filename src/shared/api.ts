@@ -30,6 +30,7 @@ import type {
   Person,
   PersonCredit,
   PersonCostar,
+  CompanyCollaborator,
   PersonDirectoryQuery,
   PersonDirectoryEntry,
   Company,
@@ -485,6 +486,8 @@ export interface NaviApi {
     list(search?: string, mediaType?: MediaType | MediaType[], limit?: number): Promise<Company[]>
     get(id: number): Promise<Company | null>
     media(id: number): Promise<MediaItem[]>
+    // Crew credited on two or more of this company's works, most shared first.
+    collaborators(id: number, limit?: number): Promise<CompanyCollaborator[]>
     upsert(input: Partial<Company> & { name: string }): Promise<number>
     remove(id: number): Promise<void>
   }

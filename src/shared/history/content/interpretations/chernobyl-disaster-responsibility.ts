@@ -128,17 +128,17 @@ export default defineInterpretation({
       ],
       reception: [
         {
-          id: 'q10',
-          text: 'Implicitly seeking to defend the Soviet record on providing information, Gorbachev (falsely) stated that the U.S. had taken 10 days to inform Congress and over a month to inform the IAEA about the accident at Three Mile Island.',
+          id: 'q11',
+          text: 'Chernobyl\' has become a metaphor not only for the horror of uncontrolled nuclear power but also for the collapsing Soviet system and its reflexive secrecy and deception, disregard for the safety and welfare of workers and their families, and inability to deliver basic services such as health care and transportation, especially in crisis situations.',
           lang: 'en',
           cite: {
-            source: 'frus-1981-88-v05-d230-gorbachev-speech-on-chernobyl',
-            loc: { section: 'Document 230', para: '1' }
+            source: 'loc-revelations-russian-archives-internal-workings',
+            loc: { section: 'Internal Workings of the Soviet Union' }
           },
           provenance: {
             via: 'web',
             at: '2026-10-09',
-            url: 'https://history.state.gov/historicaldocuments/frus1981-88v05/d230'
+            url: 'https://www.loc.gov/exhibits/archives/intn.html'
           }
         }
       ]

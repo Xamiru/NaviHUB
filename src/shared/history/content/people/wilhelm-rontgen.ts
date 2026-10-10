@@ -40,6 +40,34 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
+          id: 'q5',
+          text: 'He then became assistant to Kundt at Würzburg and afterwards at Strassburg, becoming privat-docent at the latter university in 1874.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-rontgen-wilhelm-konrad',
+            loc: { section: 'RÖNTGEN, WILHELM KONRAD', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/R%C3%B6ntgen,_Wilhelm_Konrad'
+          }
+        },
+        {
+          id: 'q6',
+          text: 'In 1879 he was chosen ordinary professor of physics and director of the Physical Institute at Giessen, whence in 1885 he removed in the same capacity to Würzburg.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-rontgen-wilhelm-konrad',
+            loc: { section: 'RÖNTGEN, WILHELM KONRAD', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/R%C3%B6ntgen,_Wilhelm_Konrad'
+          }
+        },
+        {
           id: 'q1',
           text: '1. Oktober: Berufung auf das Ordinariat in Würzburg.',
           lang: 'de',

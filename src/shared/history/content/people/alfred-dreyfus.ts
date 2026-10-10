@@ -13,6 +13,17 @@ export default definePerson({
       kind: 'overview',
       quotes: [
         {
+          id: 'q3',
+          text: 'DREYFUS, ALFRED (1859– ), French soldier, of Jewish parentage, the scandal of whose condemnation for treason and subsequent rehabilitation convulsed French political life between 1894 and 1899, and only ended in 1906, was born in Mülhausen, Upper Alsace, removing to Paris in 1874.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-dreyfus', loc: { section: 'DREYFUS, ALFRED', para: '1' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Dreyfus,_Alfred'
+          }
+        },
+        {
           id: 'q1',
           text: 'Der französische Hauptmann Alfred Dreyfus wird von einem Kriegsgericht wegen angeblicher Spionage für Deutschland zu lebenslanger Verbannung auf die Teufelsinsel verurteilt.',
           lang: 'de',

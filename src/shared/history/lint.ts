@@ -22,8 +22,12 @@ const OCR = [
   /\b[il]\d{3}\b/,
   /\b0(?:ctober|n|f)\b/,
   /β\d/,
-  /\b(?:toobtain|hisbeing|asone|onethird|anti-Alliedactivities)\b/
+  /\b(?:toobtain|hisbeing|asone|onethird|anti-Alliedactivities)\b/,
+  /\[\[Page /,
+  /\b[a-z]+ C (?:of|Kurdish)\b/
 ]
+/** An English quote cut from inside a sentence; a few names legitimately start lowercase. */
+const FRAGMENT = /^(?!al-|el-|ad-|ibn |bin |de |van |von |da |du |la |le |e\.g\.|i\.e\.|c\.|ca\.|(?:eBay|iPhone)\b)[a-z]/
 /** A section that opens mid-story: a time step or reaction with nothing before it. */
 const MIDSTORY = /^(A (few|couple of) (days|weeks|months|years) later|(Some|Two|Three|Several) (days|weeks|months|years) later|Shortly (after|afterwards|thereafter)|Soon (after|afterwards|thereafter)|Later|Afterwards|After (this|that|which)|Upon (his|her|their|this|that)|Following (this|that)|The next|Next|Again|Once again|Finally|Eventually|Thereafter|Subsequently)\b/
 /**
@@ -119,6 +123,18 @@ export function lintCatalog(catalog: HistoryCatalog, entities: HistoryEntity[]):
     for (const id of new Set(citedIn(i.framing).filter(outlet))) add('state-outlet', ref, `${id} frames the question`, 'framing')
   }
 
+  /** Checks every quote on its own, wherever it sits. */
+  const quoteChecks = (ref: string, quotes: Quote[]): void => {
+    for (const q of quotes) {
+      if (q.lang === 'en' && FRAGMENT.test(q.text)) add('fragment', ref, 'the quote starts inside a sentence', q.id)
+      const para = q.cite.loc?.para
+      if (para !== undefined && !/^[1-9]\d*$/.test(para)) add('bad-locator', ref, `paragraph "${para}" is not a paragraph number`, q.id)
+      if (CITATION_TAIL.test(q.text)) add('citation-tail', ref, 'the quote ends in a citation parenthesis', q.id)
+      if (OCR.some((re) => re.test(q.text))) add('ocr', ref, 'the quote carries scan damage', q.id)
+    }
+  }
+  for (const e of entities) if (e.kind === 'interpretation') quoteChecks(refOf('interpretation', e.id), quotesOf(e))
+
   for (const e of entities) {
     if (!ARTICLE_KINDS.has(e.kind) || !('names' in e)) continue
     const ref = refOf(e.kind, e.id)
@@ -144,10 +160,7 @@ export function lintCatalog(catalog: HistoryCatalog, entities: HistoryEntity[]):
     })
 
     const own = quotesOf(e)
-    for (const q of own) {
-      if (CITATION_TAIL.test(q.text)) add('citation-tail', ref, 'the quote ends in a citation parenthesis', q.id)
-      if (OCR.some((re) => re.test(q.text))) add('ocr', ref, 'the quote carries scan damage', q.id)
-    }
+    quoteChecks(ref, own)
 
     // The same words twice on one page (the entity plus the interpretations about it).
     const page = [...own, ...(aboutPage.get(ref) ?? [])]

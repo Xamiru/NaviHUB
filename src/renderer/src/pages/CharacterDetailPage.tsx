@@ -12,7 +12,8 @@ import EditorialDetailFrame, { RelationshipTrail } from '../components/Editorial
 import { pathForMedia } from '../lib/mediaConfig'
 import { chronologicalYear } from '../lib/archiveDisplay'
 import { useLeaveDeleted } from '../lib/navState'
-import type { MediaType, Person } from '@shared/types'
+import { useIncrementalList } from '../lib/hooks'
+import type { CharacterAppearance, MediaType, Person } from '@shared/types'
 
 // Titles whose cast is played on screen rather than voiced.
 const LIVE_ACTION = new Set<MediaType>(['movie', 'tv'])
@@ -121,26 +122,40 @@ export default function CharacterDetailPage() {
               No appearances yet. Add this character to a title&apos;s cast.
             </p>
           ) : (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-4">
-              {chronologicalRoles.map((r) => (
-                <Link key={r.media.id} to={pathForMedia(r.media)} className="group block min-w-0">
-                  <CoverImage
-                    path={r.media.coverPath}
-                    alt=""
-                    thumbWidth={240}
-                    rounded="rounded-lg"
-                    className="aspect-[2/3] w-full transition-transform group-hover:scale-[1.03]"
-                  />
-                  <p className="mt-1.5 line-clamp-2 text-sm text-white group-hover:text-accent">{r.media.title}</p>
-                  <p className="truncate text-xs text-gray-400">
-                    {[chronologicalYear(r.media.releaseDate), r.media.status].filter(Boolean).join(' · ')}
-                  </p>
-                </Link>
-              ))}
-            </div>
+            <AppearanceGrid roles={chronologicalRoles} />
           )}
         </Section>
       </EntityHeader>
     </EditorialDetailFrame>
+  )
+}
+
+// A generic character (a narrator, a mascot) can appear in hundreds of titles,
+// so covers render in batches, at the same density as the person role grid.
+function AppearanceGrid({ roles }: { roles: CharacterAppearance[] }) {
+  const { visible, sentinelRef, hasMore } = useIncrementalList(roles, 48)
+  return (
+    <>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-3">
+        {visible.map((r) => (
+          <Link key={r.media.id} to={pathForMedia(r.media)} className="group block min-w-0">
+            <CoverImage
+              path={r.media.coverPath}
+              alt=""
+              thumbWidth={160}
+              rounded="rounded-lg"
+              className="aspect-[2/3] w-full transition-transform group-hover:scale-[1.03]"
+            />
+            <p className="mt-1.5 line-clamp-2 text-xs font-medium leading-4 text-white group-hover:text-accent">
+              {r.media.title}
+            </p>
+            <p className="truncate text-xs text-gray-400">
+              {[chronologicalYear(r.media.releaseDate), r.media.status].filter(Boolean).join(' · ')}
+            </p>
+          </Link>
+        ))}
+      </div>
+      {hasMore && <div ref={sentinelRef} />}
+    </>
   )
 }

@@ -9,6 +9,7 @@ import AddToListMenu from '../components/AddToListMenu'
 import CoverImage from '../components/CoverImage'
 import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
+import { FilterPills } from '../components/PillGroup'
 import Tabs, { TabPanel } from '../components/Tabs'
 import EditorialDetailFrame, { RelationshipTrail } from '../components/EditorialDetailFrame'
 import { pathForMedia, MEDIA_CONFIGS } from '../lib/mediaConfig'
@@ -24,7 +25,7 @@ import {
 import { crewRoleLabel } from '../lib/creatorCredits'
 import { usePlayerControls } from '../lib/player'
 import { useLeaveDeleted, usePersistedState } from '../lib/navState'
-import { statusesFrom, useIncrementalList, useSettings } from '../lib/hooks'
+import { completedStatusByType, useIncrementalList, useSettings } from '../lib/hooks'
 import { themeSongToTrack } from '../lib/themeTracks'
 import { PauseIcon, PlayIcon } from '../components/PlayerIcons'
 import type { PersonCredit, MediaType, ThemeSongEntry, ThemeSongFilter } from '@shared/types'
@@ -109,12 +110,9 @@ export default function PersonDetailPage() {
     return { chronology, types, languages, breakdown, knownFor: pickKnownFor(credits) }
   }, [credits])
 
-  // Titles the user has finished: each type's second status is "completed",
-  // resolved positionally so renamed statuses still count.
+  // Titles the user has finished.
   const completed = useMemo(() => {
-    const done = new Map(
-      MEDIA_CONFIGS.map((cfg) => [cfg.key, statusesFrom(settings, cfg)[1]] as const)
-    )
+    const done = completedStatusByType(settings)
     return career.chronology.filter(
       ({ media }) => media.status != null && media.status === done.get(media.mediaType)
     ).length
@@ -167,7 +165,8 @@ export default function PersonDetailPage() {
     player.playQueue(playable.map(themeSongToTrack), playable.indexOf(s))
   }
 
-  const birthday = formatBirthday(person.birthday)
+  // No death date is stored, so an age would be wrong for anyone who has died.
+  const born = formatBirthday(person.birthday)
   const anyScored = career.knownFor.some((c) => c.media.score != null)
   // The role grid is the picture-led view of an actor; a crew-only career
   // (director, mangaka, theme artist) reads best as its chronology.
@@ -177,7 +176,7 @@ export default function PersonDetailPage() {
   const filters = (career.types.length > 1 || career.languages.length > 1) && (
     <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
       {career.types.length > 1 && (
-        <PillGroup
+        <FilterPills
           label="Filter by type"
           options={[
             { key: 'all', label: 'All' },
@@ -188,7 +187,7 @@ export default function PersonDetailPage() {
         />
       )}
       {career.languages.length > 1 && (
-        <PillGroup
+        <FilterPills
           label="Filter by language"
           options={[
             { key: 'all', label: 'Any language' },
@@ -237,7 +236,7 @@ export default function PersonDetailPage() {
           imgPath: person.photoPath
         }}
         facts={[
-          ...(birthday ? [{ label: 'Born', value: birthday }] : []),
+          ...(born ? [{ label: 'Born', value: born }] : []),
           {
             label: 'In your library',
             value: (
@@ -321,7 +320,7 @@ export default function PersonDetailPage() {
               {activeView === 'roles' ? (
                 <>
                   {view.acting.length > 0 && (
-                    <PillGroup
+                    <FilterPills
                       label="Sort roles"
                       className="mb-4"
                       options={ROLE_SORTS}
@@ -350,18 +349,26 @@ export default function PersonDetailPage() {
 
         {costars.length > 0 && (
           <Section title="Often appears with" subtitle="Shared titles in your library" className="mb-0">
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-4">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
               {costars.map(({ person: p, shared }) => (
-                <Link key={p.id} to={`/people/${p.id}`} className="group block min-w-0">
+                <Link
+                  key={p.id}
+                  to={`/people/${p.id}`}
+                  className="group flex min-w-0 items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-surface-raised"
+                >
                   <CoverImage
                     path={p.photoPath}
                     alt=""
-                    thumbWidth={160}
-                    rounded="rounded-lg"
-                    className="aspect-[2/3] w-full transition-transform group-hover:scale-[1.03]"
+                    thumbWidth={80}
+                    rounded="rounded-full"
+                    className="h-11 w-11 shrink-0 object-cover"
                   />
-                  <p className="mt-1.5 truncate text-sm text-ink-primary group-hover:text-accent">{p.name}</p>
-                  <p className="text-xs text-ink-muted">{shared} shared titles</p>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm text-ink-primary group-hover:text-accent">
+                      {p.name}
+                    </span>
+                    <span className="block text-xs text-ink-muted">{shared} shared titles</span>
+                  </span>
                 </Link>
               ))}
             </div>
@@ -369,35 +376,6 @@ export default function PersonDetailPage() {
         )}
       </EntityHeader>
     </EditorialDetailFrame>
-  )
-}
-
-function PillGroup({
-  label,
-  options,
-  value,
-  onChange,
-  className = ''
-}: {
-  label: string
-  options: { key: string; label: string }[]
-  value: string
-  onChange: (key: string) => void
-  className?: string
-}) {
-  return (
-    <div className={`flex flex-wrap gap-1.5 ${className}`} role="group" aria-label={label}>
-      {options.map((o) => (
-        <button
-          key={o.key}
-          className={`pill !py-0.5 !text-xs ${value === o.key ? 'pill-active' : ''}`}
-          aria-pressed={value === o.key}
-          onClick={() => onChange(o.key)}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
   )
 }
 
@@ -447,7 +425,8 @@ function RoleGrid({ title, entries }: { title: string; entries: RoleGroupEntry[]
   const { visible, sentinelRef, hasMore } = useIncrementalList(entries, 48)
   return (
     <Section title={title}>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
+      {/* Denser than Known for, which stays the one large row on the page. */}
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-3">
         {visible.map(({ credit, titles }) => (
           <RoleCard key={credit.character!.id} c={credit} titles={titles} />
         ))}
@@ -566,7 +545,7 @@ const RoleCard = memo(function RoleCard({ c, titles }: { c: PersonCredit; titles
           <CoverImage
             path={roleImage}
             alt=""
-            thumbWidth={240}
+            thumbWidth={160}
             rounded="rounded-lg"
             className="h-full w-full transition-transform group-hover:scale-105"
           />
@@ -574,7 +553,7 @@ const RoleCard = memo(function RoleCard({ c, titles }: { c: PersonCredit; titles
       </Link>
       {c.character && (
         <Link to={`/characters/${c.character.id}`}>
-          <p className="mt-2 text-sm font-medium line-clamp-2 group-hover:text-accent">
+          <p className="mt-1.5 text-xs font-medium leading-4 line-clamp-2 group-hover:text-accent">
             {c.character.name}
           </p>
         </Link>

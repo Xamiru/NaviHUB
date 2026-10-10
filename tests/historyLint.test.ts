@@ -71,3 +71,36 @@ describe('History lint: section openers', () => {
     expect(keys.filter((k) => k.startsWith('section-opener'))).toEqual([])
   })
 })
+
+describe('History lint: quotes cut badly', () => {
+  it('flags a quote that starts inside a sentence, in an interpretation too', () => {
+    const keys = lint((all) => {
+      find<HistoryInterpretation>(all, 'interpretation', 'sample-revolution-causes').positions[0].statements.push({ ...q('s7'), text: 'and so the regime fell.' })
+    })
+    expect(keys).toContain('fragment|interpretation:sample-revolution-causes|s7')
+  })
+
+  it('accepts names that start lowercase', () => {
+    const keys = lint((all) => {
+      find<HistoryInterpretation>(all, 'interpretation', 'sample-revolution-causes').positions[0].statements.push({ ...q('s7'), text: 'al-Afghani argued for reform.' })
+    })
+    expect(keys.filter((k) => k.startsWith('fragment'))).toEqual([])
+  })
+
+  it('accepts quotes that open with an abbreviation', () => {
+    const keys = lint((all) => {
+      const s = find<HistoryInterpretation>(all, 'interpretation', 'sample-revolution-causes').positions[0].statements
+      s.push({ ...q('s7'), text: 'c. 1990 the regime fell.' })
+      s.push({ ...q('s8'), text: 'e.g. the army refused.' })
+    })
+    expect(keys.filter((k) => k.startsWith('fragment'))).toEqual([])
+  })
+
+  it('flags a paragraph locator that is not a paragraph number', () => {
+    const keys = lint((all) => {
+      const e = find<HistoryEvent>(all, 'event', 'sample-revolution')
+      e.sections[0].quotes.push({ ...q('q94'), text: 'The crowd gathered.', cite: { source: 'book-a', loc: { para: '-1' } } })
+    })
+    expect(keys).toContain('bad-locator|event:sample-revolution|q94')
+  })
+})

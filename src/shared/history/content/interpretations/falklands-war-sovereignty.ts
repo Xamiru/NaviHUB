@@ -60,7 +60,7 @@ export default defineInterpretation({
       ],
       reception: [
         {
-          id: 'q7',
+          id: 'q9',
           text: 'In 1964 the UN, in response to an Argentine appeal, classified the Islands as a non-self-governing territory administered by the UK and called on both parties to initiate talks towards peaceful resolution of their conflicting sovereignty claims.',
           lang: 'en',
           cite: {

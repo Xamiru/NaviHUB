@@ -160,7 +160,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q6',
-          text: 'He died at Livadia on the 1st of November 1894,',
+          text: 'He died at Livadia on the 1st of November 1894, and was succeeded by his eldest son, Nicholas II.',
           lang: 'en',
           cite: {
             source: 'britannica-1911-alexander-iii-tsar',

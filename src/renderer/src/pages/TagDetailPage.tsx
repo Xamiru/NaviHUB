@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -8,10 +9,15 @@ import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import EmptyState from '../components/EmptyState'
 import Section from '../components/Section'
-import { MediaCard } from './MediaListPage'
+import { FilterPills } from '../components/PillGroup'
+import MediaCard from '../components/MediaCard'
 import { ContextTrail } from '../components/ContextPanel'
+import { usePersistedState } from '../lib/navState'
+import { completedStatusByType, useIncrementalList, useSettings } from '../lib/hooks'
+import { sortWorks, WORK_SORT_OPTIONS, type WorkSort } from '../lib/companyWorks'
+import type { MediaItem, MediaType } from '@shared/types'
 
-// Everything carrying one tag, grouped by media type in sidebar order.
+// Everything carrying one tag, filterable by media type and sortable.
 export default function TagDetailPage() {
   const { id } = useParams()
   const tagId = Number(id)
@@ -24,6 +30,25 @@ export default function TagDetailPage() {
     queryKey: qk.tags.media(tagId),
     queryFn: () => api.tags.media(tagId)
   })
+  const { data: settings } = useSettings()
+  const [typeFilter, setTypeFilter] = usePersistedState<MediaType | 'all'>('tagType', 'all')
+  const [sort, setSort] = usePersistedState<WorkSort>('tagSort', 'newest')
+
+  const completed = useMemo(() => {
+    const done = completedStatusByType(settings)
+    return items.filter((m) => m.status != null && m.status === done.get(m.mediaType)).length
+  }, [items, settings])
+  const typesPresent = useMemo(
+    () => MEDIA_CONFIGS.filter((cfg) => items.some((m) => m.mediaType === cfg.key)),
+    [items]
+  )
+  // A remembered type this tag has no titles in falls back to All.
+  const activeType =
+    typeFilter !== 'all' && typesPresent.some((cfg) => cfg.key === typeFilter) ? typeFilter : 'all'
+  const shown = useMemo(
+    () => sortWorks(activeType === 'all' ? items : items.filter((m) => m.mediaType === activeType), sort),
+    [items, activeType, sort]
+  )
 
   if (isLoading) return <PageStatus>Loading…</PageStatus>
   if (!tag) return <PageStatus>Tag not found.</PageStatus>
@@ -47,7 +72,9 @@ export default function TagDetailPage() {
             {tag.category && <span className="chip ml-3 align-middle">{tag.category}</span>}
           </>
         }
-        subtitle={`${items.length} ${items.length === 1 ? 'title' : 'titles'}`}
+        subtitle={`${items.length} ${items.length === 1 ? 'title' : 'titles'}${
+          items.length ? ` · ${completed} completed` : ''
+        }`}
       />
 
       {groups.length > 0 && (
@@ -95,16 +122,40 @@ export default function TagDetailPage() {
       {groups.length === 0 ? (
         <EmptyState title="Nothing carries this tag yet." />
       ) : (
-        groups.map(({ cfg, items: group }) => (
-          <Section key={cfg.key} title={`${cfg.plural} / ${group.length}`} className="mb-8">
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
-              {group.map((m) => (
-                <MediaCard key={m.id} cfg={configFor(m.mediaType)} item={m} />
-              ))}
-            </div>
-          </Section>
-        ))
+        <Section title={`Titles · ${shown.length}`} className="mb-8">
+          <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+            {typesPresent.length > 1 && (
+              <FilterPills
+                label="Filter by type"
+                options={[
+                  { key: 'all', label: 'All' },
+                  ...typesPresent.map((cfg) => ({ key: cfg.key, label: cfg.plural }))
+                ]}
+                value={activeType}
+                onChange={(t) => setTypeFilter(t as MediaType | 'all')}
+              />
+            )}
+            <FilterPills label="Sort titles" options={WORK_SORT_OPTIONS} value={sort} onChange={(k) => setSort(k as WorkSort)} />
+          </div>
+          <TitleGrid items={shown} showType={activeType === 'all' && typesPresent.length > 1} />
+        </Section>
       )}
     </div>
+  )
+}
+
+// A genre tag can hold thousands of titles, so cards render in batches as the
+// sentinel scrolls into view. A mixed list labels each card with its type.
+function TitleGrid({ items, showType }: { items: MediaItem[]; showType: boolean }) {
+  const { visible, sentinelRef, hasMore } = useIncrementalList(items)
+  return (
+    <>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(128px,1fr))] gap-3">
+        {visible.map((m) => (
+          <MediaCard key={m.id} cfg={configFor(m.mediaType)} item={m} showTypeBadge={showType} />
+        ))}
+      </div>
+      {hasMore && <div ref={sentinelRef} />}
+    </>
   )
 }

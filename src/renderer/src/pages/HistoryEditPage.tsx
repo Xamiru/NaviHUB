@@ -407,8 +407,12 @@ function InterpretationForm({ value, onChange }: { value: HistoryInterpretation;
           </div>
           <HoldersEditor value={p.holders} onChange={(holders) => setPos(i, { ...p, holders })} />
           <QuotesEditor legend="In their words" value={p.statements} onChange={(statements) => setPos(i, { ...p, statements })} />
-          {(RECEPTION_REQUIRED.has(p.category) || (p.reception?.length ?? 0) > 0) && (
-            <QuotesEditor legend="How scholars received it (required for fringe and revisionist views)" value={p.reception ?? []} onChange={(reception) => setPos(i, { ...p, reception })} />
+          {(RECEPTION_REQUIRED.has(p.category) || p.category === 'official' || (p.reception?.length ?? 0) > 0) && (
+            <QuotesEditor
+              legend={p.category === 'official' ? 'Independent assessment (required for government claims)' : 'How scholars received it (required for fringe and revisionist views)'}
+              value={p.reception ?? []}
+              onChange={(reception) => setPos(i, { ...p, reception })}
+            />
           )}
         </FormSection>
       ))}

@@ -56,6 +56,34 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
+          id: 'q8',
+          text: 'He at first intended to settle as a lecturer at Bonn University, but his Radical views made a university career out of the question, and he accepted work on a Radical paper, the Rheinische Zeitung, which expounded the ideas of the most advanced section of the Rhenish Radical bourgeoisie.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-marx',
+            loc: { section: 'MARX, HEINRICH KARL', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Marx,_Heinrich_Karl'
+          }
+        },
+        {
+          id: 'q9',
+          text: 'In October 1842 he became one of the editors of this paper, which, however, after an incessant struggle with press censors, was suppressed in the beginning of 1843.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-marx',
+            loc: { section: 'MARX, HEINRICH KARL', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Marx,_Heinrich_Karl'
+          }
+        },
+        {
           id: 'q1',
           text: 'Fortan bilden Klassenverhältnisse und politische Ökonomie die zentralen Elemente in Marxʼ Theorie.',
           lang: 'de',

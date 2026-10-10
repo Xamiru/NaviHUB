@@ -180,6 +180,7 @@ export default defineTheme({
     { ref: 'event:soviet-invasion-of-afghanistan' },
     { ref: 'event:solidarity' },
     { ref: 'event:iran-iraq-war' },
+    { ref: 'event:united-states-invasion-of-grenada' },
     { ref: 'event:perestroika-and-glasnost' },
     { ref: 'event:iran-contra-affair' },
     { ref: 'event:chernobyl-disaster' },
@@ -187,7 +188,9 @@ export default defineTheme({
     { ref: 'event:soviet-withdrawal-from-afghanistan' },
     { ref: 'event:tiananmen-square-protests-of-1989' },
     { ref: 'event:revolutions-of-1989' },
-    { ref: 'event:fall-of-the-berlin-wall' }
+    { ref: 'event:fall-of-the-berlin-wall' },
+    { ref: 'event:german-reunification' },
+    { ref: 'event:dissolution-of-the-soviet-union' }
   ],
   related: [
     { ref: 'theme:decolonization' },

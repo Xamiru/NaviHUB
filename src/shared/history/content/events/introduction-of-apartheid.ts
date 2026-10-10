@@ -48,7 +48,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Nelson Mandela',
+      ref: 'person:nelson-mandela',
       role: 'leader',
       cites: [
         {

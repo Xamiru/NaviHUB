@@ -105,6 +105,34 @@ export default definePerson({
       kind: 'career',
       quotes: [
         {
+          id: 'q9',
+          text: 'He was commissioned as second lieutenant in the corps of Royal Engineers on the 23rd of June 1852.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-gordon-charles-george',
+            loc: { section: 'GORDON, CHARLES GEORGE', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Gordon,_Charles_George'
+          }
+        },
+        {
+          id: 'q8',
+          text: 'The Crimean War broke out shortly afterwards, and Gordon was ordered on active service, and landed at Balaklava on the 1st of January 1855.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-gordon-charles-george',
+            loc: { section: 'GORDON, CHARLES GEORGE', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Gordon,_Charles_George'
+          }
+        },
+        {
           id: 'q7',
           text: 'He returned to England towards the end of 1858, and was then selected for the appointment of adjutant and field-works instructor at the Royal Engineers’ establishment, and took up his new duties at Chatham after promotion to the rank of captain in April 1859.',
           lang: 'en',

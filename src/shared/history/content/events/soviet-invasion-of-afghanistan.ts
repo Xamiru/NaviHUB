@@ -95,7 +95,8 @@ export default defineEvent({
     }
   ],
   partOf: [
-    { ref: 'period:cold-war' }
+    { ref: 'period:cold-war' },
+    { ref: 'event:soviet-afghan-war' }
   ],
   sides: [
     {

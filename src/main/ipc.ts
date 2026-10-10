@@ -305,6 +305,7 @@ export function registerIpc(): void {
   )
   ipcMain.handle('companies:get', (_e, id) => companyRepo.get(id))
   ipcMain.handle('companies:media', (_e, id) => companyRepo.media(id))
+  ipcMain.handle('companies:collaborators', (_e, id, limit) => companyRepo.collaborators(id, limit))
   ipcMain.handle('companies:upsert', (_e, input) => companyRepo.upsert(input))
   ipcMain.handle('companies:remove', (_e, id) => companyRepo.remove(id))
 

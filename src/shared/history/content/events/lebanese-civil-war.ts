@@ -632,5 +632,17 @@ export default defineEvent({
   ],
   furtherReading: [
     { source: 'traboulsi-2007-history-of-modern-lebanon', perspective: 'arab' }
+  ],
+  related: [
+    {
+      ref: 'event:taif-agreement',
+      rel: 'followed-by',
+      cites: [
+        {
+          source: 'hrw-1992-world-report-syria-and-syrian-controlled-lebanon',
+          loc: { section: 'Syria and Syrian-Controlled Lebanon', para: '42' }
+        }
+      ]
+    }
   ]
 })

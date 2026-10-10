@@ -146,8 +146,16 @@ they go further down the page, never first (user, 2026-10-07).
   fact, a date or narration. Its words appear only as an `official` position (shown as
   "Government claim") inside an interpretation, or in `in-their-words` on the speaker's own page.
   Every government claim carries `reception`: a quoted independent assessment (historian,
-  encyclopedia, inquiry, rights organisation) of that claim. Lint: `state-outlet`,
+  encyclopedia, inquiry, tribunal, rights organisation) that answers that claim. Another
+  government's statement is never independent, and a claim by the United States is never answered
+  by a US government body (State Department, Office of the Historian, Library of Congress).
+  Officials' testimony, speeches and treaty clauses never carry the narration either: a page's
+  course is told by historians and encyclopedias, and the clause text belongs in a dedicated
+  section. Lint: `state-outlet`,
   `claim-unanswered`.
+- **Every quote is a whole sentence that names its subject.** Lint: `fragment` (an English quote
+  that starts lowercase, interpretations included) and `bad-locator` (a paragraph locator that is
+  not a positive number).
 - **Every section opens on its own**, not only the overview: a career section begins where the
   career begins and names the person, never "A few days later…", "Shortly afterwards…" or a lone
   late event (lint: `section-opener`, which catches only the time-step openers; read the rest).

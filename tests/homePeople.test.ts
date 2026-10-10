@@ -93,3 +93,32 @@ describe('person co-stars', () => {
     ])
   })
 })
+
+describe('company collaborators', () => {
+  it('counts crew across the company’s works, two or more, with roles by frequency', () => {
+    const studio = companyRepo.upsert({ name: 'Studio' })
+    const works = ['A', 'B', 'C'].map((title) => mediaRepo.create({ mediaType: 'anime', title }))
+    const elsewhere = mediaRepo.create({ mediaType: 'anime', title: 'Elsewhere' })
+    for (const w of works) db.prepare('INSERT INTO media_company (media_id, company_id) VALUES (?, ?)').run(w, studio)
+    const [director, once, actor] = ['Director', 'Once', 'Actor'].map((name) => peopleRepo.upsert({ name }))
+    const credit = (media: number, person: number, role: string, ch: number | null = null) =>
+      db.prepare('INSERT INTO credit (media_id, person_id, role, character_id) VALUES (?, ?, ?, ?)').run(media, person, role, ch)
+    const character = db.prepare('INSERT INTO character (name) VALUES (?)').run('c').lastInsertRowid as number
+    for (const w of works) {
+      credit(w, director, 'director')
+      credit(w, actor, 'voice_actor', character)
+    }
+    credit(works[0], director, 'series_composition')
+    credit(works[0], director, 'director') // duplicate row counts once
+    credit(elsewhere, director, 'director') // not this studio's work
+    credit(works[1], once, 'director')
+
+    expect(companyRepo.collaborators(studio)).toEqual([
+      {
+        person: expect.objectContaining({ id: director }),
+        shared: 3,
+        roles: ['director', 'series composition']
+      }
+    ])
+  })
+})

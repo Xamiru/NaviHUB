@@ -104,7 +104,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q5',
-          text: 'He refused, saying: "I will do anything for the people but nothing [forced] by the people."',
+          text: 'When Pedro dismissed his cabinet in April 1831, street and military demonstrators demanded its reinstatement in violation of his constitutional prerogatives. He refused, saying: "I will do anything for the people but nothing [forced] by the people."',
           lang: 'en',
           cite: {
             source: 'loc-brazil-country-study-1997',

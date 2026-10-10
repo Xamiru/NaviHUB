@@ -119,7 +119,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Helmut Kohl',
+      ref: 'person:helmut-kohl',
       role: 'head-of-government',
       cites: [
         {
@@ -129,7 +129,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'George H. W. Bush',
+      ref: 'person:george-h-w-bush',
       role: 'head-of-state',
       cites: [
         {

@@ -997,6 +997,7 @@ function ActorCard({
         <CoverImage
           path={photo}
           alt={actor?.name ?? character.name}
+          thumbWidth={160}
           rounded="rounded-none"
           className="w-[72px] h-24 shrink-0"
         />
@@ -1050,6 +1051,7 @@ function CharacterCard({
         <CoverImage
           path={character.imagePath}
           alt={character.name}
+          thumbWidth={160}
           rounded="rounded-none"
           className="w-[72px] h-24 shrink-0"
         />
@@ -1079,6 +1081,7 @@ function CharacterCard({
             <CoverImage
               path={primary.person.photoPath}
               alt={primary.person.name}
+              thumbWidth={160}
               rounded="rounded-none"
               className="w-[72px] h-24"
             />
@@ -1115,6 +1118,7 @@ function CharacterOnlyCard({
         <CoverImage
           path={character.imagePath}
           alt={character.name}
+          thumbWidth={320}
           rounded="rounded-none"
           className="w-full aspect-[3/4]"
         />
@@ -1387,6 +1391,7 @@ function RelatedCard({ r, onImport }: { r: MediaRelation; onImport: () => void }
         <CoverImage
           path={r.media?.coverPath ?? null}
           alt={r.title}
+          thumbWidth={240}
           rounded="rounded-lg"
           className="h-full w-full transition-transform group-hover:scale-105"
         />
@@ -1447,6 +1452,8 @@ function StaffSection({
   async function remove(creditId: number) {
     await api.credits.remove(creditId)
     qc.invalidateQueries({ queryKey: qk.people.all })
+    // Studio pages list frequent crew collaborators from credits.
+    qc.invalidateQueries({ queryKey: qk.companies.all })
     onChange()
   }
 

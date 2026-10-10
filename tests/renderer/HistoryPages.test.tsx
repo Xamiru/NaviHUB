@@ -178,6 +178,13 @@ function articleView(): HistoryArticleView {
             holders: [{ kind: 'public', name: 'Various' }],
             statements: [quote('s2', 'A fringe view.')],
             reception: [quote('s3', 'How historians judged it.')]
+          },
+          {
+            id: 'c',
+            category: 'official',
+            holders: [{ kind: 'state', name: 'A State' }],
+            statements: [quote('s4', 'What the government said.')],
+            reception: [quote('s5', 'What an inquiry found.')]
           }
         ]
       }
@@ -210,6 +217,9 @@ describe('History article page', () => {
     expect(screen.getAllByText(/22 Bahman 1357 SH/).length).toBeGreaterThan(0)
     expect(screen.getByText('Fringe')).toBeTruthy()
     expect(screen.getByText('How scholars received it')).toBeTruthy()
+    // A government's words are a claim, answered by an independent assessment.
+    expect(screen.getByText('Government claim')).toBeTruthy()
+    expect(screen.getByText('Independent assessment')).toBeTruthy()
     expect(screen.getByText('The first quoted passage.')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Mark as read' }))
     await waitFor(() => expect(apiMock.history.setMark).toHaveBeenCalledWith('event:sample', 'read', true))

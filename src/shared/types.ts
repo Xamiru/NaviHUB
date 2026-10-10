@@ -1594,6 +1594,14 @@ export interface PersonCostar {
   shared: number
 }
 
+// Someone credited on crew for several of one company's works in the library,
+// with their roles there, most frequent first.
+export interface CompanyCollaborator {
+  person: Person
+  shared: number
+  roles: string[]
+}
+
 // One creator in a role-scoped directory (the Mangaka page): their works of
 // one media type in the library, a few covers, and how many the user has read.
 export type PersonDirectorySort = 'works' | 'read' | 'score' | 'name'

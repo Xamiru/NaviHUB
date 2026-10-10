@@ -114,7 +114,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Yasir Arafat',
+      ref: 'person:yasser-arafat',
       role: 'leader',
       side: 'palestinians',
       cites: [
