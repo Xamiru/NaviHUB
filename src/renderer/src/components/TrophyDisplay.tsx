@@ -1,6 +1,7 @@
 import type { AchievementProvider, AchievementRarity, AchievementRow } from '@shared/types'
 import { mediaUrl } from '@shared/mediaUrl'
-import { trophyDisplayDecision } from '../lib/achievementDisplay'
+import { Field } from './Field'
+import { formatProgress, trophyDisplayDecision } from '../lib/achievementDisplay'
 
 const RARITY_LABEL: Record<AchievementRarity, string> = {
   common: 'Common',
@@ -64,12 +65,16 @@ export function TrophyRow({
   achievement,
   provider,
   busy,
-  onToggle
+  onToggle,
+  selection
 }: {
   achievement: AchievementRow
   provider: AchievementProvider
   busy: boolean
   onToggle: (unlocked: boolean) => void
+  // Present on every row while picking several to mark earned at once; earned
+  // rows pass `disabled` and get an empty slot so the columns stay aligned.
+  selection?: { selected: boolean; disabled?: boolean; onChange: (selected: boolean) => void }
 }) {
   const a = achievement
   const display = trophyDisplayDecision(a)
@@ -78,13 +83,28 @@ export function TrophyRow({
   else if (a.rarity) meta.push(RARITY_LABEL[a.rarity])
   if (a.points != null) meta.push(`${a.points} points`)
   if (display.unlocked && a.unlockedAt) meta.push(`Unlocked ${formatAchievementDate(a.unlockedAt)}`)
+  if (display.unlocked && a.unlockSource === 'manual') meta.push('marked by hand')
+  const progress = !display.unlocked && a.progress ? formatProgress(a.progress) : null
 
   return (
     <li
-      className={`grid min-w-0 grid-cols-[64px_minmax(0,1fr)] items-center gap-4 border-t px-3 py-4 first:border-t-0 sm:grid-cols-[64px_minmax(0,1fr)_auto] sm:px-5 ${
-        display.unlocked ? 'border-base-700 bg-base-800/45' : 'border-base-700/70'
-      }`}
+      className={`grid min-w-0 items-center gap-4 border-t px-3 py-4 first:border-t-0 sm:px-5 ${
+        selection
+          ? 'grid-cols-[auto_64px_minmax(0,1fr)] sm:grid-cols-[auto_64px_minmax(0,1fr)_auto]'
+          : 'grid-cols-[64px_minmax(0,1fr)] sm:grid-cols-[64px_minmax(0,1fr)_auto]'
+      } ${display.unlocked ? 'border-base-700 bg-base-800/45' : 'border-base-700/70'}`}
     >
+      {selection?.disabled && <span className="h-4 w-4" aria-hidden="true" />}
+      {selection && !selection.disabled && (
+        <Field label={`Select ${a.name}`} hiddenLabel className="flex">
+          <input
+            type="checkbox"
+            className="h-4 w-4"
+            checked={selection.selected}
+            onChange={(event) => selection.onChange(event.target.checked)}
+          />
+        </Field>
+      )}
       {display.iconPath ? (
         <img
           src={mediaUrl(display.iconPath) ?? undefined}
@@ -113,12 +133,30 @@ export function TrophyRow({
             {display.description}
           </p>
         )}
+        {progress && (
+          <div className="mt-2 flex max-w-xs items-center gap-2">
+            <div
+              className="h-1 flex-1 overflow-hidden rounded-full bg-base-700"
+              role="progressbar"
+              aria-label={`${a.name} progress`}
+              aria-valuemin={0}
+              aria-valuemax={a.progress?.max}
+              aria-valuenow={a.progress?.current}
+              aria-valuetext={progress.label}
+            >
+              <div className="h-full bg-accent/70" style={{ width: `${progress.pct}%` }} />
+            </div>
+            <span className="shrink-0 text-xs text-gray-400">{progress.label}</span>
+          </div>
+        )}
         <p className={`mt-2 truncate text-[11px] ${a.rarity ? RARITY_CLASS[a.rarity] : 'text-gray-400'}`}>
           {meta.join(' / ')}
         </p>
       </div>
       <button
-        className="btn-ghost col-span-2 shrink-0 justify-self-end text-xs sm:col-span-1"
+        className={`btn-ghost shrink-0 justify-self-end text-xs ${
+          selection ? 'col-span-3 sm:col-span-1' : 'col-span-2 sm:col-span-1'
+        }`}
         disabled={busy}
         onClick={() => onToggle(!display.unlocked)}
       >

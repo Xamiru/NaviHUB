@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { toastError } from '../lib/toast'
+import { confirmAchievementLaunch } from '../lib/achievementLaunch'
 import { useGameSession, fmtDurationSec } from '../lib/useGameSession'
 
 // THE launch control for games/VNs (cfg.hasGameLaunch). It lives in the detail
@@ -35,6 +37,10 @@ export default function GameLaunchButton({
   className?: string
 }) {
   const session = useGameSession()
+  // The one local flag: the pre-launch window (achievement check, its dialog,
+  // the launch call) happens BEFORE any session exists for the poll to report,
+  // and a second click there would launch the game twice.
+  const [starting, setStarting] = useState(false)
   const { data: ov } = useQuery({
     queryKey: qk.games.overview(mediaId),
     queryFn: () => api.games.overview(mediaId)
@@ -60,13 +66,18 @@ export default function GameLaunchButton({
   }
 
   async function play(): Promise<void> {
+    if (starting) return
+    setStarting(true)
     try {
+      if (!(await confirmAchievementLaunch(mediaId))) return
       await api.games.launch(mediaId)
       // The poll self-gates while idle, so a launch must kick it back to life
       // or the session would never report.
       await session.kick()
     } catch (e) {
       toastError(e)
+    } finally {
+      setStarting(false)
     }
   }
 
@@ -74,7 +85,7 @@ export default function GameLaunchButton({
     <button
       className={className}
       onClick={() => void play()}
-      disabled={!ov.supported || session.running}
+      disabled={!ov.supported || session.running || starting}
       title={
         !ov.supported
           ? 'Launching runs on Windows only'

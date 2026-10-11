@@ -84,6 +84,7 @@ import * as gameSessionRepo from './repos/gameSessionRepo'
 import * as achievements from './achievements'
 import * as achievementWatcher from './achievementWatcher'
 import * as achievementRepo from './repos/achievementRepo'
+import * as goldbergInstall from './goldbergInstall'
 import * as files from './files'
 import * as manga from './manga'
 import * as video from './video'
@@ -407,6 +408,22 @@ export function registerIpc(): void {
   ipcMain.handle('achievements:importEmu', (_e, mediaId) => achievements.sweepEmuFiles(mediaId))
   ipcMain.handle('achievements:toggleManual', (_e, achievementId, unlocked) =>
     achievements.toggleManual(achievementId, unlocked)
+  )
+  ipcMain.handle('achievements:markEarnedMany', (_e, achievementIds, unlockedAtMs) =>
+    achievementRepo.setManualMany(achievementIds, unlockedAtMs ?? Date.now())
+  )
+  ipcMain.handle('achievements:swapNames', (_e, firstId, secondId) =>
+    achievementRepo.swapNames(firstId, secondId)
+  )
+  ipcMain.handle('achievements:launchCheck', (_e, mediaId) => achievements.launchCheck(mediaId))
+  ipcMain.handle('achievements:goldbergState', (_e, mediaId) =>
+    goldbergInstall.goldbergState(mediaId)
+  )
+  ipcMain.handle('achievements:goldbergInstall', (_e, mediaId) =>
+    goldbergInstall.installConfig(mediaId)
+  )
+  ipcMain.handle('achievements:goldbergRestore', (_e, mediaId) =>
+    goldbergInstall.restore(mediaId)
   )
   ipcMain.handle('achievements:disable', (_e, mediaId) => achievements.disableTracking(mediaId))
   ipcMain.handle('achievements:watchStatus', () => achievementWatcher.getWatchStatus())

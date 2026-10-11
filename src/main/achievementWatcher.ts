@@ -1,5 +1,5 @@
 import * as achievementRepo from './repos/achievementRepo'
-import { exeDirOf, nodeFileIO, scanUnlocks, windowsEnv } from './emuScan'
+import { emuStateOf, exeDirOf, nodeFileIO, scanUnlocks, windowsEnv } from './emuScan'
 import type { EmuFileIO } from './emuScan'
 import type { EmuEnv } from './achievementsCore'
 import { getSqlite } from './db/connection'
@@ -216,10 +216,12 @@ export async function pollOnce(
   // reason a 5 s interval costs nothing.
   if (scan.newestMtimeMs != null && scan.newestMtimeMs === w.lastMtimeMs) return []
 
-  const fresh = achievementRepo.insertUnlocks(
+  // The same apply step as the manual sweep: new unlocks in, phantoms the
+  // files now mark not earned withdrawn, progress counters replaced.
+  const { fresh } = achievementRepo.applyEmuScan(
     w.mediaId,
     scan.unlocks,
-    'emu',
+    emuStateOf(scan),
     scan.newestMtimeMs ?? now()
   )
   // AFTER the write, never before: a throw here (SQLITE_BUSY against a
@@ -255,15 +257,12 @@ export function startWatch(mediaId: number, nowMs: number = Date.now()): void {
   const tracking = achievementRepo.getTracking(mediaId)
   if (!tracking) return
 
-  const row = getSqlite().prepare('SELECT exe_path FROM media_item WHERE id = ?').get(mediaId) as
-    | { exe_path: string | null }
-    | undefined
 
   watch = {
     mediaId,
     provider: tracking.provider,
     providerGameId: tracking.providerGameId,
-    exeDir: exeDirOf(row?.exe_path ?? null),
+    exeDir: exeDirOf(achievementRepo.exePathOf(mediaId)),
     startedAtMs: nowMs,
     // Deliberately null rather than the current mtime: the first tick reads
     // whatever is already there, so an unlock earned between the last sweep and
@@ -323,10 +322,10 @@ export function stopAchievementWatcher(): void {
   if (watch.provider === 'steam') {
     try {
       const scan = scanUnlocks(watch.providerGameId, watch.exeDir, nodeFileIO, windowsEnv())
-      achievementRepo.insertUnlocks(
+      achievementRepo.applyEmuScan(
         watch.mediaId,
         scan.unlocks,
-        'emu',
+        emuStateOf(scan),
         scan.newestMtimeMs ?? Date.now()
       )
     } catch {

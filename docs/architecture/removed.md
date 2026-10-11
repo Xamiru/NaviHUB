@@ -46,3 +46,7 @@
 ## Album listening journal
 
 **Album listening journal — REMOVED (2026-09-26).** Album pages carried a "My listening journal" section (0–10 album rating, Want to hear / Exploring / Revisit shelf, review, album tags and dated listening entries), browsed from a Music **Journal** tab at `/music/journal`; smart playlists could filter by album rating and shelf. The user removed it. `runMigrations` drops `music_album_personal` and `music_listen`, and smart playlists no longer take `minAlbumRating`/`shelf` (older saved rules keep working; those keys are ignored). Per-track tags and standout marks (`music_track_personal`, the track menu's **Tags and standout track**) stay, and smart playlists still match them. Do not rebuild the album journal.
+
+## Automatic Goldberg DLL swap
+
+**Automatic Goldberg DLL swap — REMOVED before release (2026-10-11).** One-click achievement setup briefly also swapped a user-picked gbe_fork `steam_api64.dll` into the game folder (staged copy, backup of the original, manifest, Undo), plus icon copying and `steam_appid.txt` writing. Three code reviews in a row found serious failure paths in it: a game left with no DLL, an original overwritten on retry, Undo stranded after antivirus deleted the swapped DLL. The user chose to cut it. NaviHUB never touches a DLL now; a game not yet on Goldberg gets manual steps in the dialog, and one-click setup only writes the achievement list for a game already running Goldberg (rules R1–R7 in `goldbergInstall.ts`). Do not rebuild the DLL swap, the icon copying or the app id writing.

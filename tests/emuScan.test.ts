@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   exeDirOf,
   existingUnlockFiles,
+  findApiDll,
   findLocalSteamSchema,
   scanUnlocks,
   steamSettingsDir
@@ -112,6 +113,10 @@ describe('scanUnlocks', () => {
       emus: [],
       files: 0,
       unlocks: [],
+      locked: [],
+      progress: [],
+      // Nothing was read, so nothing may be concluded about locked state.
+      complete: false,
       newestMtimeMs: null
     })
   })
@@ -145,5 +150,17 @@ describe('path helpers', () => {
 
   it('names the folder Goldberg reads its config from', () => {
     expect(steamSettingsDir('/games/thing')).toBe('/games/thing/steam_settings')
+  })
+})
+
+describe('one game-folder search', () => {
+  it('reads only the list beside the steam_api DLL when there is one', () => {
+    const io = fakeIO({
+      'C:\\G\\steam_settings\\achievements.json': '[{"name":"stale"}]',
+      'C:\\G\\bin\\steam_api64.dll': 'x',
+      'C:\\G\\bin\\steam_settings\\achievements.json': '[{"name":"live"}]'
+    })
+    expect(findLocalSteamSchema('C:\\G\\bin', io)?.content).toContain('live')
+    expect(findApiDll('C:\\G\\bin', io)).toEqual({ dir: 'C:\\G\\bin', name: 'steam_api64.dll' })
   })
 })

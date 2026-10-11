@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 import type { AchievementRow } from '../src/shared/types'
 import {
   filterTrophies,
+  formatProgress,
   selectTrophies,
   sortTrophies,
   summarizeTrophies,
+  swapCandidates,
   trophyDisplayDecision
 } from '../src/renderer/src/lib/achievementDisplay'
 
@@ -22,6 +24,8 @@ function row(patch: Partial<AchievementRow> = {}): AchievementRow {
     rarity: 'uncommon',
     unlockedAt: null,
     unlockSource: null,
+    nameStatus: 'ok',
+    progress: null,
     ...patch
   }
 }
@@ -89,5 +93,19 @@ describe('achievement display helpers', () => {
       iconPath: 'media/earned.png',
       dimLockedArt: true
     })
+  })
+})
+
+describe('name and progress helpers', () => {
+  it('orders swap candidates by closeness of global percentage', () => {
+    const target = row({ id: 1, globalPct: 42.5 })
+    const rows = [target, row({ id: 2, globalPct: 90 }), row({ id: 3, globalPct: 42.4 }), row({ id: 4, globalPct: null })]
+    expect(swapCandidates(rows, target).map((r) => r.id)).toEqual([3, 2, 4])
+  })
+
+  it('formats and clamps a progress counter', () => {
+    expect(formatProgress({ current: 820, max: 2000 }).pct).toBe(41)
+    expect(formatProgress({ current: 5, max: 2 }).pct).toBe(100)
+    expect(formatProgress({ current: 1, max: 0 }).pct).toBe(0)
   })
 })

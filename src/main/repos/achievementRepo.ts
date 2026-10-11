@@ -3,6 +3,7 @@ import { rarityTier } from '../achievementsCore'
 import type {
   AchievementGameProgress,
   AchievementListPayload,
+  AchievementNameStatus,
   AchievementProvider,
   AchievementRow,
   AchievementSummary,
@@ -40,9 +41,20 @@ function mapAchievement(r: any): AchievementRow {
     globalPct: r.global_pct ?? null,
     rarity: rarityTier(r.global_pct),
     unlockedAt: r.unlocked_at ?? null,
-    unlockSource: (r.unlock_source as AchievementUnlockSource | null) ?? null
+    unlockSource: (r.unlock_source as AchievementUnlockSource | null) ?? null,
+    nameStatus: (r.name_status as AchievementNameStatus | undefined) ?? 'ok',
+    progress:
+      r.unlocked_at == null && r.progress_current != null && r.progress_max != null
+        ? { current: r.progress_current, max: r.progress_max }
+        : null
   }
 }
+
+const ROW_SQL = `SELECT a.*, u.unlocked_at, u.source AS unlock_source,
+                        p.current AS progress_current, p.max AS progress_max
+                   FROM achievement a
+                   LEFT JOIN achievement_unlock u ON u.achievement_id = a.id
+                   LEFT JOIN achievement_progress p ON p.achievement_id = a.id`
 
 function mapEvent(r: any): AchievementUnlockEvent {
   return {
@@ -77,6 +89,14 @@ export function getTracking(mediaId: number): AchievementTracking | null {
     : null
 }
 
+// The linked executable, which every emulator path is anchored to.
+export function exePathOf(mediaId: number): string | null {
+  const row = getSqlite().prepare('SELECT exe_path FROM media_item WHERE id = ?').get(mediaId) as
+    | { exe_path: string | null }
+    | undefined
+  return row?.exe_path ?? null
+}
+
 // Exe linked NOW, or a session proving it once was, or tracking already set up.
 // exe_path is nulled outright by games:clearExe and keeps no history, so the
 // other two clauses are what make "or ever" true.
@@ -106,13 +126,54 @@ export type AchievementInput = {
 
 type SqliteDb = ReturnType<typeof getSqlite>
 
+// A non-exact source pairs names by rank afresh, so it can hand a name the user
+// swapped onto row X to some other row Y as well — two rows with one name, and
+// Y's real name gone. Re-applying each swap to the incoming list as a trade
+// (X takes its name back from Y, Y takes whatever X was offered) keeps every
+// name on exactly one row.
+function carryManualSwaps(
+  db: SqliteDb,
+  mediaId: number,
+  rows: readonly AchievementInput[]
+): AchievementInput[] {
+  const manual = db
+    .prepare(
+      `SELECT api_name, name FROM achievement WHERE media_id = ? AND name_status = 'manual'`
+    )
+    .all(mediaId) as { api_name: string; name: string }[]
+  const out = rows.map((r) => ({ ...r }))
+  for (const m of manual) {
+    const x = out.findIndex((r) => r.apiName === m.api_name)
+    if (x < 0 || out[x].name === m.name) continue
+    const y = out.findIndex((r, i) => i !== x && r.name === m.name)
+    if (y < 0) continue
+    const a = out[x]
+    const b = out[y]
+    out[x] = { ...a, ...displayOf(b) }
+    out[y] = { ...b, ...displayOf(a) }
+  }
+  return out
+}
+
+function displayOf(r: AchievementInput): Partial<AchievementInput> {
+  const { name, description, hidden, iconPath, iconGrayPath } = r
+  return { name, description, hidden, iconPath, iconGrayPath }
+}
+
+// `exactNames`: the source names every achievement by its api name (the Steam
+// Web API, RetroAchievements). Only such a source may overwrite a name the user
+// confirmed or swapped by hand; the crack's own file and the public page cannot,
+// because either may carry exactly the rank-pairing guess the user corrected.
 function upsertSchemaInDb(
   db: SqliteDb,
   mediaId: number,
   provider: AchievementProvider,
   providerGameId: string,
-  rows: readonly AchievementInput[]
+  incoming: readonly AchievementInput[],
+  exactNames: boolean,
+  prune = true
 ): void {
+  let rows = incoming
   if (!rows.length) throw new Error('Cannot replace an achievement set with an empty schema')
   const prior = db
     .prepare('SELECT provider, provider_game_id FROM achievement_game WHERE media_id = ?')
@@ -134,52 +195,81 @@ function upsertSchemaInDb(
        schema_fetched_at = excluded.schema_fetched_at`
   ).run(mediaId, provider, providerGameId)
 
+  if (!exactNames) rows = carryManualSwaps(db, mediaId, rows)
+
+  // `keep` = the stored row is a hand-swapped name and this source is not
+  // exact: name, text, hidden flag and art stay as the user set them (they
+  // travel together, because the public page pairs them as one row).
+  const keep = `(achievement.name_status = 'manual' AND @exact = 0)`
   const upsert = db.prepare(
     `INSERT INTO achievement
        (media_id, api_name, name, description, hidden, icon_path, icon_gray_path,
-        points, global_pct, sort_order)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        points, global_pct, sort_order, name_status)
+     VALUES (@mediaId, @apiName, @name, @description, @hidden, @iconPath, @iconGrayPath,
+             @points, @globalPct, @sortOrder, @nameStatus)
      ON CONFLICT(media_id, api_name) DO UPDATE SET
-       name = excluded.name,
+       name = CASE WHEN ${keep} THEN achievement.name ELSE excluded.name END,
        -- A source that lacks a description (Steam's public page blanks the
        -- hidden ones) must not wipe one an earlier source supplied.
-       description = COALESCE(excluded.description, achievement.description),
-       -- hidden stays authoritative from the source even when the text above
-       -- is preserved: that pairing is deliberate, not a leak. The kept text
-       -- is what the UI reveals once the achievement is unlocked, and until
-       -- then hidden is exactly what should be concealing it.
-       hidden = excluded.hidden,
+       description = CASE WHEN ${keep} THEN achievement.description
+                          ELSE COALESCE(excluded.description, achievement.description) END,
+       -- hidden comes from the source even when the text above is preserved
+       -- (that pairing is deliberate, not a leak: the kept text is what the
+       -- UI reveals once the achievement is unlocked). A hand-swapped row is
+       -- the exception — it keeps its stored flag with the rest of its display.
+       hidden = CASE WHEN ${keep} THEN achievement.hidden ELSE excluded.hidden END,
        -- COALESCE so a refetch that couldn't re-download art keeps the art
        -- already on disk, the import-preserves-what-it-can rule.
-       icon_path = COALESCE(excluded.icon_path, achievement.icon_path),
-       icon_gray_path = COALESCE(excluded.icon_gray_path, achievement.icon_gray_path),
+       icon_path = CASE WHEN ${keep} THEN achievement.icon_path
+                        ELSE COALESCE(excluded.icon_path, achievement.icon_path) END,
+       icon_gray_path = CASE WHEN ${keep} THEN achievement.icon_gray_path
+                             ELSE COALESCE(excluded.icon_gray_path, achievement.icon_gray_path) END,
        points = excluded.points,
        global_pct = COALESCE(excluded.global_pct, achievement.global_pct),
-       sort_order = excluded.sort_order`
+       sort_order = excluded.sort_order,
+       name_status = CASE WHEN ${keep} THEN 'manual' ELSE excluded.name_status END`
   )
   rows.forEach((r, i) => {
-    upsert.run(
+    upsert.run({
       mediaId,
-      r.apiName,
-      r.name,
-      r.description,
-      r.hidden ? 1 : 0,
-      r.iconPath,
-      r.iconGrayPath,
-      r.points,
-      r.globalPct,
-      i
-    )
+      apiName: r.apiName,
+      name: r.name,
+      description: r.description,
+      hidden: r.hidden ? 1 : 0,
+      iconPath: r.iconPath,
+      iconGrayPath: r.iconGrayPath,
+      points: r.points,
+      globalPct: r.globalPct,
+      sortOrder: i,
+      nameStatus: 'ok',
+      exact: exactNames ? 1 : 0
+    })
   })
 
   // Prune achievements the provider dropped. A set that came back EMPTY is
   // treated as a failed fetch by the caller, so this never runs with no rows.
-  if (rows.length) {
+  // A partial source (a crack's own list, which is often incomplete — the
+  // very gap the launch check warns about) never prunes: dropping a row
+  // deletes its unlock and progress with it.
+  if (prune && rows.length) {
     const keep = rows.map(() => '?').join(',')
     db.prepare(`DELETE FROM achievement WHERE media_id = ? AND api_name NOT IN (${keep})`).run(
       mediaId,
       ...rows.map((r) => r.apiName)
     )
+  } else if (rows.length) {
+    // Rows the source did not list keep their relative order, after the
+    // source's own. Left with their old numbers they would collide with the
+    // renumbered ones, and listInProviderOrder — the order the positional
+    // Goldberg file follows — would interleave them.
+    const listed = new Set(rows.map((r) => r.apiName))
+    const rest = (
+      db
+        .prepare('SELECT id, api_name FROM achievement WHERE media_id = ? ORDER BY sort_order, id')
+        .all(mediaId) as { id: number; api_name: string }[]
+    ).filter((r) => !listed.has(r.api_name))
+    const renumber = db.prepare('UPDATE achievement SET sort_order = ? WHERE id = ?')
+    rest.forEach((r, i) => renumber.run(rows.length + i, r.id))
   }
 }
 
@@ -191,10 +281,13 @@ export function upsertSchema(
   mediaId: number,
   provider: AchievementProvider,
   providerGameId: string,
-  rows: readonly AchievementInput[]
+  rows: readonly AchievementInput[],
+  exactNames = true
 ): void {
   const db = getSqlite()
-  db.transaction(() => upsertSchemaInDb(db, mediaId, provider, providerGameId, rows))()
+  db.transaction(() =>
+    upsertSchemaInDb(db, mediaId, provider, providerGameId, rows, exactNames)
+  )()
 }
 
 // Initial association without a set — setup stores the first choice so it
@@ -217,9 +310,7 @@ export function setInitialAssociation(
 export function listForMedia(mediaId: number): AchievementRow[] {
   return getSqlite()
     .prepare(
-      `SELECT a.*, u.unlocked_at, u.source AS unlock_source
-         FROM achievement a
-         LEFT JOIN achievement_unlock u ON u.achievement_id = a.id
+      `${ROW_SQL}
         WHERE a.media_id = ?
         -- Unlocked first, then the provider's own order: the earned ones are
         -- what the user came to look at.
@@ -236,9 +327,7 @@ export function listForMedia(mediaId: number): AchievementRow[] {
 export function listInProviderOrder(mediaId: number): AchievementRow[] {
   return getSqlite()
     .prepare(
-      `SELECT a.*, u.unlocked_at, u.source AS unlock_source
-         FROM achievement a
-         LEFT JOIN achievement_unlock u ON u.achievement_id = a.id
+      `${ROW_SQL}
         WHERE a.media_id = ?
         ORDER BY a.sort_order, a.id`
     )
@@ -364,12 +453,123 @@ export function replaceSchemaWithUnlocks(
   rows: readonly AchievementInput[],
   unlocks: readonly UnlockInput[],
   source: AchievementUnlockSource,
-  fallbackMs: number
+  fallbackMs: number,
+  opts: { exactNames?: boolean; prune?: boolean; emu?: EmuState } = {}
 ): AchievementRow[] {
   const db = getSqlite()
   return db.transaction(() => {
-    upsertSchemaInDb(db, mediaId, provider, providerGameId, rows)
-    return insertUnlocksInDb(db, mediaId, unlocks, source, fallbackMs)
+    upsertSchemaInDb(
+      db,
+      mediaId,
+      provider,
+      providerGameId,
+      rows,
+      opts.exactNames ?? true,
+      opts.prune ?? true
+    )
+    const priorEmu = emuUnlockNames(db, mediaId)
+    const fresh = insertUnlocksInDb(db, mediaId, unlocks, source, fallbackMs)
+    if (opts.emu) applyEmuStateInDb(db, mediaId, opts.emu, priorEmu)
+    return fresh
+  })()
+}
+
+// What a whole emulator-file read says beyond its earned list (emuScan).
+export type EmuState = {
+  locked: readonly string[]
+  progress: readonly { apiName: string; current: number; max: number }[]
+  // Every file parsed whole. Nothing below runs on a torn read.
+  complete: boolean
+  // What the files mark earned right now, with the time they give (null when
+  // they give none).
+  earned: readonly { apiName: string; unlockedAtMs: number | null }[]
+}
+
+// Two corrections an emulator file can make, both only on a complete read:
+//
+//  - Withdraw an EMULATOR unlock the files now explicitly mark not earned
+//    (the emulator reported it, then the game re-locked it — a phantom).
+//    Never a manual or RA unlock. And only while the files still agree with
+//    most of what they told us before: a fresh or reset profile (reinstall,
+//    new PC) marks EVERYTHING not earned, and acting on that would wipe a
+//    game's history. So the withdrawals may not outnumber the EARLIER emulator
+//    unlocks the files still confirm with the same timestamp — `priorEmu` is
+//    read before this read's own inserts, and a re-earned achievement (new
+//    time) does not count as agreement.
+//  - Update the progress counters (upsert only, see below).
+//
+// Returns how many unlocks were withdrawn.
+// The emulator unlocks recorded so far, with their stored time in epoch seconds.
+function emuUnlockNames(db: SqliteDb, mediaId: number): Map<string, number> {
+  const rows = db
+    .prepare(
+      `SELECT a.api_name, CAST(strftime('%s', u.unlocked_at) AS INTEGER) AS at
+         FROM achievement_unlock u
+         JOIN achievement a ON a.id = u.achievement_id
+        WHERE a.media_id = ? AND u.source = 'emu'`
+    )
+    .all(mediaId) as { api_name: string; at: number }[]
+  return new Map(rows.map((r) => [r.api_name, r.at]))
+}
+
+function applyEmuStateInDb(
+  db: SqliteDb,
+  mediaId: number,
+  state: EmuState,
+  priorEmu: ReadonlyMap<string, number>
+): number {
+  let removed = 0
+  if (state.complete && state.locked.length) {
+    // "Still confirmed" means the SAME unlock: the files give the time this
+    // app stored for it. An achievement re-earned on a fresh or reinstalled
+    // profile carries a new, later time, so it confirms nothing — otherwise a
+    // user who re-earned 6 of 10 would lose the other 4 old unlocks.
+    const confirmed = state.earned.filter((e) => {
+      const stored = priorEmu.get(e.apiName)
+      return (
+        stored != null &&
+        e.unlockedAtMs != null &&
+        Math.abs(Math.floor(e.unlockedAtMs / 1000) - stored) <= 1
+      )
+    }).length
+    const withdraw = state.locked.filter((n) => priorEmu.has(n))
+    if (withdraw.length && confirmed > 0 && withdraw.length <= confirmed) {
+      const del = db.prepare(
+        `DELETE FROM achievement_unlock
+          WHERE source = 'emu'
+            AND achievement_id = (SELECT id FROM achievement WHERE media_id = ? AND api_name = ?)`
+      )
+      for (const name of withdraw) removed += del.run(mediaId, name).changes
+    }
+  }
+  // Counters are only ever upserted, never cleared: an INI read mid-rewrite
+  // looks complete but holds only the sections written so far, and clearing
+  // first would wipe every counter it had not reached. A counter left behind
+  // by an achievement that is now earned is hidden by the row mapper.
+  const put = db.prepare(
+    `INSERT INTO achievement_progress (achievement_id, current, max)
+     SELECT id, ?, ? FROM achievement WHERE media_id = ? AND api_name = ?
+     ON CONFLICT(achievement_id) DO UPDATE SET
+       current = excluded.current, max = excluded.max, updated_at = datetime('now')`
+  )
+  for (const p of state.progress) put.run(p.current, p.max, mediaId, p.apiName)
+  return removed
+}
+
+// One emulator read applied in one transaction: new unlocks in, phantoms out,
+// counters replaced.
+export function applyEmuScan(
+  mediaId: number,
+  unlocks: readonly UnlockInput[],
+  state: EmuState,
+  fallbackMs: number
+): { fresh: AchievementRow[]; removed: number } {
+  const db = getSqlite()
+  return db.transaction(() => {
+    const priorEmu = emuUnlockNames(db, mediaId)
+    const fresh = insertUnlocksInDb(db, mediaId, unlocks, 'emu', fallbackMs)
+    const removed = applyEmuStateInDb(db, mediaId, state, priorEmu)
+    return { fresh, removed }
   })()
 }
 
@@ -385,6 +585,51 @@ export function setManual(achievementId: number, unlocked: boolean): void {
   } else {
     db.prepare('DELETE FROM achievement_unlock WHERE achievement_id = ?').run(achievementId)
   }
+}
+
+// Several earned at once, for achievements the emulator never recorded. One
+// date for all of them (the user's best guess, or now). Like setManual it never
+// overwrites a tracked unlock. Returns how many were newly marked.
+export function setManualMany(achievementIds: readonly number[], atMs: number): number {
+  const db = getSqlite()
+  // Never in the future: a typed date past today would top the recent feed.
+  const now = Date.now()
+  const ms = Number.isFinite(atMs) && atMs > 0 ? Math.min(atMs, now) : now
+  const seconds = Math.floor(ms / 1000)
+  const insert = db.prepare(
+    `INSERT INTO achievement_unlock (achievement_id, unlocked_at, source)
+     VALUES (?, datetime(?, 'unixepoch'), 'manual')
+     ON CONFLICT(achievement_id) DO NOTHING`
+  )
+  return db.transaction(() => {
+    let n = 0
+    for (const id of new Set(achievementIds)) n += insert.run(id, seconds).changes
+    return n
+  })()
+}
+
+// Trade the display half (name, text, hidden flag, art) of two achievements in
+// the same set, keeping each api name, rarity and unlock where it is. Both end
+// up 'manual', so only an exact source renames them again.
+export function swapNames(firstId: number, secondId: number): void {
+  if (firstId === secondId) throw new Error('Choose two different achievements to swap.')
+  const db = getSqlite()
+  db.transaction(() => {
+    const get = db.prepare(
+      'SELECT id, media_id, name, description, hidden, icon_path, icon_gray_path FROM achievement WHERE id = ?'
+    )
+    const a = get.get(firstId) as any
+    const b = get.get(secondId) as any
+    if (!a || !b) throw new Error('That achievement no longer exists.')
+    if (a.media_id !== b.media_id) throw new Error('Both achievements must belong to the same game.')
+    const set = db.prepare(
+      `UPDATE achievement SET name = ?, description = ?, hidden = ?, icon_path = ?,
+              icon_gray_path = ?, name_status = 'manual'
+        WHERE id = ?`
+    )
+    set.run(b.name, b.description, b.hidden, b.icon_path, b.icon_gray_path, a.id)
+    set.run(a.name, a.description, a.hidden, a.icon_path, a.icon_gray_path, b.id)
+  })()
 }
 
 export function disable(mediaId: number): void {

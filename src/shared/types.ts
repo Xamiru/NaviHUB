@@ -1442,6 +1442,9 @@ export interface GameLaunchStatus {
 export type AchievementProvider = 'steam' | 'ra'
 export type AchievementUnlockSource = 'emu' | 'ra' | 'manual'
 export type AchievementRarity = 'common' | 'uncommon' | 'rare' | 'ultra-rare'
+// Frozen keys (achievement.name_status). 'manual': swapped by the user, so
+// only an exact source (the Steam Web API, RA) renames it again.
+export type AchievementNameStatus = 'ok' | 'manual'
 
 export interface AchievementRow {
   id: number
@@ -1456,6 +1459,9 @@ export interface AchievementRow {
   rarity: AchievementRarity | null // derived main-side from globalPct
   unlockedAt: string | null // null = locked
   unlockSource: AchievementUnlockSource | null
+  nameStatus: AchievementNameStatus
+  // The emulator's counter for a locked achievement ("820 / 2000").
+  progress: { current: number; max: number } | null
 }
 
 export interface AchievementTracking {
@@ -1506,6 +1512,45 @@ export interface AchievementSetupResult {
   // Community-page achievements that could not be paired with an api name and
   // were dropped (they cannot be tracked without one).
   unmatched?: number
+}
+
+// Read straight off an emulator sweep: files read, unlocks added, phantom
+// unlocks withdrawn because the files now mark them not earned.
+export interface AchievementEmuImport {
+  found: number
+  imported: number
+  removed: number
+  emus: string[]
+}
+
+// What one-click Goldberg setup sees in a game folder (achievements:goldbergState).
+export interface GoldbergState {
+  // The folder holding the game's steam_api64.dll / steam_api.dll.
+  gameDir: string | null
+  dllName: 'steam_api64.dll' | 'steam_api.dll' | null
+  // 'goldberg': that DLL is Goldberg/GSE. 'other': some other crack or the
+  // real Steam DLL, which must be swapped first. 'none': no DLL was found.
+  emulator: 'goldberg' | 'other' | 'none'
+  // Where the achievement list lives or will be written.
+  settingsDir: string | null
+  list: 'missing' | 'incomplete' | 'complete'
+  missing: number
+  total: number
+  // NaviHUB wrote the list here and can put the original back.
+  canRestore: boolean
+}
+
+// The pre-launch check for a Steam-tracked game run through a Goldberg-family
+// emulator. That emulator silently drops any unlock for an achievement missing
+// from steam_settings/achievements.json, so a missing or partial list means
+// achievements earned this session are lost for good.
+export interface AchievementLaunchCheck {
+  problem: 'missing' | 'incomplete'
+  // Achievements in the tracked set that the game folder's list lacks.
+  missing: number
+  total: number
+  // The steam_settings folder that was found (incomplete) or expected (missing).
+  dir: string | null
 }
 
 // One unlock as it happened, for the popup + the global feed.

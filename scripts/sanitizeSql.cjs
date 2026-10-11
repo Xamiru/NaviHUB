@@ -127,6 +127,7 @@ const FIXED_WIPES = [
   'DELETE FROM quiz_session',
   'DELETE FROM game_session',
   'DELETE FROM achievement_unlock',
+  'DELETE FROM achievement_progress',
   'DELETE FROM checklist_log',
   // History's personal layer: reading marks, private notes, own links, files
   // on this machine and the user's own entities.

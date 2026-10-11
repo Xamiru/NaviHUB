@@ -56,6 +56,11 @@ function ConfirmPanel({ req }: { req: ConfirmRequest }) {
         <button className="btn-ghost" onClick={() => answerConfirm(req.id, false)}>
           Cancel
         </button>
+        {req.secondaryLabel && (
+          <button className="btn" onClick={() => answerConfirm(req.id, 'secondary')}>
+            {req.secondaryLabel}
+          </button>
+        )}
         <button
           ref={okRef}
           className={req.danger ? 'btn-danger' : 'btn-primary'}

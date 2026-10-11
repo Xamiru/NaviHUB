@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
+import { confirmAchievementLaunch } from '../lib/achievementLaunch'
 import { qk } from '../lib/queryKeys'
 import { configFor } from '../lib/mediaConfig'
 import { usePersistedState } from '../lib/navState'
@@ -228,6 +229,7 @@ export default function InstalledGamesPage() {
     if (session.running || launchingId !== null) return
     setLaunchingId(game.mediaId)
     try {
+      if (!(await confirmAchievementLaunch(game.mediaId))) return
       await api.games.launch(game.mediaId)
       await session.kick()
     } catch (err) {

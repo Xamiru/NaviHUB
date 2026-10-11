@@ -113,7 +113,8 @@ export const achievement = sqliteTable(
     iconGrayPath: text('icon_gray_path'),
     points: integer('points'), // RA only
     globalPct: real('global_pct'),
-    sortOrder: integer('sort_order').notNull().default(0)
+    sortOrder: integer('sort_order').notNull().default(0),
+    nameStatus: text('name_status').notNull().default('ok') // 'ok' | 'manual'
   },
   (t) => ({
     byMedia: index('idx_achievement_media').on(t.mediaId),
@@ -135,6 +136,16 @@ export const achievementUnlock = sqliteTable(
     byTime: index('idx_achievement_unlock_time').on(t.unlockedAt)
   })
 )
+
+// The emulator's counter for a locked achievement. Personal; dropped on export.
+export const achievementProgress = sqliteTable('achievement_progress', {
+  achievementId: integer('achievement_id')
+    .primaryKey()
+    .references(() => achievement.id, { onDelete: 'cascade' }),
+  current: real('current').notNull(),
+  max: real('max').notNull(),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`)
+})
 
 // ---------------------------------------------------------------------------
 // person — voice actors, directors, authors, actors…

@@ -1,15 +1,27 @@
 import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import type { GoldbergState } from '@shared/types'
 import { api } from '../lib/api'
-import { useDialog } from '../lib/hooks'
-import { toastError } from '../lib/toast'
+import { qk } from '../lib/queryKeys'
+import { confirmDialog } from '../lib/confirm'
+import { toast, toastError } from '../lib/toast'
+import Dialog from './Dialog'
 
-// The guided setup for a game whose crack writes no achievement files at all.
-// NaviHUB generates the steam_settings folder Goldberg reads and tells the
-// user exactly where to put it — it deliberately never writes into the game
-// folder itself, because a wrong guess there breaks an install and the copy is
-// one step the user can see and undo.
+// One-click achievement saving. The Goldberg emulator (gbe_fork) only saves an
+// achievement its steam_settings/achievements.json lists, so for a game already
+// running Goldberg this writes a complete list beside its DLL, backing up the
+// release's own list once (Restore puts it back). NaviHUB never touches the DLL
+// itself: a game that is not on Goldberg yet gets the manual steps instead.
 
 const GBE_RELEASES = 'https://github.com/Detanup01/gbe_fork/releases'
+
+function listSummary(state: GoldbergState): string {
+  if (state.list === 'complete') return `The achievement list is in place (${state.total} achievements).`
+  if (state.list === 'incomplete') {
+    return `The achievement list is missing ${state.missing} of ${state.total} achievements, so those cannot be saved when you earn them.`
+  }
+  return 'There is no achievement list yet, so the emulator cannot save any achievement you earn.'
+}
 
 export default function GoldbergWizardDialog({
   mediaId,
@@ -18,18 +30,45 @@ export default function GoldbergWizardDialog({
   mediaId: number
   onClose: () => void
 }) {
+  const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
-  const [result, setResult] = useState<{ dir: string; achievements: number } | null>(null)
+  const [done, setDone] = useState<string | null>(null)
+  const query = useQuery({
+    queryKey: qk.achievements.goldberg(mediaId),
+    queryFn: () => api.achievements.goldbergState(mediaId),
+    // The folder changes outside the app (a DLL swapped by hand in Explorer),
+    // so every opening reads it fresh rather than trusting the app's 5 s cache.
+    refetchOnMount: 'always'
+  })
+  const state = query.data
   const close = (): void => {
     if (!busy) onClose()
   }
-  const panelRef = useDialog(close)
 
-  async function generate(): Promise<void> {
+  async function run(fn: () => Promise<GoldbergState | null>, message: string): Promise<void> {
+    setBusy(true)
+    try {
+      const next = await fn()
+      if (next) {
+        qc.setQueryData(qk.achievements.goldberg(mediaId), next)
+        setDone(message)
+        toast(message, 'success')
+      }
+    } catch (e) {
+      toastError(e)
+      // A failure can still have changed the folder (Restore reporting a lost
+      // original drops its manifest), so read it again.
+      void qc.invalidateQueries({ queryKey: qk.achievements.goldberg(mediaId) })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function saveElsewhere(): Promise<void> {
     setBusy(true)
     try {
       const res = await api.achievements.generateGoldberg(mediaId)
-      if (res) setResult(res)
+      if (res) toast(`Wrote ${res.achievements} achievements to ${res.dir}`, 'success')
     } catch (e) {
       toastError(e)
     } finally {
@@ -37,98 +76,147 @@ export default function GoldbergWizardDialog({
     }
   }
 
+  async function restore(): Promise<void> {
+    const ok = await confirmDialog(
+      "Put the game's original achievement list back? Achievements it does not list will not be saved again.",
+      { confirmLabel: 'Restore original' }
+    )
+    if (ok) await run(() => api.achievements.goldbergRestore(mediaId), 'The original list is back.')
+  }
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-6 overflow-y-auto"
-      onMouseDown={(e) => e.target === e.currentTarget && close()}
+    <Dialog
+      labelledBy="goldberg-setup-title"
+      describedBy="goldberg-setup-help"
+      onClose={close}
+      overlayClassName="fixed inset-0 z-50 bg-black/70 p-4 overflow-y-auto"
+      panelClassName="card w-full max-w-2xl p-6"
     >
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="goldberg-setup-title"
-        aria-busy={busy}
-        tabIndex={-1}
-        className="card w-full max-w-2xl p-6 mt-10"
-      >
-        <div className="mb-4 flex items-start justify-between gap-4">
-          <div>
-            <h2 id="goldberg-setup-title" className="text-lg font-medium">
-              Set up Goldberg for this game
-            </h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Some cracks stub achievements out entirely, so nothing is ever written to disk for
-              NaviHUB to read. Swapping in the Goldberg emulator fixes that.
-            </p>
-          </div>
-          <button className="btn-ghost" onClick={close} disabled={busy} aria-label="Close" title="Close">
-            ✕
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h2 id="goldberg-setup-title" className="text-lg font-medium">
+            Set up achievement saving
+          </h2>
+          <p id="goldberg-setup-help" className="mt-1 text-sm text-gray-400">
+            The Goldberg emulator saves an achievement only if the game folder lists it. NaviHUB
+            writes that list for you and keeps a backup of the game's own.
+          </p>
+        </div>
+        <button className="btn-ghost" onClick={close} disabled={busy} aria-label="Close" title="Close">
+          ✕
+        </button>
+      </div>
+
+      {query.isError ? (
+        <div role="alert" className="text-sm text-gray-400">
+          Could not look at the game folder.
+          <button className="btn ml-3" onClick={() => void query.refetch()}>
+            Try again
           </button>
         </div>
+      ) : !state ? (
+        <div className="space-y-3" aria-label="Checking the game folder">
+          <div className="h-3 w-64 motion-safe:animate-pulse rounded bg-base-600" />
+          <div className="h-10 motion-safe:animate-pulse rounded bg-base-700" />
+        </div>
+      ) : (
+        <div className="space-y-4 text-sm">
+          {state.gameDir && (
+            <p className="text-xs text-gray-400">
+              Game folder: <span className="break-all font-mono text-gray-300">{state.gameDir}</span>
+            </p>
+          )}
 
-        {!result ? (
-          <>
-            <ol className="space-y-3 text-sm text-gray-400 list-decimal pl-5">
-              <li>
-                Check the game folder for <code className="text-gray-300">steam_api64.dll</code> (or{' '}
-                <code className="text-gray-300">steam_api.dll</code>). If there is none, or the crack
-                is a patched .exe rather than a replaced DLL, this will not work — leave that game on
-                manual tracking.
-              </li>
-              <li>
-                Download the Goldberg fork (gbe_fork) and keep the{' '}
-                <code className="text-gray-300">experimental</code> build handy.
-                <button
-                  className="btn-ghost text-xs ml-2"
-                  onClick={() => void api.app.openExternal(GBE_RELEASES)}
-                >
-                  Open releases page
-                </button>
-              </li>
-              <li>Generate the config below, then copy it and the DLL into the game folder.</li>
-            </ol>
-            <p className="mt-4 text-xs text-gray-500">
-              Back up the original DLL before replacing it — renaming it to{' '}
-              <code>steam_api64.dll.bak</code> is enough to undo everything.
+          {state.emulator === 'none' && (
+            <p className="text-gray-300">
+              There is no steam_api64.dll or steam_api.dll next to this game's executable, so
+              Goldberg cannot be set up here. Mark achievements by hand instead, or save the
+              config to a folder and place it yourself.
             </p>
-            <div className="mt-5 flex gap-2">
-              <button className="btn-primary" disabled={busy} onClick={generate}>
-                {busy ? 'Generating…' : 'Generate config…'}
+          )}
+
+          {state.emulator === 'other' && (
+            <>
+              <p className="text-gray-300">
+                This game's {state.dllName} is not Goldberg, so it never saves achievements
+                anywhere. To track them, swap Goldberg in by hand:
+              </p>
+              <ol className="list-decimal space-y-2 pl-5 text-gray-400">
+                <li>
+                  Download the gbe_fork release and unpack it.
+                  <button
+                    className="btn-ghost ml-2 text-xs"
+                    onClick={() => void api.app.openExternal(GBE_RELEASES)}
+                  >
+                    Open releases page
+                  </button>
+                </li>
+                <li>
+                  In the game folder, rename {state.dllName} to {state.dllName}.bak so you can undo
+                  this.
+                </li>
+                <li>
+                  Copy in the release's {state.dllName} from{' '}
+                  <code className="text-gray-300">
+                    release/experimental/{state.dllName === 'steam_api64.dll' ? 'x64' : 'x86'}
+                  </code>
+                  .
+                </li>
+                <li>Open this dialog again to write the achievement list.</li>
+              </ol>
+            </>
+          )}
+
+          {state.emulator === 'goldberg' && (
+            <>
+              <p className={state.list === 'complete' ? 'text-gray-300' : 'text-signal-caution'}>
+                {listSummary(state)}
+              </p>
+              <button
+                className="btn-primary"
+                disabled={busy}
+                onClick={() =>
+                  void run(
+                    () => api.achievements.goldbergInstall(mediaId),
+                    `Wrote ${state.total} achievements to the game folder.`
+                  )
+                }
+              >
+                {busy
+                  ? 'Writing…'
+                  : state.list === 'complete'
+                    ? 'Rewrite the list'
+                    : 'Write the achievement list'}
               </button>
-              <button className="btn-ghost" onClick={close} disabled={busy}>
-                Cancel
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <p className="text-sm text-gray-400">
-              Wrote {result.achievements} achievements to:
+              {state.list === 'complete' && (
+                <p className="text-xs text-gray-400">
+                  Rewrite after fixing a name, so the game's own notifications use it too.
+                </p>
+              )}
+            </>
+          )}
+
+          {done && (
+            <p role="status" className="text-signal-affirmative">
+              {done}
             </p>
-            <p className="mt-1 mb-4 font-mono text-xs text-gray-300 break-all">{result.dir}</p>
-            <ol className="space-y-2 text-sm text-gray-400 list-decimal pl-5">
-              <li>
-                Copy that whole <code className="text-gray-300">steam_settings</code> folder next to
-                the game’s executable.
-              </li>
-              <li>
-                Rename the game’s <code className="text-gray-300">steam_api64.dll</code> to{' '}
-                <code className="text-gray-300">steam_api64.dll.bak</code>, then copy Goldberg’s
-                <code className="text-gray-300"> steam_api64.dll</code> in its place.
-              </li>
-              <li>
-                Launch the game from NaviHUB and earn something. Unlocks pop up as they happen; use
-                “Import from emulator files” to catch up anything earned outside a session.
-              </li>
-            </ol>
-            <div className="mt-5">
-              <button className="btn-primary" onClick={onClose}>
-                Done
+          )}
+
+          <div className="flex flex-wrap gap-2 border-t border-base-700 pt-4">
+            {state.canRestore && (
+              <button className="btn-ghost text-xs" disabled={busy} onClick={() => void restore()}>
+                Restore the original list
               </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+            )}
+            <button className="btn-ghost text-xs" disabled={busy} onClick={() => void saveElsewhere()}>
+              Save the config to a folder instead…
+            </button>
+            <button className="btn-ghost ml-auto" onClick={close} disabled={busy}>
+              {done ? 'Done' : 'Not now'}
+            </button>
+          </div>
+        </div>
+      )}
+    </Dialog>
   )
 }

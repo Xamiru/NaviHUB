@@ -128,6 +128,9 @@ import type {
   GameLaunchOverview,
   GameLaunchStatus,
   InstalledGame,
+  AchievementEmuImport,
+  GoldbergState,
+  AchievementLaunchCheck,
   AchievementListPayload,
   AchievementSetupResult,
   AchievementUnlockEvent,
@@ -607,8 +610,22 @@ export interface NaviApi {
     refresh(mediaId: number): Promise<AchievementSetupResult>
     // Retroactive sweep of the emulator save files. `found: 0` is the
     // diagnostic that nothing on disk is writing unlocks for this game.
-    importEmu(mediaId: number): Promise<{ found: number; imported: number; emus: string[] }>
+    // Also withdraws emulator unlocks the files now mark not earned.
+    importEmu(mediaId: number): Promise<AchievementEmuImport>
     toggleManual(achievementId: number, unlocked: boolean): Promise<void>
+    // Marks several achievements earned by hand with one date (epoch ms, or
+    // null for now); never overwrites a tracked unlock. Returns how many changed.
+    markEarnedMany(achievementIds: number[], unlockedAtMs: number | null): Promise<number>
+    // Trades the names (with text and art) of two achievements in one set.
+    swapNames(firstId: number, secondId: number): Promise<void>
+    // null = nothing to warn about before launching this title.
+    launchCheck(mediaId: number): Promise<AchievementLaunchCheck | null>
+    // One-click achievement saving for a game already running Goldberg: writes
+    // a complete steam_settings/achievements.json beside its DLL (never touching
+    // the DLL), backing up the release's own list once.
+    goldbergState(mediaId: number): Promise<GoldbergState>
+    goldbergInstall(mediaId: number): Promise<GoldbergState>
+    goldbergRestore(mediaId: number): Promise<GoldbergState>
     disable(mediaId: number): Promise<void>
     // Polled while a session runs; the in-game overlay (achPopup.ts) and this
     // both read it — one for the popup cards, this for the toast + list refresh.

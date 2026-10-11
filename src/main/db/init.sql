@@ -83,6 +83,9 @@ CREATE TABLE IF NOT EXISTS achievement (
   points         INTEGER,         -- RA only; NULL for Steam (no invented score)
   global_pct     REAL,            -- global unlock %, drives the rarity tier
   sort_order     INTEGER NOT NULL DEFAULT 0,
+  -- Frozen keys: 'ok' or 'manual' (the user swapped it with "Fix achievement
+  -- names"; only an exact source, the Steam Web API or RA, renames it again).
+  name_status    TEXT NOT NULL DEFAULT 'ok',
   UNIQUE(media_id, api_name)
 );
 CREATE INDEX IF NOT EXISTS idx_achievement_media ON achievement(media_id);
@@ -98,6 +101,16 @@ CREATE TABLE IF NOT EXISTS achievement_unlock (
   source         TEXT NOT NULL    -- 'emu' | 'ra' | 'manual'
 );
 CREATE INDEX IF NOT EXISTS idx_achievement_unlock_time ON achievement_unlock(unlocked_at);
+
+-- The emulator's counter for a not-yet-earned achievement ("820 / 2000"),
+-- replaced whole by every complete emulator-file read. Personal → dropped on
+-- export.
+CREATE TABLE IF NOT EXISTS achievement_progress (
+  achievement_id INTEGER PRIMARY KEY REFERENCES achievement(id) ON DELETE CASCADE,
+  current        REAL NOT NULL,
+  max            REAL NOT NULL,
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);
 
 CREATE TABLE IF NOT EXISTS person (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,

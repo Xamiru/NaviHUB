@@ -174,6 +174,14 @@ const api: NaviApi = {
     importEmu: (mediaId) => ipcRenderer.invoke('achievements:importEmu', mediaId),
     toggleManual: (achievementId, unlocked) =>
       ipcRenderer.invoke('achievements:toggleManual', achievementId, unlocked),
+    markEarnedMany: (achievementIds, unlockedAtMs) =>
+      ipcRenderer.invoke('achievements:markEarnedMany', achievementIds, unlockedAtMs),
+    swapNames: (firstId, secondId) =>
+      ipcRenderer.invoke('achievements:swapNames', firstId, secondId),
+    launchCheck: (mediaId) => ipcRenderer.invoke('achievements:launchCheck', mediaId),
+    goldbergState: (mediaId) => ipcRenderer.invoke('achievements:goldbergState', mediaId),
+    goldbergInstall: (mediaId) => ipcRenderer.invoke('achievements:goldbergInstall', mediaId),
+    goldbergRestore: (mediaId) => ipcRenderer.invoke('achievements:goldbergRestore', mediaId),
     disable: (mediaId) => ipcRenderer.invoke('achievements:disable', mediaId),
     watchStatus: () => ipcRenderer.invoke('achievements:watchStatus'),
     testPopup: () => ipcRenderer.invoke('achievements:testPopup'),

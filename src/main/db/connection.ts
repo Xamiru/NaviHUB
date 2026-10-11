@@ -333,6 +333,8 @@ export function runMigrations(sqlite: Database.Database): string[] {
   ensureColumn(sqlite, 'football_match', 'away_formation', 'away_formation TEXT')
   ensureColumn(sqlite, 'football_match', 'home_manager', 'home_manager TEXT')
   ensureColumn(sqlite, 'football_match', 'away_manager', 'away_manager TEXT')
+  // 2026-10-10: names the user swapped by hand survive non-exact re-fetches.
+  ensureColumn(sqlite, 'achievement', 'name_status', "name_status TEXT NOT NULL DEFAULT 'ok'")
   dropNotNull(
     sqlite,
     'wrestling_match',

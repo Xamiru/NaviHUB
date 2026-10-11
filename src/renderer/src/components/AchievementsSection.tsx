@@ -6,6 +6,7 @@ import { qk } from '../lib/queryKeys'
 import { confirmDialog } from '../lib/confirm'
 import { toast, toastError } from '../lib/toast'
 import { usePersistedState } from '../lib/navState'
+import { localInputDate } from '../lib/hobbyForms'
 import {
   selectTrophies,
   summarizeTrophies,
@@ -14,6 +15,8 @@ import {
 } from '../lib/achievementDisplay'
 import AchievementSetupDialog, { reportSetup } from './AchievementSetupDialog'
 import GoldbergWizardDialog from './GoldbergWizardDialog'
+import AchievementNameDialog from './AchievementNameDialog'
+import { Field } from './Field'
 import EmptyState from './EmptyState'
 import ActionMenu from './ActionMenu'
 import { TrophyProgress, TrophyRow, providerLabel } from './TrophyDisplay'
@@ -25,6 +28,14 @@ const FILTERS: { key: TrophyFilter; label: string }[] = [
   { key: 'ultra-rare', label: 'Ultra rare' }
 ]
 
+// Local noon of the picked day, so no timezone pushes it onto a neighbour.
+function dateInputToMs(value: string): number | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!m) return null
+  const ms = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12).getTime()
+  return Number.isFinite(ms) ? ms : null
+}
+
 export default function AchievementsSection({ m }: { m: MediaDetail }) {
   const qc = useQueryClient()
   const [setupProvider, setSetupProvider] = useState<AchievementProvider | null>(null)
@@ -32,6 +43,14 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
   const [busy, setBusy] = useState(false)
   const [filter, setFilter] = usePersistedState<TrophyFilter>('trophyFilter', 'all')
   const [sort, setSort] = usePersistedState<TrophySort>('trophySort', 'default')
+  const [nameDialogOpen, setNameDialogOpen] = useState(false)
+  // Picking several locked achievements to mark earned with one date.
+  // Selection shows only locked achievements as a VIEW, never by rewriting
+  // the remembered filter: that is history-scoped, so Back would otherwise
+  // return to "Locked" with selection already off.
+  const [selecting, setSelecting] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<number>>(new Set())
+  const [bulkDate, setBulkDate] = useState(localInputDate)
 
   const query = useQuery({
     queryKey: qk.achievements.list(m.id),
@@ -118,12 +137,38 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
 
   const { summary, achievements, tracking } = data
   const counts = summarizeTrophies(achievements)
-  const selected = selectTrophies(achievements, filter, sort)
+  const shownFilter: TrophyFilter = selecting ? 'locked' : filter
+  const selected = selectTrophies(achievements, shownFilter, sort)
   const countFor = (key: TrophyFilter): number => {
     if (key === 'earned') return counts.earned
     if (key === 'locked') return counts.locked
     if (key === 'ultra-rare') return counts.ultraRare
     return counts.total
+  }
+
+  function stopSelecting(): void {
+    setSelecting(false)
+    setSelectedIds(new Set())
+  }
+
+  function toggleSelected(id: number, on: boolean): void {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (on) next.add(id)
+      else next.delete(id)
+      return next
+    })
+  }
+
+  async function markSelectedEarned(): Promise<void> {
+    const ids = [...selectedIds]
+    if (!ids.length) return
+    const at = dateInputToMs(bulkDate)
+    await act(async () => {
+      const changed = await api.achievements.markEarnedMany(ids, at)
+      toast(`Marked ${changed} achievement${changed === 1 ? '' : 's'} earned by hand.`, 'success')
+      stopSelecting()
+    })
   }
 
   async function disableTracking(): Promise<void> {
@@ -177,21 +222,36 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
                       onSelect: () =>
                         act(async () => {
                           const result = await api.achievements.importEmu(m.id)
+                          const removed = result.removed
+                            ? ` ${result.removed} withdrawn because the files now mark ${result.removed === 1 ? 'it' : 'them'} not earned.`
+                            : ''
                           toast(
                             result.found === 0
                               ? 'No compatible emulator save files were found for this game.'
-                              : `Read ${result.found} file${result.found === 1 ? '' : 's'} from ${result.emus.join(', ')}. ${result.imported} new unlock${result.imported === 1 ? '' : 's'} imported.`,
+                              : `Read ${result.found} file${result.found === 1 ? '' : 's'} from ${result.emus.join(', ')}. ${result.imported} new unlock${result.imported === 1 ? '' : 's'} imported.${removed}`,
                             result.found === 0 ? 'error' : 'success'
                           )
                         })
                     },
                     {
-                      label: 'Set up Goldberg',
+                      label: 'Fix achievement names',
+                      disabled: busy || achievements.length < 2,
+                      onSelect: () => setNameDialogOpen(true)
+                    },
+                    {
+                      label: 'Set up achievement saving',
                       disabled: busy,
                       onSelect: () => setWizardOpen(true)
                     }
                   ]
                 : []),
+              {
+                label: 'Mark several earned',
+                disabled: busy || counts.locked === 0,
+                onSelect: () => {
+                  setSelecting(true)
+                }
+              },
               {
                 label: 'Stop tracking',
                 danger: true,
@@ -207,15 +267,44 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
         <EmptyState title="No achievements in this set" />
       ) : (
         <>
+          {selecting && (
+            <div className="card mb-5 flex flex-wrap items-end gap-3 p-4" role="region" aria-label="Mark several earned">
+              <p className="basis-full text-sm text-gray-300">
+                Tick the achievements you earned but the emulator never recorded.{' '}
+                <span className="text-gray-400">{selectedIds.size} selected.</span>
+              </p>
+              <Field label="Earned on" description="One date for all of them; your best guess is fine.">
+                <input
+                  type="date"
+                  className="input h-9 w-44"
+                  value={bulkDate}
+                  max={localInputDate()}
+                  onChange={(event) => setBulkDate(event.target.value)}
+                />
+              </Field>
+              <button
+                className="btn"
+                disabled={busy || selectedIds.size === 0 || dateInputToMs(bulkDate) == null}
+                onClick={() => void markSelectedEarned()}
+              >
+                Mark {selectedIds.size || ''} earned
+              </button>
+              <button className="btn-ghost" disabled={busy} onClick={stopSelecting}>
+                Cancel
+              </button>
+            </div>
+          )}
+
           <div className="mb-5 flex flex-wrap items-center gap-2">
             {FILTERS.map((item) => (
               <button
                 key={item.key}
-                className={`pill ${filter === item.key ? 'pill-active' : ''}`}
-                aria-pressed={filter === item.key}
+                className={`pill ${shownFilter === item.key ? 'pill-active' : ''}`}
+                aria-pressed={shownFilter === item.key}
+                disabled={selecting}
                 onClick={() => setFilter(item.key)}
               >
-                {item.label} <span className={filter === item.key ? 'opacity-75' : 'text-gray-500'}>{countFor(item.key)}</span>
+                {item.label} <span className={shownFilter === item.key ? 'opacity-75' : 'text-gray-500'}>{countFor(item.key)}</span>
               </button>
             ))}
             <label className="ml-auto flex items-center gap-2 text-xs text-gray-400">
@@ -237,6 +326,15 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
                   achievement={achievement}
                   provider={tracking.provider}
                   busy={busy}
+                  selection={
+                    selecting
+                      ? {
+                          selected: selectedIds.has(achievement.id),
+                          disabled: achievement.unlockedAt != null,
+                          onChange: (on) => toggleSelected(achievement.id, on)
+                        }
+                      : undefined
+                  }
                   onToggle={(unlocked) =>
                     act(async () => {
                       if (!unlocked) {
@@ -253,7 +351,7 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
             </ul>
           ) : (
             <EmptyState
-              title={`No ${FILTERS.find((item) => item.key === filter)?.label.toLowerCase()} achievements`}
+              title={`No ${FILTERS.find((item) => item.key === shownFilter)?.label.toLowerCase()} achievements`}
               body="Choose another trophy filter to return to the full set."
               action={<button className="btn-primary" onClick={() => setFilter('all')}>Show all achievements</button>}
             />
@@ -261,7 +359,22 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
         </>
       )}
 
-      {wizardOpen && <GoldbergWizardDialog mediaId={m.id} onClose={() => setWizardOpen(false)} />}
+      {wizardOpen && (
+        <GoldbergWizardDialog
+          mediaId={m.id}
+          onClose={() => setWizardOpen(false)}
+        />
+      )}
+      {nameDialogOpen && (
+        <AchievementNameDialog
+          achievements={achievements}
+          onClose={() => setNameDialogOpen(false)}
+          onDone={() => {
+            setNameDialogOpen(false)
+            void refresh()
+          }}
+        />
+      )}
     </>
   )
 }

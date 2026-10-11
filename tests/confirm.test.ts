@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  chooseDialog,
   confirmDialog,
   answerConfirm,
   getConfirm,
@@ -79,5 +80,27 @@ describe('confirm store', () => {
     expect(getConfirm()).toBeNull()
     await p
     unsubscribe()
+  })
+})
+
+describe('chooseDialog', () => {
+  it('reports which of the two ways forward was taken, or cancel', async () => {
+    const opts = { confirmLabel: 'Fix and launch', secondaryLabel: 'Launch anyway' }
+    const first = chooseDialog('q', opts)
+    expect(getConfirm()).toMatchObject({ confirmLabel: 'Fix and launch', secondaryLabel: 'Launch anyway' })
+    answerConfirm(getConfirm()!.id, true)
+    expect(await first).toBe('confirm')
+    const second = chooseDialog('q', opts)
+    answerConfirm(getConfirm()!.id, 'secondary')
+    expect(await second).toBe('secondary')
+    const third = chooseDialog('q', opts)
+    answerConfirm(getConfirm()!.id, false)
+    expect(await third).toBe('cancel')
+  })
+
+  it('keeps confirmDialog boolean even if answered with the secondary choice', async () => {
+    const p = confirmDialog('q')
+    answerConfirm(getConfirm()!.id, 'secondary')
+    expect(await p).toBe(false)
   })
 })

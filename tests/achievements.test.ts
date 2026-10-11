@@ -328,7 +328,7 @@ describe('retroactive emulator sweep', () => {
   })
 
   it('reports found: 0 for an untracked game rather than guessing an app id', () => {
-    expect(achievements.importEmuUnlocks(addGame())).toEqual({ found: 0, imported: 0, emus: [] })
+    expect(achievements.importEmuUnlocks(addGame())).toEqual({ found: 0, imported: 0, removed: 0, emus: [] })
   })
 
   it('imports each achievement once, however often it is swept', async () => {
@@ -543,6 +543,43 @@ describe('schema source order', () => {
     expect(repo.listForMedia(id)[0].globalPct).toBe(42.5)
   })
 
+  it("ignores a list NaviHUB wrote itself, falling through to the next source", async () => {
+    const id = addGame()
+    const io = localSchemaIO(localSchema)
+    const manifest = `${EXE_DIR}\\steam_settings\\.navihub-goldberg.json`
+    const res = await achievements.fetchSteamSchema(id, '440', {
+      io: { ...io, exists: (p: string) => p === manifest || io.exists(p) }
+    })
+    expect(res.schemaSource).toBe('webapi')
+  })
+
+  it("reads the release's original list from NaviHUB's backup of it", async () => {
+    const id = addGame()
+    const dir = `${EXE_DIR}\\steam_settings`
+    const files: Record<string, string> = {
+      [`${dir}\\achievements.json`]: JSON.stringify([{ name: 'ACH_WIN', displayName: 'Written by NaviHUB' }]),
+      [`${dir}\\.navihub-goldberg.json`]: '{}',
+      [`${dir}\\achievements.json.navihub-backup`]: JSON.stringify(localSchema)
+    }
+    const res = await achievements.fetchSteamSchema(id, '440', {
+      io: { exists: (p) => p in files, readFile: (p) => files[p] ?? '', mtimeMs: () => null, listDirs: () => [] }
+    })
+    expect(res.schemaSource).toBe('local')
+    expect(repo.listForMedia(id)[0].name).toBe('Winner (local)')
+  })
+
+  it("never deletes achievements a crack's incomplete list leaves out", async () => {
+    const id = addGame()
+    settings = {}
+    await achievements.fetchSteamSchema(id, '440', { io: localSchemaIO([...localSchema, { name: 'ACH_EXTRA', displayName: 'Extra' }]) })
+    const extra = repo.listForMedia(id).find((r) => r.apiName === 'ACH_EXTRA')!
+    repo.setManual(extra.id, true)
+    // The list on disk now lacks ACH_EXTRA (the gap the launch check warns about).
+    await achievements.fetchSteamSchema(id, '440', { io: localSchemaIO(localSchema) })
+    const after = repo.listForMedia(id).find((r) => r.apiName === 'ACH_EXTRA')
+    expect(after?.unlockedAt).toBeTruthy()
+  })
+
   it('finds the file up to two folders above an exe kept in bin/', async () => {
     const id = Number(
       db
@@ -655,3 +692,4 @@ describe('schema source order', () => {
     expect(repo.summaryFor(id).unlocked).toBe(1)
   })
 })
+

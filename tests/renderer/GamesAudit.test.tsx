@@ -7,10 +7,11 @@ import FranchisesPage from '../../src/renderer/src/pages/FranchisesPage'
 import FranchisePage from '../../src/renderer/src/pages/FranchisePage'
 import GoldbergWizardDialog from '../../src/renderer/src/components/GoldbergWizardDialog'
 
-const { listGames, settingsAll, generateGoldberg } = vi.hoisted(() => ({
+const { listGames, settingsAll, goldbergState, goldbergInstall } = vi.hoisted(() => ({
   listGames: vi.fn(),
   settingsAll: vi.fn(),
-  generateGoldberg: vi.fn()
+  goldbergState: vi.fn(),
+  goldbergInstall: vi.fn()
 }))
 
 vi.mock('../../src/renderer/src/lib/api', () => ({
@@ -24,7 +25,10 @@ vi.mock('../../src/renderer/src/lib/api', () => ({
       ensureArt: async () => ({ started: false }),
       artStatus: async () => ({ running: false, done: 0, total: 0 })
     },
-    achievements: { generateGoldberg: (...args: unknown[]) => generateGoldberg(...args) }
+    achievements: {
+      goldbergState: (...args: unknown[]) => goldbergState(...args),
+      goldbergInstall: (...args: unknown[]) => goldbergInstall(...args)
+    }
   }
 }))
 
@@ -79,25 +83,39 @@ describe('Games audit regressions', () => {
     expect(container.querySelectorAll('a[href^="/franchises/"] img')).toHaveLength(heroes.length - 1)
   })
 
-  it('keeps the Goldberg instructions visible until generation finishes', async () => {
-    let finish!: (value: { dir: string; achievements: number }) => void
-    generateGoldberg.mockImplementation(
-      () => new Promise<{ dir: string; achievements: number }>((resolve) => { finish = resolve })
-    )
+  it('cannot be closed while it is writing into the game folder', async () => {
+    const state = {
+      gameDir: 'C:\\Games\\DS2',
+      dllName: 'steam_api64.dll',
+      emulator: 'goldberg',
+      settingsDir: 'C:\\Games\\DS2\\steam_settings',
+      list: 'missing',
+      missing: 12,
+      total: 12,
+      canRestore: false
+    }
+    goldbergState.mockResolvedValue(state)
+    let finish!: (value: unknown) => void
+    goldbergInstall.mockImplementation(() => new Promise((resolve) => { finish = resolve }))
     const onClose = vi.fn()
     const user = userEvent.setup()
-    render(<GoldbergWizardDialog mediaId={7} onClose={onClose} />)
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <GoldbergWizardDialog mediaId={7} onClose={onClose} />
+      </QueryClientProvider>
+    )
 
-    await user.click(screen.getByRole('button', { name: 'Generate config…' }))
-    expect(screen.getByRole('button', { name: 'Generating…' })).toBeDisabled()
+    await user.click(await screen.findByRole('button', { name: 'Write the achievement list' }))
+    expect(screen.getByRole('button', { name: 'Writing…' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Close' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Not now' })).toBeDisabled()
     await user.keyboard('{Escape}')
     fireEvent.mouseDown(screen.getByRole('dialog').parentElement!)
     expect(onClose).not.toHaveBeenCalled()
 
-    await act(async () => finish({ dir: 'C:\\Temp\\steam_settings', achievements: 12 }))
-    expect(await screen.findByText('C:\\Temp\\steam_settings')).toBeInTheDocument()
+    await act(async () => finish({ ...state, list: 'complete', missing: 0, canRestore: true }))
+    expect(await screen.findByText('Wrote 12 achievements to the game folder.')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Done' }))
     expect(onClose).toHaveBeenCalledOnce()
   })

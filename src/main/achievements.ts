@@ -9,9 +9,22 @@ import * as settingsRepo from './repos/settingsRepo'
 import * as links from './repos/externalLinkRepo'
 import * as achievementRepo from './repos/achievementRepo'
 import { search as steamSearch } from './steam'
-import { exeDirOf, findLocalSteamSchema, scanUnlocks, steamSettingsDir } from './emuScan'
+import { goldbergState } from './goldbergInstall'
+import {
+  emuStateOf,
+  exeDirOf,
+  findLocalSteamSchema,
+  scanUnlocks,
+  nodeFileIO,
+  steamSettingsDir
+} from './emuScan'
 import {
   buildGoldbergConfig,
+  decideLaunchCheck,
+  GOLDBERG_BACKUP_SUFFIX,
+  GOLDBERG_MANIFEST,
+  goldbergIconFileName,
+  joinUnder,
   joinCommunityWithPercentages,
   parseCommunityAchievementsPage,
   parseGoldbergSchema
@@ -19,6 +32,8 @@ import {
 import type { EmuFileIO } from './emuScan'
 import type { EmuEnv, PercentRow, SchemaRow } from './achievementsCore'
 import type {
+  AchievementEmuImport,
+  AchievementLaunchCheck,
   AchievementSetupResult,
   SteamAppCandidate,
   AchievementUnlockSource
@@ -142,8 +157,19 @@ async function loadSteamSchema(
 ): Promise<LoadedSchema> {
   const tried: string[] = []
 
-  // 1. The crack's own config.
-  const local = findLocalSteamSchema(exeDir, io)
+  // 1. The crack's own config. A list NaviHUB wrote itself (one-click setup
+  // leaves its manifest beside it) was generated FROM this database and adds
+  // nothing; reading it back would launder old guesses into "the game's own
+  // files". The release's original, kept as a backup, is still a real source.
+  const fio = io ?? nodeFileIO
+  let local = findLocalSteamSchema(exeDir, fio)
+  if (local) {
+    if (fio.exists(joinUnder(local.dir, GOLDBERG_MANIFEST))) {
+      const backup = joinUnder(local.dir, `achievements.json${GOLDBERG_BACKUP_SUFFIX}`)
+      const original = fio.exists(backup) ? fio.readFile(backup) : ''
+      local = original.trim() ? { dir: local.dir, content: original } : null
+    }
+  }
   if (local) {
     const rows = parseGoldbergSchema(local.content)
     if (rows.length) return { source: 'local', rows, localDir: local.dir, unmatched: 0 }
@@ -257,10 +283,7 @@ export async function fetchSteamSchema(
     achievementRepo.setInitialAssociation(mediaId, 'steam', id)
   }
 
-  const row = getSqlite().prepare('SELECT exe_path FROM media_item WHERE id = ?').get(mediaId) as
-    | { exe_path: string | null }
-    | undefined
-  const exeDir = exeDirOf(row?.exe_path ?? null)
+  const exeDir = exeDirOf(achievementRepo.exePathOf(mediaId))
 
   updateActivity({ phase: 'fetching' })
   const schema = await loadSteamSchema(id, exeDir, deps.io)
@@ -301,7 +324,16 @@ export async function fetchSteamSchema(
     })),
     scan.unlocks,
     'emu',
-    fallback
+    fallback,
+    // Only the Web API names every achievement by its id. The crack's own list
+    // may be a file the old copy-it-yourself wizard wrote from a rank-paired
+    // guess (no manifest marks those), so it cannot override a hand swap; and
+    // it is often incomplete, so it never prunes.
+    {
+      exactNames: schema.source === 'webapi',
+      prune: schema.source !== 'local',
+      emu: emuStateOf(scan)
+    }
   )
 
   const summary = achievementRepo.summaryFor(mediaId)
@@ -316,7 +348,7 @@ export async function fetchSteamSchema(
 }
 
 // ---------------- Emulator sweep ----------------
-export type EmuImportResult = { found: number; imported: number; emus: string[] }
+export type EmuImportResult = AchievementEmuImport
 
 // Reads every emulator file for a tracked game and records what it finds. Also
 // the diagnostic the UI leans on: `found: 0` means no emulator wrote anything
@@ -326,22 +358,40 @@ export function importEmuUnlocks(
   deps: { io?: EmuFileIO; env?: EmuEnv; nowMs?: number } = {}
 ): EmuImportResult {
   const tracking = achievementRepo.getTracking(mediaId)
-  if (!tracking || tracking.provider !== 'steam') return { found: 0, imported: 0, emus: [] }
+  if (!tracking || tracking.provider !== 'steam') {
+    return { found: 0, imported: 0, removed: 0, emus: [] }
+  }
 
-  const row = getSqlite().prepare('SELECT exe_path FROM media_item WHERE id = ?').get(mediaId) as
-    | { exe_path: string | null }
-    | undefined
   const scan = scanUnlocks(
     tracking.providerGameId,
-    exeDirOf(row?.exe_path ?? null),
+    exeDirOf(achievementRepo.exePathOf(mediaId)),
     deps.io,
     deps.env
   )
   // A file with no usable timestamp falls back to when it was last written,
   // which is far closer to the truth than "now" for a retroactive sweep.
   const fallback = scan.newestMtimeMs ?? deps.nowMs ?? Date.now()
-  const fresh = achievementRepo.insertUnlocks(mediaId, scan.unlocks, 'emu', fallback)
-  return { found: scan.files, imported: fresh.length, emus: scan.emus }
+  const { fresh, removed } = achievementRepo.applyEmuScan(
+    mediaId,
+    scan.unlocks,
+    emuStateOf(scan),
+    fallback
+  )
+  return { found: scan.files, imported: fresh.length, removed, emus: scan.emus }
+}
+
+// ---------------- Pre-launch check ----------------
+// Reads the game folder exactly as one-click setup sees it (goldbergInstall),
+// so "Fix and launch" always silences it. Tolerant: a check that cannot read
+// something says nothing rather than blocking Play.
+export function launchCheck(mediaId: number): AchievementLaunchCheck | null {
+  const tracking = achievementRepo.getTracking(mediaId)
+  if (!tracking || tracking.provider !== 'steam') return null
+  try {
+    return decideLaunchCheck(goldbergState(mediaId))
+  } catch {
+    return null
+  }
 }
 
 // ---------------- Manual + lifetime ----------------
@@ -414,7 +464,7 @@ export async function generateGoldbergConfig(
     if (!rel) return null
     const src = absoluteMediaPath(rel)
     if (!existsSync(src)) return null
-    const name = `${row.apiName.replace(/[^\w.-]+/g, '_')}${locked ? '_gray' : ''}${extname(src) || '.jpg'}`
+    const name = goldbergIconFileName(row.apiName, locked, extname(src))
     try {
       copyFileSync(src, join(imagesDir, name))
       return name

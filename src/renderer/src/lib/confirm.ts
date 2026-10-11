@@ -18,10 +18,14 @@ export interface ConfirmRequest {
   message: string
   confirmLabel: string
   danger: boolean
+  // A second, non-primary way forward (chooseDialog only).
+  secondaryLabel?: string
 }
 
+export type ConfirmAnswer = 'confirm' | 'secondary' | 'cancel'
+
 interface PendingConfirm extends ConfirmRequest {
-  resolve: (ok: boolean) => void
+  resolve: (answer: ConfirmAnswer) => void
 }
 
 let nextId = 1
@@ -55,6 +59,28 @@ export function confirmDialog(
         message,
         confirmLabel: opts.confirmLabel ?? 'OK',
         danger: opts.danger ?? false,
+        resolve: (answer) => resolve(answer === 'confirm')
+      }
+    ]
+    emit()
+  })
+}
+
+// confirmDialog with a second way forward beside the primary one, e.g.
+// "Fix and launch" / "Launch anyway" / Cancel. Resolves with which was chosen.
+export function chooseDialog(
+  message: string,
+  opts: { confirmLabel: string; secondaryLabel: string }
+): Promise<ConfirmAnswer> {
+  return new Promise<ConfirmAnswer>((resolve) => {
+    queue = [
+      ...queue,
+      {
+        id: nextId++,
+        message,
+        confirmLabel: opts.confirmLabel,
+        secondaryLabel: opts.secondaryLabel,
+        danger: false,
         resolve
       }
     ]
@@ -65,10 +91,10 @@ export function confirmDialog(
 // Answer the dialog on screen; anything queued behind it takes its place. A
 // stale id (double-answered by both the click and the keydown) is a no-op, so
 // the promise can never settle twice.
-export function answerConfirm(id: number, ok: boolean): void {
+export function answerConfirm(id: number, ok: boolean | 'secondary'): void {
   const req = queue.find((r) => r.id === id)
   if (!req) return
   queue = queue.filter((r) => r.id !== id)
   emit()
-  req.resolve(ok)
+  req.resolve(ok === 'secondary' ? 'secondary' : ok ? 'confirm' : 'cancel')
 }

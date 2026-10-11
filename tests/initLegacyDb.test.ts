@@ -581,6 +581,67 @@ describe('a live DB that predates newer columns', () => {
     expect(db.prepare('SELECT title FROM media_item').get()).toEqual({ title: 'Old Save' })
   })
 
+  it('adds achievement.name_status to a set tracked before name checks existed', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    // A 2026-09 library: the achievement table without name_status, one
+    // tracked achievement and its unlock, and no achievement_progress table.
+    db.exec(`CREATE TABLE media_item (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      media_type      TEXT NOT NULL,
+      title           TEXT NOT NULL,
+      title_original  TEXT,
+      synopsis        TEXT,
+      cover_path      TEXT,
+      release_date    TEXT,
+      total_units     INTEGER,
+      status          TEXT,
+      score           REAL,
+      progress        INTEGER NOT NULL DEFAULT 0,
+      rewatch_count   INTEGER NOT NULL DEFAULT 0,
+      notes           TEXT,
+      favorite        INTEGER NOT NULL DEFAULT 0,
+      metadata        TEXT,
+      external_source TEXT,
+      external_id     TEXT,
+      created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE achievement (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      media_id INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+      api_name TEXT NOT NULL, name TEXT NOT NULL, description TEXT,
+      hidden INTEGER NOT NULL DEFAULT 0, icon_path TEXT, icon_gray_path TEXT,
+      points INTEGER, global_pct REAL, sort_order INTEGER NOT NULL DEFAULT 0,
+      UNIQUE(media_id, api_name));
+    CREATE TABLE achievement_unlock (
+      achievement_id INTEGER PRIMARY KEY REFERENCES achievement(id) ON DELETE CASCADE,
+      unlocked_at TEXT NOT NULL, source TEXT NOT NULL);
+    INSERT INTO media_item (media_type, title) VALUES ('game', 'Death Stranding 2');
+    INSERT INTO achievement (media_id, api_name, name) VALUES (1, 'trophy_001', 'Lou?');
+    INSERT INTO achievement_unlock VALUES (1, '2026-09-16 19:07:46', 'emu');`)
+
+    expect(() => db.exec(initSql)).not.toThrow()
+    expect(() => runMigrations(db)).not.toThrow()
+
+    // The repo's own row query (ROW_SQL in achievementRepo) runs on the result.
+    const row = db
+      .prepare(
+        `SELECT a.*, u.unlocked_at, u.source AS unlock_source,
+                p.current AS progress_current, p.max AS progress_max
+           FROM achievement a
+           LEFT JOIN achievement_unlock u ON u.achievement_id = a.id
+           LEFT JOIN achievement_progress p ON p.achievement_id = a.id
+          WHERE a.media_id = 1`
+      )
+      .get() as { name_status: string; unlocked_at: string; progress_current: number | null }
+    expect(row).toMatchObject({
+      name_status: 'ok',
+      unlocked_at: '2026-09-16 19:07:46',
+      progress_current: null
+    })
+  })
+
   it('drops the retired gacha tracker, its checklist rows and its orphaned images', () => {
     const db = new Database(':memory:')
     db.pragma('foreign_keys = ON')

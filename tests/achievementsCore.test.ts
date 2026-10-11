@@ -6,9 +6,13 @@ import {
   joinCommunityWithPercentages,
   parseCommunityAchievementsPage,
   parseGoldbergSchema,
-  parseUnlockFile,
+  parseUnlockFileFull,
   rarityTier
 } from '../src/main/achievementsCore'
+
+// The earned half of a parse — what most of these cases are about.
+const unlocksIn = (...args: Parameters<typeof parseUnlockFileFull>) =>
+  parseUnlockFileFull(...args).unlocks
 
 // The pure half of achievement tracking: emulator save locations, the file
 // formats those emulators write, rarity cutoffs, and the wizard's config.
@@ -77,9 +81,9 @@ describe('candidateUnlockPaths', () => {
   })
 })
 
-describe('parseUnlockFile: Goldberg/GSE JSON', () => {
+describe('parseUnlockFileFull: Goldberg/GSE JSON', () => {
   it('reads the earned flag and converts epoch seconds to ms', () => {
-    const out = parseUnlockFile(
+    const out = unlocksIn(
       'goldberg-json',
       JSON.stringify({
         ACH_WIN: { earned: true, earned_time: 1690000000 },
@@ -90,7 +94,7 @@ describe('parseUnlockFile: Goldberg/GSE JSON', () => {
   })
 
   it('reports a missing or zero timestamp as null rather than 1970', () => {
-    const out = parseUnlockFile(
+    const out = unlocksIn(
       'goldberg-json',
       JSON.stringify({ A: { earned: true, earned_time: 0 }, B: { earned: true } })
     )
@@ -101,7 +105,7 @@ describe('parseUnlockFile: Goldberg/GSE JSON', () => {
   })
 
   it('passes through a fork that already writes milliseconds', () => {
-    const out = parseUnlockFile('goldberg-json', JSON.stringify({ A: { earned: true, earned_time: 1690000000000 } }))
+    const out = unlocksIn('goldberg-json', JSON.stringify({ A: { earned: true, earned_time: 1690000000000 } }))
     expect(out[0].unlockedAtMs).toBe(1690000000000)
   })
 
@@ -111,18 +115,18 @@ describe('parseUnlockFile: Goldberg/GSE JSON', () => {
     // transaction and discard every good unlock in the same batch. Reporting no
     // time makes the caller fall back to the file's mtime.
     for (const t of [1690000000000000, 1690000000000000000, 9.9e18]) {
-      const out = parseUnlockFile('goldberg-json', JSON.stringify({ A: { earned: true, earned_time: t } }))
+      const out = unlocksIn('goldberg-json', JSON.stringify({ A: { earned: true, earned_time: t } }))
       expect(out, `earned_time ${t}`).toEqual([{ apiName: 'A', unlockedAtMs: null }])
     }
   })
 
   it('rejects the same out-of-range value from an INI', () => {
-    const out = parseUnlockFile('ini', '[ACH_A]\nAchieved=1\nUnlockTime=1690000000000000000')
+    const out = unlocksIn('ini', '[ACH_A]\nAchieved=1\nUnlockTime=1690000000000000000')
     expect(out).toEqual([{ apiName: 'ACH_A', unlockedAtMs: null }])
   })
 
   it('accepts the array shape some forks write', () => {
-    const out = parseUnlockFile(
+    const out = unlocksIn(
       'goldberg-json',
       JSON.stringify([
         { name: 'ACH_A', earned: true, earned_time: 1600000000 },
@@ -133,9 +137,9 @@ describe('parseUnlockFile: Goldberg/GSE JSON', () => {
   })
 })
 
-describe('parseUnlockFile: the CODEX/RUNE/Online-Fix INI family', () => {
+describe('parseUnlockFileFull: the CODEX/RUNE/Online-Fix INI family', () => {
   it('reads a section-per-achievement file', () => {
-    const out = parseUnlockFile(
+    const out = unlocksIn(
       'ini',
       ['[ACH_ONE]', 'Achieved=1', 'UnlockTime=1690000000', '', '[ACH_TWO]', 'Achieved=0'].join('\n')
     )
@@ -143,7 +147,7 @@ describe('parseUnlockFile: the CODEX/RUNE/Online-Fix INI family', () => {
   })
 
   it('tolerates the HaveAchieved spelling and CRLF line endings', () => {
-    const out = parseUnlockFile(
+    const out = unlocksIn(
       'ini',
       '[ACH_X]\r\nHaveAchieved=1\r\nHaveAchievedTime=1600000000\r\n'
     )
@@ -151,7 +155,7 @@ describe('parseUnlockFile: the CODEX/RUNE/Online-Fix INI family', () => {
   })
 
   it('reads the flat container shape, timestamp packed into the value', () => {
-    const out = parseUnlockFile(
+    const out = unlocksIn(
       'ini',
       ['[Achievements]', 'ACH_A=1', 'ACH_B=1,1690000000', 'ACH_C=0'].join('\n')
     )
@@ -162,7 +166,7 @@ describe('parseUnlockFile: the CODEX/RUNE/Online-Fix INI family', () => {
   })
 
   it('ignores comments and blank lines', () => {
-    const out = parseUnlockFile(
+    const out = unlocksIn(
       'ini',
       ['; written by the emulator', '# comment', '', '[ACH_A]', 'Achieved=1'].join('\n')
     )
@@ -170,7 +174,7 @@ describe('parseUnlockFile: the CODEX/RUNE/Online-Fix INI family', () => {
   })
 
   it('keeps the last entry when a file lists one achievement twice', () => {
-    const out = parseUnlockFile(
+    const out = unlocksIn(
       'ini',
       ['[ACH_A]', 'Achieved=1', 'UnlockTime=1600000000', '[ACH_A]', 'Achieved=1', 'UnlockTime=1700000000'].join('\n')
     )
@@ -178,25 +182,25 @@ describe('parseUnlockFile: the CODEX/RUNE/Online-Fix INI family', () => {
   })
 })
 
-describe('parseUnlockFile: damaged input', () => {
+describe('parseUnlockFileFull: damaged input', () => {
   // The watcher reads these files WHILE the game writes them, so a torn read is
   // routine and must look like "nothing new", never like a crash.
   it('returns nothing for truncated JSON', () => {
-    expect(parseUnlockFile('goldberg-json', '{"ACH_A": {"earned": tr')).toEqual([])
+    expect(unlocksIn('goldberg-json', '{"ACH_A": {"earned": tr')).toEqual([])
   })
 
   it('returns nothing for an empty file, either format', () => {
-    expect(parseUnlockFile('goldberg-json', '')).toEqual([])
-    expect(parseUnlockFile('ini', '')).toEqual([])
+    expect(unlocksIn('goldberg-json', '')).toEqual([])
+    expect(unlocksIn('ini', '')).toEqual([])
   })
 
   it('returns nothing for JSON that is not an achievement map', () => {
-    expect(parseUnlockFile('goldberg-json', '"hello"')).toEqual([])
-    expect(parseUnlockFile('goldberg-json', 'null')).toEqual([])
+    expect(unlocksIn('goldberg-json', '"hello"')).toEqual([])
+    expect(unlocksIn('goldberg-json', 'null')).toEqual([])
   })
 
   it('skips junk lines in an INI without dropping the valid sections', () => {
-    const out = parseUnlockFile('ini', ['garbage line', '[ACH_A]', 'Achieved=1', '[unclosed'].join('\n'))
+    const out = unlocksIn('ini', ['garbage line', '[ACH_A]', 'Achieved=1', '[unclosed'].join('\n'))
     expect(out).toEqual([{ apiName: 'ACH_A', unlockedAtMs: null }])
   })
 })

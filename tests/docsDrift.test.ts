@@ -35,6 +35,9 @@ const NOT_IN_REPO = new Set([
   // A file inside the USER'S game folders (a Goldberg crack's schema), read by
   // achievements.ts — not part of this repo.
   'achievements.json',
+  // One-click Goldberg setup's undo manifest, also in the user's game folder
+  // (goldbergInstall.ts).
+  '.navihub-goldberg.json',
   'latest-linux.yml',
   'app-update.yml',
   // Files inside a library backup and the restore marker in userData

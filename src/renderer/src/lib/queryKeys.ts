@@ -514,6 +514,7 @@ export const qk = {
     recent: (limit: number) => ['achievements', 'recent', limit] as const,
     cardSummaries: ['achievements', 'cardSummaries'] as const,
     resolveSteam: (mediaId: number) => ['achievements', 'resolveSteam', mediaId] as const,
+    goldberg: (mediaId: number) => ['achievements', 'goldberg', mediaId] as const,
     raConsoles: ['achievements', 'raConsoles'] as const,
     raSearch: (query: string, consoleId: string) =>
       ['achievements', 'raSearch', query, consoleId] as const

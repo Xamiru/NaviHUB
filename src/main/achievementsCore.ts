@@ -5,6 +5,7 @@
 // drives the whole matrix on Linux against literal fixture strings.
 
 import { posix, win32 } from 'path'
+import type { AchievementLaunchCheck } from '@shared/types'
 
 export type EmuFormat = 'goldberg-json' | 'ini'
 
@@ -33,9 +34,27 @@ export type ParsedUnlock = {
   unlockedAtMs: number | null
 }
 
+// A counter the emulator keeps for a not-yet-earned achievement (Goldberg's
+// progress/max_progress, CODEX's CurProgress/MaxProgress).
+export type ParsedProgress = { apiName: string; current: number; max: number }
+
+// Everything one unlock file says. `locked` lists achievements the file marks
+// EXPLICITLY not earned (`"earned": false`, `Achieved=0`) — never ones it just
+// omits, because a missing entry proves nothing. `complete` is false when the
+// file could not be parsed as a whole (a torn read mid-write); callers must not
+// draw any "this is locked" conclusion from such a read.
+export type ParsedUnlockFile = {
+  unlocks: ParsedUnlock[]
+  locked: string[]
+  progress: ParsedProgress[]
+  complete: boolean
+}
+
 // Join under whichever path flavor the base looks like. The real inputs are
-// Windows paths, but tests build them from POSIX roots.
-function joinUnder(base: string, ...parts: string[]): string {
+// Windows paths, but tests build them from POSIX roots. The ONE game-path
+// joiner: emuScan and the schema loader use it too, so a path like
+// C:/Games/x is never joined two different ways.
+export function joinUnder(base: string, ...parts: string[]): string {
   const win = /^[a-zA-Z]:[\\/]/.test(base) || base.includes('\\')
   return win ? win32.join(base, ...parts) : posix.join(base, ...parts)
 }
@@ -216,6 +235,28 @@ const TIME_KEYS = [
   'timestamp'
 ]
 
+// The explicit "not earned" spellings. Deliberately narrow: a value that was
+// cut off mid-write ("Achieved=") is neither earned nor explicitly locked.
+function isExplicitFalse(raw: unknown): boolean {
+  if (typeof raw === 'boolean') return !raw
+  if (typeof raw === 'number') return raw === 0
+  if (typeof raw === 'string') {
+    const head = raw.trim().toLowerCase().split(',')[0].trim()
+    return head === '0' || head === 'false' || head === 'no'
+  }
+  return false
+}
+
+const PROGRESS_KEYS = ['progress', 'curprogress', 'cur_progress']
+const MAX_PROGRESS_KEYS = ['max_progress', 'maxprogress', 'max']
+
+function readProgress(apiName: string, rec: Record<string, unknown>): ParsedProgress | null {
+  const current = Number(pick(rec, PROGRESS_KEYS))
+  const max = Number(pick(rec, MAX_PROGRESS_KEYS))
+  if (!Number.isFinite(current) || !Number.isFinite(max) || max <= 0 || current < 0) return null
+  return { apiName, current, max }
+}
+
 function pick(obj: Record<string, unknown>, keys: string[]): unknown {
   for (const k of keys) if (k in obj) return obj[k]
   return undefined
@@ -223,20 +264,27 @@ function pick(obj: Record<string, unknown>, keys: string[]): unknown {
 
 // Goldberg/GSE/EMPRESS: an object keyed by api name, or (some forks) an array
 // of entries carrying their own name.
-function parseGoldbergJson(content: string): ParsedUnlock[] {
+function parseGoldbergJson(content: string): ParsedUnlockFile {
   const data: unknown = JSON.parse(content)
-  const out: ParsedUnlock[] = []
+  const out: ParsedUnlockFile = { unlocks: [], locked: [], progress: [], complete: true }
 
   const consume = (apiName: string, entry: unknown): void => {
     if (!apiName) return
     if (typeof entry === 'boolean' || typeof entry === 'number') {
-      if (isTruthyFlag(entry)) out.push({ apiName, unlockedAtMs: null })
+      if (isTruthyFlag(entry)) out.unlocks.push({ apiName, unlockedAtMs: null })
+      else if (isExplicitFalse(entry)) out.locked.push(apiName)
       return
     }
     if (!entry || typeof entry !== 'object') return
     const rec = entry as Record<string, unknown>
-    if (!isTruthyFlag(pick(rec, EARNED_KEYS))) return
-    out.push({ apiName, unlockedAtMs: normalizeTime(pick(rec, TIME_KEYS)) })
+    const flag = pick(rec, EARNED_KEYS)
+    if (isTruthyFlag(flag)) {
+      out.unlocks.push({ apiName, unlockedAtMs: normalizeTime(pick(rec, TIME_KEYS)) })
+      return
+    }
+    if (isExplicitFalse(flag)) out.locked.push(apiName)
+    const progress = readProgress(apiName, rec)
+    if (progress) out.progress.push(progress)
   }
 
   if (Array.isArray(data)) {
@@ -248,6 +296,8 @@ function parseGoldbergJson(content: string): ParsedUnlock[] {
     for (const [key, entry] of Object.entries(data as Record<string, unknown>)) {
       consume(key, entry)
     }
+  } else {
+    out.complete = false
   }
   return out
 }
@@ -264,15 +314,21 @@ const CONTAINER_SECTIONS = new Set(['achievements', 'achievement', 'steamachieve
 //
 // so both are handled in one pass. A section is an achievement unless its name
 // is a known container.
-function parseIni(content: string): ParsedUnlock[] {
-  const out: ParsedUnlock[] = []
+function parseIni(content: string): ParsedUnlockFile {
+  const out: ParsedUnlockFile = { unlocks: [], locked: [], progress: [], complete: true }
   let section = ''
   let fields: Record<string, string> = {}
 
   const flushSection = (): void => {
     if (!section || CONTAINER_SECTIONS.has(section.toLowerCase())) return
-    if (!isTruthyFlag(pick(fields, EARNED_KEYS))) return
-    out.push({ apiName: section, unlockedAtMs: normalizeTime(pick(fields, TIME_KEYS)) })
+    const flag = pick(fields, EARNED_KEYS)
+    if (isTruthyFlag(flag)) {
+      out.unlocks.push({ apiName: section, unlockedAtMs: normalizeTime(pick(fields, TIME_KEYS)) })
+      return
+    }
+    if (isExplicitFalse(flag)) out.locked.push(section)
+    const progress = readProgress(section, fields)
+    if (progress) out.progress.push(progress)
   }
 
   for (const rawLine of content.split(/\r?\n/)) {
@@ -294,10 +350,16 @@ function parseIni(content: string): ParsedUnlock[] {
     if (!key) continue
 
     if (CONTAINER_SECTIONS.has(section.toLowerCase())) {
+      // A flat container mixes achievements with bookkeeping (CODEX's
+      // [SteamAchievements] lists "00000=ACH_NAME" and "Count=55"), so only an
+      // earned flag is trusted here, never an explicit-locked one.
       if (!isTruthyFlag(value)) continue
       // "1,1690000000" packs the timestamp into the same value.
       const parts = value.split(',')
-      out.push({ apiName: key, unlockedAtMs: parts.length > 1 ? normalizeTime(parts[1]) : null })
+      out.unlocks.push({
+        apiName: key,
+        unlockedAtMs: parts.length > 1 ? normalizeTime(parts[1]) : null
+      })
     } else {
       fields[key.toLowerCase()] = value
     }
@@ -308,18 +370,26 @@ function parseIni(content: string): ParsedUnlock[] {
 
 // Never throws. A file read mid-write is half-written more often than not, and
 // a torn parse must look like "nothing new yet", not like a crashed session.
-export function parseUnlockFile(format: EmuFormat, content: string): ParsedUnlock[] {
+export function parseUnlockFileFull(format: EmuFormat, content: string): ParsedUnlockFile {
   try {
     const parsed = format === 'goldberg-json' ? parseGoldbergJson(content) : parseIni(content)
     // Last write wins per api name, so a file listing one achievement twice
-    // cannot produce two unlock rows.
+    // cannot produce two unlock rows. Earned beats locked for the same name.
     const byName = new Map<string, ParsedUnlock>()
-    for (const u of parsed) if (u.apiName.trim()) byName.set(u.apiName, u)
-    return [...byName.values()]
+    for (const u of parsed.unlocks) if (u.apiName.trim()) byName.set(u.apiName, u)
+    const progress = new Map<string, ParsedProgress>()
+    for (const p of parsed.progress) if (!byName.has(p.apiName)) progress.set(p.apiName, p)
+    return {
+      unlocks: [...byName.values()],
+      locked: [...new Set(parsed.locked)].filter((n) => n.trim() && !byName.has(n)),
+      progress: [...progress.values()],
+      complete: parsed.complete && content.trim().length > 0
+    }
   } catch {
-    return []
+    return { unlocks: [], locked: [], progress: [], complete: false }
   }
 }
+
 
 export function diffNewUnlocks(
   known: ReadonlySet<string>,
@@ -467,14 +537,15 @@ export type PercentRow = { name: string; percent: number }
 // a cache and the endpoint live, so on any game with active players most
 // values differ by a tenth and an exact-percent join collapses (AC4 Black Flag:
 // 12 of 49 paired). So:
-//   - equal counts → pair by rank outright (a tie run can at worst swap names
-//     inside itself, which a later re-fetch corrects);
+//   - equal counts → pair by rank outright. A tie run can swap names inside
+//     itself (Steam rounds both lists to a tenth, so ties are common); the
+//     unlock still lands on the right id, and the user can swap a pair that
+//     looks wrong with "Fix achievement names";
 //   - unequal counts (a page/endpoint out of step about an added or removed
 //     achievement) → an order-preserving alignment that pairs rows within
 //     PCT_TOLERANCE of each other and drops what cannot be placed, counted so
 //     the caller can say so.
 const PCT_TOLERANCE = 1.5
-
 function byPercentDesc<T extends { percent: number | null }>(rows: readonly T[]): T[] {
   return [...rows].sort((a, b) => (b.percent ?? -1) - (a.percent ?? -1))
 }
@@ -556,4 +627,121 @@ export function buildGoldbergConfig(
     achievementsJson: JSON.stringify(entries, null, 2) + '\n',
     steamAppidTxt: `${appid}\n`
   }
+}
+
+// Before a launch: will the emulator be able to save this game's unlocks?
+// Goldberg/GSE silently drop an unlock for any achievement their
+// steam_settings/achievements.json does not list (gbe_fork's
+// set_achievement_internal returns before writing), and the game will not
+// announce it again, so a gap here loses achievements for good. Only a game
+// whose steam_api DLL IS Goldberg is checked: other emulators keep no such
+// list, and without that DLL NaviHUB could not offer a fix, so a warning there
+// would just repeat on every Play. Reads the same folder the installer writes
+// (beside the DLL), so a successful fix always silences it.
+export function decideLaunchCheck(state: {
+  emulator: 'goldberg' | 'other' | 'none'
+  list: 'missing' | 'incomplete' | 'complete'
+  missing: number
+  total: number
+  settingsDir: string | null
+}): AchievementLaunchCheck | null {
+  if (state.emulator !== 'goldberg' || state.list === 'complete' || !state.total) return null
+  return { problem: state.list, missing: state.missing, total: state.total, dir: state.settingsDir }
+}
+
+// One-click setup's record of what it changed, kept inside steam_settings, and
+// the suffix its backups of the release's own files carry.
+export const GOLDBERG_MANIFEST = '.navihub-goldberg.json'
+export const GOLDBERG_BACKUP_SUFFIX = '.navihub-backup'
+
+// The icon file name the save-to-a-folder Goldberg generator gives one
+// achievement's art. (One-click setup writes no icons; see removed.md.)
+export function goldbergIconFileName(apiName: string, locked: boolean, sourceExt: string): string {
+  return `${apiName.replace(/[^\w.-]+/g, '_')}${locked ? '_gray' : ''}${sourceExt || '.jpg'}`
+}
+
+// Strings only a Goldberg-family build carries: its save-folder names ("GSE
+// Saves" for gbe_fork, "Goldberg SteamEmu Saves" for the original), its config
+// folder and gbe_fork's ini names (settings_parser.cpp). Several, because a
+// compiler may build a short constant like "GSE Saves" from immediates rather
+// than keep it as one string. Real Steam and other cracks contain none of them.
+const GOLDBERG_DLL_MARKERS = [
+  'GSE Saves',
+  'Goldberg SteamEmu Saves',
+  'steam_settings',
+  'configs.main.ini',
+  'configs.user.ini'
+]
+
+export function looksLikeGoldbergDll(bytes: Uint8Array): boolean {
+  const buf = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  return GOLDBERG_DLL_MARKERS.some(
+    (m) => buf.includes(Buffer.from(m, 'latin1')) || buf.includes(Buffer.from(m, 'utf16le'))
+  )
+}
+
+// The list one-click setup writes, built from the release's own list (rule R5
+// in goldbergInstall.ts). Every release entry is kept EXACTLY as it was —
+// unknown fields, icons and stat `progress` blocks included, since gbe_fork
+// unlocks stat-based achievements from those — with two exceptions: a name
+// the user fixed by hand gets its display text, and every tracked id the
+// release lacks is appended. Nothing is ever removed. (A hand-fixed name
+// also brings its hidden flag; its icon stays the release's.) A release list that is
+// not a JSON array counts as empty (its file is backed up, never lost).
+export type GoldbergTrackedRow = {
+  apiName: string
+  name: string
+  description: string | null
+  hidden: boolean
+  manual: boolean
+}
+
+export function mergeGoldbergList(
+  release: unknown,
+  tracked: readonly GoldbergTrackedRow[]
+): unknown[] {
+  const base: unknown[] = Array.isArray(release) ? release : []
+  const byId = new Map(tracked.map((t) => [t.apiName, t]))
+  // Set one display field, keeping any other languages a localized object has.
+  const text = (current: unknown, value: string): unknown =>
+    current && typeof current === 'object' && !Array.isArray(current)
+      ? { ...(current as Record<string, unknown>), english: value }
+      : value
+  const listed = new Set<string>()
+  const out = base.map((entry) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return entry
+    const rec = entry as Record<string, unknown>
+    if (typeof rec.name !== 'string') return entry
+    listed.add(rec.name)
+    const t = byId.get(rec.name)
+    if (!t?.manual) return entry
+    // A hand swap moves the hidden flag with the name (achievementRepo
+    // .swapNames), so the overlay must hide the same achievements NaviHUB does.
+    // Written in the release's own form: "1"/"0", a number or a boolean.
+    const hidden =
+      typeof rec.hidden === 'boolean'
+        ? t.hidden
+        : typeof rec.hidden === 'number'
+          ? (t.hidden ? 1 : 0)
+          : (t.hidden ? '1' : '0')
+    return {
+      ...rec,
+      displayName: text(rec.displayName, t.name),
+      description: text(rec.description, t.description ?? ''),
+      hidden
+    }
+  })
+  for (const t of tracked) {
+    if (listed.has(t.apiName)) continue
+    listed.add(t.apiName)
+    out.push({
+      name: t.apiName,
+      displayName: t.name,
+      description: t.description ?? '',
+      hidden: t.hidden ? '1' : '0',
+      icon: '',
+      icongray: ''
+    })
+  }
+  return out
 }

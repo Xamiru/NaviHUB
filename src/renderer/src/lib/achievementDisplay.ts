@@ -57,6 +57,33 @@ export function filterTrophies(
   return [...rows]
 }
 
+// Who a name could have been swapped with: the rest of the set, closest global
+// percentage first, because a rank pairing only ever trades near-ties.
+export function swapCandidates(
+  rows: readonly AchievementRow[],
+  target: AchievementRow
+): AchievementRow[] {
+  const distance = (row: AchievementRow): number =>
+    row.globalPct != null && target.globalPct != null
+      ? Math.abs(row.globalPct - target.globalPct)
+      : Number.POSITIVE_INFINITY
+  return rows
+    .filter((row) => row.id !== target.id)
+    .map((row, index) => ({ row, index }))
+    .sort((a, b) => distance(a.row) - distance(b.row) || a.index - b.index)
+    .map(({ row }) => row)
+}
+
+// "820 / 2000", with the thousands grouped and fractional counters trimmed.
+export function formatProgress(progress: { current: number; max: number }): {
+  label: string
+  pct: number
+} {
+  const fmt = (n: number): string => n.toLocaleString(undefined, { maximumFractionDigits: 1 })
+  const pct = progress.max > 0 ? Math.min(100, Math.max(0, (progress.current / progress.max) * 100)) : 0
+  return { label: `${fmt(progress.current)} / ${fmt(progress.max)}`, pct }
+}
+
 function unlockTime(row: AchievementRow): number {
   if (!row.unlockedAt) return Number.NEGATIVE_INFINITY
   const parsed = Date.parse(row.unlockedAt.replace(' ', 'T') + (row.unlockedAt.endsWith('Z') ? '' : 'Z'))
