@@ -5,6 +5,7 @@ import { qk } from '../../lib/queryKeys'
 import { matchState } from '@shared/typing'
 import { readingMatches } from '@shared/romaji'
 import type { QuizKind } from '@shared/types'
+import SessionSummary from './SessionSummary'
 import StudySessionFrame, { SessionEvidence, SessionFeedback } from '../StudySessionFrame'
 
 // The arcade races' shared shell: a fixed clock, a score/streak header and one
@@ -139,27 +140,24 @@ export default function ArcadeShell({
   }
 
   if (over) {
-    const acc = attempted ? Math.round((correct / attempted) * 100) : 0
     const best = history?.best
     return (
       <StudySessionFrame title="Arcade results" subtitle={`${spec.seconds}-second challenge`} surface={false}>
-      <div className="card p-8 text-center">
-        <p className="text-sm uppercase tracking-widest text-gray-500">Time</p>
-        <p className="mt-3 text-6xl font-bold">{correct}</p>
-        <p className="mt-1 text-sm text-gray-400">
-          correct in {spec.seconds} s · {attempted} attempted · {acc}% · best streak {bestStreak}
-        </p>
-        {newBest ? (
-          <p className="mt-3 text-sm text-accent">New personal best.</p>
-        ) : (
-          best && <p className="mt-3 text-sm text-gray-500">Personal best {best.score}</p>
-        )}
-        <div className="mt-6 flex justify-center gap-2">
-          <button className="btn-primary" onClick={onExit}>
-            Back to setup
-          </button>
-        </div>
-      </div>
+        <SessionSummary
+          title="Time"
+          score={attempted > 0 ? { correct, total: attempted } : null}
+          facts={[
+            { label: 'Correct', value: correct },
+            { label: 'Best streak', value: bestStreak },
+            { label: 'Personal best', value: best ? best.score : 'none yet' }
+          ]}
+          note={newBest ? 'New personal best.' : undefined}
+          actions={
+            <button type="button" className="btn-ghost" onClick={onExit}>
+              Back to setup
+            </button>
+          }
+        />
       </StudySessionFrame>
     )
   }

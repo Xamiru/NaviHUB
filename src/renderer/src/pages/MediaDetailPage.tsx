@@ -53,6 +53,7 @@ import type {
   MediaDetail,
   MediaCharacterEntry,
   ThemeSong,
+  MusicTrack,
   MediaRelation,
   HltbTimes
 } from '@shared/types'
@@ -64,8 +65,10 @@ import StandStats from '../components/theme/StandStats'
 import { standParameters } from '../lib/standStats'
 import { useAppTheme } from '../lib/useAppTheme'
 import BookFacts from '../components/BookFacts'
+import LinkedMusicSection, { useMusicLinks } from '../components/music/LinkedMusicSection'
+import { musicTrackToPlayerTrack } from '../lib/musicTracks'
 
-type DetailTab = 'overview' | 'cast' | 'video' | 'media' | 'achievements' | 'art'
+type DetailTab = 'overview' | 'cast' | 'video' | 'media' | 'achievements' | 'music' | 'art'
 
 export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const { id } = useParams()
@@ -93,6 +96,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
       : []),
     ...(cfg.mediaTabLabel ? [{ key: 'media' as DetailTab, label: cfg.mediaTabLabel }] : []),
     ...(cfg.hasAchievements ? [{ key: 'achievements' as DetailTab, label: 'Achievements' }] : []),
+    { key: 'music', label: 'Music' },
     { key: 'art', label: 'Art' }
   ]
   const [params] = useSearchParams()
@@ -362,6 +366,10 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
         )}
 
         {tab === 'achievements' && <AchievementsSection m={m} />}
+
+        {tab === 'music' && (
+          <LinkedMusicSection owner={{ mediaId: m.id }} ownerTitle={m.title} themes={m.themes} />
+        )}
 
         {tab === 'art' && (
           <>
@@ -1179,6 +1187,11 @@ function ThemesSection({ m, onChange }: { m: MediaDetail; onChange: () => void }
   // so the bar's next/prev walk this anime's songs. Src resolution is lazy in
   // the player, so this is just a cheap mapping.
   const player = usePlayerControls()
+  // Library tracks linked on the Music tab as a theme's full version.
+  const { data: links } = useMusicLinks({ mediaId: m.id })
+  const fullVersions = new Map(
+    (links ?? []).flatMap((l) => (l.themeSongId != null && l.tracks[0] ? [[l.themeSongId, l.tracks[0]] as const] : []))
+  )
   const playable = themes.filter((t) => t.audioPath || t.audioUrl)
   function playTheme(theme: ThemeSong) {
     const start = playable.findIndex((t) => t.id === theme.id)
@@ -1205,7 +1218,12 @@ function ThemesSection({ m, onChange }: { m: MediaDetail; onChange: () => void }
           </p>
         )}
         {shown.map((t) => (
-          <ThemeRow key={t.id} theme={t} onPlay={() => playTheme(t)} />
+          <ThemeRow
+            key={t.id}
+            theme={t}
+            onPlay={() => playTheme(t)}
+            fullVersion={fullVersions.get(t.id) ?? null}
+          />
         ))}
       </div>
       <div className="mb-3 flex justify-center">
@@ -1229,7 +1247,15 @@ function ThemesSection({ m, onChange }: { m: MediaDetail; onChange: () => void }
   )
 }
 
-function ThemeRow({ theme, onPlay }: { theme: ThemeSong; onPlay: () => void }) {
+function ThemeRow({
+  theme,
+  onPlay,
+  fullVersion
+}: {
+  theme: ThemeSong
+  onPlay: () => void
+  fullVersion: MusicTrack | null
+}) {
   // The player resolves local-vs-remote audio lazily when the track starts, so
   // the row no longer pre-checks the local file (one IPC per row saved).
   const hasAudio = !!(theme.audioPath || theme.audioUrl)
@@ -1286,6 +1312,15 @@ function ThemeRow({ theme, onPlay }: { theme: ThemeSong; onPlay: () => void }) {
           </p>
         )}
       </div>
+      {fullVersion && (
+        <button
+          className="btn-ghost shrink-0 text-xs"
+          onClick={() => player.playQueue([musicTrackToPlayerTrack(fullVersion)], 0)}
+          title={`Play the full version from your music library: ${fullVersion.title}`}
+        >
+          Play full version
+        </button>
+      )}
       <FavoriteButton
         active={favorite}
         variant="compact"

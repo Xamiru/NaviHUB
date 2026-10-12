@@ -64,7 +64,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Tony Blair',
+      ref: 'person:tony-blair',
       role: 'head-of-government',
       cites: [
         {

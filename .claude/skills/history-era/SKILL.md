@@ -148,7 +148,10 @@ they go further down the page, never first (user, 2026-10-07).
   Every government claim carries `reception`: a quoted independent assessment (historian,
   encyclopedia, inquiry, tribunal, rights organisation) that answers that claim. Another
   government's statement is never independent, and a claim by the United States is never answered
-  by a US government body (State Department, Office of the Historian, Library of Congress).
+  by a US government body (State Department, Office of the Historian, Library of Congress). An inquiry
+  created by the same government (the 9/11 Commission for a US claim, Chilcot for a UK claim) may
+  stand as its own position but does not answer that government's claim. A figure is one the
+  source states, never a sum or difference worked out from it.
   Officials' testimony, speeches and treaty clauses never carry the narration either: a page's
   course is told by historians and encyclopedias, and the clause text belongs in a dedicated
   section. Lint: `state-outlet`,

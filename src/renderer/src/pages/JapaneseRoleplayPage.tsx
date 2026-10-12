@@ -141,7 +141,7 @@ export default function JapaneseRoleplayPage() {
               This checks the intended language functions, not every valid expression or full naturalness.
             </p>
             <div className="mt-5 space-y-2">
-              {activeTutor && <Link to="/japanese/tutor/session" className="btn-primary block text-center">Continue Tutor session</Link>}
+              {activeTutor && <Link to="/japanese/tutor/session" className="btn-primary block text-center">Continue today’s session</Link>}
               <button type="button" className={activeTutor ? 'btn-ghost w-full' : 'btn-primary w-full'} onClick={() => reset()}>
                 Repeat scenario
               </button>

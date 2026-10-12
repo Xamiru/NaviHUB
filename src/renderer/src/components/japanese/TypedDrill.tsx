@@ -5,6 +5,7 @@ import { qk } from '../../lib/queryKeys'
 import type { QuizKind } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
 import StudySessionFrame, { SessionEvidence, SessionFeedback } from '../StudySessionFrame'
+import SessionSummary from './SessionSummary'
 
 // The generic typed drill engine (finite queue, misses re-enqueued at the end,
 // one quiz_session row per finished round). Moved verbatim out of
@@ -29,7 +30,8 @@ export default function TypedDrill({
   onExit,
   placeholder = 'type the reading…',
   wide = false,
-  title = 'Typed drill'
+  title = 'Typed drill',
+  japanese = true
 }: {
   items: DrillItem[]
   kind: QuizKind
@@ -38,6 +40,8 @@ export default function TypedDrill({
   placeholder?: string
   wide?: boolean // a wider input for multi-word answers (Use of English)
   title?: string
+  /** English pages reuse this engine; they keep their own next step. */
+  japanese?: boolean
 }) {
   const qc = useQueryClient()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -98,30 +102,22 @@ export default function TypedDrill({
   }
 
   if (finished) {
-    const pct = items.length ? Math.round((firstTryCorrect / items.length) * 100) : 0
+    const labelOf = (p: string): string => items.find((i) => i.prompt === p)?.label ?? p
     return (
-      <StudySessionFrame title={`${title} results`} subtitle="First-try recall and requeued misses" surface={false}>
-        <div className="card p-7 text-center">
-          <p className="text-3xl font-bold">
-            {firstTryCorrect} / {items.length}
-          </p>
-          <p className="mt-1 text-sm text-gray-400">
-            {pct === 100 ? 'Flawless.' : `${pct}% on the first try · best streak ${bestStreak}`}
-          </p>
-          {missed.size > 0 && (
-            <p className="mt-3 text-lg text-gray-300">
-              <span className="mr-2 text-xs uppercase tracking-widest text-gray-500">Missed</span>
-              {[...missed]
-                .map((p) => items.find((i) => i.prompt === p)?.label ?? p)
-                .join(items.some((i) => i.label) ? ' · ' : '　')}
-            </p>
-          )}
-          <div className="mt-5 flex justify-center gap-2">
-            <button className="btn-primary" onClick={onExit}>
+      <StudySessionFrame title={`${title} results`} subtitle="First-try recall; misses came back until answered" surface={false}>
+        <SessionSummary
+          title="Round complete"
+          score={{ correct: firstTryCorrect, total: items.length }}
+          facts={[{ label: 'Best streak', value: bestStreak }]}
+          note={items.length > 0 && firstTryCorrect === items.length ? 'Flawless.' : undefined}
+          missed={[...missed].map((p) => ({ key: p, jp: labelOf(p) }))}
+          next={japanese ? undefined : null}
+          actions={
+            <button type="button" className={japanese ? 'btn-ghost' : 'btn-primary'} onClick={onExit}>
               Back to setup
             </button>
-          </div>
-        </div>
+          }
+        />
       </StudySessionFrame>
     )
   }

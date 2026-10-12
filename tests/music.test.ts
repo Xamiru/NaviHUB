@@ -302,6 +302,31 @@ describe('startScan', () => {
     expect(db.pragma('foreign_key_check')).toEqual([])
   })
 
+  it('re-attaches a music link after its file and album folder are renamed', async () => {
+    makeFiles(['Cliff Martinez/Drive/01 Rubber Head.mp3'])
+    await startScan(fakeReader())
+    const track = db.prepare('SELECT id, album_id FROM music_track').get() as { id: number; album_id: number }
+    db.exec("INSERT INTO media_item (id, media_type, title) VALUES (1, 'movie', 'Drive')")
+    db.prepare(
+      `INSERT INTO media_music_link (media_id, kind, track_id, label, snap_artist, snap_album, snap_title, snap_duration)
+       VALUES (1, 'track', ?, 'OST', 'Cliff Martinez', 'Drive', 'Rubber Head', NULL)`
+    ).run(track.id)
+    db.prepare(
+      `INSERT INTO media_music_link (media_id, kind, album_id, label, snap_artist, snap_album)
+       VALUES (1, 'album', ?, 'OST', 'Cliff Martinez', 'Drive')`
+    ).run(track.album_id)
+
+    rmSync(join(root, 'Cliff Martinez'), { recursive: true })
+    makeFiles(['Cliff Martinez/2011 - Drive/1-01 Rubber Head.flac'])
+    await startScan(fakeReader())
+    const moved = db.prepare('SELECT id, album_id FROM music_track').get() as { id: number; album_id: number }
+    expect(moved.id).not.toBe(track.id)
+    expect(db.prepare('SELECT kind, track_id, album_id FROM media_music_link ORDER BY id').all()).toEqual([
+      { kind: 'track', track_id: moved.id, album_id: null },
+      { kind: 'album', track_id: null, album_id: moved.album_id }
+    ])
+  })
+
   it('prunes vanished tracks, empty albums/artists, and cascades playlist rows', async () => {
     makeFiles(['A/One/01 a.mp3', 'B/Two/01 b.mp3'])
     await startScan(fakeReader())

@@ -1,7 +1,31 @@
 import type { QuizHistory } from '../types'
 
 export type TutorPhaseId = 'foundation' | 'bridge' | 'immersion' | 'independent' | 'advanced'
-export type TutorSkill = 'recall' | 'sound' | 'listening' | 'reading' | 'output' | 'curriculum'
+export type TutorSkill =
+  | 'recall'
+  | 'sound'
+  | 'listening'
+  | 'reading'
+  | 'output'
+  | 'curriculum'
+  | 'kana'
+  | 'lesson'
+
+// The session lengths the learner picks from each day. Sixty is the full
+// balanced loop; the shorter ones keep its order and drop the later blocks.
+export type TutorBudget = 10 | 20 | 40 | 60
+export const TUTOR_BUDGETS: TutorBudget[] = [10, 20, 40, 60]
+
+export const TUTOR_SKILL_LABEL: Record<TutorSkill, string> = {
+  recall: 'Review',
+  sound: 'Sound',
+  listening: 'Listening',
+  reading: 'Reading',
+  output: 'Speaking and writing',
+  curriculum: 'Next lesson',
+  kana: 'Kana',
+  lesson: 'Lesson'
+}
 
 export interface TutorPhase {
   id: TutorPhaseId
@@ -116,6 +140,13 @@ export interface TutorEvidence {
   hasReadingMedia: boolean
   hasListeningMedia: boolean
   readingRoute: string
+  /** Defaults to the full sixty-minute loop. */
+  budgetMinutes?: TutorBudget
+  /** Kana not yet practised and not marked as already known. */
+  kanaNeeded?: boolean
+  /** All-time review count; zero means no known words for listening yet. */
+  totalReviews?: number
+  nextLesson?: { id: number; title: string } | null
 }
 
 export interface TutorTask {
@@ -174,7 +205,7 @@ function weakestSkill(e: TutorEvidence): TutorWeakness | null {
       route: '/japanese/review',
       evidence:
         e.strictRetention30 == null
-          ? 'There are not enough recent reviews to measure strict retention yet.'
+          ? 'Not enough recent reviews to measure yet.'
           : `Strict 30-day retention is ${e.strictRetention30}%.`,
       threshold: 80,
       // A missing retention sample is already handled by the required review
@@ -188,7 +219,7 @@ function weakestSkill(e: TutorEvidence): TutorWeakness | null {
       route: '/japanese/phonology',
       evidence:
         e.phonology.accuracy == null
-          ? 'The phonology foundation has not produced evidence yet.'
+          ? 'Not tried yet.'
           : `Recent phonology accuracy is ${e.phonology.accuracy}%.`,
       threshold: 80,
       sessions: e.phonology.sessions
@@ -200,9 +231,7 @@ function weakestSkill(e: TutorEvidence): TutorWeakness | null {
       route: useImmersion ? '/japanese/immersion' : '/japanese/listen',
       evidence:
         listeningEvidence.accuracy == null
-          ? useImmersion
-            ? 'There are no long-form listening results yet.'
-            : 'There are no guided-listening results yet.'
+          ? 'Not tried yet.'
           : `Recent ${useImmersion ? 'long-form' : 'guided'} listening accuracy is ${listeningEvidence.accuracy}%.`,
       threshold: 75,
       sessions: listeningEvidence.sessions
@@ -214,7 +243,7 @@ function weakestSkill(e: TutorEvidence): TutorWeakness | null {
       route: '/japanese/reading',
       evidence:
         e.reading.accuracy == null
-          ? 'There are no connected-reading results yet.'
+          ? 'Not tried yet.'
           : `Recent graded-reading accuracy is ${e.reading.accuracy}%.`,
       threshold: 75,
       sessions: e.reading.sessions
@@ -226,7 +255,7 @@ function weakestSkill(e: TutorEvidence): TutorWeakness | null {
       route: '/japanese/output',
       evidence:
         e.output.accuracy == null
-          ? 'No controlled-output unit has been self-checked yet.'
+          ? 'Not tried yet.'
           : `Recent controlled-output confidence is ${e.output.accuracy}%.`,
       threshold: 70,
       sessions: e.output.sessions
@@ -255,89 +284,175 @@ export function buildTutorPlan(e: TutorEvidence): TutorPlan {
   const phase = tutorPhaseForStep(e.frontierStep)
   const weakness = weakestSkill(e)
   const lessonHeld = e.unseen > 0
+  const budget = e.budgetMinutes ?? 60
   const newRemaining = Math.max(0, e.dailyTarget - e.introducedToday)
-  const reviewTitle =
-    e.due > 0
-      ? `Clear ${e.due} due card${e.due === 1 ? '' : 's'}`
-      : newRemaining > 0 && e.unseen > 0
-        ? `Introduce up to ${Math.min(newRemaining, e.unseen)} new cards`
-        : 'Keep the review queue clear'
+  // Nothing to review yet: the first job is a lesson, not "keep the queue clear".
+  const nothingToReview = e.due === 0 && e.unseen === 0
+  const lessonFirst = nothingToReview && !!e.nextLesson
+  // Guided listening deals only sentences built from known words, so a learner
+  // with no reviewed cards hears the sound-system units instead.
+  const knowsWords = (e.totalReviews ?? 1) > 0
+
+  const kana: TutorTask = {
+    skill: 'kana',
+    title: 'Learn the kana',
+    detail: 'Type the reading of each character. Start with a couple of rows and add more once they feel easy.',
+    minutes: 10,
+    route: '/japanese/kana',
+    reason: 'Everything else in Japanese is written with these characters.',
+    priority: 'required'
+  }
+  const sound: TutorTask = {
+    skill: 'sound',
+    title: 'One sound-system unit',
+    detail: 'Hear the beat of each word, say the examples aloud, then answer the short check.',
+    minutes: 10,
+    route: '/japanese/phonology',
+    reason: 'Hearing Japanese timing early makes every later word easier to remember.',
+    priority: 'recommended'
+  }
+  const lesson: TutorTask = {
+    skill: 'lesson',
+    title: e.nextLesson ? `Learn: ${e.nextLesson.title}` : 'Learn your next lesson',
+    detail: 'Read the lesson, try its short check, then mark it as learned so its words join your reviews.',
+    minutes: 10,
+    route: e.nextLesson ? `/japanese/lessons/${e.nextLesson.id}` : '/japanese/roadmap',
+    reason: 'There is nothing to review yet, so the next lesson comes first.',
+    priority: 'required'
+  }
+  const introduce: TutorTask = {
+    skill: 'recall',
+    title: `Introduce up to ${e.dailyTarget} new cards`,
+    detail: 'Open Review after marking the lesson learned and meet its words for the first time.',
+    minutes: 5,
+    route: '/japanese/review',
+    reason: 'New words stick when you see them again soon after reading the lesson.',
+    priority: 'recommended'
+  }
+  const recall: TutorTask = {
+    skill: 'recall',
+    title:
+      e.due > 0
+        ? `Clear ${e.due} due card${e.due === 1 ? '' : 's'}`
+        : newRemaining > 0 && e.unseen > 0
+          ? `Introduce up to ${Math.min(newRemaining, e.unseen)} new cards`
+          : 'Keep the review queue clear',
+    detail: 'Answer from memory before revealing. Stop adding new cards while unseen ones are waiting.',
+    minutes: 15,
+    route: '/japanese/review',
+    reason: e.due > 0 ? 'Cards that are due are the ones you are about to forget.' : 'A clear queue keeps tomorrow light.',
+    priority: 'required'
+  }
 
   const listeningRoute =
     e.hasListeningMedia && e.frontierStep >= 10 ? '/japanese/immersion' : '/japanese/listen'
-  const listeningTitle =
-    listeningRoute === '/japanese/immersion' ? 'Complete one five-pass scene' : 'Guided listening and shadowing'
+  const listening: TutorTask = knowsWords
+    ? {
+        skill: 'listening',
+        title:
+          listeningRoute === '/japanese/immersion' ? 'Complete one five-pass scene' : 'Guided listening and shadowing',
+        detail:
+          listeningRoute === '/japanese/immersion'
+            ? 'Watch cold, then with Japanese subtitles, then with the transcript; shadow a few lines and retell.'
+            : 'Pick the meaning before you see the transcript, then repeat each sentence once out loud.',
+        minutes: 10,
+        route: listeningRoute,
+        reason: e.hasListeningMedia
+          ? 'An attached local episode is ready to listen to.'
+          : 'Sentences built from words you know are a safe way to start listening.',
+        priority: 'recommended'
+      }
+    : sound
+  // Native manga is too hard in the first steps, so the foundation reads the
+  // graded passages even when a manga is in progress.
+  const realReading = e.hasReadingMedia && phase.id !== 'foundation'
+  const reading: TutorTask = {
+    skill: 'reading',
+    title: realReading ? 'Read one manageable scene' : 'Read one graded passage',
+    detail: realReading
+      ? 'Read for meaning, look up only what blocks you, and save words that keep coming back.'
+      : 'Use furigana when you need it and save only a few useful words.',
+    minutes: 20,
+    route: realReading ? e.readingRoute : '/japanese/reading',
+    reason: realReading ? 'Real reading is what all of this is for.' : 'Connected text is the bridge to real manga and novels.',
+    priority: 'required'
+  }
+  const output: TutorTask = {
+    skill: 'output',
+    title: e.frontierStep >= 4 ? 'Complete one branching role-play' : 'Write or say a few sentences',
+    detail:
+      e.frontierStep >= 4
+        ? 'Answer before you look at the example replies, carry the conversation on, then fix what was missing.'
+        : 'Answer the prompts in Japanese, compare with the example, then improve your answer.',
+    minutes: 10,
+    route: e.frontierStep >= 4 ? '/japanese/roleplay' : '/japanese/output',
+    reason: 'Producing a sentence shows gaps that recognising one can hide.',
+    priority: 'recommended'
+  }
+  // A measured weak result earns a short practice block; a skill that has never
+  // been tried is not a weakness yet.
+  const repair: TutorTask | null =
+    weakness && weakness.score != null && !['recall', 'listening', 'reading', 'output'].includes(weakness.skill)
+      ? {
+          skill: weakness.skill,
+          title: `Practise your weak spot: ${weakness.label}`,
+          detail: weakness.evidence,
+          minutes: 5,
+          route: weakness.route,
+          reason: 'This is the weakest measured part of your study.',
+          priority: 'recommended'
+        }
+      : null
+  const nextLessonTask: TutorTask = {
+    skill: 'curriculum',
+    title: lessonHeld ? 'Hold the next lesson' : 'Read the next lesson',
+    detail: lessonHeld
+      ? `${e.unseen} new card${e.unseen === 1 ? ' is' : 's are'} still waiting. Meet those first; the next lesson stays open.`
+      : 'Read for understanding and try its check. Its cards join your reviews on a later day.',
+    minutes: 5,
+    route: lessonHeld ? '/japanese/review' : e.nextLesson ? `/japanese/lessons/${e.nextLesson.id}` : '/japanese/roadmap',
+    reason: lessonHeld ? 'More new material would bury the cards already waiting.' : 'You have room for new material.',
+    priority: lessonHeld ? 'optional' : 'recommended'
+  }
 
-  const tasks: TutorTask[] = [
-    {
-      skill: 'recall',
-      title: reviewTitle,
-      detail: 'Grade from memory before revealing. Stop adding new cards if the unseen pile remains.',
-      minutes: 15,
-      route: '/japanese/review',
-      reason: e.due > 0 ? 'Due recall has the highest forgetting cost.' : 'A clear queue protects tomorrow.',
-      priority: 'required'
-    },
-    {
-      skill: 'listening',
-      title: listeningTitle,
-      detail:
-        listeningRoute === '/japanese/immersion'
-          ? 'Cold pass, Japanese-subtitle pass, transcript pass, then shadow and retell.'
-          : 'Choose meaning before the transcript, then shadow each revealed sentence once.',
-      minutes: 10,
-      route: listeningRoute,
-      reason: e.hasListeningMedia
-        ? 'An attached local episode is ready to become listening curriculum.'
-        : 'Known-word audio builds a safe listening base until local video is attached.',
-      priority: 'recommended'
-    },
-    {
-      skill: 'reading',
-      title: e.hasReadingMedia ? 'Read one manageable scene' : 'Complete one connected graded reading',
-      detail: e.hasReadingMedia
-        ? 'Read for meaning, look up only blockers, and mine words that recur or matter to the scene.'
-        : 'Use furigana only when structure stops being visible; mine no more than a few useful words.',
-      minutes: 20,
-      route: e.hasReadingMedia ? e.readingRoute : '/japanese/reading',
-      reason: e.hasReadingMedia ? 'Real reading is the main transfer target.' : 'Connected text is the bridge to local media.',
-      priority: 'required'
-    },
-    {
-      skill: 'output',
-      title: e.frontierStep >= 4 ? 'Complete one branching role-play' : 'Produce, compare, and repair',
-      detail: e.frontierStep >= 4
-        ? 'Respond before revealing the authored paths, carry the exchange forward, then repair missing language functions.'
-        : 'Finish one controlled response and revise the answer after comparison.',
-      minutes: 10,
-      route: e.frontierStep >= 4 ? '/japanese/roleplay' : '/japanese/output',
-      reason: 'Retrieval in a sentence exposes gaps that recognition can hide.',
-      priority: 'recommended'
-    }
-  ]
-
-  if (weakness && weakness.skill !== 'recall' && weakness.skill !== 'listening' && weakness.skill !== 'reading' && weakness.skill !== 'output') {
-    tasks.push({
-      skill: weakness.skill,
-      title: `Repair: ${weakness.label}`,
-      detail: weakness.evidence,
-      minutes: 5,
-      route: weakness.route,
-      reason: 'This is the weakest measured part of the current loop.',
-      priority: 'recommended'
-    })
+  const at = (task: TutorTask, minutes: number): TutorTask => ({ ...task, minutes })
+  let tasks: TutorTask[]
+  if (e.kanaNeeded) {
+    tasks =
+      budget === 10
+        ? [at(kana, 10)]
+        : budget === 20
+          ? [at(kana, 10), at(sound, 10)]
+          : budget === 40
+            ? [at(kana, 20), at(sound, 10), ...(e.nextLesson ? [at(lesson, 10)] : [])]
+            : [at(kana, 30), at(sound, 15), ...(e.nextLesson ? [at(lesson, 15)] : [])]
   } else {
-    tasks.push({
-      skill: 'curriculum',
-      title: lessonHeld ? 'Hold the next lesson' : 'Read the next roadmap lesson',
-      detail: lessonHeld
-        ? `There are ${e.unseen} unseen cards waiting. Use the five minutes on the weakest current skill instead.`
-        : 'Read for understanding, complete the production check, then introduce its cards on a later review.',
-      minutes: 5,
-      route: lessonHeld && weakness ? weakness.route : '/japanese/roadmap',
-      reason: lessonHeld ? 'More content would hide the current backlog.' : 'The recall queue has room for new material.',
-      priority: lessonHeld ? 'optional' : 'recommended'
-    })
+    const opening = lessonFirst
+      ? (minutes: number) => [at(lesson, minutes - 5), introduce]
+      : (minutes: number) => [at(recall, minutes)]
+    // At twenty minutes the second block is whichever of reading and listening
+    // has less recent practice, so the two alternate over the days.
+    const listeningPractice =
+      listening.skill === 'sound'
+        ? e.phonology
+        : listening.route === '/japanese/immersion'
+          ? e.immersion
+          : e.listening
+    const second = listeningPractice.sessions < e.reading.sessions ? listening : reading
+    tasks =
+      budget === 10
+        ? opening(10)
+        : budget === 20
+          ? [...opening(10), at(second, 10)]
+          : budget === 40
+            ? [...opening(15), at(listening, 10), at(reading, 15)]
+            : [
+                ...opening(15),
+                at(listening, 10),
+                at(reading, 20),
+                at(output, 10),
+                ...(repair ? [repair] : lessonFirst ? [] : [nextLessonTask])
+              ]
   }
 
   return {

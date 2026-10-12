@@ -38,7 +38,7 @@ export default function SpotifyTrackRecoveryDialog({ sourceKind, trackId, title,
   const qc = useQueryClient()
   const player = usePlayerControls()
   const [query, setQuery] = useState(`${artist} ${title}`)
-  const [submitted, setSubmitted] = useState(`${artist} ${title}`.trim())
+  const [submitted, setSubmitted] = useState('')
   const [url, setUrl] = useState('')
   const [localQuery, setLocalQuery] = useState(title)
   const localSearch = useDebouncedValue(localQuery)

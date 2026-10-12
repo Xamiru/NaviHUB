@@ -479,7 +479,14 @@ export type ActivitySourceKey =
 
 export interface ActivityHeatmap {
   combined: { day: string; count: number }[]
-  sources: { key: ActivitySourceKey; label: string; days: { day: string; count: number }[] }[]
+  // `minutes` is present only on sources that record a duration (play
+  // sessions, tracks played), so the grid can switch to time spent.
+  sources: {
+    key: ActivitySourceKey
+    label: string
+    hasMinutes: boolean
+    days: { day: string; count: number; minutes?: number }[]
+  }[]
 }
 
 // One saved reading/watching position, for Home's "pick up where you left off".
@@ -633,7 +640,10 @@ export interface SlideshowSyncResult {
 }
 
 export type PictureOrientation = 'landscape' | 'portrait' | 'square'
-export type PictureSort = 'newest' | 'oldest' | 'title'
+export type PictureSort = 'newest' | 'oldest' | 'title' | 'largest'
+// Minimum tiers on the shorter side (1080p+, 1440p+, 4K+), so portrait art
+// classifies like landscape; 'low' is everything known to be under 1080p.
+export type PictureResolution = 'fhd' | 'qhd' | 'uhd' | 'low'
 
 // The Pictures gallery query. Every field narrows; an empty filter is every
 // image. albumId switches the order to the album's own.
@@ -646,9 +656,25 @@ export interface PictureGalleryFilter {
   // An image must carry every listed tag.
   tagIds?: number[]
   orientation?: PictureOrientation | null
+  resolution?: PictureResolution | null
+  // Words matched against the title, file name, source and tag names; every
+  // word must match somewhere.
+  search?: string
   inSlideshow?: boolean
   albumId?: number | null
   sort?: PictureSort
+}
+
+export interface PictureFileInfo {
+  // null when the file is missing (an unmounted drive).
+  bytes: number | null
+  format: string | null
+}
+
+export interface PicturePathsResult {
+  added: MediaImage[]
+  // Dropped items that were not readable image files.
+  skipped: number
 }
 
 export interface PictureAlbum {
@@ -2158,6 +2184,8 @@ export type JpTutorSkill =
   | 'reading'
   | 'output'
   | 'curriculum'
+  | 'kana'
+  | 'lesson'
 
 export interface JpTutorTaskRecord {
   key: string
@@ -2405,6 +2433,17 @@ export interface DictInfo {
 // Live status of a dictionary download/import, polled by the renderer while an
 // import runs (module-level state in the importer, like the music scan). The
 // sentence bank and stroke set share this status and its one-at-a-time gate.
+// The one-click install of the core Japanese packs (dict:installStarter).
+export type StarterPackKey = 'jmdict' | 'freq' | 'kanjidic' | 'krad' | 'grammar' | 'sentences'
+
+export interface StarterInstallStatus {
+  running: boolean
+  current: StarterPackKey | null
+  done: StarterPackKey[]
+  remaining: StarterPackKey[]
+  error: string | null
+}
+
 export interface DictImportStatus {
   running: boolean
   phase:
@@ -2985,6 +3024,53 @@ export type VideoFileRef =
   | { kind: 'file'; fileId: number }
   | { kind: 'wrestling'; fileId: number }
 
+// Anything the in-app player can open. The four `kind` strings are frozen:
+// they ride the /watch/:kind/:id route. Clips and Football media have no
+// watched state or resume position, so watched/progress calls take the
+// narrower VideoFileRef.
+export type VideoSourceRef =
+  | VideoFileRef
+  | { kind: 'clip'; clipId: number }
+  | { kind: 'football'; mediaId: number }
+
+export type VideoSourceKind = VideoSourceRef['kind']
+
+// Whether Chromium can decode the file. 'unsupported' never mounts a <video>;
+// 'uncertain' mounts it and lets the renderer's watchdog decide.
+export interface VideoDecode {
+  verdict: 'ok' | 'uncertain' | 'unsupported'
+  reason: string | null
+}
+
+export interface VideoAudioTrack {
+  index: number // absolute ffprobe stream index
+  label: string
+  lang: string | null
+  codec: string
+  channels: number | null
+  isDefault: boolean
+}
+
+export interface VideoSource {
+  ref: VideoSourceRef
+  title: string
+  seriesTitle: string | null
+  // A library episode links back to its title; other kinds carry backPath.
+  mediaId: number | null
+  mediaType: MediaType | null
+  backPath: string | null
+  url: string // navimg:// URL for <video src>
+  decode: VideoDecode
+  hasAudio: boolean
+  durationSeconds: number | null
+  resumeSeconds: number | null
+  watchedAt: string | null
+  audioTracks: VideoAudioTrack[]
+  subtitles: VideoSubtitleTrack[] // embedded tracks arrive with url null
+  prev: { fileId: number; title: string } | null
+  next: { fileId: number; title: string } | null
+}
+
 // Legacy scanner values retained on existing rows. External players do their
 // own compatibility handling; new scans need not calculate this field.
 export type VideoPlanAction = 'direct' | 'remux' | 'transcode' | 'unsupported'
@@ -3163,6 +3249,65 @@ export interface MusicTrack {
   playCount: number
   lastPlayedAt: string | null
   coverPath: string | null // the album's cover
+}
+
+// ---- music links (a local album/track linked to a title or a wrestler) ----
+
+// Exactly one of the two owners. Wrestlers link entrance themes.
+export type MusicLinkOwner = { mediaId: number } | { wrestlerId: number }
+
+export type MusicLinkKind = 'album' | 'track'
+
+export interface MusicLink {
+  id: number
+  mediaId: number | null
+  wrestlerId: number | null
+  kind: MusicLinkKind
+  label: string
+  sortOrder: number
+  // The linked album or track no longer exists (moved or deleted) and no
+  // rescan has found a unique match yet; `snapshot` names what it was.
+  missing: boolean
+  snapshot: { artist: string; album: string; title: string | null }
+  album: MusicAlbumSummary | null
+  // Album link: the album's tracks in disc/track order. Track link: the one
+  // track. Missing link: empty.
+  tracks: MusicTrack[]
+  // Anime only: the theme_song this track is the full version of, resolved
+  // through the theme's external id so it survives a theme refresh.
+  themeSongId: number | null
+}
+
+export interface MusicLinkCreate {
+  owner: MusicLinkOwner
+  kind: MusicLinkKind
+  albumId?: number | null
+  trackId?: number | null
+  label: string
+  themeSongId?: number | null
+}
+
+export interface MusicLinkUpdate {
+  label?: string
+  themeSongId?: number | null
+}
+
+export interface MusicLinkCandidates {
+  albums: MusicAlbumSummary[]
+  tracks: MusicTrack[]
+}
+
+// One row of the Music section's Soundtracks tab: a title or a wrestler with links.
+export interface SoundtrackOwner {
+  mediaId: number | null
+  wrestlerId: number | null
+  mediaType: MediaType | null
+  title: string
+  coverPath: string | null
+  linkCount: number
+  trackCount: number
+  missingCount: number
+  labels: string[]
 }
 
 export type MusicTrackBrowseSort = 'catalog' | 'recent' | 'most' | 'least' | 'title'
@@ -4101,6 +4246,8 @@ export interface TimeStatsItem {
   title: string
   coverPath: string | null
   minutes: number
+  // Leans on a per-unit assumption or a length fallback (shown with a leading ≈).
+  estimated: boolean
   // Raw tracking fields so the renderer can format a per-type detail line
   // ("24 ep × 2 watches", "180 ch", "132 h played") with mediaConfig knowledge.
   progress: number
@@ -4119,10 +4266,38 @@ export interface TimeStatsByType {
 export interface LibraryTimeStats {
   totalMinutes: number
   consumedCount: number // items that actually contributed (progress/rewatch/completed)
-  libraryCount: number // all media_item rows across the six types
-  byType: TimeStatsByType[] // all six types, zeros included; renderer filters
+  libraryCount: number // all media_item rows across the stat types (@shared/timeStats)
+  byType: TimeStatsByType[] // every stat type, zeros included; renderer filters
   longest: TimeStatsItem | null // single biggest time sink overall
   mostRevisited: (TimeStatsItem & { times: number }) | null // max rewatch_count, null if < 2
+}
+
+// Score and release-decade breakdowns for /stats (media_item only, no estimates).
+export interface LibraryInsights {
+  // Raw score values per type, as stored; the renderer buckets them against score.max.
+  scores: { mediaType: MediaType; score: number; count: number }[]
+  // Finished titles (completed status or a logged pass) by release decade.
+  decades: { decade: number; mediaType: MediaType; count: number }[]
+  unknownYear: number // finished titles with no usable release year
+}
+
+// "Who your time went to": people and studios ranked by the minutes of the
+// consumed titles they are credited on. Computed in the quiz-pool process.
+export type CreditTimeGroupKey = 'voice' | 'actor' | 'director' | 'writer' | 'studio'
+
+export interface CreditTimeEntry {
+  id: number // person.id, or company.id for the studio group
+  name: string
+  imagePath: string | null
+  minutes: number
+  titleCount: number
+  estimated: boolean
+}
+
+export interface CreditTimeGroup {
+  key: CreditTimeGroupKey
+  label: string
+  entries: CreditTimeEntry[] // top 10 by minutes
 }
 
 // Japanese-roadmap immersion milestones, counted from the real library.
@@ -4203,18 +4378,27 @@ export interface TorrentFilter {
 }
 
 // ---- Daily / weekly checklist ----
-// The catalog of possible items is code (src/shared/checklist.ts); these types
-// describe one hydrated board. Every date here is a LOCAL 'YYYY-MM-DD' string
-// computed in the main process — the renderer only formats them, it never
-// derives "today" itself.
+// Built-in items are code (src/shared/checklist.ts); custom items are rows in
+// checklist_custom. These types describe one hydrated board. Every date here is
+// a LOCAL 'YYYY-MM-DD' string computed in the main process: the renderer only
+// formats them and sends one back as the day to view or edit, which main
+// validates. It never derives "today" itself.
 
 export type ChecklistCadence = 'daily' | 'weekly'
 
 // mediaLog: the checklist performs the tracking action (log an episode/film).
+// mediaSession: pick what you read today; lifts planned to in-progress and
+//   never counts a unit or finishes the title (books, visual novels).
 // detected: completion is read from existing activity tables (SRS, quizzes…),
 //   and can also be credited by hand when the activity happened outside the app.
-// manual: a plain tick, nothing to detect.
-export type ChecklistKind = 'mediaLog' | 'detected' | 'manual'
+// manual: a plain tick (target 1) or a counter; every custom item is manual.
+export type ChecklistKind = 'mediaLog' | 'mediaSession' | 'detected' | 'manual'
+
+// What one period of one item (or one whole day) came to.
+// done: hit the target. missed: due, over, not hit. skipped: the user skipped
+// it (or the day). off: not scheduled, or the item was not on the board then.
+// pending: the current period, due, not hit yet. future: after today.
+export type ChecklistPeriodState = 'done' | 'missed' | 'skipped' | 'off' | 'pending' | 'future'
 
 // What one progress log did, so the caller can say "rewatch #3 started" instead
 // of silently resetting a finished title's progress to 1.
@@ -4227,40 +4411,87 @@ export interface MediaProgressLogged {
   status: string | null
 }
 
-// One logged event in the current period. `title` falls back to the snapshot
+// One logged event in the viewed period. `title` falls back to the snapshot
 // cached in the log payload when the media row has since been deleted.
 export interface ChecklistLogEntry {
   id: number
   mediaId: number | null
   title: string | null
+  amount: number
   createdAt: string
 }
 
-// One enabled board row, fully hydrated: def facts are re-sent so the page can
-// render straight from this payload.
+// A one-click log target for a media item: what was logged last, then what is
+// in progress.
+export interface ChecklistSuggestion {
+  mediaId: number
+  title: string
+  coverPath: string | null
+}
+
+export interface ChecklistStreak {
+  current: number
+  longest: number
+}
+
+// One enabled board row, fully hydrated for the viewed period: def facts are
+// re-sent so the page can render straight from this payload.
 export interface ChecklistTaskStatus {
-  id: number // checklist_task.id — the remove target
+  id: number // checklist_task.id: the remove/skip/schedule target
   key: string
   cadence: ChecklistCadence
   label: string
+  hint: string
+  note: string | null // custom items only
+  unit: string | null // 'min', 'sets'… shown after the target
   kind: ChecklistKind
+  customId: number | null // checklist_custom.id for a custom item
   route: string | null // detected: where clicking the row goes
-  mediaType: MediaType | null // mediaLog: which picker to open
+  mediaType: MediaType | null // mediaLog / mediaSession: which picker to open
   target: number // the board's override, or the def's default
   defaultTarget: number // what "reset" goes back to
+  days: number | null // daily weekday mask (bit = getUTCDay()); null = every day
+  due: boolean // scheduled in the viewed period (weeklies always are)
+  skipped: boolean // the item (or the whole day) is skipped in the viewed period
   detected: number // the auto-counted part of `progress` (0 for other kinds)
-  progress: number // detected + logged, within the current period
+  credited: number // the logged/ticked/hand-credited part of `progress`
+  progress: number // detected + credited, within the viewed period
   done: boolean
+  state: ChecklistPeriodState
   entries: ChecklistLogEntry[] // logged episodes / ticks / hand-added credits
+  streak: ChecklistStreak // in days for a daily item, in weeks for a weekly one
+  rate: { done: number; due: number } // last 30 days / 13 weeks, skipped excluded
+  strip: { period: string; state: ChecklistPeriodState }[] // viewed week's days, or the last 7 weeks
+  suggestions: ChecklistSuggestion[] // media kinds only
+}
+
+export interface ChecklistDayCell {
+  day: string
+  state: ChecklistPeriodState
+  done: number
+  due: number
 }
 
 export interface ChecklistStatus {
   today: string
-  week: { start: string; end: string } // Saturday..Friday
+  day: string // the viewed day (today unless the user stepped back)
+  week: { start: string; end: string } // the viewed day's week, Saturday..Friday
+  restDay: boolean // the viewed day is skipped as a whole
+  summary: { done: number; due: number } // the viewed day's due dailies
   daily: ChecklistTaskStatus[]
   weekly: ChecklistTaskStatus[]
-  streak: { current: number; longest: number } // fully-complete daily boards
-  history: { day: string; count: number }[] // dailies completed per day
+  streak: ChecklistStreak // fully-complete days; skipped and off days bridge
+  weekDays: ChecklistDayCell[] // the viewed week, Saturday..Friday
+  history: { day: string; count: number; skipped: boolean }[] // dailies done per day
+}
+
+// A user-defined item. target 1 renders as a checkbox, anything higher as a
+// counter in `unit`.
+export interface ChecklistCustomInput {
+  label: string
+  unit: string | null
+  target: number
+  note: string | null
 }
 
 // ---- English dictionary (/english: dictionaryapi.dev lookup + saved words) ----

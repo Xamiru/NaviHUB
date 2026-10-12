@@ -15,7 +15,8 @@ describe('wired surface moods', () => {
     ['/quiz/song', 'standard'],
     ['/search', 'standard'],
     ['/manga/8/read/13', 'immersive'],
-    ['/read/book/token', 'immersive']
+    ['/read/book/token', 'immersive'],
+    ['/watch/file/12', 'immersive']
   ] as const)('classifies %s as %s', (pathname, mood) => {
     expect(surfaceMoodForPath(pathname)).toBe(mood)
   })

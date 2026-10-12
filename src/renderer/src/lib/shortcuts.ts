@@ -40,6 +40,24 @@ export const BOOK_READER_SHORTCUTS: ShortcutRow[] = [
   { keys: ['Esc'], label: 'Close panels / back to series' }
 ]
 
+export const VIDEO_PLAYER_SHORTCUTS: ShortcutRow[] = [
+  { keys: ['Space', 'K'], label: 'Play / pause' },
+  { keys: ['←', '→'], label: 'Back / forward 5 s (Shift = 1 s)' },
+  { keys: ['J', 'L'], label: 'Back / forward 10 s' },
+  { keys: ['A', 'D'], label: 'Previous / next subtitle line' },
+  { keys: ['R'], label: 'Replay the current line' },
+  { keys: ['Shift+R', 'Shift+L'], label: 'Replay / loop the study range' },
+  { keys: ['↑', '↓', 'Shift+M'], label: 'Volume up / down, mute' },
+  { keys: ['[', ']', '\\'], label: 'Slower / faster / normal speed' },
+  { keys: ['S', 'B'], label: 'Subtitles on/off, second track' },
+  { keys: ['-', '='], label: 'Subtitle timing earlier / later' },
+  { keys: ['T', 'M', 'C'], label: 'Transcript, mining panel, capture' },
+  { keys: ['N', 'P'], label: 'Next / previous file' },
+  { keys: ['F', 'O'], label: 'Fullscreen, open externally' },
+  { keys: ['0-9'], label: 'Jump to 0-90 percent' },
+  { keys: ['Esc'], label: 'Close panels / leave the player' }
+]
+
 export const SHORTCUT_GROUPS: ShortcutGroup[] = [
   {
     title: 'Navigation',
@@ -74,5 +92,6 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
     ]
   },
   { title: 'Manga reader', note: 'Press ? inside the reader for this list.', rows: MANGA_READER_SHORTCUTS },
-  { title: 'Book reader', note: 'Press ? inside the reader for this list.', rows: BOOK_READER_SHORTCUTS }
+  { title: 'Book reader', note: 'Press ? inside the reader for this list.', rows: BOOK_READER_SHORTCUTS },
+  { title: 'Video player', note: 'Press ? inside the player for this list.', rows: VIDEO_PLAYER_SHORTCUTS }
 ]

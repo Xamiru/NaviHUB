@@ -56,7 +56,11 @@ export default function JapaneseStatsPage() {
       <PageHeader back={{ to: '/japanese', label: 'Japanese' }} title="Japanese stats" />
 
       {answered === 0 ? (
-        <EmptyState title="No reviews yet — grade some cards and this page fills in." />
+        <EmptyState
+          title="Nothing to show yet"
+          body="After your first reviews this page shows your streak, a year of activity, how well you remember, what is coming up and which cards keep slipping."
+          action={<Link to="/japanese" className="btn-primary">Start your first session</Link>}
+        />
       ) : (
         <>
           <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-6">

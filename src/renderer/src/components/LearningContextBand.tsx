@@ -68,11 +68,11 @@ function JapaneseBand() {
   })
   return (
     <Band>
-      <span className="font-medium text-gray-200">Knowledge map</span>
+      <span className="font-medium text-gray-200">Japanese</span>
       <span>{data?.dueCount ?? 0} reviews due</span>
-      <span>{data?.newAvailableCount ?? 0} unseen cards available</span>
+      <span>{data?.newAvailableCount ?? 0} new cards waiting</span>
       <Link to="/japanese" className="ml-auto text-accent hover:text-accent-hover">
-        Return to today
+        Back to Today
       </Link>
     </Band>
   )

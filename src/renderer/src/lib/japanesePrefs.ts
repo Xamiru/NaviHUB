@@ -1,3 +1,5 @@
+import { TUTOR_BUDGETS, type TutorBudget } from '@shared/japanese/tutor'
+
 const DAILY_TARGET_KEY = 'japanese.dailyNewTarget'
 export const DEFAULT_JP_DAILY_TARGET = 10
 
@@ -19,3 +21,29 @@ export function saveJpDailyTarget(target: number): void {
     // A full or disabled localStorage must never block a review session.
   }
 }
+
+// The session length picked on Today. Remembered per machine so the next day
+// opens on the same choice; a convenience, never study data.
+const SESSION_BUDGET_KEY = 'japanese.sessionBudget'
+export const DEFAULT_JP_SESSION_BUDGET: TutorBudget = 20
+
+export function loadJpSessionBudget(): TutorBudget {
+  try {
+    const saved = Number(localStorage.getItem(SESSION_BUDGET_KEY))
+    return (TUTOR_BUDGETS as number[]).includes(saved) ? (saved as TutorBudget) : DEFAULT_JP_SESSION_BUDGET
+  } catch {
+    return DEFAULT_JP_SESSION_BUDGET
+  }
+}
+
+export function saveJpSessionBudget(budget: TutorBudget): void {
+  try {
+    localStorage.setItem(SESSION_BUDGET_KEY, String(budget))
+  } catch {
+    // Storage is optional here.
+  }
+}
+
+// "I can read kana" lives in the settings table so the plan, the Today page
+// and the path all agree on it.
+export const KANA_KNOWN_SETTING = 'japanese.kanaKnown'

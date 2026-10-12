@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { useDialog } from '../lib/hooks'
 import { shuffle } from '@shared/shuffle'
 import { PauseIcon, PlayIcon, ShuffleIcon } from './PlayerIcons'
@@ -7,8 +7,13 @@ const SLIDESHOW_SECONDS = [5, 10, 20]
 
 // Fullscreen image viewer for the wallpaper/fan-art grids: object-contain over
 // a near-black backdrop, ←/→ steps through the section's images (wrapping),
-// Escape / the mouse Back button / a click beside the image / × closes. Deliberately chrome-light — no zoom; the
-// manga reader remains the heavy-duty viewer.
+// Escape / the mouse Back button / a click beside the image / × closes.
+// Chrome-light: the one tool is actual-size zoom (Z, double-click or the 1:1
+// button), panned by dragging; Escape leaves zoom before it closes. The manga
+// reader remains the heavy-duty viewer.
+//
+// `caption` draws an optional info strip for the shown image (the gallery's
+// size, file and source details).
 //
 // With `slideshow`, it also plays: a play/pause control, a 5/10/20 s interval
 // and shuffle. The timer is a renderer timeout that restarts on every image
@@ -20,7 +25,8 @@ export default function Lightbox({
   onClose,
   onContextMenu,
   slideshow = false,
-  autoplay = false
+  autoplay = false,
+  caption
 }: {
   images: { url: string; alt?: string }[]
   index: number
@@ -32,10 +38,44 @@ export default function Lightbox({
   // Offer the play controls; autoplay starts playing on open.
   slideshow?: boolean
   autoplay?: boolean
+  caption?: (index: number) => ReactNode
 }): React.JSX.Element | null {
-  const panelRef = useDialog(onClose)
+  const [zoomed, setZoomed] = useState(false)
+  const panelRef = useDialog(() => (zoomed ? setZoomed(false) : onClose()))
   const count = images.length
   const [playing, setPlaying] = useState(slideshow && autoplay)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  // Where to keep the clicked point when zooming in: its fraction of the image
+  // and its position in the viewport.
+  const anchorRef = useRef<{ fx: number; fy: number; x: number; y: number } | null>(null)
+  const dragRef = useRef<{ x: number; y: number; left: number; top: number } | null>(null)
+
+  useEffect(() => setZoomed(false), [index])
+
+  function toggleZoom(anchor?: { fx: number; fy: number; x: number; y: number }): void {
+    anchorRef.current = anchor ?? null
+    setZoomed((z) => !z)
+  }
+
+  // Studying one image pauses the slideshow.
+  useEffect(() => {
+    if (zoomed) setPlaying(false)
+  }, [zoomed])
+
+  useLayoutEffect(() => {
+    const box = scrollRef.current
+    if (!zoomed || !box) return
+    const imgEl = box.querySelector('img')
+    const anchor = anchorRef.current
+    anchorRef.current = null
+    if (!imgEl) return
+    const fx = anchor?.fx ?? 0.5
+    const fy = anchor?.fy ?? 0.5
+    const x = anchor?.x ?? box.clientWidth / 2
+    const y = anchor?.y ?? box.clientHeight / 2
+    box.scrollLeft = imgEl.offsetLeft + fx * imgEl.offsetWidth - x
+    box.scrollTop = imgEl.offsetTop + fy * imgEl.offsetHeight - y
+  }, [zoomed])
   const [seconds, setSeconds] = useState(10)
   // A shuffled visiting order, or null to step through in order.
   const [order, setOrder] = useState<number[] | null>(null)
@@ -53,12 +93,25 @@ export default function Lightbox({
       else if (e.key === 'ArrowRight') onIndexChange((index + 1) % count)
       else if (e.key === ' ' && canPlay && e.target === panelRef.current) {
         e.preventDefault()
+        setZoomed(false)
         setPlaying((p) => !p)
       }
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [index, count, onIndexChange, canPlay, panelRef])
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent): void {
+      if ((e.key !== 'z' && e.key !== 'Z') || e.ctrlKey || e.metaKey || e.altKey) return
+      const target = e.target as HTMLElement | null
+      if (target?.closest('input, select, textarea')) return
+      e.preventDefault()
+      toggleZoom()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
 
   useEffect(() => {
     if (!playing || !canPlay) return
@@ -103,17 +156,83 @@ export default function Lightbox({
           if (e.button === 0 && e.target === e.currentTarget) onClose()
         }}
       >
-        <img
-          src={img.url}
-          alt={img.alt ?? ''}
-          draggable={false}
-          className="max-w-full max-h-full object-contain select-none"
-          onContextMenu={(e) => {
-            if (!onContextMenu) return
-            e.preventDefault()
-            onContextMenu(index, e)
-          }}
-        />
+        {zoomed ? (
+          // Actual size: auto margins centre a small image without clipping
+          // the top-left of a large one, and dragging pans the scroll box.
+          <div
+            ref={scrollRef}
+            className="absolute inset-0 flex cursor-grab overflow-auto active:cursor-grabbing"
+            onPointerDown={(e) => {
+              if (e.button !== 0) return
+              const box = e.currentTarget
+              dragRef.current = { x: e.clientX, y: e.clientY, left: box.scrollLeft, top: box.scrollTop }
+              box.setPointerCapture?.(e.pointerId)
+            }}
+            onPointerMove={(e) => {
+              const drag = dragRef.current
+              if (!drag) return
+              e.currentTarget.scrollLeft = drag.left - (e.clientX - drag.x)
+              e.currentTarget.scrollTop = drag.top - (e.clientY - drag.y)
+            }}
+            onPointerUp={() => {
+              dragRef.current = null
+            }}
+            onPointerCancel={() => {
+              dragRef.current = null
+            }}
+          >
+            <img
+              src={img.url}
+              alt={img.alt ?? ''}
+              draggable={false}
+              className="m-auto max-w-none select-none"
+              onDoubleClick={() => toggleZoom()}
+              onContextMenu={(e) => {
+                if (!onContextMenu) return
+                e.preventDefault()
+                onContextMenu(index, e)
+              }}
+            />
+          </div>
+        ) : (
+          <img
+            src={img.url}
+            alt={img.alt ?? ''}
+            draggable={false}
+            className="max-w-full max-h-full object-contain select-none"
+            onDoubleClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect()
+              const panel = panelRef.current?.getBoundingClientRect()
+              toggleZoom({
+                fx: rect.width ? (e.clientX - rect.left) / rect.width : 0.5,
+                fy: rect.height ? (e.clientY - rect.top) / rect.height : 0.5,
+                x: e.clientX - (panel?.left ?? 0),
+                y: e.clientY - (panel?.top ?? 0)
+              })
+            }}
+            onContextMenu={(e) => {
+              if (!onContextMenu) return
+              e.preventDefault()
+              onContextMenu(index, e)
+            }}
+          />
+        )}
+
+        {caption && (
+          <div className="media-contrast absolute left-4 top-3 max-w-[60%] rounded bg-black/70 px-2 py-1 text-xs text-gray-300">
+            {caption(index)}
+          </div>
+        )}
+
+        <button
+          className="media-contrast absolute right-16 top-4 rounded bg-black/60 px-2 py-0.5 text-xs text-gray-300 hover:text-gray-100"
+          onClick={() => toggleZoom()}
+          aria-pressed={zoomed}
+          aria-label="Actual size"
+          title={zoomed ? 'Fit to screen (Z)' : 'Actual size (Z)'}
+        >
+          1:1
+        </button>
 
         <button
           className="absolute top-3 right-4 text-3xl leading-none text-gray-400 hover:text-gray-100"

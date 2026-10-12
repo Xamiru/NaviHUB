@@ -13,6 +13,8 @@ import { acceptedRomaji, readingMatches, splitReadings } from '@shared/romaji'
 import { conjugate, FORM_LABELS, FORMS_FOR, type ConjForm, type WordClass } from '@shared/conjugate'
 import QuizRecord from '../components/QuizRecord'
 import TypedDrill, { type DrillItem } from '../components/japanese/TypedDrill'
+import SessionLauncher from '../components/japanese/SessionLauncher'
+import SessionSummary from '../components/japanese/SessionSummary'
 import { shuffle } from '@shared/shuffle'
 import NumbersDrillSetup from '../components/japanese/NumbersDrill'
 import NamesDrillSetup from '../components/japanese/NamesDrill'
@@ -45,11 +47,16 @@ interface KanaItem {
 function KanaDrill({
   chars,
   settings,
-  onExit
+  roundLength,
+  onExit,
+  onRestart
 }: {
   chars: string[]
   settings: Record<string, unknown>
+  /** 0 = endless until Stop. */
+  roundLength: number
   onExit: () => void
+  onRestart: (chars: string[]) => void
 }) {
   const qc = useQueryClient()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -70,6 +77,11 @@ function KanaDrill({
   const loggedRef = useRef(false)
 
   const current = queue[0] ?? null
+
+  // A fixed round ends by itself, so a beginner never has to find Stop.
+  useEffect(() => {
+    if (roundLength > 0 && answered >= roundLength) setStopped(true)
+  }, [answered, roundLength])
 
   // Stopping IS the end of the round here (there's no natural finish), so that
   // is where the quiz_session row goes — guarded like the other quiz pages.
@@ -150,31 +162,26 @@ function KanaDrill({
   }
 
   if (stopped) {
-    const pct = answered ? Math.round((correct / answered) * 100) : 0
+    const missedKana = [...missed]
     return (
-      <div className="card p-6 text-center">
-        <p className="text-3xl font-bold">
-          {correct} / {answered}
-        </p>
-        <p className="mt-1 text-sm text-gray-400">
-          {answered === 0
-            ? 'Nothing answered.'
-            : pct === 100
-              ? 'Flawless.'
-              : `${pct}% on the first try · best streak ${bestStreak}`}
-        </p>
-        {missed.size > 0 && (
-          <p className="mt-3 text-lg text-gray-300">
-            <span className="mr-2 text-xs uppercase tracking-widest text-gray-500">Missed</span>
-            {[...missed].join('　')}
-          </p>
-        )}
-        <div className="mt-5 flex justify-center gap-2">
-          <button className="btn-primary" onClick={onExit}>
-            Back to setup
-          </button>
-        </div>
-      </div>
+      <SessionSummary
+        title={answered === 0 ? 'Drill stopped' : 'Kana round complete'}
+        score={answered > 0 ? { correct, total: answered } : null}
+        facts={answered > 0 ? [{ label: 'Best streak', value: bestStreak }] : []}
+        note={answered > 0 && correct === answered ? 'Flawless.' : undefined}
+        missed={missedKana.map((kana) => ({ key: kana, jp: kana, meaning: acceptedRomaji(kana)[0] }))}
+        onRetryMissed={missedKana.length > 0 ? () => onRestart(missedKana) : undefined}
+        actions={
+          <>
+            <button type="button" className="btn-ghost" onClick={() => onRestart(chars)}>
+              Another round
+            </button>
+            <button type="button" className="btn-ghost" onClick={onExit}>
+              Change rows
+            </button>
+          </>
+        }
+      />
     )
   }
 
@@ -183,6 +190,7 @@ function KanaDrill({
       <div className="mb-4 flex items-center justify-between text-xs text-gray-500">
         <span className="tabular-nums">
           {correct} / {answered}
+          {roundLength > 0 && <span className="ml-2 text-gray-400">· {Math.max(0, roundLength - answered)} left</span>}
         </span>
         <span>
           streak {streak}
@@ -195,7 +203,7 @@ function KanaDrill({
         </span>
       </div>
 
-      <p className="text-center text-7xl leading-none">{current?.kana}</p>
+      <p lang="ja" className="text-center text-8xl leading-none text-white">{current?.kana}</p>
 
       <div className="mx-auto mt-6 max-w-xs">
         <input
@@ -254,8 +262,8 @@ export default function JapaneseKanaPage() {
     <div className="p-6 max-w-[1320px] mx-auto">
       <PageHeader
         back={{ to: "/japanese", label: "Japanese" }}
-        title="Typing Drills"
-        subtitle="Pick your sets, get flashed a prompt, type the answer. Misses come back around until you clear them."
+        title="Typing drills"
+        subtitle="See a prompt, type the answer. Anything you miss comes back around until you get it."
       />
 
       <Tabs
@@ -394,7 +402,10 @@ function DojoSetup() {
 
 function KanaDrillSetup() {
   const [selected, setSelected] = usePersistedState<string[]>('jpKanaRows', ['a', 'ka'])
-  const [running, setRunning] = useState(false)
+  const [round, setRound] = usePersistedState<number>('jpKanaRound', 20)
+  // Characters for the running round: the selected rows, or just the misses.
+  const [running, setRunning] = useState<string[] | null>(null)
+  const [runId, setRunId] = useState(0)
 
   const selectedSet = new Set(selected)
   const chars = SECTIONS.flatMap((s) => s.rows)
@@ -413,14 +424,64 @@ function KanaDrillSetup() {
     setSelected(on ? [...rest, ...rows.map((r) => r.key)] : rest)
   }
 
+  function run(list: string[]): void {
+    setRunning(list)
+    setRunId((n) => n + 1)
+  }
+
   if (running) {
     return (
-      <KanaDrill chars={chars} settings={{ rows: selected }} onExit={() => setRunning(false)} />
+      <KanaDrill
+        key={runId}
+        chars={running}
+        roundLength={round}
+        settings={{ rows: selected, round }}
+        onExit={() => setRunning(null)}
+        onRestart={run}
+      />
     )
   }
 
+  const rowLabels = SECTIONS.flatMap((s) => s.rows)
+    .filter((r) => selectedSet.has(r.key))
+    .map((r) => r.label)
+
   return (
-    <div>
+    <SessionLauncher
+      summary={
+        <div>
+          <p className="text-sm text-gray-400">This round</p>
+          <p lang="ja" className="mt-2 break-words text-4xl leading-snug text-white">
+            {chars.length > 0 ? chars.slice(0, 25).join(' ') : 'Pick rows under Options'}
+            {chars.length > 25 && <span className="text-xl text-gray-400"> and {chars.length - 25} more</span>}
+          </p>
+          <p className="mt-3 text-sm text-gray-400">
+            Type the reading of each character. Learn a row until it is automatic, then add the next under Options.
+          </p>
+        </div>
+      }
+      defaults={`${rowLabels.length} row${rowLabels.length === 1 ? '' : 's'} · ${round === 0 ? 'endless' : `${round} answers`}`}
+      startLabel={`Start (${chars.length} characters)`}
+      onStart={() => run(chars)}
+      disabled={chars.length === 0}
+      options={
+        <>
+          <div>
+            <div className="label mb-2">Round length</div>
+            <div className="flex flex-wrap gap-2">
+              {[20, 40, 0].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  aria-pressed={round === n}
+                  className={round === n ? 'pill pill-active' : 'pill'}
+                  onClick={() => setRound(n)}
+                >
+                  {n === 0 ? 'Endless' : `${n} answers`}
+                </button>
+              ))}
+            </div>
+          </div>
       {SECTIONS.map((section) => {
         const allOn = section.rows.every((r) => selectedSet.has(r.key))
         return (
@@ -455,19 +516,11 @@ function KanaDrillSetup() {
         )
       })}
 
-      <button
-        className="btn-primary"
-        disabled={chars.length === 0}
-        onClick={() => setRunning(true)}
-      >
-        Start drill ({chars.length} characters)
-      </button>
-      <p className="mt-2 text-xs text-gray-500">
-        Grind one row until it&apos;s automatic, then add the next — same advice as the DJT tool.
-      </p>
-
+        </>
+      }
+    >
       <QuizRecord kind="kana" />
-    </div>
+    </SessionLauncher>
   )
 }
 

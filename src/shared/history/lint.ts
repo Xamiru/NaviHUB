@@ -24,7 +24,10 @@ const OCR = [
   /β\d/,
   /\b(?:toobtain|hisbeing|asone|onethird|anti-Alliedactivities)\b/,
   /\[\[Page /,
-  /\b[a-z]+ C (?:of|Kurdish)\b/
+  /\b[a-z]+ C (?:of|Kurdish)\b/,
+  // Apparatus copied with the sentence: figure and table references, numbered recitals.
+  /\((?:FIGURE|Figure|TABLE|Table) \d+\)|\bsee (?:Table|Figure) \d+\b/,
+  /^[A-Z]{1,2}\.\s+whereas\b/
 ]
 /** An English quote cut from inside a sentence; a few names legitimately start lowercase. */
 const FRAGMENT = /^(?!al-|el-|ad-|ibn |bin |de |van |von |da |du |la |le |e\.g\.|i\.e\.|c\.|ca\.|(?:eBay|iPhone)\b)[a-z]/

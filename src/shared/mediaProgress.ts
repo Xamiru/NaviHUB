@@ -102,3 +102,15 @@ export function advanceProgress(
   }
   return { ...cur, progress, status, startedRewatch: false }
 }
+
+// "I spent time with this today" — the checklist's reading-session items for
+// books and visual novels. Unlike advanceProgress it never counts a unit, never
+// completes and never wraps into another pass: books track pages, and a VN
+// session says nothing about how far through the route you are. It only lifts
+// an untracked or planned title to in-progress; every other status stays.
+export function startSession(status: string | null, statuses: string[]): string | null {
+  const inProgress = statuses[0] ?? null
+  const planned = statuses.length ? statuses[statuses.length - 1] : null
+  if (!status || status === planned) return inProgress ?? status
+  return status
+}

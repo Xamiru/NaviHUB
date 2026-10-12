@@ -1058,9 +1058,9 @@ CREATE TABLE IF NOT EXISTS quiz_session (
 CREATE INDEX IF NOT EXISTS idx_quiz_session_kind ON quiz_session(kind, played_at);
 
 -- ---- Daily / weekly checklist ----
--- The CATALOG of possible items lives in src/shared/checklist.ts
--- (content-as-code config); these tables only store which items are enabled
--- and what happened. Weeks run Saturday→Friday; period_key and every "today"
+-- The built-in CATALOG lives in src/shared/checklist.ts (content-as-code
+-- config); checklist_custom holds the user's own items. These tables store
+-- which items are on the board, their rule history, skips and what happened. Weeks run Saturday→Friday; period_key and every "today"
 -- decision are computed in MAIN with local dates (the renderer never derives
 -- today). Both tables are personal → wiped on export (sanitizeSql.cjs).
 
@@ -1069,7 +1069,9 @@ CREATE TABLE IF NOT EXISTS checklist_task (
   task_key    TEXT NOT NULL,               -- FROZEN key from shared/checklist.ts
   cadence     TEXT NOT NULL,               -- 'daily' | 'weekly'
   target      INTEGER,                     -- per-board override; NULL = the def's default
+  days        INTEGER,                     -- daily weekday mask (bit = getUTCDay()); NULL = every day
   sort_order  INTEGER NOT NULL DEFAULT 0,
+  removed_at  TEXT,                        -- soft delete: the row keeps its id and rule history
   created_at  TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(task_key, cadence)
 );
@@ -1088,10 +1090,47 @@ CREATE TABLE IF NOT EXISTS checklist_log (
   period_key  TEXT NOT NULL,
   media_id    INTEGER,
   payload     TEXT,
+  amount      INTEGER NOT NULL DEFAULT 1,  -- units this row adds (minutes, sets…); 1 for a tick or a log
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_checklist_log_task
   ON checklist_log(task_key, cadence, period_key);
+
+-- Effective-dated board rules, so changing a target or schedule, or removing
+-- an item, never rewrites past days. A period is judged by the item's latest
+-- row with from_day <= that period's key (the day, or the week's Saturday).
+-- Written on every board change; a task with no rows falls back to its own
+-- created_at / target / days (checklistRepo.rulesFor).
+CREATE TABLE IF NOT EXISTS checklist_rule (
+  id        INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id   INTEGER NOT NULL,              -- checklist_task.id (no FK: tasks soft-delete)
+  from_day  TEXT NOT NULL,
+  target    INTEGER,                       -- NULL = the def's default
+  days      INTEGER,                       -- NULL = every day
+  active    INTEGER NOT NULL DEFAULT 1,
+  UNIQUE(task_id, from_day)
+);
+
+-- The user's own items. Board key is 'custom-<id>' (frozen once used).
+CREATE TABLE IF NOT EXISTS checklist_custom (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  label       TEXT NOT NULL,
+  unit        TEXT,
+  target      INTEGER NOT NULL DEFAULT 1,
+  note        TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Skipped periods: neither done nor missed, so a streak bridges them.
+-- task_id 0 = the whole day (a rest day), daily only.
+CREATE TABLE IF NOT EXISTS checklist_skip (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id     INTEGER NOT NULL DEFAULT 0,
+  cadence     TEXT NOT NULL,
+  period_key  TEXT NOT NULL,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(task_id, cadence, period_key)
+);
 
 -- ---- English words (saved list = the SRS deck) ----
 -- One row per saved (word, chosen definition) from the English dictionary
@@ -2161,3 +2200,43 @@ CREATE TABLE IF NOT EXISTS history_user_entity (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- media_music_link — a local music album or track linked to a library title or
+-- a wrestler (soundtracks, featured songs, entrance themes) with a free-text
+-- label. NEVER name this table soundtrack_link: retireSoundtrackLinks() in
+-- connection.ts drops that name on every startup. Personal; wiped on export.
+-- album_id/track_id are SET NULL, not CASCADE: a moved or renamed file is a new
+-- music row, so the link keeps its snap_* identity and musicLinkRepo
+-- .reattachOrphans() moves it to the matching new row after a scan. `kind` is
+-- the discriminator because an album/track XOR CHECK would fail the SET NULL.
+-- theme_external_id (anime only) marks a track as the full version of the
+-- theme_song with that external_id on the same media item; it is a key, not an
+-- FK, because a theme refresh deletes and re-inserts every theme_song row.
+CREATE TABLE IF NOT EXISTS media_music_link (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  media_id          INTEGER REFERENCES media_item(id) ON DELETE CASCADE,
+  wrestler_id       INTEGER REFERENCES wrestling_wrestler(id) ON DELETE CASCADE,
+  kind              TEXT NOT NULL CHECK(kind IN ('album','track')),
+  album_id          INTEGER REFERENCES music_album(id) ON DELETE SET NULL,
+  track_id          INTEGER REFERENCES music_track(id) ON DELETE SET NULL,
+  theme_external_id TEXT,
+  label             TEXT NOT NULL DEFAULT '',
+  sort_order        INTEGER NOT NULL DEFAULT 0,
+  snap_artist       TEXT NOT NULL,
+  snap_album        TEXT NOT NULL,
+  snap_title        TEXT,
+  snap_duration     REAL,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  CHECK((media_id IS NOT NULL) + (wrestler_id IS NOT NULL) = 1),
+  CHECK(kind = 'track' OR (track_id IS NULL AND theme_external_id IS NULL AND snap_title IS NULL)),
+  CHECK(kind = 'album' OR album_id IS NULL),
+  CHECK(theme_external_id IS NULL OR media_id IS NOT NULL)
+);
+CREATE INDEX IF NOT EXISTS idx_media_music_link_media    ON media_music_link(media_id);
+CREATE INDEX IF NOT EXISTS idx_media_music_link_wrestler ON media_music_link(wrestler_id);
+CREATE INDEX IF NOT EXISTS idx_media_music_link_album    ON media_music_link(album_id);
+CREATE INDEX IF NOT EXISTS idx_media_music_link_track    ON media_music_link(track_id);
+-- One live link per owner, target and label; orphans are exempt until re-attached.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_media_music_link_identity ON media_music_link(
+  COALESCE(media_id, 0), COALESCE(wrestler_id, 0), kind, COALESCE(album_id, 0), COALESCE(track_id, 0), label
+) WHERE album_id IS NOT NULL OR track_id IS NOT NULL;

@@ -7,6 +7,8 @@
 // authored once and validated by tests/jpReadings.test.ts, which uses
 // furiganaProblems() to reject anything the parser cannot render.
 
+import { toHiragana } from '../kana'
+
 export interface FuriganaSegment {
   text: string // the base text (kanji run, or plain text)
   ruby: string | null // the reading, when this segment is a kanji run with one
@@ -14,6 +16,7 @@ export interface FuriganaSegment {
 
 const KANJI = /[一-鿿㐀-䶿々〆]/
 const KANA_ONLY = /^[ぁ-んァ-ヶー・]+$/
+const READING_TEXT = /^(?=.*[ぁ-んァ-ヶ])[^A-Za-z一-鿿㐀-䶿々〆]+$/
 
 export function parseFurigana(text: string): FuriganaSegment[] {
   const out: FuriganaSegment[] = []
@@ -99,4 +102,33 @@ export function furiganaProblems(text: string): string[] {
     }
   }
   return [...new Set(problems)]
+}
+
+// Aligns a dictionary-style word with its kana reading so the reading sits
+// over the kanji only: 食べ物 + たべもの → 食[た] べ 物[もの]. Kana in the word
+// anchor the split (compared as hiragana, so カタカナ words match). When the
+// reading cannot be aligned, an all-kanji word carries it whole; anything else
+// (a grammar card's sentence, say) comes back as plain text so the caller can
+// show the reading on its own line rather than one ruby over a whole sentence.
+export function alignFurigana(word: string, reading: string | null | undefined): FuriganaSegment[] {
+  const clean = (reading ?? '').trim()
+  if (!word) return []
+  // A reading is kana, optionally with the sentence's own punctuation; romaji
+  // or kanji in it means it is not something to put over the text.
+  if (!clean || !KANJI.test(word) || !READING_TEXT.test(clean)) return [{ text: word, ruby: null }]
+
+  const runs: { text: string; kanji: boolean }[] = []
+  for (const ch of word) {
+    const kanji = KANJI.test(ch)
+    const last = runs.at(-1)
+    if (last && last.kanji === kanji) last.text += ch
+    else runs.push({ text: ch, kanji })
+  }
+  const escape = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const pattern = new RegExp(
+    `^${runs.map((run) => (run.kanji ? '(.+?)' : `(${escape(toHiragana(run.text))})`)).join('')}$`
+  )
+  const match = pattern.exec(toHiragana(clean))
+  if (!match) return runs.length === 1 ? [{ text: word, ruby: clean }] : [{ text: word, ruby: null }]
+  return runs.map((run, i) => ({ text: run.text, ruby: run.kanji ? match[i + 1] : null }))
 }

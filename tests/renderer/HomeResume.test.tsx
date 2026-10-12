@@ -24,7 +24,20 @@ vi.mock('../../src/renderer/src/lib/player', () => ({
 vi.mock('../../src/renderer/src/lib/api', () => ({
   api: {
     achievements: { recent: async () => [] },
-    checklist: { status: async () => ({ daily: [], weekly: [], streak: { current: 0 } }) },
+    checklist: {
+      status: async () => ({
+        today: '2026-07-25',
+        day: '2026-07-25',
+        week: { start: '2026-07-25', end: '2026-07-31' },
+        restDay: false,
+        summary: { done: 0, due: 0 },
+        daily: [],
+        weekly: [],
+        streak: { current: 0, longest: 0 },
+        weekDays: [],
+        history: []
+      })
+    },
     companies: { list: () => companiesList() },
     english: { srsStats: async () => ({ totalCount: 0, dueCount: 0, reviewedToday: 0 }) },
     japanese: { stats: () => japaneseStats() },
@@ -94,10 +107,9 @@ describe('Home resume failure', () => {
       kind: 'video', refId: 42, media, dirPath: 'video/lain',
       partTitle: 'Layer 03: Psyche', position: 321, total: 1400, updatedAt: '2026-09-22'
     }])
-    const user = userEvent.setup()
     const { container } = renderPage()
     const hero = await screen.findByRole('region', { name: 'Your archive' })
-    const resume = await screen.findByRole('button', { name: /Layer 03: Psyche.*Continue/ })
+    const resume = await screen.findByRole('link', { name: /Layer 03: Psyche.*Continue/ })
     expect(hero.querySelectorAll('.home-cover-wall img')).toHaveLength(12)
     expect(hero.querySelector('.home-signature')).toHaveAttribute('aria-hidden', 'true')
     expect(hero.querySelector('.home-signature')).toHaveAttribute('src', expect.stringContaining(
@@ -106,8 +118,9 @@ describe('Home resume failure', () => {
     expect(hero).not.toContainElement(resume)
     expect(hero.compareDocumentPosition(resume) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(container.querySelectorAll('h1')).toHaveLength(1)
-    await user.click(resume)
-    expect(openExternal).toHaveBeenCalledWith({ kind: 'file', fileId: 42 })
+    // A saved video position resumes in the in-app player.
+    expect(resume).toHaveAttribute('href', '/watch/file/42')
+    expect(openExternal).not.toHaveBeenCalled()
   })
 
   it('shows each in-progress title once in Up next and switches to the backlog', async () => {

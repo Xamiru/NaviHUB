@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
@@ -7,8 +8,8 @@ import { confirmDialog } from '../../lib/confirm'
 import Section from '../Section'
 import type { WrestlingVideo } from '@shared/types'
 
-// The collection half of an event page: attach a folder of rips, then open them
-// in the operating system's default video player.
+// The collection half of an event page: attach a folder of rips, then play
+// them in the in-app player or open them in the system player.
 
 function fmtDuration(seconds: number | null): string {
   if (seconds == null) return ''
@@ -21,8 +22,9 @@ function Row({ file }: { file: WrestlingVideo }): JSX.Element {
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
   return <div className="flex items-center gap-3 border-b border-line-subtle py-2">
-    <button className="min-w-0 flex-1 text-left text-sm hover:text-accent" onClick={() => void api.video.openExternal({ kind: 'wrestling', fileId: file.id }).catch(toastError)}>{file.title}</button>
+    <Link to={`/watch/wrestling/${file.id}`} className="min-w-0 flex-1 text-left text-sm hover:text-accent">{file.title}</Link>
     <span className="text-xs text-ink-muted">{fmtDuration(file.duration)}</span>
+    <button className="btn-ghost text-xs" aria-label={`Open in the system player: ${file.title}`} title="Open in the system player" onClick={() => void api.video.openExternal({ kind: 'wrestling', fileId: file.id }).catch(toastError)}>External</button>
     <button className="btn-ghost text-xs" aria-label={`${file.watchedAt ? 'Mark unwatched' : 'Mark watched'}: ${file.title}`} disabled={busy} onClick={async () => {
       setBusy(true)
       try { await api.video.markWatched({ kind: 'wrestling', fileId: file.id }, !file.watchedAt); await qc.invalidateQueries({ queryKey: qk.wrestling.all }) }

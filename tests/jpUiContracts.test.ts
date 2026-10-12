@@ -85,9 +85,13 @@ describe('Japanese renderer contracts', () => {
     const frame = readFileSync(join(ROOT, 'components/StudySessionFrame.tsx'), 'utf8')
     const lesson = readFileSync(join(ROOT, 'pages/JapaneseLessonPage.tsx'), 'utf8')
 
-    expect(home.indexOf('title="Today"')).toBeLessThan(home.indexOf('title="Course path"'))
+    // One Start action above everything else; the path and tools come after it.
+    expect(home.indexOf('aria-label="Today"')).toBeGreaterThan(-1)
+    expect(home.indexOf('aria-label="Today"')).toBeLessThan(home.indexOf('<CoursePath'))
+    expect(home.indexOf('<CoursePath')).toBeLessThan(home.indexOf('title="Suggested for you"'))
     expect(home).toContain('currentCourseWindow')
-    expect(home).toContain("if (loading) return <PageStatus>Preparing today’s Japanese plan…</PageStatus>")
+    expect(home).toContain("if (!model.ready) return <PageStatus>Preparing today’s Japanese…</PageStatus>")
+    expect(home).toContain('Japanese study data could not be loaded')
     expect(home).not.toContain('roadmap.steps.slice(0, 5)')
     expect(guide).toContain('Twelve authored offline conversations')
     expect(guide).not.toContain('attached to the local player')

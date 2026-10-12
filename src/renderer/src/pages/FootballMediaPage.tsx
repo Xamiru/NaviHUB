@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { toastError } from '../lib/toast'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
@@ -259,7 +260,7 @@ export default function FootballMediaPage() {
           <div key={item.id} className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.8fr)_auto] sm:items-center">
             <div className="grid grid-cols-[56px_minmax(0,1fr)] items-center gap-3"><span className="border-r border-line-subtle pr-3 text-center font-mono text-[10px] uppercase tracking-[0.12em] text-ink-muted">{item.kind === 'fullMatch' ? 'match' : item.kind}</span><span><span className="block font-medium text-ink">{item.title}</span><span className="mt-1 block text-xs text-ink-muted">{item.localPath ? 'Local file' : 'Web link'}</span></span></div>
             <p className="truncate text-sm text-ink-muted">{item.links.map((link) => link.label).filter(Boolean).join(', ')}</p>
-            <div className="flex gap-2"><button className="btn-ghost" onClick={() => item.localPath ? api.football.openMedia(item.localPath) : item.url && api.football.openExternalLink('website', item.url)}>Open</button><button className="btn-ghost text-signal-anomaly" onClick={() => remove(item.id, item.title)}>Remove</button></div>
+            <div className="flex gap-2">{item.localPath ? <><Link to={`/watch/football/${item.id}`} className="btn-ghost">Play</Link><button className="btn-ghost" title="Open in the system player" aria-label={`Open in the system player: ${item.title}`} onClick={() => void api.video.openExternal({ kind: 'football', mediaId: item.id }).catch(toastError)}>External</button></> : <button className="btn-ghost" onClick={() => item.url && void api.football.openExternalLink('website', item.url).catch(toastError)}>Open</button>}<button className="btn-ghost text-signal-anomaly" onClick={() => remove(item.id, item.title)}>Remove</button></div>
           </div>
         ))}
         {!mediaQuery.isError && !data.length && <p className="py-8 text-sm text-ink-muted">No media attachments match this shelf.</p>}

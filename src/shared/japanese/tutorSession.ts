@@ -6,6 +6,8 @@ export interface TutorSessionBaseline {
   reviewsToday: number
   introducedToday: number
   chaptersRead: number
+  /** Absent on sessions saved before lesson blocks existed. */
+  learnedLessons?: number
 }
 
 export interface TutorSessionState {
@@ -18,6 +20,8 @@ export interface TutorSessionState {
   manualCompleted: string[]
   dismissedRepairs: string[]
   endedAt: string | null
+  /** The session length picked on Today; absent on older saved sessions. */
+  budgetMinutes?: number
 }
 
 export interface TutorSessionEvidence {
@@ -26,6 +30,7 @@ export interface TutorSessionEvidence {
   introducedToday: number
   chaptersRead: number
   latestChapterReadAt: string | null
+  learnedLessons?: number
   histories: Partial<Record<QuizKind, QuizHistory>>
 }
 
@@ -100,6 +105,8 @@ function historiesFor(task: TutorTask, evidence: TutorSessionEvidence): QuizHist
       return [evidence.histories.jpReading].filter(Boolean) as QuizHistory[]
     case 'output':
       return [evidence.histories.jpOutput].filter(Boolean) as QuizHistory[]
+    case 'kana':
+      return [evidence.histories.kana].filter(Boolean) as QuizHistory[]
     default:
       return []
   }
@@ -130,19 +137,19 @@ function repairFor(
   if (score >= threshold) return null
   const copy: Record<'sound' | 'listening' | 'reading' | 'output', [string, string]> = {
     sound: [
-      'Repair the sound distinction now',
+      'Go over that sound difference again',
       'Replay the lesson examples with beats, say each contrast twice, then repeat its short check.'
     ],
     listening: [
-      'Replay one missed listening segment',
+      'Replay one sentence you missed',
       'Use Japanese subtitles only after a cold replay, then shadow one line that failed to resolve.'
     ],
     reading: [
-      'Repair the passage before moving on',
+      'Reread the part you missed',
       'Reread the paragraph behind one missed answer and explain the connector or reference that changed its meaning.'
     ],
     output: [
-      'Repair one response immediately',
+      'Try your weakest answer again',
       'Say or write the weakest prompt again from memory, then compare only the structure you missed.'
     ]
   }
@@ -165,6 +172,7 @@ function sessionMeetsEvidence(task: TutorTask, session: QuizSession | null): boo
   if (task.skill === 'sound') return session.total >= 3
   if (task.skill === 'reading') return session.total >= 4
   if (task.skill === 'output') return session.total >= 6
+  if (task.skill === 'kana') return session.total >= 10
   if (task.skill !== 'listening') return true
   if (session.kind !== 'jpImmersion') return session.total >= 5
   const passes = session.settings?.passes
@@ -182,7 +190,7 @@ export function tutorSessionProgress(
     const key = tutorTaskKey(task, index)
     const latestSession = latestTaskSession(task, evidence, state.startedAt)
     let complete = manual.has(key)
-    let source = complete ? 'Marked complete by you.' : 'Waiting for evidence from this session.'
+    let source = complete ? 'Marked complete by you.' : 'Not done yet.'
 
     if (!complete && task.skill === 'recall') {
       const introducing = task.title.startsWith('Introduce')
@@ -200,6 +208,10 @@ export function tutorSessionProgress(
             ? 'The review queue was already clear when the session started.'
             : `${reviewsAdded} review${reviewsAdded === 1 ? '' : 's'} completed after the Tutor session started.`
       }
+    } else if (!complete && task.skill === 'lesson') {
+      const before = state.baseline.learnedLessons
+      complete = before != null && evidence.learnedLessons != null && evidence.learnedLessons > before
+      if (complete) source = 'A lesson was marked learned after the session started.'
     } else if (!complete && task.skill === 'curriculum') {
       complete = evidence.introducedToday > state.baseline.introducedToday
       if (complete) source = 'New lesson cards entered study after the session started.'
@@ -252,13 +264,13 @@ export function tutorSessionDebrief(progress: TutorTaskProgress[]): TutorDebrief
     plannedMinutesTotal: progress.reduce((sum, item) => sum + item.task.minutes, 0),
     summary:
       done.length === progress.length
-        ? 'The full study docket is complete. Stop adding material and let today consolidate.'
-        : `${done.length} of ${progress.length} study blocks produced evidence. Unfinished blocks remain available without becoming debt.`,
+        ? 'Every block is done. Stop adding material and let today settle.'
+        : `${done.length} of ${progress.length} blocks done. Unfinished blocks are not carried over as debt.`,
     strongest: scored[0] ? `${scored[0].label}: ${scored[0].score}%` : null,
     tomorrowFocus: pendingRepair
       ? pendingRepair.title
       : pendingTask
         ? `Begin with ${pendingTask.title.toLowerCase()}`
-        : 'Repeat the balanced loop and let new evidence choose the next repair.'
+        : 'Another session of the same shape.'
   }
 }

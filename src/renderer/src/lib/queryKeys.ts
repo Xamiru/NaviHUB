@@ -77,6 +77,9 @@ export const qk = {
       ['media', 'seasonalAnime', year, includeUnknown] as const,
     // Under the ['media'] prefix on purpose: every media mutation invalidates it.
     timeStats: ['media', 'timeStats'] as const,
+    timeStatsType: (mediaType: string) => ['media', 'timeStatsType', mediaType] as const,
+    libraryInsights: ['media', 'libraryInsights'] as const,
+    creditTime: ['media', 'creditTime'] as const,
     // Same rationale — logging an episode should refresh the roadmap milestones.
     jpMilestones: ['media', 'jpMilestones'] as const,
     resumePoints: ['media', 'resumePoints'] as const,
@@ -106,7 +109,8 @@ export const qk = {
   },
   checklist: {
     all: ['checklist'] as const,
-    status: ['checklist', 'status'] as const
+    // null = today, whatever day main says that is.
+    status: (day: string | null) => ['checklist', 'status', day ?? 'today'] as const
   },
   entity,
   people: {
@@ -213,8 +217,14 @@ export const qk = {
     // mediaId null = the gallery's Unsorted bucket.
     sources: (mediaId: number | null, kind: ImageKind) =>
       ['pictures', 'sources', mediaId, kind] as const,
-    search: (mediaId: number | null, source: WallpaperSource, q: string, page: number) =>
-      ['pictures', 'search', mediaId, source, q, page] as const,
+    // minSize: the "find a larger version" search's Wallhaven floor.
+    search: (
+      mediaId: number | null,
+      source: WallpaperSource,
+      q: string,
+      page: number,
+      minSize: { width: number; height: number } | null = null
+    ) => ['pictures', 'search', mediaId, source, q, page, minSize] as const,
     // The Pictures gallery. Its own actions invalidate the whole `all` prefix
     // (favorite, tag and album state ride on every image row); the Browse
     // dialog invalidates only galleryAll, so it never refetches its searches.
@@ -224,7 +234,9 @@ export const qk = {
     album: (albumId: number) => ['pictures', 'albums', albumId] as const,
     tags: ['pictures', 'tags'] as const,
     homePick: ['pictures', 'homePick'] as const,
-    slideshowSource: ['pictures', 'slideshowSource'] as const
+    slideshowSource: ['pictures', 'slideshowSource'] as const,
+    // Size and format for the Lightbox caption.
+    fileInfo: (imageId: number) => ['pictures', 'fileInfo', imageId] as const
   },
   images: {
     // Hand-picked cover/photo lock state per entity (ImagePickerDialog).
@@ -254,7 +266,13 @@ export const qk = {
     // Linked local videos and their manual watched marks.
     all: ['video'] as const,
     library: (mediaId: number) => ['video', 'library', mediaId] as const,
-    scanStatus: ['video', 'scanStatus'] as const
+    scanStatus: ['video', 'scanStatus'] as const,
+    // The in-app player's source for one /watch/:kind/:id route.
+    source: (kind: string, id: number) => ['video', 'source', kind, id] as const,
+    // An embedded track extracted on demand, then its parsed cues by URL.
+    subtitleTrack: (kind: string, id: number, trackId: string) =>
+      ['video', 'subtitleTrack', kind, id, trackId] as const,
+    cues: (url: string) => ['video', 'cues', url] as const
   },
   japanese: {
     all: ['japanese'] as const,
@@ -352,6 +370,7 @@ export const qk = {
     lookup: (query: string) => ['dict', 'lookup', query] as const,
     kanji: (text: string) => ['dict', 'kanji', text] as const,
     importStatus: ['dict', 'importStatus'] as const,
+    starterStatus: ['dict', 'starterStatus'] as const,
     // Example sentences + stroke order live under `dict` on purpose: installing
     // or removing a pack invalidates the prefix and drops their caches too.
     sentences: (term: string) => ['dict', 'sentences', term] as const,
@@ -385,6 +404,19 @@ export const qk = {
     // the `all` prefix; the polled statuses sit under it too but refetch on
     // their own intervals while something runs.
     all: ['music'] as const,
+    // Music linked to titles and wrestlers. Under the `music` prefix on purpose:
+    // a scan (re-attach), a like or a tag edit refreshes the linked rows too.
+    // Link mutations invalidate `links.all`.
+    links: {
+      all: ['music', 'links'] as const,
+      owner: (owner: import('@shared/types').MusicLinkOwner) =>
+        ['music', 'links', 'owner', 'mediaId' in owner ? 'media' : 'wrestler',
+          'mediaId' in owner ? owner.mediaId : owner.wrestlerId] as const,
+      franchise: (mediaIds: number[]) => ['music', 'links', 'franchise', mediaIds] as const,
+      labels: ['music', 'links', 'labels'] as const,
+      search: (query: string) => ['music', 'links', 'search', query] as const,
+      browse: ['music', 'links', 'browse'] as const
+    },
     artists: (search: string) => ['music', 'artists', search] as const,
     albums: (search: string, scope: MusicBrowseScope = {}) =>
       ['music', 'albums', search, scope.genre ?? null, scope.decade ?? null] as const,

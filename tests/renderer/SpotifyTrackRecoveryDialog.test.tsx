@@ -58,12 +58,14 @@ beforeEach(() => {
 afterEach(() => { vi.clearAllMocks(); vi.restoreAllMocks() })
 
 describe('SpotifyTrackRecoveryDialog', () => {
-  it('searches YouTube Music on open and starts the chosen source immediately', async () => {
+  it('searches YouTube Music only when asked and starts the chosen source immediately', async () => {
     const user = userEvent.setup()
     vi.mocked(api.music.spotifySearchAudio).mockResolvedValue([remoteResult])
     vi.mocked(api.music.spotifyPreviewAudio).mockResolvedValue('navimg://preview.mp3')
     const onClose = renderDialog({ problem: 'Needs review: Title or recording version differs' })
     expect(screen.getByText('Needs review: Title or recording version differs')).toBeInTheDocument()
+    expect(api.music.spotifySearchAudio).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Search' }))
     expect(await screen.findByText('Song result')).toBeInTheDocument()
     expect(api.music.spotifySearchAudio).toHaveBeenCalledWith('Artist Song')
 
@@ -146,6 +148,7 @@ describe('SpotifyTrackRecoveryDialog', () => {
     let resolvePreview!: (value: string) => void
     vi.mocked(api.music.spotifyPreviewAudio).mockReturnValue(new Promise((resolve) => { resolvePreview = resolve }))
     renderDialog({ candidate: candidate() })
+    await user.click(screen.getByRole('button', { name: 'Search' }))
     await screen.findByText('Remote result')
     await user.click(within(screen.getByRole('region', { name: 'Download from YouTube Music' })).getByRole('button', { name: 'Listen' }))
     await user.click(within(screen.getByRole('region', { name: 'Downloaded version' })).getByRole('button', { name: 'Listen' }))

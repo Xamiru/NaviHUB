@@ -161,16 +161,9 @@ export default function WrestlingCollectionPage(): JSX.Element {
                   </span>
                   <span className="flex shrink-0 gap-2">
                     {m.videoId != null && (
-                      <button
-                        className="hover:text-accent"
-                        onClick={() =>
-                          void api.video
-                            .openExternal({ kind: 'wrestling', fileId: m.videoId! })
-                            .catch(toastError)
-                        }
-                      >
-                        Open
-                      </button>
+                      <Link className="hover:text-accent" to={`/watch/wrestling/${m.videoId}`}>
+                        Play
+                      </Link>
                     )}
                     <button className="hover:text-accent" onClick={() => setEditing(m)}>
                       Edit

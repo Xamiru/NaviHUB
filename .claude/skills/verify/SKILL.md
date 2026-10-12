@@ -70,6 +70,15 @@ const page = await app.firstWindow()
   display (no xvfb installed); keep sessions short. Read-only flows only —
   this is the live personal DB (concurrent open alongside the user's running
   instance is fine, SQLite WAL).
+- **When verification needs writes, drive a COPY of the library.** Copy
+  `~/.config/navihub/navihub.db` into `<scratch>/xdg/navihub/` (check that
+  `navihub.db-wal` is 0 bytes first, so the copy is complete), launch with
+  `env.XDG_CONFIG_HOME = '<scratch>/xdg'`, and assert
+  `await app.evaluate(({ app }) => app.getPath('userData'))` starts with that
+  path BEFORE any interaction; close and abort otherwise. Startup migrations run
+  on the copy, which also proves a schema change against the real data. Covers
+  404 (no media folder there); that is expected noise. Re-copy before each run,
+  since a run's writes persist in the copy. Delete the copy afterwards.
 - **Keep screenshots small and few.** Capture the region under test
   (`locator.screenshot()` or a `clip`) as JPEG at quality ~70, one per state
   you need to see. Every image stays in the conversation; full-page PNGs add

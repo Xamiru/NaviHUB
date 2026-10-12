@@ -66,7 +66,7 @@ export default function PictureAlbumPage(): React.JSX.Element {
     if (!ok) return
     await api.pictures.albumDelete(albumId)
     void qc.invalidateQueries({ queryKey: qk.pictures.all })
-    leaveDeleted((path) => path === `/pictures/albums/${albumId}`, '/pictures/albums')
+    leaveDeleted((path) => path === `/gallery/albums/${albumId}`, '/gallery/albums')
   }
 
   if (album.isError) {
@@ -81,7 +81,7 @@ export default function PictureAlbumPage(): React.JSX.Element {
   return (
     <div className="mx-auto max-w-[1760px] p-5 sm:p-6 xl:p-8">
       <PageHeader
-        back={{ to: '/pictures/albums', label: 'Albums' }}
+        back={{ to: '/gallery/albums', label: 'Albums' }}
         title={
           renaming != null ? (
             <form

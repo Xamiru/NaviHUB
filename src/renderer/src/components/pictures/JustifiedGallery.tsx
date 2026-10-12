@@ -125,22 +125,30 @@ export default function JustifiedGallery({
                 >
                   {isSelected ? '✓' : ''}
                 </button>
-                {(showTitles || img.inSlideshow) && (
-                  <div className="pointer-events-none absolute inset-x-1.5 bottom-1.5 flex items-end justify-between gap-1">
-                    {showTitles ? (
-                      <span className="media-contrast hidden max-w-[75%] truncate rounded bg-black/70 px-1.5 py-0.5 text-xs text-gray-200 group-hover:block group-focus-within:block">
-                        {name}
-                      </span>
-                    ) : (
-                      <span />
-                    )}
+                <div className="pointer-events-none absolute inset-x-1.5 bottom-1.5 flex items-end justify-between gap-1">
+                  {showTitles ? (
+                    <span className="media-contrast hidden min-w-0 truncate rounded bg-black/70 px-1.5 py-0.5 text-xs text-gray-200 group-hover:block group-focus-within:block">
+                      {name}
+                    </span>
+                  ) : (
+                    <span />
+                  )}
+                  <span className="ml-auto flex shrink-0 gap-1">
                     {img.inSlideshow && (
                       <span className="media-contrast rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-300">
                         Slideshow
                       </span>
                     )}
-                  </div>
-                )}
+                    {img.width && img.height ? (
+                      <span
+                        className="media-contrast rounded bg-black/70 px-1.5 py-0.5 text-[10px] tabular-nums text-gray-300"
+                        aria-label={`${img.width} by ${img.height} pixels`}
+                      >
+                        {img.width}×{img.height}
+                      </span>
+                    ) : null}
+                  </span>
+                </div>
               </div>
             )
           })}

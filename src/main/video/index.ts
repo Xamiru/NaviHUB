@@ -1,15 +1,11 @@
-import { shell } from 'electron'
-import { existsSync } from 'fs'
-import type { VideoFileRef } from '@shared/types'
-import { absoluteMediaPath } from '../files'
 import { probeFile } from './ffmpeg'
 import { pickAudioStream, pickVideoStream } from './probeParse'
 import * as scan from './scan'
-import { VIDEO_SCOPES, type VideoScope } from './scope'
 
-// The single video module ipc.ts imports. NaviHUB discovers files and keeps
-// manual watched state; playback belongs to the operating system's default
-// application (normally VLC when the user has associated video files with it).
+// The single video module ipc.ts imports. NaviHUB discovers files, keeps
+// watched state and resume positions, and plays what Chromium can decode in
+// the in-app player. Every file can also open in the operating system's
+// default application (normally VLC), the fallback for anything undecodable.
 
 export {
   attachFolder,
@@ -17,6 +13,7 @@ export {
   detach,
   detachIn,
   files,
+  markProgressIn,
   markWatched,
   markWatchedIn,
   rescan,
@@ -25,10 +22,11 @@ export {
   takeProgressUndo
 } from './scan'
 export { detectTools } from './ffmpeg'
+export { clipAudio, openExternal, scopeOfFile, source, subtitleTrack } from './source'
 
-// Wires the real prober into the scanner. ffprobe metadata remains useful for
-// episode ordering/details and offline Japanese subtitle-corpus extraction;
-// external playback itself does not depend on it.
+// Wires the real prober into the scanner. ffprobe metadata feeds episode
+// details, the player's decode gate and offline subtitle extraction; playback
+// itself never depends on it.
 export function installProber(): void {
   scan.setProber(async (absPath) => {
     const probe = await probeFile(absPath)
@@ -44,29 +42,4 @@ export function installProber(): void {
       playability: null
     }
   })
-}
-
-function scopeOf(ref: VideoFileRef): VideoScope {
-  return ref.kind === 'file' ? VIDEO_SCOPES.video : VIDEO_SCOPES.wrestling
-}
-
-export async function openExternal(ref: VideoFileRef): Promise<void> {
-  const scope = scopeOf(ref)
-  const row = scan.scopedFileById(scope, ref.fileId)
-  if (!row) throw new Error('That video is no longer in the library. Rescan its folder.')
-
-  let absPath: string
-  try {
-    absPath = absoluteMediaPath(`${scope.prefix}/${row.filePath}`)
-  } catch {
-    throw new Error('That video path is invalid. Rescan its folder.')
-  }
-  if (!existsSync(absPath)) {
-    throw new Error(
-      `Video file not found on disk. Rescan the folder, or check the ${scope.label} library root in Settings.`
-    )
-  }
-
-  const error = await shell.openPath(absPath)
-  if (error) throw new Error(`Could not open the video in the system player: ${error}`)
 }

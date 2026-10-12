@@ -101,6 +101,16 @@ export default defineEvent({
           loc: { section: 'World Report 1998: Iran', para: '2' }
         }
       ]
+    },
+    {
+      ref: 'event:2000-iranian-legislative-election',
+      rel: 'followed-by',
+      cites: [
+        {
+          source: 'hrw-2001-world-report-iran',
+          loc: { section: 'World Report 2001: Iran', para: '1' }
+        }
+      ]
     }
   ],
   sections: [

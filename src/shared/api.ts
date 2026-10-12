@@ -6,6 +6,7 @@ import type { WrestlingJourneySummary, WrestlingJourneyInput, WrestlingJourneyDe
 import type { VnReadingOverview, VnReadingNodeInput, VnReadingResume, VnNoteInput, VnNotePage } from './types'
 import type { BangumiCandidate, ExternalLinkSource, GameCastResult, GameLinksState, GameUpgradePlan, GameUpgradeStatus, GameWorkSummary } from './types'
 import type { BookEdition, ChosenBookEdition } from './types'
+import type { MusicLink, MusicLinkCandidates, MusicLinkCreate, MusicLinkOwner, MusicLinkUpdate, SoundtrackOwner } from './types'
 // The typed surface exposed on window.api. Both preload (which implements the
 // bridge) and the renderer (which consumes it) import this so they never drift.
 
@@ -13,6 +14,7 @@ import type { RefreshAspect, RefreshRequest } from './refresh'
 import type { VaQuizQuestionSeed } from './vaQuiz'
 import type {
   ChecklistCadence,
+  ChecklistCustomInput,
   ChecklistStatus,
   MediaItem,
   MediaType,
@@ -28,6 +30,9 @@ import type {
   RefreshRunStatus,
   TvSeason,
   LibraryTimeStats,
+  TimeStatsItem,
+  LibraryInsights,
+  CreditTimeGroup,
   Person,
   PersonCredit,
   PersonCostar,
@@ -94,6 +99,8 @@ import type {
   StorageRootKey,
   MediaImage,
   PictureAlbum,
+  PictureFileInfo,
+  PicturePathsResult,
   PictureGalleryFilter,
   PictureTag,
   SlideshowSource,
@@ -193,6 +200,7 @@ import type {
   DictInfo,
   DictEntry,
   DictImportStatus,
+  StarterInstallStatus,
   DictImportSummary,
   SentenceExample,
   SentenceBankInfo,
@@ -266,6 +274,9 @@ import type {
   OpenTarget,
   VideoAttachResult,
   VideoFileRef,
+  VideoSource,
+  VideoSourceRef,
+  VideoSubtitleTrack,
   VideoLibrary,
   VideoToolsResult,
   JpToken,
@@ -398,6 +409,17 @@ export interface NaviApi {
     preview(rules: MusicSmartRules, page: number): Promise<MusicSmartPreview>
     queue(id: number): Promise<MusicTrack[]>
   }
+  musicLinks: {
+    forOwner(owner: MusicLinkOwner): Promise<MusicLink[]>
+    forMediaIds(mediaIds: number[]): Promise<MusicLink[]>
+    labels(): Promise<string[]>
+    search(query: string): Promise<MusicLinkCandidates>
+    create(input: MusicLinkCreate): Promise<number>
+    update(id: number, patch: MusicLinkUpdate): Promise<void>
+    reorder(owner: MusicLinkOwner, orderedIds: number[]): Promise<void>
+    remove(id: number): Promise<void>
+    browse(): Promise<SoundtrackOwner[]>
+  }
   vnExplore: {
     discover(input: VnDiscoverFilter): Promise<VnDiscoverPage>
     tags(query: string): Promise<VnTagResult[]>
@@ -455,6 +477,12 @@ export interface NaviApi {
     statusCounts(mediaType: string): Promise<Record<string, number>>
     facets(mediaType: string): Promise<MediaListFacets>
     timeStats(): Promise<LibraryTimeStats>
+    // Every consumed title of one type, biggest first (/stats "Show all").
+    timeStatsType(mediaType: MediaType): Promise<TimeStatsItem[]>
+    // Score values and finished-titles-by-release-decade for /stats.
+    libraryInsights(): Promise<LibraryInsights>
+    // People and studios ranked by the time of the titles they are credited on.
+    creditTime(): Promise<CreditTimeGroup[]>
     // Japanese-roadmap immersion milestones (anime/manga/novels completed,
     // statuses resolved positionally so renames keep working).
     jpMilestones(): Promise<JpMilestones>
@@ -678,28 +706,51 @@ export interface NaviApi {
     removeItem(itemId: number): Promise<void>
   }
   checklist: {
-    // Daily/weekly recurring board (/checklist). The item catalog lives in
-    // src/shared/checklist.ts; "today" and every period key are computed in
-    // main from local dates, so no method takes a date.
-    status(): Promise<ChecklistStatus>
+    // Daily/weekly recurring board (/checklist). Built-in items live in
+    // src/shared/checklist.ts, custom ones in checklist_custom. "Today" and
+    // every period key are computed in main from local dates; an optional
+    // `day` is one the user stepped back to (a date string main sent), which
+    // main validates. Omitted means today.
+    status(day?: string): Promise<ChecklistStatus>
     addTask(key: string, cadence: ChecklistCadence): Promise<number>
+    // Soft delete: past days keep the rules that judged them.
     removeTask(id: number): Promise<void>
-    // null clears a per-board target override.
+    // null clears a per-board target override. Applies from the current period on.
     setTarget(id: number, target: number | null): Promise<void>
+    // Daily items: weekday mask (bit = getUTCDay()); null = every day.
+    setDays(id: number, days: number | null): Promise<void>
     reorder(cadence: ChecklistCadence, orderedIds: number[]): Promise<void>
     // mediaLog items: logging performs the tracking write (episode +1 /
     // rewatch / mark watched) and records what to restore on undo.
     logMedia(
       taskKey: string,
       cadence: ChecklistCadence,
-      mediaId: number
+      mediaId: number,
+      day?: string
     ): Promise<MediaProgressLogged>
+    // mediaSession items (books, VNs): planned -> in progress, never finished.
+    logSession(
+      taskKey: string,
+      cadence: ChecklistCadence,
+      mediaId: number,
+      day?: string
+    ): Promise<{ logId: number; title: string; status: string | null }>
     undoLog(logId: number): Promise<void>
-    tick(taskKey: string, cadence: ChecklistCadence): Promise<number>
-    untick(taskKey: string, cadence: ChecklistCadence): Promise<void>
-    // One manual credit toward a detected item — un-clamped, undoable, and the
-    // reason nothing on the board can be impossible to finish.
-    credit(taskKey: string, cadence: ChecklistCadence): Promise<number>
+    tick(taskKey: string, cadence: ChecklistCadence, day?: string): Promise<number>
+    untick(taskKey: string, cadence: ChecklistCadence, day?: string): Promise<void>
+    // Manual credit toward a detected or counter item — un-clamped, undoable,
+    // and the reason nothing on the board can be impossible to finish.
+    credit(taskKey: string, cadence: ChecklistCadence, amount?: number, day?: string): Promise<number>
+    // taskId null = the whole day is a rest day. Unlimited; shown on the heatmap.
+    skip(taskId: number | null, cadence: ChecklistCadence, skipped: boolean, day?: string): Promise<void>
+    createCustom(
+      input: ChecklistCustomInput,
+      cadence: ChecklistCadence,
+      days: number | null
+    ): Promise<number>
+    updateCustom(id: number, input: Omit<ChecklistCustomInput, 'target'>): Promise<void>
+    // Permanent: the item and every entry it ever logged.
+    deleteCustom(id: number): Promise<void>
   }
   anilist: {
     search(query: string): Promise<ImportSearchResult[]>
@@ -848,11 +899,13 @@ export interface NaviApi {
     // Sources this title can browse, in tab order (pictures.listSources).
     sources(mediaId: number | null, kind: ImageKind): Promise<WallpaperSourceInfo[]>
     // query is ignored by id-bound sources (TMDB, VNDB, AniList banner).
+    // minSize narrows Wallhaven to at least that size (finding a larger copy).
     search(
       mediaId: number | null,
       source: WallpaperSource,
       query: string,
-      page: number
+      page: number,
+      minSize?: { width: number; height: number } | null
     ): Promise<WallpaperSearchPage>
     // Download a picked search result / pasted URL into pictures.dir + record it.
     addFromSearch(
@@ -863,6 +916,14 @@ export interface NaviApi {
     addFromUrl(mediaId: number | null, kind: ImageKind, url: string): Promise<MediaImage>
     // Native multi-select picker; copies into pictures.dir. [] when cancelled.
     addFromFiles(mediaId: number | null, kind: ImageKind): Promise<MediaImage[]>
+    // Files dropped on the gallery (absolute paths from pathForFile).
+    addFromPaths(mediaId: number | null, kind: ImageKind, paths: string[]): Promise<PicturePathsResult>
+    // The local path of a dropped File; '' when it has none. Not an IPC call.
+    pathForFile(file: File): string
+    // Swaps the image's file for a larger Browse result, keeping the row.
+    replace(imageId: number, result: WallpaperSearchResult): Promise<MediaImage>
+    fileInfo(imageId: number): Promise<PictureFileInfo>
+    showInFolder(imageId: number): Promise<void>
     // Removes the row and deletes its file on disk (and its slideshow copy).
     remove(imageId: number): Promise<void>
     // Adds/removes a COPY of the image in the Windows desktop-slideshow folder
@@ -1109,6 +1170,11 @@ export interface NaviApi {
     // Live status of the running download/import (polled while it runs). Shared
     // by the dictionary, sentence-bank and stroke-set imports.
     importStatus(): Promise<DictImportStatus>
+    // Installs whichever of the six core Japanese packs are missing, in order,
+    // through the importers above. Resolves when the run ends; poll
+    // starterStatus meanwhile.
+    installStarter(): Promise<StarterInstallStatus>
+    starterStatus(): Promise<StarterInstallStatus>
     remove(id: number): Promise<void>
     // Offline example sentences (Tatoeba pairs). [] when no bank is installed.
     sentences(term: string, limit?: number): Promise<SentenceExample[]>
@@ -1275,14 +1341,29 @@ export interface NaviApi {
     detach(mediaId: number): Promise<void>
     files(mediaId: number): Promise<VideoLibrary>
 
-    // Opens the tracked path in the OS default video application. Configure
-    // VLC as the system default to make it the player NaviHUB launches.
-    openExternal(ref: VideoFileRef): Promise<void>
-    // Whether ffmpeg/ffprobe are available for metadata and subtitle-corpus
-    // extraction. External playback does not depend on these tools.
+    // Opens the file in the OS default video application (normally VLC), for
+    // any source kind. The in-app player's fallback for undecodable files.
+    openExternal(ref: VideoSourceRef): Promise<void>
+    // Whether ffmpeg/ffprobe are available for metadata, subtitle extraction
+    // and sentence audio. Playback never depends on these tools.
     tools(): Promise<VideoToolsResult>
     // Manual watched tracking. A file id is only unique within its table.
     markWatched(ref: VideoFileRef, watched: boolean): Promise<void>
+    // Everything the in-app player needs for one file: its navimg URL, the
+    // decode verdict, subtitle tracks (embedded ones listed with url null)
+    // and neighbours. Rejects with a sentence when the file is unreachable.
+    source(ref: VideoSourceRef): Promise<VideoSource>
+    // Extracts one embedded subtitle track on demand; sidecars come back as is.
+    subtitleTrack(ref: VideoSourceRef, trackId: string): Promise<VideoSubtitleTrack | null>
+    // Resume position for library episodes and wrestling files; null clears
+    // it. Never logs progress. Ignored for clips and Football media.
+    markProgress(ref: VideoSourceRef, seconds: number | null): Promise<void>
+    // Sentence audio for a mined card (jpaudio/mining/…); null without ffmpeg.
+    clipAudio(input: {
+      ref: VideoSourceRef
+      startSec: number
+      endSec: number
+    }): Promise<{ audioPath: string } | null>
   }
   music: {
     // Standalone local-music library (<root>/<Artist>/<Album>/<tracks>).

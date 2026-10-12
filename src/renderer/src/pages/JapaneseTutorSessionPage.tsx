@@ -5,10 +5,14 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
+import SessionSummary from '../components/japanese/SessionSummary'
+import { BudgetPicker, PlanBlocks } from '../components/japanese/SessionPlanPicker'
 import { useJapaneseTutorModel } from '../lib/useJapaneseTutorModel'
+import { loadJpSessionBudget, saveJpSessionBudget } from '../lib/japanesePrefs'
 import {
   saveTutorSession,
   startTutorSession,
+  tutorBaseline,
   updateTutorSession,
   useTutorSessionState
 } from '../lib/japaneseTutorSession'
@@ -17,51 +21,45 @@ import {
   tutorSessionProgress,
   type TutorSessionEvidence
 } from '@shared/japanese/tutorSession'
-import type { TutorSkill } from '@shared/japanese/tutor'
+import { TUTOR_SKILL_LABEL, type TutorBudget } from '@shared/japanese/tutor'
 
-const SKILL_LABEL: Record<TutorSkill, string> = {
-  recall: 'Recall',
-  sound: 'Sound',
-  listening: 'Listening',
-  reading: 'Reading',
-  output: 'Output',
-  curriculum: 'Curriculum'
-}
-
+// Today's guided session, one block at a time: a segmented bar, the block to do
+// now with one Go button, and the whole plan underneath. Blocks complete from
+// what the app can see (reviews, quiz results, lessons, chapters); anything it
+// cannot see can be marked done by hand and says so.
 export default function JapaneseTutorSessionPage() {
   const qc = useQueryClient()
-  const model = useJapaneseTutorModel()
+  const [budget, setBudget] = useState<TutorBudget>(loadJpSessionBudget)
+  const model = useJapaneseTutorModel(budget)
   const session = useTutorSessionState()
   const [saving, setSaving] = useState(false)
 
-  if (!model.ready) return <PageStatus>Reading today’s study evidence…</PageStatus>
+  if (!model.ready) return <PageStatus>Preparing today’s session…</PageStatus>
 
   const { stats, detail, history, mangaLibrary, plan } = model
 
   function begin(): void {
-    startTutorSession(plan, {
-      due: stats.dueCount,
-      reviewsToday: stats.reviewsToday,
-      introducedToday: stats.introducedToday,
-      chaptersRead: detail.journey.chaptersRead
-    })
+    startTutorSession(plan, tutorBaseline(stats, detail), budget)
+  }
+
+  function pickBudget(next: TutorBudget): void {
+    setBudget(next)
+    saveJpSessionBudget(next)
   }
 
   if (!session) {
     return (
-      <div className="mx-auto max-w-4xl p-4 sm:p-6">
+      <div className="mx-auto max-w-3xl p-4 sm:p-6">
         <PageHeader
-          back={{ to: '/japanese/tutor', label: 'Tutor' }}
-          title="Guided study session"
-          subtitle="Work through one responsive docket. NaviHUB advances the plan from evidence it can verify and leaves every recommendation open."
+          back={{ to: '/japanese', label: 'Japanese' }}
+          title="Today’s session"
+          subtitle="Pick how long you have. The session walks you through each part in order."
         />
-        <div className="border-y border-base-700 py-8">
-          <p className="max-w-2xl text-lg leading-8 text-gray-300">
-            Today’s plan contains {plan.tasks.length} blocks and about {plan.totalMinutes} minutes.
-            Start when you are ready; the baseline is captured at that moment.
-          </p>
-          <button type="button" className="btn-primary mt-6" onClick={begin}>
-            Start today’s docket
+        <div className="card space-y-6 p-6">
+          <BudgetPicker value={budget} onChange={pickBudget} />
+          <PlanBlocks tasks={plan.tasks} />
+          <button type="button" className="btn-primary" onClick={begin}>
+            Start {budget}-minute session
           </button>
         </div>
       </div>
@@ -78,16 +76,15 @@ export default function JapaneseTutorSessionPage() {
     introducedToday: stats.introducedToday,
     chaptersRead: detail.journey.chaptersRead,
     latestChapterReadAt: chapterDates?.at(-1) ?? null,
+    learnedLessons: stats.learnedLessons,
     histories: history
   }
   const progress = tutorSessionProgress(session, evidence)
   const debrief = tutorSessionDebrief(progress)
   const repair = progress.find((item) => item.repair)?.repair ?? null
-  const next = progress.find((item) => !item.complete) ?? null
-  const current = repair
-    ? progress.find((item) => item.repair?.key === repair.key) ?? next
-    : next
-  const complete = debrief.completed === debrief.total
+  const current = progress.find((item) => !item.complete) ?? null
+  const allDone = debrief.completed === debrief.total
+  const sessionMinutes = session.budgetMinutes ?? debrief.plannedMinutesTotal
 
   function toggleManual(key: string): void {
     updateTutorSession((state) => ({
@@ -160,162 +157,168 @@ export default function JapaneseTutorSessionPage() {
     }
   }
 
-  function freshStart(): void {
+  function startAgain(): void {
     saveTutorSession(null)
-    begin()
   }
 
   return (
-    <div className="mx-auto max-w-[1320px] p-4 sm:p-6">
+    <div className="mx-auto max-w-4xl p-4 sm:p-6">
       <PageHeader
-        back={{ to: '/japanese/tutor', label: 'Tutor' }}
-        title={session.endedAt ? 'Today’s Tutor debrief' : 'Guided study session'}
-        subtitle={`${plan.phase.title}. The docket updates from evidence logged after ${formatStart(session.startedAt)}.`}
+        back={{ to: '/japanese', label: 'Japanese' }}
+        title={session.endedAt ? 'Session saved' : 'Today’s session'}
+        subtitle={`${sessionMinutes}-minute session · ${plan.phase.title} · started ${formatStart(session.startedAt)}`}
         actions={
-          session.endedAt ? (
-            <button type="button" className="btn-ghost" onClick={freshStart}>Start fresh session</button>
-          ) : (
+          !session.endedAt && (
             <button type="button" className="btn-ghost" disabled={saving} onClick={() => void endDay()}>
-              {saving ? 'Saving debrief…' : 'End and debrief'}
+              {saving ? 'Saving…' : 'End session'}
             </button>
           )
         }
       />
 
-      {!session.endedAt && repair && (
-        <section className="mb-7 border border-signal-caution/40 bg-signal-caution/5 p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-signal-caution">Immediate repair</p>
-          <h2 className="mt-2 text-xl font-semibold text-white">{repair.title}</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-300">{repair.detail}</p>
-          <p className="mt-2 text-xs text-gray-500">
-            Latest result: {repair.score}%. Repair target: {repair.threshold}%.
+      <ol className="mb-2 flex gap-1.5" aria-label="Session progress">
+        {progress.map((item, index) => {
+          const now = !session.endedAt && current?.key === item.key
+          return (
+            <li key={item.key} className="min-w-0 flex-1">
+              <span
+                className={`block h-2 rounded-full ${
+                  item.complete ? 'bg-accent' : now ? 'bg-accent/40 ring-1 ring-accent' : 'bg-base-700'
+                }`}
+                aria-hidden="true"
+              />
+              <span className="sr-only">
+                Block {index + 1}, {TUTOR_SKILL_LABEL[item.task.skill]}:{' '}
+                {item.complete ? 'done' : now ? 'now' : 'not started'}
+              </span>
+            </li>
+          )
+        })}
+      </ol>
+      <p className="mb-6 text-xs tabular-nums text-gray-400">
+        {debrief.completed} of {debrief.total} blocks done · {debrief.plannedMinutesCompleted} of{' '}
+        {debrief.plannedMinutesTotal} planned minutes completed
+      </p>
+
+      {session.endedAt ? (
+        <div className="mb-8">
+          <SessionSummary
+            title={allDone ? 'Every block done' : 'Session saved'}
+            facts={[
+              { label: 'Blocks done', value: `${debrief.completed} / ${debrief.total}` },
+              {
+                label: 'Planned minutes completed',
+                value: `${debrief.plannedMinutesCompleted} / ${debrief.plannedMinutesTotal}`
+              },
+              { label: 'Best result', value: debrief.strongest ?? 'not scored' }
+            ]}
+            note={`Tomorrow: ${debrief.tomorrowFocus}`}
+            celebrate={debrief.completed > 0}
+            actions={
+              <button type="button" className="btn-ghost" onClick={startAgain}>
+                Start another session
+              </button>
+            }
+          />
+        </div>
+      ) : repair ? (
+        <section className="card mb-8 border-signal-caution/40 p-6">
+          <p className="text-xs font-semibold uppercase tracking-wide text-signal-caution">Quick practice</p>
+          <h2 className="mt-2 text-2xl font-semibold text-white">{repair.title}</h2>
+          <p className="mt-2 max-w-2xl leading-7 text-gray-300">{repair.detail}</p>
+          <p className="mt-2 text-sm text-gray-400">
+            Your last result was {repair.score}%; aim for {repair.threshold}%.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
-            <Link to={repair.route} className="btn-primary">Open five-minute repair</Link>
+            <Link to={repair.route} className="btn-primary">Practise now · 5 min</Link>
             <button type="button" className="btn-ghost" onClick={() => dismissRepair(repair.key)}>
-              Continue without repair
+              Skip and continue
             </button>
           </div>
         </section>
+      ) : current ? (
+        <section className="card mb-8 p-6 sm:p-8" aria-labelledby="current-block">
+          <p className="text-xs font-semibold uppercase tracking-wide text-accent">
+            Now · {TUTOR_SKILL_LABEL[current.task.skill]} · {current.task.minutes} min
+          </p>
+          <h2 id="current-block" className="mt-3 text-3xl font-semibold text-white text-balance">
+            {current.task.title}
+          </h2>
+          <p className="mt-3 max-w-2xl leading-7 text-gray-300">{current.task.detail}</p>
+          <p className="mt-2 text-sm text-gray-400">{current.task.reason}</p>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <Link to={current.task.route} className="btn-primary px-6 py-2.5 text-base">Go</Link>
+            <button type="button" className="btn-ghost" onClick={() => toggleManual(current.key)}>
+              I did this another way
+            </button>
+          </div>
+        </section>
+      ) : (
+        <section className="card mb-8 p-6 text-center sm:p-8">
+          <h2 className="text-2xl font-semibold text-white">Every block is done</h2>
+          <p className="mt-2 text-gray-300">Save the session to keep today’s record.</p>
+          <button
+            type="button"
+            className="btn-primary mt-5"
+            disabled={saving}
+            onClick={() => void endDay()}
+          >
+            {saving ? 'Saving…' : 'Finish session'}
+          </button>
+        </section>
       )}
 
-      <div className="grid min-w-0 gap-7 lg:grid-cols-[minmax(0,1fr)_310px]">
-        <div className="min-w-0">
-          {!session.endedAt && current && !repair && (
-            <section className="mb-7 border-y border-accent/40 bg-accent/5 px-1 py-6">
-              <p className="text-xs font-semibold uppercase tracking-wide text-accent">Current block</p>
-              <div className="mt-3 flex flex-wrap items-start justify-between gap-5">
-                <div className="max-w-3xl">
-                  <h2 className="text-2xl font-semibold text-white">{current.task.title}</h2>
-                  <p className="mt-2 leading-7 text-gray-300">{current.task.detail}</p>
-                  <p className="mt-2 text-sm text-gray-500">Why now: {current.task.reason}</p>
+      <section aria-labelledby="session-plan">
+        <h2 id="session-plan" className="text-sm font-semibold text-white">The whole session</h2>
+        <ol className="mt-3 divide-y divide-base-700 border-y border-base-700">
+          {progress.map((item) => {
+            const manual = session.manualCompleted.includes(item.key)
+            return (
+              <li key={item.key} className="flex flex-wrap items-center gap-3 px-1 py-3">
+                <span
+                  className={`w-5 text-center ${item.complete ? 'text-accent' : 'text-gray-500'}`}
+                  aria-label={item.complete ? 'Done' : 'Not done'}
+                >
+                  {item.complete ? '✓' : '○'}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className={item.complete ? 'text-gray-400' : 'text-white'}>{item.task.title}</p>
+                  <p className="mt-0.5 text-xs text-gray-500">
+                    {TUTOR_SKILL_LABEL[item.task.skill]} · {item.task.minutes} min · {item.evidence}
+                  </p>
                 </div>
-                <Link to={current.task.route} className="btn-primary">Open block</Link>
-              </div>
-            </section>
-          )}
-
-          <section>
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-semibold text-white">Study docket</h2>
-                <p className="mt-1 text-sm text-gray-500">{debrief.completed} of {debrief.total} blocks complete</p>
-              </div>
-              <p className="text-sm tabular-nums text-gray-400">
-                {debrief.plannedMinutesCompleted} of {debrief.plannedMinutesTotal} planned minutes complete
-              </p>
-            </div>
-            <div className="mt-4 divide-y divide-base-700 border-y border-base-700">
-              {progress.map((item, index) => {
-                const isCurrent = current?.key === item.key && !session.endedAt
-                return (
-                  <article
-                    key={item.key}
-                    className={`grid gap-3 px-1 py-4 sm:grid-cols-[44px_100px_minmax(0,1fr)_auto] sm:items-center ${
-                      isCurrent ? 'bg-accent/5' : ''
-                    }`}
-                  >
-                    <span className="text-xs tabular-nums text-gray-500">{String(index + 1).padStart(2, '0')}</span>
-                    <div>
-                      <p className="text-sm font-medium text-white">{SKILL_LABEL[item.task.skill]}</p>
-                      <p className="mt-0.5 text-xs text-gray-500">{item.task.minutes} minutes</p>
-                    </div>
-                    <div>
-                      <p className={item.complete ? 'font-medium text-gray-400' : 'font-medium text-white'}>
-                        {item.task.title}
-                      </p>
-                      <p className="mt-1 text-xs leading-5 text-gray-500">{item.evidence}</p>
-                    </div>
-                    <div className="flex flex-wrap justify-end gap-2">
-                      {!item.complete && <Link to={item.task.route} className="btn-ghost">Open</Link>}
+                {!session.endedAt && (
+                  <div className="flex gap-2">
+                    {!item.complete && <Link to={item.task.route} className="btn-ghost">Open</Link>}
+                    {(manual || !item.complete) && (
                       <button
                         type="button"
                         className="btn-ghost"
-                        disabled={item.complete && !session.manualCompleted.includes(item.key)}
-                        aria-pressed={item.complete && session.manualCompleted.includes(item.key)}
+                        aria-pressed={manual}
                         onClick={() => toggleManual(item.key)}
                       >
-                        {session.manualCompleted.includes(item.key) ? 'Undo manual mark' : item.complete ? 'Completed' : 'Mark complete'}
+                        {manual ? 'Undo' : 'Mark done'}
                       </button>
-                    </div>
-                  </article>
-                )
-              })}
-            </div>
-          </section>
-        </div>
-
-        <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start">
-          <div className="card p-5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Daily debrief</p>
-            <p className="mt-3 text-3xl font-semibold tabular-nums text-white">
-              {debrief.completed} / {debrief.total}
-            </p>
-            <p className="mt-3 text-sm leading-6 text-gray-400">{debrief.summary}</p>
-            <dl className="mt-5 space-y-3 border-t border-base-700 pt-4 text-sm">
-              <DebriefRow
-                label="Planned time completed"
-                value={`${debrief.plannedMinutesCompleted} / ${debrief.plannedMinutesTotal} min`}
-              />
-              <DebriefRow label="Strongest result" value={debrief.strongest ?? 'not scored yet'} />
-              <DebriefRow label="Tomorrow first" value={debrief.tomorrowFocus} />
-            </dl>
-            {!session.endedAt && (complete || debrief.completed > 0) && (
-              <button
-                type="button"
-                className="btn-primary mt-5 w-full"
-                disabled={saving}
-                onClick={() => void endDay()}
-              >
-                {saving
-                  ? 'Saving debrief…'
-                  : complete
-                    ? 'Close today’s session'
-                    : 'End here and keep the evidence'}
-              </button>
-            )}
-          </div>
-
-          <div className="card p-5">
-            <h2 className="text-sm font-semibold text-white">How completion works</h2>
-            <p className="mt-3 text-sm leading-6 text-gray-400">
-              Reviews, quiz results, new cards, and local chapter progress complete blocks automatically.
-              Use a manual mark for unlogged reading, speaking, or another valid variation.
-            </p>
-          </div>
-        </aside>
-      </div>
+                    )}
+                  </div>
+                )}
+              </li>
+            )
+          })}
+        </ol>
+        <p className="mt-3 text-xs text-gray-500">
+          Reviews, quiz results, lessons and chapter progress tick blocks off on their own. Mark a
+          block done yourself when you practised in a way the app cannot see; it is recorded as
+          marked by you.
+        </p>
+      </section>
     </div>
   )
-}
-
-function DebriefRow({ label, value }: { label: string; value: string }): JSX.Element {
-  return <div><dt className="text-gray-500">{label}</dt><dd className="mt-1 leading-5 text-gray-200">{value}</dd></div>
 }
 
 function formatStart(value: string): string {
   const date = new Date(value)
   return Number.isNaN(date.getTime())
-    ? 'the start of this session'
+    ? 'today'
     : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }

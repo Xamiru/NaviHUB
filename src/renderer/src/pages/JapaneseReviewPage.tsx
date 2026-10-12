@@ -11,7 +11,10 @@ import { jpDailyPacing } from '@shared/japanese/dailyPlan'
 import CardSourceBadge from '../components/CardSourceBadge'
 import CardAttachments from '../components/japanese/CardAttachments'
 import StudySessionFrame from '../components/StudySessionFrame'
-import TutorSessionContinue from '../components/TutorSessionContinue'
+import SessionLauncher from '../components/japanese/SessionLauncher'
+import SessionSummary, { type SummaryMiss } from '../components/japanese/SessionSummary'
+import { WordFurigana } from '../components/japanese/Furigana'
+import { alignFurigana } from '@shared/japanese/furigana'
 import type { JpReviewCard, SrsGrade } from '@shared/types'
 
 type Phase = 'setup' | 'review' | 'done'
@@ -81,6 +84,7 @@ export default function JapaneseReviewPage() {
   const [revealed, setRevealed] = useState(false)
   const [reviewed, setReviewed] = useState(0)
   const [misses, setMisses] = useState(0)
+  const [missed, setMissed] = useState<SummaryMiss[]>([])
   const [grading, setGrading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -94,6 +98,15 @@ export default function JapaneseReviewPage() {
   }
 
   const current = queue[0] ?? null
+
+  function rememberMiss(card: JpReviewCard): void {
+    const key = String(card.id)
+    setMissed((list) =>
+      list.some((item) => item.key === key)
+        ? list
+        : [...list, { key, jp: card.front, reading: card.reading, meaning: card.back }]
+    )
+  }
   // Null when this card can't produce a good prompt — it just flips as before.
   const prompt =
     typedMode && current
@@ -129,6 +142,7 @@ export default function JapaneseReviewPage() {
       setQueue(items)
       setReviewed(0)
       setMisses(0)
+      setMissed([])
       setRevealed(false)
       setPhase('review')
     } finally {
@@ -144,7 +158,10 @@ export default function JapaneseReviewPage() {
         await api.japanese.submitReview(current.card.id, g)
         const next = gradeCard(current.srs, g)
         setReviewed((n) => n + 1)
-        if (g === 'again') setMisses((n) => n + 1)
+        if (g === 'again') {
+          setMisses((n) => n + 1)
+          rememberMiss(current.card)
+        }
         setRevealed(false)
         setTyped('')
         setChecked(null)
@@ -168,7 +185,10 @@ export default function JapaneseReviewPage() {
       try {
         await api.japanese.ghostAnswer(current.card.id, correct)
         setReviewed((n) => n + 1)
-        if (!correct) setMisses((n) => n + 1)
+        if (!correct) {
+          setMisses((n) => n + 1)
+          rememberMiss(current.card)
+        }
         setRevealed(false)
         setTyped('')
         setChecked(null)
@@ -240,21 +260,36 @@ export default function JapaneseReviewPage() {
         <PageHeader
           back={{ to: "/japanese", label: "Japanese" }}
           title="Review"
-          subtitle="Spaced-repetition flashcards over everything you have marked as learned."
+          subtitle="Flashcards for everything you have learned, each shown again just before you would forget it."
         />
 
-        <div className="card p-5 space-y-5">
-          <div className="flex gap-6 text-sm">
-            <span>
-              <span className="text-2xl font-bold text-accent">{stats?.dueCount ?? 0}</span>{' '}
-              <span className="text-gray-400">due</span>
-            </span>
-            <span>
-              <span className="text-2xl font-bold">{stats?.newAvailableCount ?? 0}</span>{' '}
-              <span className="text-gray-400">new available</span>
-            </span>
-          </div>
-
+        <SessionLauncher
+          summary={
+            <div className="flex flex-wrap items-end gap-8">
+              <div>
+                <p className="text-5xl font-semibold tabular-nums text-white">{stats?.dueCount ?? 0}</p>
+                <p className="mt-1 text-sm text-gray-400">due now</p>
+              </div>
+              <div>
+                <p className="text-5xl font-semibold tabular-nums text-gray-300">{daily.newThisSession}</p>
+                <p className="mt-1 text-sm text-gray-400">new this session</p>
+              </div>
+              {(stats?.dueCount ?? 0) === 0 && (stats?.newAvailableCount ?? 0) === 0 && (
+                <p className="basis-full text-sm text-gray-400">
+                  Nothing is waiting. Mark a lesson as learned to add its words, or come back when
+                  cards are due.
+                </p>
+              )}
+            </div>
+          }
+          defaults={`${newLimit === 0 ? 'No' : newLimit} new a day · ${dueCap === 0 ? 'no cap' : `cap ${dueCap}`} · ${typedMode ? 'typed answers' : 'flip cards'}`}
+          startLabel="Start review"
+          onStart={() => void start()}
+          starting={loading}
+          error={error}
+          hint="Space to flip · 1 Again · 2 Hard · 3 Good · 4 Easy"
+          options={
+            <>
           <div>
             <div className="label mb-2">New cards today</div>
             <div className="flex flex-wrap gap-2">
@@ -279,7 +314,6 @@ export default function JapaneseReviewPage() {
               </p>
             )}
           </div>
-
           <div>
             <div className="label mb-2">Cap due cards today</div>
             <div className="flex flex-wrap gap-2">
@@ -340,41 +374,30 @@ export default function JapaneseReviewPage() {
             </label>
           </div>
 
-          {error && <p className="text-sm text-signal-anomaly">{error}</p>}
-
-          <button className="btn-primary w-full" disabled={loading} onClick={start}>
-            {loading ? 'Loading…' : 'Start review'}
-          </button>
-          <p className="text-center text-xs text-gray-400">
-            Space to flip · 1 Again · 2 Hard · 3 Good · 4 Easy
-          </p>
-        </div>
+            </>
+          }
+        />
       </div>
     )
   }
 
   if (phase === 'done') {
     return (
-      <div className="p-6 max-w-md mx-auto">
-        <div className="card p-8 text-center">
-          <p className="text-sm uppercase tracking-widest text-gray-500">Session complete</p>
-          <p className="mt-3 text-5xl font-bold">{reviewed}</p>
-          <p className="mt-1 text-sm text-gray-400">
-            {reviewed === 1 ? 'review' : 'reviews'}
-            {misses > 0 && ` · ${misses} again`}
-          </p>
-          <div className="mt-6 flex gap-2">
-            <button className="btn-primary flex-1" onClick={() => setPhase('setup')}>
+      <div className="p-6">
+        <SessionSummary
+          title="Review complete"
+          score={reviewed > 0 ? { correct: reviewed - misses, total: reviewed } : null}
+          facts={[
+            { label: 'Cards reviewed', value: reviewed },
+            { label: 'Again', value: misses }
+          ]}
+          missed={missed}
+          actions={
+            <button type="button" className="btn-ghost" onClick={() => setPhase('setup')}>
               Review more
             </button>
-            <TutorSessionContinue
-              fallbackTo="/japanese"
-              fallbackLabel="Done"
-              fallbackBack
-              className="btn-ghost flex-1 text-center"
-            />
-          </div>
-        </div>
+          }
+        />
       </div>
     )
   }
@@ -388,7 +411,7 @@ export default function JapaneseReviewPage() {
   return (
     <StudySessionFrame
       title="Japanese review"
-      subtitle={`${card.lessonTitle} · ${card.lessonKind}`}
+      subtitle={`${card.lessonTitle} · ${card.lessonKind} · ${queue.length} left`}
       progress={{ current: reviewed, total: reviewed + queue.length, label: 'Cards reviewed' }}
       actions={
         <>
@@ -442,13 +465,19 @@ export default function JapaneseReviewPage() {
             )}
           </>
         ) : (
-          <p className="text-3xl leading-relaxed">{card.front}</p>
+          <p className={`${frontSize(card.front)} leading-relaxed text-white`}>
+            <WordFurigana word={card.front} reading={card.reading} show={revealed} />
+          </p>
         )}
         {revealed && (
           <>
-            {prompt && <p className="mt-4 text-2xl leading-relaxed">{card.front}</p>}
-            {card.reading && card.reading !== card.front && (
-              <p className="mt-3 text-lg text-gray-400">{card.reading}</p>
+            {prompt && (
+              <p className="mt-4 text-3xl leading-relaxed">
+                <WordFurigana word={card.front} reading={card.reading} />
+              </p>
+            )}
+            {card.reading && card.reading !== card.front && !rubyFits(card.front, card.reading) && (
+              <p lang="ja" className="mt-3 text-lg text-gray-400">{card.reading}</p>
             )}
             <p className="mt-3 text-xl text-gray-100">{card.back}</p>
             {(card.onyomi || card.kunyomi) && (
@@ -576,4 +605,17 @@ export default function JapaneseReviewPage() {
       </div>
     </StudySessionFrame>
   )
+}
+
+// Words fill the card; sentences step down so they still fit on one or two lines.
+function frontSize(front: string): string {
+  if (front.length <= 6) return 'text-6xl'
+  if (front.length <= 16) return 'text-4xl'
+  return 'text-2xl'
+}
+
+// The reading shows as furigana when it lines up with the kanji; otherwise it
+// keeps its own line under the word.
+function rubyFits(front: string, reading: string): boolean {
+  return alignFurigana(front, reading).some((segment) => segment.ruby)
 }

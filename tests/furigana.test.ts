@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { furiganaProblems, parseFurigana, stripFurigana } from '../src/shared/japanese/furigana'
+import { alignFurigana, furiganaProblems, parseFurigana, stripFurigana } from '../src/shared/japanese/furigana'
 
 describe('parseFurigana', () => {
   it('attaches a reading to the maximal preceding kanji run', () => {
@@ -57,5 +57,35 @@ describe('furiganaProblems', () => {
     expect(furiganaProblems('私[わたし]は学校に行[い]く。').some((p) => /without a reading: 学校/.test(p))).toBe(
       true
     )
+  })
+})
+
+describe('alignFurigana', () => {
+  const show = (word: string, reading: string | null) =>
+    alignFurigana(word, reading).map((s) => (s.ruby ? `${s.text}[${s.ruby}]` : s.text)).join('')
+
+  it('puts the reading over each kanji run, anchored on the kana between them', () => {
+    expect(show('食べ物', 'たべもの')).toBe('食[た]べ物[もの]')
+    expect(show('東京', 'とうきょう')).toBe('東京[とうきょう]')
+    expect(show('お茶', 'おちゃ')).toBe('お茶[ちゃ]')
+    expect(show('引き出し', 'ひきだし')).toBe('引[ひ]き出[だ]し')
+  })
+
+  it('matches katakana in the word against a hiragana reading', () => {
+    expect(show('ガス代', 'がすだい')).toBe('ガス代[だい]')
+  })
+
+  it('leaves kana-only words and missing readings as plain text', () => {
+    expect(alignFurigana('ありがとう', 'ありがとう')).toEqual([{ text: 'ありがとう', ruby: null }])
+    expect(alignFurigana('猫', null)).toEqual([{ text: '猫', ruby: null }])
+    expect(alignFurigana('猫', 'neko')).toEqual([{ text: '猫', ruby: null }])
+  })
+
+  it('aligns grammar-card sentences and leaves unalignable ones plain', () => {
+    expect(show('私は学生です。', 'わたしはがくせいです。')).toBe('私[わたし]は学[がくせい]です。'.replace('学[がくせい]', '学生[がくせい]'))
+    // は read as わ: no ruby over the whole sentence, the caller shows the reading instead.
+    expect(alignFurigana('今日は', 'きょうわ')).toEqual([{ text: '今日は', ruby: null }])
+    // An all-kanji word still carries an irregular reading whole.
+    expect(alignFurigana('大人', 'おとな')).toEqual([{ text: '大人', ruby: 'おとな' }])
   })
 })

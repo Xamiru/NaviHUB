@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { TutorPlan } from '@shared/japanese/tutor'
+import type { JpStats, JpStatsDetail } from '@shared/types'
 import type { TutorSessionBaseline, TutorSessionState } from '@shared/japanese/tutorSession'
 
 const STORAGE_KEY = 'japanese.tutorSession.v1'
@@ -43,9 +44,21 @@ export function saveTutorSession(state: TutorSessionState | null): void {
   window.dispatchEvent(new Event(CHANGE_EVENT))
 }
 
+// The counts a session measures its own progress against, captured at Start.
+export function tutorBaseline(stats: JpStats, detail: JpStatsDetail): TutorSessionBaseline {
+  return {
+    due: stats.dueCount,
+    reviewsToday: stats.reviewsToday,
+    introducedToday: stats.introducedToday,
+    chaptersRead: detail.journey.chaptersRead,
+    learnedLessons: stats.learnedLessons
+  }
+}
+
 export function startTutorSession(
   plan: TutorPlan,
-  baseline: TutorSessionBaseline
+  baseline: TutorSessionBaseline,
+  budgetMinutes?: number
 ): TutorSessionState {
   const state: TutorSessionState = {
     version: 1,
@@ -56,7 +69,8 @@ export function startTutorSession(
     baseline,
     manualCompleted: [],
     dismissedRepairs: [],
-    endedAt: null
+    endedAt: null,
+    ...(budgetMinutes ? { budgetMinutes } : {})
   }
   saveTutorSession(state)
   return state

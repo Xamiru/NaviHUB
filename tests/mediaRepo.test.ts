@@ -543,3 +543,117 @@ describe('mediaRepo.timeStats', () => {
     expect(mediaRepo.timeStats().mostRevisited).toBeNull()
   })
 })
+
+describe('mediaRepo.timeStats: positional completion, rewatches, estimates', () => {
+  function minutesFor(type: Parameters<typeof mediaRepo.create>[0]['mediaType']): number {
+    return mediaRepo.timeStats().byType.find((t) => t.mediaType === type)!.minutes
+  }
+
+  it('counts every earlier pass plus the current one while a rewatch is in progress', () => {
+    // The rewatch wrap sets progress back to 1 and the status to in-progress.
+    mediaRepo.create({
+      mediaType: 'anime',
+      title: 'Second watch',
+      status: 'Watching',
+      totalUnits: 24,
+      progress: 1,
+      rewatchCount: 2,
+      metadata: { epDuration: 24 }
+    })
+    expect(minutesFor('anime')).toBe((24 + 1) * 24)
+  })
+
+  it('reads a renamed completed status by position, not by its English label', () => {
+    settingsRepo.set(
+      'anime.statuses',
+      JSON.stringify(['Watching', 'Finished', 'On Hold', 'Dropped', 'Someday'])
+    )
+    mediaRepo.create({
+      mediaType: 'anime',
+      title: 'Renamed done',
+      status: 'Finished',
+      totalUnits: 10,
+      metadata: { epDuration: 20 }
+    })
+    // "Completed" is no longer this type's completed status: no progress, no time.
+    mediaRepo.create({ mediaType: 'anime', title: 'Old label', status: 'Completed', totalUnits: 12 })
+    const s = mediaRepo.timeStats()
+    expect(s.consumedCount).toBe(1)
+    expect(minutesFor('anime')).toBe(200)
+  })
+
+  it('marks each item estimated from its own source of minutes', () => {
+    mediaRepo.create({ mediaType: 'game', title: 'Logged', progress: 10 })
+    mediaRepo.create({ mediaType: 'game', title: 'Length only', status: 'Completed', totalUnits: 40 })
+    mediaRepo.create({ mediaType: 'movie', title: 'Film', status: 'Watched', totalUnits: 120 })
+    const items = mediaRepo.timeStats().byType.flatMap((t) => t.topItems)
+    const by = (title: string) => items.find((i) => i.title === title)!
+    expect(by('Logged').estimated).toBe(false)
+    expect(by('Length only').estimated).toBe(true)
+    expect(by('Film').estimated).toBe(false)
+    expect(mediaRepo.timeStats().longest!.title).toBe('Length only')
+    expect(mediaRepo.timeStats().longest!.estimated).toBe(true)
+  })
+
+  it('timeStatsForType returns every consumed title of the type, biggest first', () => {
+    for (let i = 1; i <= 7; i++) {
+      mediaRepo.create({ mediaType: 'manga', title: `M${i}`, progress: i * 10 })
+    }
+    mediaRepo.create({ mediaType: 'manga', title: 'Planned', status: 'Plan to Read' })
+    mediaRepo.create({ mediaType: 'anime', title: 'Other type', progress: 3 })
+    const all = mediaRepo.timeStatsForType('manga')
+    expect(all.map((i) => i.title)).toEqual(['M7', 'M6', 'M5', 'M4', 'M3', 'M2', 'M1'])
+    expect(mediaRepo.timeStats().byType.find((t) => t.mediaType === 'manga')!.topItems).toHaveLength(5)
+  })
+})
+
+describe('mediaRepo.activityHeatmap', () => {
+  it('reports play-session minutes beside the session count', () => {
+    const id = mediaRepo.create({ mediaType: 'game', title: 'Played' })
+    const insert = db.prepare(
+      `INSERT INTO game_session (media_id, started_at, ended_at, duration)
+       VALUES (?, datetime('now', '-1 hour'), datetime('now'), ?)`
+    )
+    insert.run(id, 3600)
+    insert.run(id, 1800)
+    const heat = mediaRepo.activityHeatmap()
+    const games = heat.sources.find((s) => s.key === 'games')!
+    expect(games.hasMinutes).toBe(true)
+    expect(games.days).toHaveLength(1)
+    expect(games.days[0]).toMatchObject({ count: 2, minutes: 90 })
+    const reviews = heat.sources.find((s) => s.key === 'jpReviews')!
+    expect(reviews.hasMinutes).toBe(false)
+  })
+})
+
+describe('mediaRepo.libraryInsights', () => {
+  it('returns raw score counts per type', () => {
+    mediaRepo.create({ mediaType: 'anime', title: 'A', score: 8 })
+    mediaRepo.create({ mediaType: 'anime', title: 'B', score: 8 })
+    mediaRepo.create({ mediaType: 'movie', title: 'C', score: 6.5 })
+    mediaRepo.create({ mediaType: 'movie', title: 'Unscored' })
+    const { scores } = mediaRepo.libraryInsights()
+    expect(scores).toEqual(
+      expect.arrayContaining([
+        { mediaType: 'anime', score: 8, count: 2 },
+        { mediaType: 'movie', score: 6.5, count: 1 }
+      ])
+    )
+    expect(scores).toHaveLength(2)
+  })
+
+  it('groups finished titles by release decade and counts unknown years', () => {
+    mediaRepo.create({ mediaType: 'anime', title: '98', status: 'Completed', releaseDate: '1998-04-03' })
+    mediaRepo.create({ mediaType: 'anime', title: '91', status: 'Completed', releaseDate: '1991' })
+    mediaRepo.create({ mediaType: 'movie', title: 'Rewatched', rewatchCount: 2, releaseDate: '2004-01-01' })
+    mediaRepo.create({ mediaType: 'anime', title: 'No date', status: 'Completed' })
+    mediaRepo.create({ mediaType: 'anime', title: 'Planned', status: 'Plan to Watch', releaseDate: '2010-01-01' })
+    mediaRepo.create({ mediaType: 'anime', title: 'Watching', status: 'Watching', releaseDate: '2012-01-01' })
+    const { decades, unknownYear } = mediaRepo.libraryInsights()
+    expect(decades).toEqual([
+      { decade: 1990, mediaType: 'anime', count: 2 },
+      { decade: 2000, mediaType: 'movie', count: 1 }
+    ])
+    expect(unknownYear).toBe(1)
+  })
+})

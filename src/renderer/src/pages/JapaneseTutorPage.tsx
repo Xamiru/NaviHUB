@@ -1,27 +1,19 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { useJapaneseTutorModel } from '../lib/useJapaneseTutorModel'
-import { startTutorSession, useTutorSessionState } from '../lib/japaneseTutorSession'
+import { useTutorSessionState } from '../lib/japaneseTutorSession'
 import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
-import { TUTOR_PHASES, historyEvidence, type TutorSkill } from '@shared/japanese/tutor'
+import { TUTOR_PHASES, TUTOR_SKILL_LABEL as SKILL_LABEL, historyEvidence } from '@shared/japanese/tutor'
 import type { JpTutorSkill } from '@shared/types'
 
-const SKILL_LABEL: Record<TutorSkill, string> = {
-  recall: 'Recall',
-  sound: 'Sound',
-  listening: 'Listening',
-  reading: 'Reading',
-  output: 'Output',
-  curriculum: 'Curriculum'
-}
-
+// Explains how Today builds a session, the five phases from kana to native
+// media, and the learner's record. Starting a session happens on Today.
 export default function JapaneseTutorPage() {
-  const navigate = useNavigate()
   const qc = useQueryClient()
   const activeSession = useTutorSessionState(false)
   const model = useJapaneseTutorModel()
@@ -32,7 +24,7 @@ export default function JapaneseTutorPage() {
   const [showAllErrors, setShowAllErrors] = useState(false)
 
   if (!model.ready) {
-    return <PageStatus>Preparing your tutor plan…</PageStatus>
+    return <PageStatus>Preparing your plan…</PageStatus>
   }
   const {
     stats,
@@ -54,16 +46,6 @@ export default function JapaneseTutorPage() {
   for (const item of tutorErrors) {
     const key = `${item.skill}:${item.label}`
     occurrenceCount.set(key, (occurrenceCount.get(key) ?? 0) + 1)
-  }
-
-  function beginSession(): void {
-    startTutorSession(plan, {
-      due: stats.dueCount,
-      reviewsToday: stats.reviewsToday,
-      introducedToday: stats.introducedToday,
-      chaptersRead: detail.journey.chaptersRead
-    })
-    navigate('/japanese/tutor/session')
   }
 
   async function recordProblem(): Promise<void> {
@@ -94,78 +76,49 @@ export default function JapaneseTutorPage() {
     <div className="mx-auto max-w-[1400px] p-4 sm:p-6">
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
-        title="Tutor"
-        subtitle="Your complete path from kana-complete beginner to independent manga, visual-novel, and anime use. Recommendations respond to your evidence, but every lesson and tool remains open."
+        title="How your plan works"
+        subtitle="How Today picks your session, the five phases from your first kana to reading and watching on your own, and the problems you are working on. Nothing here is ever locked."
         actions={
           <>
-            <Link to="/japanese/stats" className="btn-ghost">Evidence</Link>
-            {activeSession ? (
-              <Link to="/japanese/tutor/session" className="btn-primary">Resume guided session</Link>
-            ) : (
-              <button type="button" className="btn-primary" onClick={beginSession}>Start guided session</button>
-            )}
+            <Link to="/japanese/stats" className="btn-ghost">Stats</Link>
+            <Link to={activeSession ? '/japanese/tutor/session' : '/japanese'} className="btn-primary">
+              {activeSession ? 'Resume session' : 'Go to Today'}
+            </Link>
           </>
         }
       />
 
       <div className="grid min-w-0 gap-7 lg:grid-cols-[minmax(0,1fr)_330px]">
         <div className="min-w-0">
-          <section className="mb-9 border-b border-base-700 pb-8">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <h2 className="text-2xl font-semibold text-white">Today: one balanced hour</h2>
-                <p className="mt-2 max-w-3xl leading-relaxed text-gray-400">
-                  {plan.phase.title}. Work from recall into comprehension, then finish with production and one carefully chosen lesson or repair.
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-3xl font-semibold tabular-nums text-white">{plan.totalMinutes} min</p>
-                <p className="mt-1 text-xs text-gray-500">recommended, never locked</p>
-              </div>
-            </div>
-
-            <div className="mt-6 divide-y divide-base-700 border-y border-base-700">
-              {plan.tasks.map((task, index) => (
-                <div
-                  key={`${task.skill}-${task.title}`}
-                  className="grid gap-3 py-4 sm:grid-cols-[44px_105px_minmax(0,1fr)_auto] sm:items-center"
-                >
-                  <span className="text-xs tabular-nums text-gray-500">{String(index + 1).padStart(2, '0')}</span>
-                  <div>
-                    <p className="text-sm font-medium text-white">{SKILL_LABEL[task.skill]}</p>
-                    <p className="mt-0.5 text-xs text-gray-500">{task.minutes} minutes</p>
-                  </div>
-                  <div>
-                    <p className="font-medium text-white">{task.title}</p>
-                    <p className="mt-1 text-sm leading-6 text-gray-400">{task.detail}</p>
-                    <p className="mt-1 text-xs text-gray-500">Why now: {task.reason}</p>
-                  </div>
-                  <Link to={task.route} className="btn-ghost">
-                    Open
-                  </Link>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <Section title="Weekly operating rhythm" subtitle="for roughly one hour a day">
-            <div className="grid gap-x-8 gap-y-5 border-y border-base-700 py-5 sm:grid-cols-2">
-              <Rhythm title="Five standard days" body="Complete the sixty-minute plan in order. If review runs long, reduce new cards before cutting reading." />
-              <Rhythm title="Two output sessions" body="Save a first draft before comparison, then revise. Rate the help the original draft needed and try a different situation in the transfer practice." />
-              <Rhythm title="Four reading contacts" body="Use local manga or visual-novel text on four days. Graded reading fills the gap when native text is too costly." />
-              <Rhythm title="Two listening contacts" body="Use guided sentence audio early. From Step 10, replace one or both with a staged local-media session." />
-              <Rhythm title="One checkpoint" body="Review the evidence rail, repeat the weakest measured skill, and move forward only when the current material feels manageable." />
-              <Rhythm title="One low-pressure day" body="Clear due reviews, then enjoy local media. Mine only language you want to meet again." />
-            </div>
+          <Section title="How Today builds a session" subtitle={`${plan.phase.title} right now`}>
+            <dl className="grid gap-x-8 gap-y-5 border-y border-base-700 py-5 sm:grid-cols-2">
+              <Rhythm title="10 minutes" body="Reviews only. On a day with nothing to review, the next lesson and a first look at its words." />
+              <Rhythm title="20 minutes" body="Reviews, then reading or listening, whichever you have done less of lately, so the two take turns." />
+              <Rhythm title="40 minutes" body="Reviews, listening and reading." />
+              <Rhythm title="60 minutes" body="Adds making your own sentences, and either the next lesson or a few minutes on your weakest measured skill." />
+              <Rhythm title="Starting out" body="Kana comes first until you can read it. Listening uses the sound-system units until you know enough words to understand sentences." />
+              <Rhythm title="Nothing is forced" body="Every block links to a tool you can also open any time. A skill you have not tried yet is never treated as a weakness." />
+            </dl>
           </Section>
 
-          <Section title="Tutor record" subtitle="durable debriefs and recurring problems">
+          <Section title="A good week" subtitle="if you study most days">
+            <dl className="grid gap-x-8 gap-y-5 border-y border-base-700 py-5 sm:grid-cols-2">
+              <Rhythm title="Most days" body="Do a session from Today. If reviews run long, add fewer new cards rather than skipping reading." />
+              <Rhythm title="Twice a week" body="Make your own sentences: write a first try, compare it with the example, then improve it." />
+              <Rhythm title="Four days" body="Read something: graded passages early on, your own manga or novels once they are manageable." />
+              <Rhythm title="Twice a week" body="Listen: short sentences early on, scenes from your own anime from Step 10." />
+              <Rhythm title="Once a week" body="Look at Stats, practise your weakest skill, and move on when the current material feels manageable." />
+              <Rhythm title="One easy day" body="Clear your reviews, then just enjoy something in Japanese. Save only the words you want to see again." />
+            </dl>
+          </Section>
+
+          <Section title="Your record" subtitle="past sessions and problems you are working on">
             <div className="grid gap-8 border-y border-base-700 py-5 xl:grid-cols-2">
               <div className="min-w-0">
                 <h3 className="font-medium text-white">Recent study days</h3>
                 {tutorDays.length === 0 ? (
                   <p className="mt-3 text-sm leading-6 text-gray-400">
-                    Close a guided Tutor session to save its first debrief here.
+                    Finish a session from Today to see it here.
                   </p>
                 ) : (
                   <div className="mt-3 divide-y divide-base-700">
@@ -189,7 +142,7 @@ export default function JapaneseTutorPage() {
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-baseline justify-between gap-3">
-                  <h3 className="font-medium text-white">Open error ledger</h3>
+                  <h3 className="font-medium text-white">Problems to work on</h3>
                   {openErrors.length > 0 && (
                     <span className="text-xs tabular-nums text-gray-500">
                       {openErrors.length} open
@@ -198,7 +151,7 @@ export default function JapaneseTutorPage() {
                 </div>
                 {openErrors.length === 0 ? (
                   <p className="mt-3 text-sm leading-6 text-gray-400">
-                    Weak measured results and problems you report will stay here until resolved.
+                    Low scores and problems you add stay here until you mark them solved.
                   </p>
                 ) : (
                   <div className="mt-3" aria-live="polite">
@@ -217,7 +170,7 @@ export default function JapaneseTutorPage() {
                                 </p>
                               </div>
                               <button type="button" className="btn-ghost shrink-0" onClick={() => void resolveProblem(item.id)}>
-                                Resolve
+                                Solved
                               </button>
                             </div>
                           </div>
@@ -240,7 +193,7 @@ export default function JapaneseTutorPage() {
             </div>
           </Section>
 
-          <Section title="Full roadmap" subtitle="five phases; exit evidence guides, never gates">
+          <Section title="Five phases" subtitle="move on whenever it feels manageable">
             <div className="relative space-y-3 before:absolute before:bottom-6 before:left-[25px] before:top-6 before:w-px before:bg-accent/20">
               {TUTOR_PHASES.map((phase, phaseIndex) => {
                 const current = phase.id === plan.phase.id
@@ -274,7 +227,7 @@ export default function JapaneseTutorPage() {
                         {phase.exitEvidence.map((item) => <li key={item}>{item}</li>)}
                       </ul>
                       <p className="mt-4 text-xs leading-5 text-gray-500">
-                        If this evidence is missing, keep later content open but spend the five-minute repair block here.
+                        Nothing is locked. Until these are true, a full session spends a few minutes on them.
                       </p>
                     </div>
                   </article>
@@ -286,27 +239,31 @@ export default function JapaneseTutorPage() {
 
         <aside className="min-w-0 space-y-5 lg:sticky lg:top-6 lg:self-start">
           <div className="card p-5">
-            <h2 className="text-sm font-semibold text-white">Tutor diagnosis</h2>
-            {plan.weakness ? (
+            <h2 className="text-sm font-semibold text-white">Weakest skill</h2>
+            {plan.weakness && plan.weakness.score != null ? (
               <>
                 <p className="mt-3 text-lg font-medium text-signal-caution">{plan.weakness.label}</p>
                 <p className="mt-2 text-sm leading-6 text-gray-400">{plan.weakness.evidence}</p>
-                <Link to={plan.weakness.route} className="btn-ghost mt-4 w-full text-center">Open repair practice</Link>
+                <Link to={plan.weakness.route} className="btn-ghost mt-4 w-full text-center">Practise it</Link>
               </>
+            ) : plan.weakness ? (
+              <p className="mt-3 text-sm leading-6 text-gray-400">
+                Nothing measured below target yet. {plan.weakness.label} has not been tried; scores appear after your first sessions.
+              </p>
             ) : (
-              <p className="mt-3 text-sm leading-6 text-gray-400">No measured skill is below its current target. Keep the balanced loop.</p>
+              <p className="mt-3 text-sm leading-6 text-gray-400">Every measured skill is on target. Keep going.</p>
             )}
             {plan.lessonHeld && (
-              <p className="mt-4 border-t border-base-700 pt-4 text-sm leading-6 text-signal-caution">
-                New lesson recommendation held because {stats.newAvailableCount} unseen cards are already waiting. The roadmap remains open.
+              <p className="mt-4 border-t border-base-700 pt-4 text-sm leading-6 text-gray-300">
+                New lessons are on hold because {stats.newAvailableCount} new cards are still waiting. Every lesson stays open.
               </p>
             )}
           </div>
 
           <div className="card p-5">
-            <h2 className="text-sm font-semibold text-white">Report a recurring problem</h2>
+            <h2 className="text-sm font-semibold text-white">Add a problem</h2>
             <p className="mt-2 text-sm leading-6 text-gray-400">
-              Record something the automatic checks cannot see. The Tutor keeps it until you resolve it.
+              Something keeps tripping you up? Note it here and it stays until you mark it solved.
             </p>
             <label className="label mt-4" htmlFor="jp-tutor-error-skill">Skill</label>
             <select
@@ -343,16 +300,16 @@ export default function JapaneseTutorPage() {
               disabled={savingError || !errorLabel.trim() || !errorDetail.trim()}
               onClick={() => void recordProblem()}
             >
-              {savingError ? 'Recording problem…' : 'Add to error ledger'}
+              {savingError ? 'Adding…' : 'Add problem'}
             </button>
           </div>
 
           <div className="card p-5">
-            <h2 className="text-sm font-semibold text-white">Current evidence</h2>
+            <h2 className="text-sm font-semibold text-white">Where you are</h2>
             <dl className="mt-4 space-y-3 text-sm">
               <Evidence label="Course frontier" value={`Step ${frontierStep}`} />
               <Evidence label="Due cards" value={String(stats.dueCount)} />
-              <Evidence label="Strict retention, 30d" value={detail.retention.strict30 == null ? 'not measured' : `${Math.round(detail.retention.strict30 * 100)}%`} />
+              <Evidence label="Strict retention, 30d" value={detail.retention.strict30 == null ? 'not enough reviews' : `${Math.round(detail.retention.strict30 * 100)}%`} />
               <Evidence label="Sound check" value={formatAccuracy(historyEvidence(history.jpPhonology).accuracy)} />
               <Evidence label="Guided listening" value={formatAccuracy(historyEvidence(history.listening).accuracy)} />
               <Evidence label="Long-form listening" value={formatAccuracy(historyEvidence(history.jpImmersion).accuracy)} />
@@ -361,23 +318,23 @@ export default function JapaneseTutorPage() {
               <Evidence label="Chapters read" value={String(detail.journey.chaptersRead)} />
             </dl>
             <p className="mt-4 border-t border-base-700 pt-4 text-xs leading-5 text-gray-500">
-              Missing evidence becomes a recommendation to sample that skill. It is not treated as failure. Output includes self-assessed practice; it does not certify independent fluency. Earlier sessions may rate the repaired response rather than the first draft.
+              A skill you have not tried is never counted as a weakness. Speaking and writing scores are your own ratings, not a fluency test; earlier sessions may rate the improved answer rather than the first draft.
             </p>
           </div>
 
           <div className="card p-5">
-            <h2 className="text-sm font-semibold text-white">Local curriculum</h2>
+            <h2 className="text-sm font-semibold text-white">Your media</h2>
             <p className="mt-3 text-sm leading-6 text-gray-400">
               {nextChapter && currentManga
                 ? `Reading: ${currentManga.title} · ${nextChapter.title}`
                 : currentVisualNovel
                   ? `Visual novel: ${currentVisualNovel.title}. Use a bounded scene, then return for output.`
-                  : 'Attach a manga or EPUB chapter to turn the local reader into curriculum.'}
+                  : 'Add manga or EPUB chapters to read your own books in sessions.'}
             </p>
             <p className="mt-2 text-sm leading-6 text-gray-400">
               {(videoLibrary?.files.length ?? 0) > 0 && currentAnime
                 ? `Listening: ${currentAnime.title} · ${videoLibrary!.files.length} local file${videoLibrary!.files.length === 1 ? '' : 's'}`
-                : 'Attach an anime video folder to unlock staged long-form listening.'}
+                : 'Link an anime’s video folder to practise listening with your own episodes.'}
             </p>
           </div>
         </aside>
@@ -387,7 +344,7 @@ export default function JapaneseTutorPage() {
 }
 
 function Rhythm({ title, body }: { title: string; body: string }) {
-  return <div><h3 className="font-medium text-white">{title}</h3><p className="mt-1 text-sm leading-6 text-gray-400">{body}</p></div>
+  return <div><dt className="font-medium text-white">{title}</dt><dd className="mt-1 text-sm leading-6 text-gray-400">{body}</dd></div>
 }
 
 function Evidence({ label, value }: { label: string; value: string }) {
@@ -395,7 +352,7 @@ function Evidence({ label, value }: { label: string; value: string }) {
 }
 
 function formatAccuracy(value: number | null): string {
-  return value == null ? 'not sampled' : `${value}%`
+  return value == null ? 'not tried yet' : `${value}%`
 }
 
 function localDay(date = new Date()): string {

@@ -110,6 +110,7 @@ export default function EnglishUsePage() {
     return (
       <div className="p-6 max-w-[1320px] mx-auto">
         <TypedDrill
+          japanese={false}
           title={LABEL[format]}
           items={items}
           kind={KIND[format]}

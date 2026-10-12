@@ -26,7 +26,7 @@ export default function TutorSessionContinue({
       to={active ? '/japanese/tutor/session' : fallbackTo}
       className={active ? className.replace('btn-ghost', 'btn-primary') : className}
     >
-      {active ? 'Continue Tutor session' : fallbackLabel}
+      {active ? 'Continue today’s session' : fallbackLabel}
     </Link>
   )
 }

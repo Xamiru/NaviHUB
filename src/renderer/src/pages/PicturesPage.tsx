@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
+import { useDebouncedValue } from '../lib/hooks'
 import { MEDIA_CONFIGS } from '../lib/mediaConfig'
 import { toast, toastError } from '../lib/toast'
 import PageHeader from '../components/PageHeader'
@@ -19,6 +20,7 @@ import type {
   MediaType,
   PictureGalleryFilter,
   PictureOrientation,
+  PictureResolution,
   PictureSort,
   SlideshowSource
 } from '@shared/types'
@@ -30,7 +32,8 @@ const SORT_KEY = 'pictures.sort'
 const SORTS: { value: PictureSort; label: string }[] = [
   { value: 'newest', label: 'Newest first' },
   { value: 'oldest', label: 'Oldest first' },
-  { value: 'title', label: 'By title' }
+  { value: 'title', label: 'By title' },
+  { value: 'largest', label: 'Largest first' }
 ]
 
 function loadSort(): PictureSort {
@@ -59,6 +62,8 @@ interface Filters {
   favorites: boolean
   inSlideshow: boolean
   orientation: PictureOrientation | null
+  resolution: PictureResolution | null
+  search: string
   tagIds: number[]
 }
 
@@ -70,6 +75,8 @@ const NO_FILTERS: Filters = {
   favorites: false,
   inSlideshow: false,
   orientation: null,
+  resolution: null,
+  search: '',
   tagIds: []
 }
 
@@ -84,6 +91,7 @@ export default function PicturesPage(): React.JSX.Element {
     saveSort(next)
   }
 
+  const search = useDebouncedValue(filters.search.trim())
   const query: PictureGalleryFilter = {
     unsorted: filters.scope === 'unsorted',
     mediaType: filters.scope !== 'all' && filters.scope !== 'unsorted' ? filters.scope : null,
@@ -92,6 +100,8 @@ export default function PicturesPage(): React.JSX.Element {
     favorites: filters.favorites,
     inSlideshow: filters.inSlideshow,
     orientation: filters.orientation,
+    resolution: filters.resolution,
+    search,
     tagIds: filters.tagIds,
     sort
   }
@@ -130,6 +140,33 @@ export default function PicturesPage(): React.JSX.Element {
   const filtered = JSON.stringify(filters) !== JSON.stringify(NO_FILTERS)
   const images = gallery.data ?? []
 
+  // Files dropped on the page go to the filtered title (Unsorted otherwise),
+  // as the filtered kind (wallpapers otherwise).
+  const [dragging, setDragging] = useState(false)
+  const dragDepth = useRef(0)
+  const dropMediaId = filters.scope !== 'unsorted' ? filters.mediaId : null
+  const dropTarget = dropMediaId != null ? (filters.mediaTitle ?? 'this title') : 'Unsorted'
+  const dropKind: ImageKind = filters.kind ?? 'wallpaper'
+  const carriesFiles = (e: React.DragEvent): boolean => Array.from(e.dataTransfer.types).includes('Files')
+
+  async function addDropped(dropped: File[]): Promise<void> {
+    const paths = dropped.map((f) => api.pictures.pathForFile(f)).filter(Boolean)
+    if (paths.length === 0) return
+    try {
+      const { added, skipped } = await api.pictures.addFromPaths(dropMediaId, dropKind, paths)
+      const notes = [
+        added.length > 0 && `Added ${added.length} to ${dropTarget}`,
+        skipped + dropped.length - paths.length > 0 &&
+          `${skipped + dropped.length - paths.length} skipped (not an image file)`
+      ].filter(Boolean)
+      toast(notes.join('; ') || 'Nothing was added', added.length > 0 ? 'success' : 'error')
+    } catch (e) {
+      toastError(e)
+    } finally {
+      void qc.invalidateQueries({ queryKey: qk.pictures.all })
+    }
+  }
+
   async function changeSource(next: SlideshowSource): Promise<void> {
     try {
       const r = await api.pictures.setSlideshowSource(next)
@@ -152,9 +189,42 @@ export default function PicturesPage(): React.JSX.Element {
   }
 
   return (
-    <div className="mx-auto max-w-[1760px] p-5 sm:p-6 xl:p-8">
+    <div
+      className="relative mx-auto max-w-[1760px] p-5 sm:p-6 xl:p-8"
+      onDragEnter={(e) => {
+        if (!carriesFiles(e)) return
+        e.preventDefault()
+        dragDepth.current += 1
+        setDragging(true)
+      }}
+      onDragOver={(e) => {
+        if (!carriesFiles(e)) return
+        // Without this the drop would navigate the window to the file.
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'copy'
+      }}
+      onDragLeave={(e) => {
+        if (!carriesFiles(e)) return
+        dragDepth.current = Math.max(0, dragDepth.current - 1)
+        if (dragDepth.current === 0) setDragging(false)
+      }}
+      onDrop={(e) => {
+        if (!carriesFiles(e)) return
+        e.preventDefault()
+        dragDepth.current = 0
+        setDragging(false)
+        void addDropped(Array.from(e.dataTransfer.files))
+      }}
+    >
+      {dragging && (
+        <div className="pointer-events-none absolute inset-2 z-40 flex items-center justify-center rounded-xl border-2 border-dashed border-accent bg-base-900/85">
+          <p className="text-lg font-medium text-gray-100">
+            Drop to add {dropKind === 'wallpaper' ? 'wallpapers' : 'fan art'} to {dropTarget}
+          </p>
+        </div>
+      )}
       <PageHeader
-        title="Pictures"
+        title="Gallery"
         subtitle="Wallpapers and fan art from every title"
         actions={
           <>
@@ -184,6 +254,15 @@ export default function PicturesPage(): React.JSX.Element {
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Field label="Search pictures" hiddenLabel className="contents">
+          <input
+            type="search"
+            className="input w-48 py-1.5 text-sm"
+            placeholder="Title, tag, file…"
+            value={filters.search}
+            onChange={(e) => set({ search: e.target.value })}
+          />
+        </Field>
         {filters.scope !== 'unsorted' &&
           (filters.mediaId != null ? (
             <span className="chip inline-flex items-center gap-1">
@@ -244,6 +323,18 @@ export default function PicturesPage(): React.JSX.Element {
             ['square', 'Square']
           ]}
           onChange={(orientation) => set({ orientation })}
+        />
+        <span className="h-6 w-px bg-base-700" aria-hidden="true" />
+        <PillChoice
+          label="Resolution"
+          value={filters.resolution}
+          options={[
+            ['fhd', '1080p+'],
+            ['qhd', '1440p+'],
+            ['uhd', '4K+'],
+            ['low', 'Under 1080p']
+          ]}
+          onChange={(resolution) => set({ resolution })}
         />
         <span className="h-6 w-px bg-base-700" aria-hidden="true" />
         <button

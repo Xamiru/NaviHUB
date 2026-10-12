@@ -117,7 +117,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Ariel Sharon',
+      ref: 'person:ariel-sharon',
       role: 'commander',
       side: 'idf',
       cites: [

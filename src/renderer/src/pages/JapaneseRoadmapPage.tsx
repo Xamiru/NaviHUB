@@ -5,7 +5,6 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
-import RoadmapDailyLoop from '../components/japanese/RoadmapDailyLoop'
 import RoadmapMilestones from '../components/japanese/RoadmapMilestones'
 import JlptLadder from '../components/japanese/JlptLadder'
 import type { JpRoadmapCourse } from '@shared/types'
@@ -20,29 +19,23 @@ export default function JapaneseRoadmapPage() {
     queryKey: qk.japanese.roadmap,
     queryFn: () => api.japanese.roadmap()
   })
-  const { data: stats } = useQuery({
-    queryKey: qk.japanese.stats,
-    queryFn: () => api.japanese.stats()
-  })
 
   if (isLoading) return <PageStatus>Loading…</PageStatus>
-  if (!roadmap) return <PageStatus>Roadmap unavailable.</PageStatus>
+  if (!roadmap) return <PageStatus>The course path could not be loaded.</PageStatus>
 
-  const due = stats?.dueCount ?? 0
-  const fresh = stats?.newAvailableCount ?? 0
   const frontierIndex = roadmap.steps.findIndex((c) => c.id === roadmap.frontierCourseId)
 
   return (
     <EditorialDetailFrame width="wide">
       <PageHeader
         back={{ to: "/japanese", label: "Japanese" }}
-        title="Roadmap"
-        subtitle="Every course in study order. Work down the path — or jump anywhere you like."
+        title="Path"
+        subtitle="Every course in order, from your first lesson to native material. Start anywhere; nothing is locked."
       />
 
       <div className="grid min-w-0 gap-7 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0">
-          <Section title="Knowledge path" subtitle="Your current frontier stays visible without locking later material">
+          <Section title="Courses" subtitle="where you are now is highlighted">
             <div className="relative space-y-3 before:absolute before:bottom-5 before:left-[27px] before:top-5 before:w-px before:bg-accent/20">
               <KanaStepRow />
               {roadmap.steps.map((course, i) => (
@@ -81,9 +74,6 @@ export default function JapaneseRoadmapPage() {
           </Section>
         </div>
         <aside className="min-w-0 space-y-6">
-          <Section title="Daily loop">
-            <RoadmapDailyLoop due={due} fresh={fresh} nextLesson={roadmap.nextLesson} />
-          </Section>
           <Section title="JLPT ladder" subtitle="progress, not a gate">
             <JlptLadder />
           </Section>

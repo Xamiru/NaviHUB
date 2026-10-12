@@ -3,6 +3,8 @@ import { useMemo } from 'react'
 // GitHub-style year heatmap as pure CSS: one column per week, 7 cells down,
 // accent intensity bucketed by quartile of the max day. Native title tooltips.
 // `days` is sparse ('YYYY-MM-DD' → count); missing days render as zero.
+// `skipped` days (the checklist's rest days) draw as an outline and are listed
+// in the screen-reader table too.
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const DAY_MS = 86_400_000
@@ -23,12 +25,15 @@ function bucketClass(count: number, max: number): string {
 export default function CalendarHeatmap({
   days,
   weeks = 52,
-  unit = 'reviews'
+  unit = 'reviews',
+  skipped
 }: {
   days: { day: string; count: number }[]
   weeks?: number
   unit?: string
+  skipped?: string[]
 }) {
+  const skippedSet = useMemo(() => new Set(skipped ?? []), [skipped])
   const { grid, monthLabels, max } = useMemo(() => {
     const byDay = new Map(days.map((d) => [d.day, d.count]))
     const max = Math.max(...days.map((d) => d.count), 1)
@@ -62,6 +67,7 @@ export default function CalendarHeatmap({
   }, [days, weeks])
   const activeDays = days.filter((day) => day.count > 0)
   const total = activeDays.reduce((sum, day) => sum + day.count, 0)
+  const listed = days.filter((day) => day.count > 0 || skippedSet.has(day.day))
 
   return (
     <div className="overflow-x-auto pb-1">
@@ -80,11 +86,17 @@ export default function CalendarHeatmap({
             {col.map((cell) =>
               cell.future ? (
                 <span key={cell.day} className="h-2.5 w-2.5" />
+              ) : skippedSet.has(cell.day) && cell.count <= 0 ? (
+                <span
+                  key={cell.day}
+                  className="h-2.5 w-2.5 rounded-md border border-ink-muted"
+                  title={`${cell.day} · skipped`}
+                />
               ) : (
                 <span
                   key={cell.day}
                   className={`h-2.5 w-2.5 rounded-md ${bucketClass(cell.count, max)}`}
-                  title={`${cell.day} · ${cell.count} ${unit}`}
+                  title={`${cell.day} · ${cell.count} ${unit}${skippedSet.has(cell.day) ? ' · skipped' : ''}`}
                 />
               )
             )}
@@ -92,9 +104,10 @@ export default function CalendarHeatmap({
         ))}
       </div>
       <p className="sr-only">
-        {total} {unit} across {activeDays.length} active {activeDays.length === 1 ? 'day' : 'days'}.
+        {total} {unit} across {activeDays.length} active {activeDays.length === 1 ? 'day' : 'days'}
+        {skippedSet.size > 0 ? `, ${skippedSet.size} skipped` : ''}.
       </p>
-      {activeDays.length > 0 && (
+      {listed.length > 0 && (
         <table className="sr-only">
           <caption>Daily {unit}</caption>
           <thead>
@@ -104,10 +117,10 @@ export default function CalendarHeatmap({
             </tr>
           </thead>
           <tbody>
-            {activeDays.map((day) => (
+            {listed.map((day) => (
               <tr key={day.day}>
                 <th scope="row">{day.day}</th>
-                <td>{day.count}</td>
+                <td>{skippedSet.has(day.day) ? `${day.count}, skipped` : day.count}</td>
               </tr>
             ))}
           </tbody>

@@ -42,7 +42,7 @@ export function sidebarSectionDefs(): SidebarSectionDef[] {
     { key: 'lists', label: 'Lists', group: 'library' },
     { key: 'tags', label: 'Tags', group: 'library' },
     { key: 'music', label: 'Music', group: 'local' },
-    { key: 'pictures', label: 'Pictures', group: 'local' },
+    { key: 'pictures', label: 'Gallery', group: 'local' },
     { key: 'history', label: 'History', group: 'archives' },
     { key: 'wrestling', label: 'Wrestling', group: 'archives' },
     { key: 'football', label: 'Football', group: 'archives' },

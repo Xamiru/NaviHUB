@@ -13,6 +13,7 @@ import CoverImage from '../components/CoverImage'
 import Markdown from '../components/Markdown'
 import AddToListMenu from '../components/AddToListMenu'
 import { WrestlingClipShelf } from '../components/wrestling/WrestlingClips'
+import LinkedMusicSection from '../components/music/LinkedMusicSection'
 import FavoriteButton from '../components/FavoriteButton'
 import WrestlingMatchRow from '../components/wrestling/WrestlingMatchRow'
 import { wikipediaUrl } from '@shared/wikiLinks'
@@ -22,7 +23,7 @@ import EditorialDetailFrame from '../components/EditorialDetailFrame'
 // A career runs to thousands of matches; the repo pages and this batches again.
 const PAGE = 100
 
-type Tab = 'honours' | 'matches' | 'clips'
+type Tab = 'honours' | 'matches' | 'clips' | 'music'
 
 function Fact({ label, value }: { label: string; value: string }): JSX.Element {
   return (
@@ -184,13 +185,16 @@ export default function WrestlingWrestlerPage(): JSX.Element {
             tabs={[
               { key: 'honours', label: `Honours${honourCount ? ` (${honourCount})` : ''}` },
               { key: 'matches', label: `Matches${w.record.total ? ` (${w.record.total})` : ''}` },
-              { key: 'clips', label: 'Clips' }
+              { key: 'clips', label: 'Clips' },
+              { key: 'music', label: 'Music' }
             ]}
           />
 
           <TabPanel tabsId="wrestler-record" value={tab}>
             {tab === 'clips' ? (
               <WrestlingClipShelf kind="wrestler" id={w.id} label={w.name} className="" />
+            ) : tab === 'music' ? (
+              <LinkedMusicSection owner={{ wrestlerId: w.id }} ownerTitle={w.name} title="Entrance themes and music" />
             ) : tab === 'honours' ? (
               w.honours.length === 0 ? (
                 <p className="text-sm text-gray-500">

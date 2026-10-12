@@ -1,13 +1,16 @@
 import * as quizRepo from './repos/quizRepo'
+import * as creditTimeRepo from './repos/creditTimeRepo'
 import { getSqlite } from './db/sqliteHandle'
 import { buildVaQuizQuestions } from '@shared/vaQuiz'
+import type { TimeStatsConfig } from '@shared/timeStats'
 import type {
   QuizAvailabilityRequest,
   QuizChallengeRequest,
   QuizLibFilter,
   QuizSongFilter,
   QuizSynopsisFilter,
-  QuizVaItem
+  QuizVaItem,
+  CreditTimeGroup
 } from '@shared/types'
 
 // The read-only quiz computations the quiz pool process answers (and main
@@ -31,6 +34,28 @@ function vaPoolFor(filter: QuizLibFilter): QuizVaItem[] {
   return pool
 }
 
+// The same until-the-library-changes memo for /stats' people and studios.
+const creditTimeCache = new WeakMap<
+  ReturnType<typeof getSqlite>,
+  { key: string; groups: CreditTimeGroup[] }
+>()
+
+function libraryVersion(): string {
+  const db = getSqlite()
+  const { changes } = db.prepare('SELECT total_changes() AS changes').get() as { changes: number }
+  return `${changes}:${db.pragma('data_version', { simple: true }) as number}`
+}
+
+function creditTimeFor(cfg: TimeStatsConfig): CreditTimeGroup[] {
+  const db = getSqlite()
+  const key = `${libraryVersion()}|${JSON.stringify(cfg)}`
+  const cached = creditTimeCache.get(db)
+  if (cached?.key === key) return cached.groups
+  const groups = creditTimeRepo.creditTime(cfg)
+  creditTimeCache.set(db, { key, groups })
+  return groups
+}
+
 export const QUIZ_POOL_METHODS = {
   availability: (request: QuizAvailabilityRequest) => quizRepo.availability(request),
   challengePool: (request: QuizChallengeRequest) => quizRepo.challengePool(request),
@@ -42,6 +67,8 @@ export const QUIZ_POOL_METHODS = {
   // Settings → Maintenance "Check database". Not a quiz read, but the same
   // shape: it reads every page of the library database, so it runs on this
   // process's read-only connection instead of blocking main.
+  // /stats "Who your time went to": every credit of every consumed title.
+  creditTime: (cfg: TimeStatsConfig) => creditTimeFor(cfg),
   quickCheck: () =>
     (getSqlite().pragma('quick_check') as { quick_check: string }[]).map((row) => row.quick_check)
 }

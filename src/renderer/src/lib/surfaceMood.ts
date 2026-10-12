@@ -2,7 +2,8 @@ export type SurfaceMood = 'cinematic' | 'standard' | 'quiet' | 'immersive'
 
 const IMMERSIVE_ROUTES = [
   /^\/(manga|books)\/\d+\/(read|book)\//,
-  /^\/read\/(manga|book)\//
+  /^\/read\/(manga|book)\//,
+  /^\/watch\//
 ]
 
 const QUIET_PREFIXES = [

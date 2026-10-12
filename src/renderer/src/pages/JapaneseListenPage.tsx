@@ -15,7 +15,8 @@ import { mediaUrl } from '@shared/mediaUrl'
 import { diffChars, normalizeDictation, readingsKey } from '@shared/dictation'
 import { shuffle } from '@shared/shuffle'
 import { usePitchRecorder, type Take } from '../lib/usePitchRecorder'
-import TutorSessionContinue from '../components/TutorSessionContinue'
+import SessionLauncher from '../components/japanese/SessionLauncher'
+import SessionSummary from '../components/japanese/SessionSummary'
 import type { AudioSentence, JpListeningItem } from '@shared/types'
 
 type ListeningTab = 'guided' | 'dictation'
@@ -105,42 +106,52 @@ function GuidedListening() {
   if (items) return <GuidedRound items={items} mode={mode} onExit={() => setItems(null)} />
 
   return (
-    <div>
-      <div className="card p-5 space-y-5">
-        <Group label="Difficulty">
-          <Pill active={mode === 'known'} onClick={() => setMode('known')} label="All known" />
-          <Pill active={mode === 'one'} onClick={() => setMode('one')} label="One new word" />
-        </Group>
-        <label className="flex cursor-pointer items-start gap-2.5">
-          <input
-            aria-label="Count learning cards as known"
-            type="checkbox"
-            className="mt-0.5"
-            checked={includeLearning}
-            onChange={(e) => setIncludeLearning(e.target.checked)}
-          />
-          <span className="text-sm">
-            Count learning cards as known
-            <span className="block text-xs text-gray-500">
-              Off is stricter: only graduated review cards count.
+    <SessionLauncher
+      summary={
+        <div>
+          <p className="text-2xl font-semibold text-white">{length} sentences</p>
+          <p className="mt-2 text-sm text-gray-400">
+            Hear each sentence before you see it, pick its meaning, then read it and say it back.
+            Your recording is only for you to compare; the app does not grade your accent.
+          </p>
+        </div>
+      }
+      defaults={`${mode === 'known' ? 'all words known' : 'one new word'}${includeLearning ? ' · learning cards count' : ''}`}
+      startLabel="Start listening"
+      onStart={() => void start()}
+      starting={loading}
+      error={error}
+      hint="1 to 4 to answer · R to replay · Enter for the next sentence"
+      options={
+        <>
+          <Group label="Difficulty">
+            <Pill active={mode === 'known'} onClick={() => setMode('known')} label="All known" />
+            <Pill active={mode === 'one'} onClick={() => setMode('one')} label="One new word" />
+          </Group>
+          <label className="flex cursor-pointer items-start gap-2.5">
+            <input
+              aria-label="Count learning cards as known"
+              type="checkbox"
+              className="mt-0.5"
+              checked={includeLearning}
+              onChange={(e) => setIncludeLearning(e.target.checked)}
+            />
+            <span className="text-sm">
+              Count learning cards as known
+              <span className="block text-xs text-gray-500">
+                Off is stricter: only graduated review cards count.
+              </span>
             </span>
-          </span>
-        </label>
-        <Group label="Sentences">
-          <Pill active={length === 5} onClick={() => setLength(5)} label="5" />
-          <Pill active={length === 10} onClick={() => setLength(10)} label="10" />
-        </Group>
-        <p className="text-sm text-gray-400">
-          Hear the sentence before seeing it, choose its meaning, then reveal the transcript and
-          shadow it. Pronunciation is self-compared; the app does not pretend to grade your accent.
-        </p>
-        {error && <p className="text-sm text-signal-anomaly">{error}</p>}
-        <button className="btn-primary w-full" disabled={loading} onClick={() => void start()}>
-          {loading ? 'Matching recordings…' : 'Start guided listening'}
-        </button>
-      </div>
+          </label>
+          <Group label="Sentences">
+            <Pill active={length === 5} onClick={() => setLength(5)} label="5" />
+            <Pill active={length === 10} onClick={() => setLength(10)} label="10" />
+          </Group>
+        </>
+      }
+    >
       <QuizRecord kind="listening" />
-    </div>
+    </SessionLauncher>
   )
 }
 
@@ -283,20 +294,16 @@ function GuidedRound({
 
   if (finished) {
     return (
-      <div className="card p-8 text-center">
-        <p className="text-sm uppercase tracking-widest text-gray-500">Listening complete</p>
-        <p className="mt-3 text-5xl font-bold">
-          {score}
-          <span className="text-2xl text-gray-500"> / {items.length}</span>
-        </p>
-        <p className="mt-2 text-sm text-gray-400">Shadowed {shadowed.size} sentences</p>
-        <div className="mt-6 flex gap-2">
-          <button className="btn-primary flex-1" onClick={onExit}>
-            Again
+      <SessionSummary
+        title="Listening complete"
+        score={{ correct: score, total: items.length }}
+        facts={[{ label: 'Said aloud', value: `${shadowed.size} of ${items.length}` }]}
+        actions={
+          <button type="button" className="btn-ghost" onClick={onExit}>
+            Listen again
           </button>
-          <TutorSessionContinue fallbackTo="/japanese" fallbackLabel="Back" className="btn-ghost flex-1 text-center" />
-        </div>
-      </div>
+        }
+      />
     )
   }
   if (!current) return null
@@ -417,19 +424,27 @@ function DictationSetup() {
   return items ? (
         <DictationRound items={items} onExit={() => setItems(null)} />
       ) : (
-        <div>
-          <div className="card p-5 space-y-5">
+        <SessionLauncher
+          summary={
+            <div>
+              <p className="text-2xl font-semibold text-white">{length} sentences</p>
+              <p className="mt-2 text-sm text-gray-400">Hear a sentence and write down exactly what you heard.</p>
+            </div>
+          }
+          defaults={`${length} sentences`}
+          startLabel="Start dictation"
+          onStart={() => void start()}
+          starting={loading}
+          error={error}
+          options={
             <Group label="Sentences">
               <Pill active={length === 5} onClick={() => setLength(5)} label="5" />
               <Pill active={length === 10} onClick={() => setLength(10)} label="10" />
             </Group>
-            {error && <p className="text-sm text-signal-anomaly">{error}</p>}
-            <button className="btn-primary w-full" disabled={loading} onClick={() => void start()}>
-              {loading ? 'Loading…' : 'Start'}
-            </button>
-          </div>
+          }
+        >
           <QuizRecord kind="dictation" />
-        </div>
+        </SessionLauncher>
       )
 }
 
@@ -553,19 +568,15 @@ function DictationRound({ items, onExit }: { items: AudioSentence[]; onExit: () 
 
   if (finished) {
     return (
-      <div className="card p-8 text-center">
-        <p className="text-sm uppercase tracking-widest text-gray-500">Dictation complete</p>
-        <p className="mt-3 text-5xl font-bold">
-          {score}
-          <span className="text-2xl text-gray-500"> / {items.length}</span>
-        </p>
-        <div className="mt-6 flex gap-2">
-          <button className="btn-primary flex-1" onClick={onExit}>
-            Again
+      <SessionSummary
+        title="Dictation complete"
+        score={{ correct: score, total: items.length }}
+        actions={
+          <button type="button" className="btn-ghost" onClick={onExit}>
+            Another round
           </button>
-          <TutorSessionContinue fallbackTo="/japanese" fallbackLabel="Back" className="btn-ghost flex-1 text-center" />
-        </div>
-      </div>
+        }
+      />
     )
   }
   if (!current) return null

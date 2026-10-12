@@ -43,6 +43,24 @@ const ORIENTATION_SQL = {
   square: 'i.width > 0 AND i.height > 0 AND i.width BETWEEN i.height * 0.95 AND i.height * 1.05'
 } as const
 
+// The shorter side decides the tier. Unknown (NULL) or unreadable (0)
+// dimensions match no tier, not even 'low'.
+const SHORT_SIDE = 'MIN(i.width, i.height)'
+const RESOLUTION_SQL = {
+  fhd: `${SHORT_SIDE} >= 1080`,
+  qhd: `${SHORT_SIDE} >= 1440`,
+  uhd: `${SHORT_SIDE} >= 2160`,
+  low: `i.width > 0 AND i.height > 0 AND ${SHORT_SIDE} < 1080`
+} as const
+
+const SEARCH_WORD_SQL = `(m.title LIKE ? ESCAPE '\\' OR i.file_path LIKE ? ESCAPE '\\'
+  OR i.source LIKE ? ESCAPE '\\' OR EXISTS (SELECT 1 FROM picture_tag_link l
+  JOIN picture_tag t ON t.id = l.tag_id WHERE l.image_id = i.id AND t.name LIKE ? ESCAPE '\\'))`
+
+export function searchWords(search: string | undefined): string[] {
+  return (search ?? '').trim().split(/\s+/).filter(Boolean)
+}
+
 export function listGallery(filter: PictureGalleryFilter = {}): MediaImage[] {
   const where: string[] = []
   const params: unknown[] = []
@@ -67,6 +85,12 @@ export function listGallery(filter: PictureGalleryFilter = {}): MediaImage[] {
   if (filter.favorites) where.push('i.is_favorite = 1')
   if (filter.inSlideshow) where.push('s.image_id IS NOT NULL')
   if (filter.orientation) where.push(ORIENTATION_SQL[filter.orientation])
+  if (filter.resolution) where.push(RESOLUTION_SQL[filter.resolution])
+  for (const word of searchWords(filter.search)) {
+    const like = `%${word.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
+    where.push(SEARCH_WORD_SQL)
+    params.push(like, like, like, like)
+  }
   for (const tagId of filter.tagIds ?? []) {
     where.push('EXISTS (SELECT 1 FROM picture_tag_link t WHERE t.image_id = i.id AND t.tag_id = ?)')
     params.push(tagId)
@@ -78,7 +102,9 @@ export function listGallery(filter: PictureGalleryFilter = {}): MediaImage[] {
         ? 'i.created_at, i.id'
         : filter.sort === 'title'
           ? 'm.title IS NULL, m.title COLLATE NOCASE, i.kind DESC, i.sort_order, i.id'
-          : 'i.created_at DESC, i.id DESC'
+          : filter.sort === 'largest'
+            ? 'COALESCE(i.width * i.height, 0) DESC, i.id DESC'
+            : 'i.created_at DESC, i.id DESC'
   const sql = `${IMAGE_SELECT}${join}${where.length ? ` WHERE ${where.join(' AND ')}` : ''} ORDER BY ${order}`
   return (getSqlite().prepare(sql).all(...params) as any[]).map(rowToImage)
 }
@@ -420,7 +446,7 @@ async function runSync(): Promise<SlideshowSyncResult> {
     {
       kind: 'pictureSlideshow',
       label,
-      route: '/pictures',
+      route: '/gallery',
       controls: {
         cancel: () => {
           syncCancel = true

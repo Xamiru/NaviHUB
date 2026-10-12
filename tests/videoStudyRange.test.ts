@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   formatVideoStudyCue,
   formatVideoStudyTime,
-  parseVideoStudyRange
+  parseVideoStudyRange,
+  parseWatchRange,
+  watchRangeSearch
 } from '../src/shared/videoStudyRange'
 
 describe('video study range', () => {
@@ -26,5 +28,27 @@ describe('video study range', () => {
     expect(formatVideoStudyTime(90)).toBe('1:30')
     expect(formatVideoStudyTime(3670)).toBe('1:01:10')
     expect(formatVideoStudyCue({ start: 90, end: 210 })).toBe('Start 1:30, stop 3:30')
+  })
+})
+
+describe('player watch range', () => {
+  const params = (q: string): URLSearchParams => new URLSearchParams(q)
+
+  it('round-trips a range through the /watch query string', () => {
+    const q = watchRangeSearch({ start: 90.4, end: 209.2 })
+    expect(q).toBe('start=90&end=210')
+    expect(parseWatchRange(params(q))).toEqual({ start: 90, end: 210 })
+  })
+
+  it('treats a missing, empty or invalid pair as no range', () => {
+    expect(parseWatchRange(params(''))).toBeNull()
+    expect(parseWatchRange(params('start=90'))).toBeNull()
+    expect(parseWatchRange(params('start=&end=30'))).toBeNull()
+    expect(parseWatchRange(params('start=200&end=100'))).toBeNull()
+  })
+
+  it('clamps the end to the file duration once it is known', () => {
+    expect(parseWatchRange(params('start=60&end=900'), 600)).toEqual({ start: 60, end: 600 })
+    expect(parseWatchRange(params('start=700&end=900'), 600)).toBeNull()
   })
 })

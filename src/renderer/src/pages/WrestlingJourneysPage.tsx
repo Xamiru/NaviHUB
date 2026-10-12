@@ -317,16 +317,9 @@ function JourneyStep({
           <span className="text-sm text-signal-caution">Attached file unavailable</span>
         )}
         {step.videos.map((v) => (
-          <button
-            key={v.id}
-            className="btn"
-            disabled={action.busy}
-            onClick={() =>
-              void action.run(() => api.video.openExternal({ kind: 'wrestling', fileId: v.id }))
-            }
-          >
-            Open event/match file: {v.title}
-          </button>
+          <Link key={v.id} className="btn" to={`/watch/wrestling/${v.id}`}>
+            Play event/match file: {v.title}
+          </Link>
         ))}
         <button
           className="btn-ghost"

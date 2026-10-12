@@ -10,6 +10,8 @@ import type { ContextMenuItem } from '../ContextMenu'
 import Dialog from '../Dialog'
 import { Field } from '../Field'
 import UniversalPicker, { type PickedEntity } from '../UniversalPicker'
+import ImageBrowseDialog from '../ImageBrowseDialog'
+import { nextResolutionTier } from '@shared/pictures'
 import type { ImageKind, MediaImage } from '@shared/types'
 
 // Every picture action in one place, so the gallery, an album and a title's
@@ -20,6 +22,7 @@ type DialogState =
   | { kind: 'album'; images: MediaImage[] }
   | { kind: 'tags'; images: MediaImage[] }
   | { kind: 'move'; images: MediaImage[] }
+  | { kind: 'larger'; image: MediaImage }
   | null
 
 const plural = (n: number, noun: string): string => `${n} ${noun}${n === 1 ? '' : 's'}`
@@ -121,6 +124,14 @@ export function usePictureActions({
           })
       })
     }
+    // Known size under 4K: look for a larger copy that replaces this one.
+    if (one && nextResolutionTier(one.width, one.height)) {
+      items.push({
+        label: 'Find a larger version…',
+        disabled: busy,
+        onSelect: () => setDialog({ kind: 'larger', image: one })
+      })
+    }
     if (one && one.mediaId != null) {
       const mediaId = one.mediaId
       items.push(
@@ -164,9 +175,36 @@ export function usePictureActions({
       <TagsDialog images={dialog.images} onClose={close} />
     ) : dialog?.kind === 'move' ? (
       <MoveDialog images={dialog.images} onClose={close} />
+    ) : dialog?.kind === 'larger' ? (
+      <LargerVersionDialog image={dialog.image} onClose={close} />
     ) : null
 
   return { itemsFor, toggleFavorite, remove, dialogs, busy }
+}
+
+// The Browse dialog in replace mode, with the title's cast for Danbooru's
+// character shortcuts.
+function LargerVersionDialog({
+  image,
+  onClose
+}: {
+  image: MediaImage
+  onClose: () => void
+}): React.JSX.Element {
+  const mediaId = image.mediaId
+  const { data: detail } = useQuery({
+    queryKey: qk.media.detail(mediaId ?? 0),
+    queryFn: () => api.media.get(mediaId as number),
+    enabled: mediaId != null
+  })
+  return (
+    <ImageBrowseDialog
+      m={{ id: mediaId, title: image.mediaTitle ?? 'Unsorted', characters: detail?.characters ?? [] }}
+      kind={image.kind}
+      replace={image}
+      onClose={onClose}
+    />
+  )
 }
 
 function DialogFrame({

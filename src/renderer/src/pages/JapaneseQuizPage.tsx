@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import PageHeader from '../components/PageHeader'
 import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
-import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -13,6 +12,9 @@ import { confusableTier } from '@shared/confusables'
 import type { JpLessonKind, JpQuizItem } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
 import { useTabLeaveGuard } from '../lib/browserTabs'
+import SessionLauncher from '../components/japanese/SessionLauncher'
+import SessionSummary, { type SummaryMiss } from '../components/japanese/SessionSummary'
+import { WordFurigana } from '../components/japanese/Furigana'
 
 type Phase = 'setup' | 'play' | 'summary'
 type Direction = 'jp2en' | 'en2jp' | 'jp2reading' | 'cloze'
@@ -112,6 +114,7 @@ export default function JapaneseQuizPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [newBest, setNewBest] = useState(false)
+  const [missed, setMissed] = useState<SummaryMiss[]>([])
 
   const deckRef = useRef<JpQuizItem[]>([])
   const statsRef = useRef<Stats>(ZERO)
@@ -166,6 +169,7 @@ export default function JapaneseQuizPage() {
       lengthRef.current = length
       loggedRef.current = false
       setNewBest(false)
+      setMissed([])
       setStats(ZERO)
       setPhase('play')
       nextQuestion()
@@ -207,6 +211,10 @@ export default function JapaneseQuizPage() {
     }
     statsRef.current = next
     setStats(next)
+    if (!correct) {
+      const miss = { key: String(current.id), jp: current.front, reading: current.reading, meaning: current.back }
+      setMissed((list) => (list.some((item) => item.key === miss.key) ? list : [...list, miss]))
+    }
     setPicked(optionId)
     setAnswered(true)
   }
@@ -270,7 +278,26 @@ export default function JapaneseQuizPage() {
           subtitle="Multiple choice over the lessons you have marked as learned."
         />
 
-        <div className="card p-5 space-y-5">
+        <SessionLauncher
+          summary={
+            <div>
+              <p className="text-2xl font-semibold text-white">
+                {length === 0 ? 'Endless round' : `${length} questions`}
+              </p>
+              <p className="mt-1 text-sm text-gray-400">
+                Four choices each, from the lessons you have marked as learned.
+              </p>
+            </div>
+          }
+          defaults={`${directions.map((d) => DIRECTION_LABELS[d]).join(', ') || 'no direction'} · ${courseId === null ? 'all courses' : courses.find((c) => c.id === courseId)?.title ?? 'one course'}`}
+          startLabel="Start quiz"
+          onStart={() => void startGame()}
+          starting={loading}
+          disabled={directions.length === 0}
+          error={error ?? (directions.length === 0 ? 'Choose at least one direction under Options.' : null)}
+          hint="1 to 4 to answer · Enter for the next question"
+          options={
+            <>
           <Group label="Course">
             <Pill active={courseId === null} onClick={() => setCourseId(null)} label="All" />
             {courses.map((c) => (
@@ -315,46 +342,30 @@ export default function JapaneseQuizPage() {
             <Pill active={length === 0} onClick={() => setLength(0)} label="Endless" />
           </Group>
 
-          {error && <p className="text-sm text-signal-anomaly">{error}</p>}
-
-          <button
-            className="btn-primary w-full"
-            disabled={loading || directions.length === 0}
-            onClick={startGame}
-          >
-            {loading ? 'Loading…' : 'Start quiz'}
-          </button>
-        </div>
-
-        <QuizRecord kind="japanese" />
+            </>
+          }
+        >
+          <QuizRecord kind="japanese" />
+        </SessionLauncher>
       </div>
     )
   }
 
   if (phase === 'summary') {
-    const accuracy = stats.total ? Math.round((stats.score / stats.total) * 100) : 0
     return (
-      <div className="p-6 max-w-md mx-auto">
-        <div className="card p-8 text-center">
-          <p className="text-sm uppercase tracking-widest text-gray-500">Quiz complete</p>
-          <p className="mt-3 text-5xl font-bold">
-            {stats.score}
-            <span className="text-2xl text-gray-500"> / {stats.total}</span>
-          </p>
-          <div className="mt-4 flex justify-center gap-6 text-sm text-gray-400">
-            <span>{accuracy}% correct</span>
-            <span>Best streak {stats.best}</span>
-          </div>
-          {newBest && <p className="mt-3 text-sm font-semibold text-accent">New personal best.</p>}
-          <div className="mt-6 flex gap-2">
-            <button className="btn-primary flex-1" onClick={() => setPhase('setup')}>
+      <div className="p-6">
+        <SessionSummary
+          title="Quiz complete"
+          score={{ correct: stats.score, total: stats.total }}
+          facts={[{ label: 'Best streak', value: stats.best }]}
+          note={newBest ? 'New personal best.' : undefined}
+          missed={missed}
+          actions={
+            <button type="button" className="btn-ghost" onClick={() => setPhase('setup')}>
               Play again
             </button>
-            <Link to="/japanese" className="btn-ghost flex-1 text-center">
-              Back
-            </Link>
-          </div>
-        </div>
+          }
+        />
       </div>
     )
   }
@@ -460,11 +471,8 @@ export default function JapaneseQuizPage() {
           >
             {picked === current.id ? 'Correct' : picked === null ? 'Skipped' : 'Incorrect'}
           </p>
-          <p className="mt-1 text-lg">
-            {current.front}
-            {current.reading && current.reading !== current.front && (
-              <span className="ml-2 text-sm text-gray-400">{current.reading}</span>
-            )}
+          <p className="mt-1 text-2xl">
+            <WordFurigana word={current.front} reading={current.reading} />
           </p>
           <p className="text-sm text-gray-300">{current.back}</p>
           {(current.onyomi || current.kunyomi) && (

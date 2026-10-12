@@ -3,10 +3,11 @@ import { mediaUrl } from '@shared/mediaUrl'
 import ContextMenu from '../ContextMenu'
 import Lightbox from '../Lightbox'
 import JustifiedGallery from './JustifiedGallery'
+import PictureCaption from './PictureCaption'
 import { usePictureActions } from './PictureActions'
 import type { MediaImage } from '@shared/types'
 
-// The gallery body shared by /pictures and an album: count and Play, the
+// The gallery body shared by /gallery and an album: count and Play, the
 // selection bar, the justified grid, the viewer and the right-click menu.
 export default function PictureBrowser({
   images,
@@ -105,6 +106,7 @@ export default function PictureBrowser({
           index={viewer.index}
           slideshow
           autoplay={viewer.autoplay}
+          caption={(index) => (images[index] ? <PictureCaption image={images[index]} /> : null)}
           onIndexChange={(index) => {
             setViewer((v) => (v ? { ...v, index } : v))
             setMenu(null)

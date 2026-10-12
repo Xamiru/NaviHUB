@@ -1,4 +1,5 @@
 import { memo, useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { toastError } from '../../lib/toast'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import CoverImage from '../CoverImage'
@@ -365,18 +366,30 @@ export function FootballMediaShelf({ media }: { media: FootballMedia[] }) {
               {item.links.length ? ` / ${item.links.map((link) => link.label).filter(Boolean).join(', ')}` : ''}
             </p>
           </div>
-          <button
-            className="btn-ghost shrink-0"
-            onClick={() =>
-              item.localPath
-                ? api.football.openMedia(item.localPath)
-                : item.url
-                  ? api.football.openExternalLink('website', item.url)
-                  : undefined
-            }
-          >
-            Open
-          </button>
+          {item.localPath ? (
+            <div className="flex shrink-0 gap-1">
+              <Link to={`/watch/football/${item.id}`} className="btn-ghost">
+                Play
+              </Link>
+              <button
+                className="btn-ghost"
+                title="Open in the system player"
+                aria-label={`Open in the system player: ${item.title}`}
+                onClick={() => void api.video.openExternal({ kind: 'football', mediaId: item.id }).catch(toastError)}
+              >
+                External
+              </button>
+            </div>
+          ) : (
+            <button
+              className="btn-ghost shrink-0"
+              onClick={() =>
+                item.url ? void api.football.openExternalLink('website', item.url).catch(toastError) : undefined
+              }
+            >
+              Open
+            </button>
+          )}
         </div>
       ))}
     </div>

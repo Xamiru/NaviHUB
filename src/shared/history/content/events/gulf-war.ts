@@ -268,6 +268,16 @@ export default defineEvent({
           loc: { section: 'The Gulf War, 1991', para: '13' }
         }
       ]
+    },
+    {
+      ref: 'event:iraq-war',
+      rel: 'followed-by',
+      cites: [
+        {
+          source: 'millercenter-gregg-george-w-bush-foreign-affairs',
+          loc: { section: 'George W. Bush: Foreign Affairs', para: '8' }
+        }
+      ]
     }
   ],
   sections: [

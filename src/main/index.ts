@@ -45,10 +45,14 @@ import { installAppMenu } from './appMenu'
 import { initializeSecretStorage } from './secretStorage'
 
 // Custom scheme for serving locally-stored cover/photo images to the renderer.
+// corsEnabled lets CORS-mode requests reach the handler at all: the video
+// player's <video crossOrigin="anonymous"> (needed for frame capture) and its
+// subtitle fetch() are refused by Chromium from the file:// renderer without
+// it. The handler answers them with access-control-allow-origin: *.
 protocol.registerSchemesAsPrivileged([
   {
     scheme: 'navimg',
-    privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true }
+    privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true }
   }
 ])
 
@@ -227,6 +231,10 @@ app.whenReady().then(async () => {
   // Plain files are streamed by hand (not net.fetch) so Range requests get a
   // real 206 — that's what makes <audio> seekable and lets Chromium read
   // trailing metadata (m4a moov, VBR mp3 length) without downloading it all.
+  // The scheme is corsEnabled, so a CORS-mode fetch() of a missing file must
+  // still see the 404 rather than a blocked response with no status.
+  const notFound = (): Response =>
+    new Response('Not found', { status: 404, headers: { 'access-control-allow-origin': '*' } })
   protocol.handle('navimg', async (request) => {
     const url = new URL(request.url)
     const relPath = decodeURIComponent(url.host + url.pathname)
@@ -243,20 +251,23 @@ app.whenReady().then(async () => {
         absoluteMediaPath(archived.archiveRel),
         archived.entryName
       )
-      if (!opened) return new Response('Not found', { status: 404 })
+      if (!opened) return notFound()
       return new Response(Readable.toWeb(opened.stream) as unknown as BodyInit, {
         headers: {
           'content-type': mimeFor(archived.entryName),
-          'content-length': String(opened.size)
+          'content-length': String(opened.size),
+          // The book reader fetch()es EPUB sections from here; the scheme is
+          // corsEnabled, so a CORS-mode read needs the same header as files.
+          'access-control-allow-origin': '*'
         }
       })
     }
 
     if (relPath.startsWith('thumb/')) {
       const parsed = parseThumbRequest(relPath)
-      if (!parsed) return new Response('Not found', { status: 404 })
+      if (!parsed) return notFound()
       const thumbAbs = await ensureThumb(parsed.width, parsed.sourceRel)
-      if (!thumbAbs) return new Response('Not found', { status: 404 })
+      if (!thumbAbs) return notFound()
       const st = await stat(thumbAbs)
       // Output is our own re-encode: JPEG, or PNG for a source with transparency.
       return new Response(Readable.toWeb(createReadStream(thumbAbs)) as unknown as BodyInit, {
@@ -272,10 +283,10 @@ app.whenReady().then(async () => {
     let size: number
     try {
       const st = await stat(absPath)
-      if (!st.isFile()) return new Response('Not found', { status: 404 })
+      if (!st.isFile()) return notFound()
       size = st.size
     } catch {
-      return new Response('Not found', { status: 404 })
+      return notFound()
     }
     const baseHeaders = {
       'content-type': mimeFor(absPath),

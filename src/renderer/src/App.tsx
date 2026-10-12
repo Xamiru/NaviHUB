@@ -111,7 +111,9 @@ const PartyQuizPage = lazy(() => import('./pages/PartyQuizPage'))
 const TournamentPage = lazy(() => import('./pages/TournamentPage'))
 const MangaReaderPage = lazy(() => import('./pages/MangaReaderPage'))
 const BookReaderPage = lazy(() => import('./pages/BookReaderPage'))
+const VideoPlayerPage = lazy(() => import('./pages/VideoPlayerPage'))
 const MusicSmartPage = lazy(() => import('./pages/MusicSmartPage'))
+const MusicSoundtracksPage = lazy(() => import('./pages/MusicSoundtracksPage'))
 const MusicLibraryPage = lazy(() => import('./pages/MusicLibraryPage'))
 const MusicArtistPage = lazy(() => import('./pages/MusicArtistPage'))
 const MusicAlbumPage = lazy(() => import('./pages/MusicAlbumPage'))
@@ -163,6 +165,7 @@ const JapaneseHomePage = lazy(() => import('./pages/JapaneseHomePage'))
 const JapaneseTutorPage = lazy(() => import('./pages/JapaneseTutorPage'))
 const JapaneseTutorSessionPage = lazy(() => import('./pages/JapaneseTutorSessionPage'))
 const JapaneseRoadmapPage = lazy(() => import('./pages/JapaneseRoadmapPage'))
+const JapaneseToolsPage = lazy(() => import('./pages/JapaneseToolsPage'))
 const JapaneseGuidePage = lazy(() => import('./pages/JapaneseGuidePage'))
 const JapaneseAnalyzePage = lazy(() => import('./pages/JapaneseAnalyzePage'))
 const JapaneseCoveragePage = lazy(() => import('./pages/JapaneseCoveragePage'))
@@ -208,16 +211,16 @@ export default function App() {
   const signalClarity = parseSignalClarity(settings?.[SIGNAL_CLARITY_SETTING])
   useScrollRestoration(mainRef)
 
-  // The manga/book readers are immersive: no
+  // The manga/book readers and the video player are immersive: no
   // sidebar/topbar/now-playing chrome, full-bleed. Audio keeps playing — the
   // <audio> element lives in AudioPlayerProvider, not in the (unmounted)
-  // NowPlayingBar.
+  // NowPlayingBar — and the video player pauses it when a video starts.
+  const isPlayer = /^\/watch\/(file|wrestling|clip|football)\/\d+$/.test(location.pathname)
   const isReader =
-    /^\/(manga|books)\/\d+\/(read|book)\/|^\/read\/(manga|book)\//.test(
-      location.pathname
-    )
-  // The reader branch has no <main>, so its tab is simply "Reader".
-  useTabTitle(mainRef, isReader ? 'Reader' : sectionTitle(location.pathname))
+    isPlayer ||
+    /^\/(manga|books)\/\d+\/(read|book)\/|^\/read\/(manga|book)\//.test(location.pathname)
+  // The reader branch has no <main>, so its tab is simply "Reader" or "Player".
+  useTabTitle(mainRef, isPlayer ? 'Player' : isReader ? 'Reader' : sectionTitle(location.pathname))
 
   // Theme and route atmosphere key off these attributes. Effects are painted
   // into shell backgrounds, never over content; readers render no shell at all.
@@ -264,6 +267,9 @@ export default function App() {
             {/* "Open with NaviHUB" — a .cbz/.epub from outside the library. */}
             <Route path="/read/manga/:token" element={<MangaReaderPage />} />
             <Route path="/read/book/:token" element={<BookReaderPage />} />
+            {/* The in-app video player: library episodes, wrestling files,
+                wrestling clips and Football media. The kind strings are frozen. */}
+            <Route path="/watch/:kind/:id" element={<VideoPlayerPage />} />
           </Routes>
         </Suspense>
         {/* Mounted in BOTH branches: a file opened while you're already in a
@@ -492,6 +498,7 @@ export default function App() {
             <Route path="/music/albums/:id" element={<MusicAlbumPage />} />
             <Route path="/music/playlists/:id" element={<MusicPlaylistPage />} />
             <Route path="/music/liked" element={<MusicLikedPage />} />
+            <Route path="/music/soundtracks" element={<MusicSoundtracksPage />} />
             <Route path="/music/stats" element={<MusicStatsPage />} />
             <Route path="/music/downloads" element={<MusicDownloadsPage />} />
             {/* Full-page view of the player (any audio, not just music) */}
@@ -499,16 +506,19 @@ export default function App() {
             {/* pre-stats sessions may still have /music/history in back-history */}
             <Route path="/music/history" element={<Navigate to="/music/stats" replace />} />
 
-            {/* Pictures — every Art-tab image plus Unsorted, with albums and tags */}
-            <Route path="/pictures" element={<PicturesPage />} />
-            <Route path="/pictures/albums" element={<PictureAlbumsPage />} />
-            <Route path="/pictures/albums/:id" element={<PictureAlbumPage />} />
+            {/* Gallery — every Art-tab image plus Unsorted, with albums and tags */}
+            <Route path="/gallery" element={<PicturesPage />} />
+            <Route path="/gallery/albums" element={<PictureAlbumsPage />} />
+            <Route path="/gallery/albums/:id" element={<PictureAlbumPage />} />
+            {/* the section was /pictures before it became the Gallery */}
+            <Route path="/pictures/*" element={<PicturesRedirect />} />
 
             {/* Japanese learning — standalone section (courses, SRS review, quiz) */}
             <Route path="/japanese" element={<JapaneseHomePage />} />
             <Route path="/japanese/tutor" element={<JapaneseTutorPage />} />
             <Route path="/japanese/tutor/session" element={<JapaneseTutorSessionPage />} />
             <Route path="/japanese/roadmap" element={<JapaneseRoadmapPage />} />
+            <Route path="/japanese/tools" element={<JapaneseToolsPage />} />
             <Route path="/japanese/guide" element={<JapaneseGuidePage />} />
             <Route path="/japanese/analyze" element={<JapaneseAnalyzePage />} />
             <Route path="/japanese/coverage" element={<JapaneseCoveragePage />} />
@@ -649,6 +659,12 @@ export default function App() {
 function ParamRedirect({ to }: { to: string }): React.JSX.Element {
   const { id = '' } = useParams()
   return <Navigate to={`${to}/${id}`} replace />
+}
+
+// /pictures/... became /gallery/...; keep the rest of the path.
+function PicturesRedirect(): React.JSX.Element {
+  const { pathname } = useLocation()
+  return <Navigate to={pathname.replace(/^\/pictures/, '/gallery')} replace />
 }
 
 function RouteLoading({ label }: { label: string }): React.JSX.Element {

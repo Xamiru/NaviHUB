@@ -26,6 +26,7 @@ import PageHeader from '../components/PageHeader'
 import CoverImage from '../components/CoverImage'
 import FranchiseBackground from '../components/FranchiseBackground'
 import { HeartIcon } from '../components/PlayerIcons'
+import FranchiseMusic from '../components/music/FranchiseMusic'
 
 type SortKey = 'release' | 'year' | 'story' | 'route' | 'score' | 'meta'
 type SortState = { key: SortKey; dir: 'asc' | 'desc' }
@@ -57,6 +58,13 @@ function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
   const { items, isLoading, error, refetch, isFinished } = useFranchiseLibrary(types)
   const { data: settings } = useSettings()
   const matched = useMemo(() => matchLibrary(cfg.entries, items), [cfg, items])
+  const musicEntries = useMemo(
+    () => cfg.entries.flatMap((e) => {
+      const item = matched.get(e.id)
+      return item ? [{ title: e.title, item }] : []
+    }),
+    [cfg, matched]
+  )
 
   // ---- curated art cache: fire once, poll while running, then re-fetch ----
   const { data: artMap = {} } = useQuery({
@@ -333,6 +341,8 @@ function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
             )}
           </div>
         </div>
+
+        <FranchiseMusic entries={musicEntries} accent={cfg.color} />
 
         {/* Trivia */}
         {cfg.trivia.length > 0 && (

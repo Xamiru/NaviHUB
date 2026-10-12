@@ -93,7 +93,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Ariel Sharon',
+      ref: 'person:ariel-sharon',
       role: 'commander',
       side: 'israel',
       cites: [

@@ -17,6 +17,16 @@ YouTube access check, cookie picker, Deno install), `musicTools.ts` (shared yt-d
 and the Spotify import dialog in `components/music/`. Music pages never import another page
 (guarded by `tests/performanceBoundaries.test.ts`).
 
+## Music links
+
+**Music links (2026-10-12)** — the redesign of the removed soundtrack associations (see [removed.md](removed.md)). Every media detail page has a **Music** tab (no `MediaConfig` flag; between the type tabs and Art) and every wrestler page a Music tab for entrance themes. Both mount `components/music/LinkedMusicSection.tsx` for an owner (`{ mediaId }` or `{ wrestlerId }`): linked albums and tracks from the local music library, grouped by a **free-text label** (OST, Opening, "S2E5 final scene"; groups in the order their first link appears, unlabelled links under "Unlabelled" once any label exists), drag-reorderable within a group, played with `playTracks` as ordinary `music-` tracks with `mediaId: null`. Links are made by hand only: **Link music** opens `LinkMusicDialog`, a debounced search over album titles, track titles and artist names (`musicLinkRepo.searchCandidates`, separate from the Music search page's `searchAll`), a label input that autocompletes from used labels, and for anime tracks a **Full version of** select. The dialog stays open so a soundtrack can be linked track by track.
+
+**Storage.** `media_music_link` (never `soundtrack_link`, which a startup migration drops): exactly one owner (CASCADE), `kind` `album`|`track`, and `album_id`/`track_id` with **ON DELETE SET NULL** plus a `snap_*` copy of artist, album, title and duration. `kind` is the discriminator because an album/track XOR CHECK would fail the SET NULL. A moved or renamed file is a new music row, so the prune orphans the link instead of deleting it; `music.startScan` then runs `refreshSnapshots()` (live links take the latest tags) and `reattachOrphans()`, which matches by `normalizeSpotifyMatch` artist and `recordingText` title (remaster wording folded) on the same album (`stripAlbumYearPrefix`), or — when the album folder was renamed — on the same title within 3 seconds. A match must be unique and share `recordingVariantSignature`, so a live or remixed take never stands in. Unmatched links stay visible as "missing" with Unlink. It reads only the matching artists' rows and runs only when orphans exist. A re-attach that would duplicate a link the user already re-made deletes the orphan.
+
+**Anime full versions.** A track link may carry `theme_external_id`: the `theme_song.external_id` it is the full version of, on the same anime (validated in the repo; one full version per theme). It is a key, not an FK, because a theme refresh deletes and re-inserts every `theme_song` row; reads join it back to the current row as `themeSongId`. The Theme Songs tab's `ThemeRow` then shows **Play full version**.
+
+**Elsewhere.** `/music/soundtracks` (`MusicSoundtracksPage`, a Music contextual tab) lists every title and wrestler with links (`musicLinks:browse`: one grouped read of the link table, with counts and labels), filtered by type and title, each expandable into the same section. Franchise pages render `FranchiseMusic` from `musicLinks:forMediaIds` over the matched entries (bounded by the franchise). Query keys live under `qk.music.links` inside the `music` prefix on purpose: a scan, like or tag edit refreshes linked rows; link mutations invalidate `qk.music.links.all`. Links are personal and wiped by `sanitizeSql.cjs`. Tests: `tests/musicLinkRepo.test.ts`, `tests/renderer/MusicLinks.test.tsx`.
+
 ## Personal track tags and smart playlists
 
 Track actions open a labelled tags/standout dialog; standout marks appear on album
@@ -224,7 +234,7 @@ stay in review: Chinese artists that YouTube Music credits only in Chinese ("Jay
 catalogue lacks.
 
 The recovery dialog (**Choose audio**) is shared by playlist and artist/album tracks. It shows
-the song's current problem, searches YouTube Music on open (official audio first, then its
+the song's current problem, prefills the YouTube Music query with artist and title but searches only when the user presses Search (official audio first, then its
 videos, native-script catalogues first for a native-script query; plain YouTube search only
 when that fails) and marks strong results **Match**; the
 library section is prefilled with the title. **Download this** / **Download link** approves that

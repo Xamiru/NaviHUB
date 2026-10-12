@@ -272,6 +272,13 @@ export function runMigrations(sqlite: Database.Database): string[] {
   ensureColumn(sqlite, 'theme_song', 'favorite', 'favorite INTEGER NOT NULL DEFAULT 0')
   // Per-board target override arrived one build after the checklist itself.
   ensureColumn(sqlite, 'checklist_task', 'target', 'target INTEGER')
+  // Checklist revamp (2026-10): weekday schedules, soft-deleted board rows
+  // (their rule history in checklist_rule must keep its task id) and log
+  // amounts for minutes/count items. Tasks with no checklist_rule rows fall
+  // back to their own created_at/target/days, so no backfill is needed.
+  ensureColumn(sqlite, 'checklist_task', 'days', 'days INTEGER')
+  ensureColumn(sqlite, 'checklist_task', 'removed_at', 'removed_at TEXT')
+  ensureColumn(sqlite, 'checklist_log', 'amount', 'amount INTEGER NOT NULL DEFAULT 1')
   // English saved words became the /english/review SRS deck (2026-08); every
   // DB with saved words predates the SRS columns.
   ensureColumn(sqlite, 'en_word', 'status', "status TEXT NOT NULL DEFAULT 'new'")

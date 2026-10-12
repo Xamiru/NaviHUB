@@ -93,7 +93,7 @@ export const SETTINGS_CATALOG: readonly SettingsCard[] = [
   { title: 'Wrestling library folder', tab: 'storage', keywords: ['ppv', 'matches'] },
   { title: 'Football media folder', tab: 'storage', keywords: ['clips', 'highlights'] },
   { title: 'Music library folder', tab: 'storage', keywords: ['songs', 'albums', 'mp3', 'flac'] },
-  { title: 'Pictures folder', tab: 'storage', keywords: ['wallpapers', 'fan art', 'move'] },
+  { title: 'Pictures folder', tab: 'storage', keywords: ['wallpapers', 'fan art', 'gallery', 'move'] },
   { title: 'Media folder', tab: 'storage', keywords: ['covers', 'images', 'photos', 'move'] },
   { title: 'History archive folder', tab: 'storage', keywords: ['history', 'attachments', 'move'] },
   { title: 'Slideshow folder', tab: 'storage', keywords: ['windows', 'desktop background'] },

@@ -43,6 +43,20 @@ export interface Track {
 
 export type RepeatMode = 'off' | 'all' | 'one'
 
+// A page that plays its own media (the video player) takes the OS media
+// session while it is mounted: metadata, playback state and the hardware
+// media keys. The provider stays the ONE place that installs handlers, so a
+// paused music track can never keep answering Play/Pause under a video.
+export interface MediaSessionClaim {
+  title: string
+  artist: string
+  playing: boolean
+  play: () => void
+  pause: () => void
+  seekTo: (seconds: number) => void
+  seekBy: (deltaSeconds: number) => void
+}
+
 interface PlayerControlsValue {
   track: Track | null
   isPlaying: boolean
@@ -73,6 +87,8 @@ interface PlayerControlsValue {
   seek: (time: number) => void
   setVolume: (v: number) => void
   stop: () => void
+  // null releases the session back to the music player.
+  claimMediaSession: (claim: MediaSessionClaim | null) => void
 }
 
 interface PlayerPositionValue {
@@ -148,6 +164,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
   const [index, setIndex] = useState(0)
   const [shuffled, setShuffled] = useState(() => loadPlayerPrefs().shuffle)
   const [repeat, setRepeatState] = useState<RepeatMode>(() => loadPlayerPrefs().repeat)
+  const [sessionClaim, claimMediaSession] = useState<MediaSessionClaim | null>(null)
 
   // Refs are the source of truth for playback logic: onEnded/onError and rapid
   // next/prev must never act on a stale render's state.
@@ -453,7 +470,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
       toggle,
       seek,
       setVolume,
-      stop
+      stop,
+      claimMediaSession
     }),
     [
       track,
@@ -478,7 +496,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
       toggle,
       seek,
       setVolume,
-      stop
+      stop,
+      claimMediaSession
     ]
   )
   const position = useMemo(() => ({ currentTime, duration }), [currentTime, duration])
@@ -488,7 +507,19 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
   // at one choke point (see lib/playerMeta.ts) — the overlay never spoils an answer.
   useEffect(() => {
     if (!('mediaSession' in navigator)) return
-    if (!track) return
+    if (sessionClaim) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: sessionClaim.title,
+        artist: sessionClaim.artist
+      })
+      return
+    }
+    // Nothing playing: clear what the last owner left (a released video
+    // claim or a stopped track) so the OS overlay never shows a stale title.
+    if (!track) {
+      navigator.mediaSession.metadata = null
+      return
+    }
     const meta = displayMeta(track)
     const cover = mediaUrl(meta.coverPath)
     navigator.mediaSession.metadata = new MediaMetadata({
@@ -497,12 +528,16 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
       album: meta.album,
       artwork: cover ? [{ src: cover, sizes: '512x512', type: 'image/jpeg' }] : []
     })
-  }, [track])
+  }, [track, sessionClaim?.title, sessionClaim?.artist])
 
   useEffect(() => {
     if (!('mediaSession' in navigator)) return
+    if (sessionClaim) {
+      navigator.mediaSession.playbackState = sessionClaim.playing ? 'playing' : 'paused'
+      return
+    }
     navigator.mediaSession.playbackState = track ? (isPlaying ? 'playing' : 'paused') : 'none'
-  }, [track, isPlaying])
+  }, [track, isPlaying, sessionClaim])
 
   // Feeds the scrubber/progress bar of the OS media widget (GNOME top-bar
   // extensions, KDE, hardware overlays). Reporting duration + playbackRate lets
@@ -511,6 +546,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
     if (!('mediaSession' in navigator)) return
     const ms = navigator.mediaSession
     if (typeof ms.setPositionState !== 'function') return
+    if (sessionClaim) return
     if (!track || !Number.isFinite(duration) || duration <= 0) return
     try {
       ms.setPositionState({
@@ -522,11 +558,31 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
       // Some Chromium builds throw if position momentarily exceeds duration
       // (e.g. a streamed track whose duration is still settling) — ignore.
     }
-  }, [track, duration, currentTime, isPlaying])
+  }, [track, duration, currentTime, isPlaying, sessionClaim])
 
   useEffect(() => {
     if (!('mediaSession' in navigator)) return
     const ms = navigator.mediaSession
+    const clear = (): void => {
+      ms.setActionHandler('play', null)
+      ms.setActionHandler('pause', null)
+      ms.setActionHandler('previoustrack', null)
+      ms.setActionHandler('nexttrack', null)
+      ms.setActionHandler('seekto', null)
+      ms.setActionHandler('seekbackward', null)
+      ms.setActionHandler('seekforward', null)
+      ms.setActionHandler('stop', null)
+    }
+    if (sessionClaim) {
+      ms.setActionHandler('play', () => sessionClaim.play())
+      ms.setActionHandler('pause', () => sessionClaim.pause())
+      ms.setActionHandler('seekto', (d) => {
+        if (d.seekTime != null && Number.isFinite(d.seekTime)) sessionClaim.seekTo(d.seekTime)
+      })
+      ms.setActionHandler('seekbackward', (d) => sessionClaim.seekBy(-(d.seekOffset ?? 10)))
+      ms.setActionHandler('seekforward', (d) => sessionClaim.seekBy(d.seekOffset ?? 10))
+      return clear
+    }
     // An idle player holds no OS handlers — otherwise a stray media key after
     // stop() would still reach the dead transport (and on Windows keep the app
     // listed in the SMTC flyout).
@@ -558,7 +614,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
       ms.setActionHandler('seekto', null)
       ms.setActionHandler('stop', null)
     }
-  }, [track, toggle, previous, next, hasNext, seek, stop])
+  }, [track, toggle, previous, next, hasNext, seek, stop, sessionClaim])
 
   // Remote-surface mirror: the Windows thumbbar and the pop-out widget render
   // from this snapshot (already display-masked via playerMeta). Position is

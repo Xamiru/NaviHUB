@@ -1,131 +1,109 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
-import Section from '../Section'
+import { STARTER_PACKS, starterPackInstalled } from '@shared/japanese/starterPacks'
 
-// One-time onboarding: the offline packs the section leans on, in install
-// order, with live installed-state. Renders nothing once the core six are in —
-// a set-up section that lingers after setup is done would just be noise.
-// Installed predicates mirror DictionarySettings (SettingsPage): Yomitan packs
-// by title prefix, the bespoke packs by their nullable info invokes.
+// One-time setup on Today: the six offline packs the section leans on, installed
+// with one button. Renders nothing until every query has answered (no "nothing
+// installed" flash) and nothing once all six are in. The per-pack controls and
+// the optional extras stay in Settings.
 
 const SETTINGS_LINK = '/settings?tab=learning'
 
 export default function SetupChecklist() {
+  const qc = useQueryClient()
+  const [starting, setStarting] = useState(false)
   const dictsQ = useQuery({ queryKey: qk.dict.list, queryFn: () => api.dict.list() })
-  const sentencesQ = useQuery({
-    queryKey: qk.dict.sentenceBank,
-    queryFn: () => api.dict.sentenceBank()
-  })
+  const sentencesQ = useQuery({ queryKey: qk.dict.sentenceBank, queryFn: () => api.dict.sentenceBank() })
   const kradQ = useQuery({ queryKey: qk.dict.kradSet, queryFn: () => api.dict.kradSet() })
-  const grammarQ = useQuery({
-    queryKey: qk.dict.grammarBank,
-    queryFn: () => api.dict.grammarBank()
+  const grammarQ = useQuery({ queryKey: qk.dict.grammarBank, queryFn: () => api.dict.grammarBank() })
+  const statusQ = useQuery({
+    queryKey: qk.dict.starterStatus,
+    queryFn: () => api.dict.starterStatus(),
+    // Poll while a run is going so each finished pack ticks off here.
+    refetchInterval: (query) => (query.state.data?.running || starting ? 1000 : false)
   })
 
-  // Wait for all four before judging — a "nothing installed" flash on every
-  // visit would cry wolf.
-  if (!dictsQ.isSuccess || !sentencesQ.isSuccess || !kradQ.isSuccess || !grammarQ.isSuccess)
-    return null
+  // Each pack that lands changes what is installed; refresh the lists then.
+  const doneCount = statusQ.data?.done.length ?? 0
+  useEffect(() => {
+    if (doneCount > 0) void qc.invalidateQueries({ queryKey: qk.dict.all })
+  }, [doneCount, qc])
 
-  const dicts = dictsQ.data
-  const hasDict = (prefix: string): boolean =>
-    dicts.some((d) => d.title.toLowerCase().startsWith(prefix.toLowerCase()))
+  if (!dictsQ.isSuccess || !sentencesQ.isSuccess || !kradQ.isSuccess || !grammarQ.isSuccess) return null
 
-  const rows: { title: string; size: string | null; unlocks: string; installed: boolean }[] = [
-    {
-      title: 'JMdict (English)',
-      size: '~60 MB',
-      unlocks: 'Lookups, mining autofill and both deck generators — install this first.',
-      installed: hasDict('JMdict')
-    },
-    {
-      title: 'Frequency dictionary (JPDB or BCCWJ)',
-      size: null,
-      unlocks: 'Word rankings: the core deck, the sentence feed and most drill pools.',
-      // Any Yomitan dict carrying frequency ranks counts, not just the two presets.
-      installed: dicts.some((d) => d.freqCount > 0)
-    },
-    {
-      title: 'KANJIDIC (English)',
-      size: null,
-      unlocks: 'Per-kanji readings, meanings and JLPT levels for the kanji breakdown.',
-      installed: hasDict('KANJIDIC')
-    },
-    {
-      title: 'Kanji components (KRADFILE)',
-      size: '<1 MB',
-      unlocks: 'Search-by-parts, build-a-kanji and the look-alike drills.',
-      installed: kradQ.data != null
-    },
-    {
-      title: 'Grammar library (N5-N1)',
-      size: '~2 MB',
-      unlocks: 'The searchable grammar reference and the cloze drill.',
-      installed: grammarQ.data != null
-    },
-    {
-      title: 'Example sentences (Tatoeba)',
-      size: null,
-      unlocks: 'The i+1 sentence feed, plus examples in the dictionary and on mined cards.',
-      installed: sentencesQ.data != null
+  const facts = {
+    dicts: dictsQ.data,
+    krad: kradQ.data != null,
+    grammar: grammarQ.data != null,
+    sentences: sentencesQ.data != null
+  }
+  const rows = STARTER_PACKS.map((pack) => ({ ...pack, installed: starterPackInstalled(pack.key, facts) }))
+  const status = statusQ.data
+  const running = starting || !!status?.running
+  if (rows.every((row) => row.installed) && !running) return null
+
+  const installedCount = rows.filter((row) => row.installed).length
+  const current = rows.find((row) => row.key === status?.current)
+
+  async function install(): Promise<void> {
+    setStarting(true)
+    try {
+      await api.dict.installStarter()
+    } finally {
+      setStarting(false)
+      await qc.invalidateQueries({ queryKey: qk.dict.all })
     }
-  ]
-
-  if (rows.every((r) => r.installed)) return null
+  }
 
   return (
-    <Section
-      title="Set up"
-      subtitle={
-        <Link to={SETTINGS_LINK} className="hover:text-accent">
-          Settings → Dictionaries
-        </Link>
-      }
-    >
-      <div className="card divide-y divide-base-700">
-        {rows.map((r) => {
-          const inner = (
-            <>
+    <section className="card mb-8 p-5" aria-labelledby="jp-setup">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h2 id="jp-setup" className="font-semibold text-white">
+            Install the offline dictionaries
+          </h2>
+          <p className="mt-1 text-sm text-gray-400" aria-live="polite">
+            {running
+              ? `Installing ${current?.title ?? 'the next pack'}… ${installedCount} of ${rows.length} ready.`
+              : `${installedCount} of ${rows.length} ready. One download each, then everything works without a network.`}
+          </p>
+          {status?.error && !running && (
+            <p className="mt-1 text-sm text-signal-anomaly">Stopped: {status.error}</p>
+          )}
+        </div>
+        <button type="button" className="btn-ghost" disabled={running} onClick={() => void install()}>
+          {running ? 'Installing…' : installedCount === 0 ? 'Install all' : 'Install the rest'}
+        </button>
+      </div>
+      <details className="mt-4">
+        <summary className="cursor-pointer text-sm text-gray-300">What gets installed</summary>
+        <ul className="mt-3 divide-y divide-base-700 border-y border-base-700">
+          {rows.map((row) => (
+            <li key={row.key} className="flex items-center gap-3 py-2.5">
               <span
-                className={`w-6 shrink-0 text-center ${r.installed ? 'text-signal-affirmative' : 'text-gray-500'}`}
-                title={r.installed ? 'Installed' : 'Not installed'}
+                className={`w-5 text-center ${row.installed ? 'text-signal-affirmative' : 'text-gray-500'}`}
+                aria-label={row.installed ? 'Installed' : 'Not installed'}
               >
-                {r.installed ? '✓' : '○'}
+                {row.installed ? '✓' : '○'}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="text-sm font-medium">
-                  {r.title}
-                  {r.size && <span className="ml-2 text-xs text-gray-500">{r.size}</span>}
+                <span className="text-sm font-medium text-gray-100">
+                  {row.title}
+                  {row.size && <span className="ml-2 text-xs text-gray-400">{row.size}</span>}
                 </span>
-                <span className="mt-0.5 block text-xs text-gray-400">{r.unlocks}</span>
+                <span className="mt-0.5 block text-xs text-gray-400">{row.unlocks}</span>
               </span>
-            </>
-          )
-          return r.installed ? (
-            <div key={r.title} className="flex items-center gap-2 p-3">
-              {inner}
-            </div>
-          ) : (
-            <Link
-              key={r.title}
-              to={SETTINGS_LINK}
-              className="group flex items-center gap-2 p-3 hover:bg-base-800/60"
-            >
-              {inner}
-              <span className="shrink-0 text-xs text-gray-500 group-hover:text-accent">
-                Install ›
-              </span>
-            </Link>
-          )
-        })}
-      </div>
-      <p className="mt-2 text-xs text-gray-500">
-        Offline packs the practice pages need — a one-time download each, then everything works
-        without a network. Five more optional packs (names, stroke order, pitch, audio) live in
-        Settings.
-      </p>
-    </Section>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-3 text-xs text-gray-400">
+          Optional extras (names, stroke order, pitch accent, audio) are in{' '}
+          <Link to={SETTINGS_LINK} className="text-signal-link hover:underline">Settings</Link>.
+        </p>
+      </details>
+    </section>
   )
 }

@@ -54,3 +54,103 @@ export function buildSubtitleExtractArgs(input: {
     ffInputArg(input.output)
   ]
 }
+
+// ---- In-app playback decode gate ----
+// The player plays files straight off navimg:// with no remux or transcode.
+// Chromium in Electron 44 decodes Matroska, H.264 at every profile (Hi10P in
+// software), VP8/VP9/AV1, and AAC/MP3/Opus/Vorbis/FLAC/PCM. Two failures are
+// silent, which is why this gate exists: HEVC on Linux plays audio with no
+// picture, and AC3/E-AC3/DTS plays a picture with zero decoded audio bytes and
+// no error event. HEVC and AC3 depend on the OS decoder elsewhere, so they are
+// `uncertain` there and the renderer's watchdog has the final word.
+
+export type DecodeVerdict = 'ok' | 'uncertain' | 'unsupported'
+
+export interface DecodeDecision {
+  verdict: DecodeVerdict
+  reason: string | null
+}
+
+const OK_CONTAINERS = new Set(['.mkv', '.webm', '.mp4', '.m4v', '.mov'])
+const OK_VIDEO = new Set(['h264', 'vp8', 'vp9', 'av1'])
+const OS_VIDEO = new Set(['hevc', 'h265'])
+const OK_AUDIO = new Set(['aac', 'mp3', 'opus', 'vorbis', 'flac'])
+const OS_AUDIO = new Set(['ac3', 'eac3'])
+
+export function decideDecodable(input: {
+  ext: string
+  videoCodec: string | null
+  audioCodec: string | null
+  platform: NodeJS.Platform
+}): DecodeDecision {
+  const ext = input.ext.toLowerCase()
+  if (!OK_CONTAINERS.has(ext)) {
+    return {
+      verdict: 'unsupported',
+      reason: `The ${ext.replace(/^\./, '').toUpperCase() || 'unknown'} container cannot be played inside NaviHUB.`
+    }
+  }
+  const osDecoder = input.platform === 'win32' || input.platform === 'darwin'
+  let verdict: DecodeVerdict = 'ok'
+  let reason: string | null = null
+  const worse = (v: DecodeVerdict, why: string): void => {
+    const rank = { ok: 0, uncertain: 1, unsupported: 2 }
+    if (rank[v] > rank[verdict]) {
+      verdict = v
+      reason = why
+    }
+  }
+
+  const v = input.videoCodec?.toLowerCase() ?? null
+  if (v == null) worse('uncertain', 'The video codec is unknown until ffprobe has read the file.')
+  else if (OS_VIDEO.has(v)) {
+    if (osDecoder) worse('uncertain', 'HEVC video depends on the system decoder.')
+    else worse('unsupported', 'HEVC video cannot be decoded inside NaviHUB on Linux.')
+  } else if (!OK_VIDEO.has(v)) {
+    worse('unsupported', `${v.toUpperCase()} video cannot be decoded inside NaviHUB.`)
+  }
+
+  const a = input.audioCodec?.toLowerCase() ?? null
+  if (a != null && !OK_AUDIO.has(a) && !a.startsWith('pcm_')) {
+    if (OS_AUDIO.has(a) && osDecoder) {
+      worse('uncertain', `${a.toUpperCase()} audio depends on the system decoder.`)
+    } else {
+      worse('unsupported', `${a.toUpperCase()} audio cannot be decoded inside NaviHUB.`)
+    }
+  }
+  return { verdict, reason }
+}
+
+// ---- Sentence audio for a mined card ----
+export const CLIP_LEAD_IN = 0.15
+export const CLIP_TAIL = 0.25
+export const CLIP_MAX_SECONDS = 30
+
+export function buildClipArgs(o: {
+  input: string
+  output: string
+  startSec: number
+  endSec: number
+  audioStream?: number | null
+}): string[] {
+  const start = Math.max(0, o.startSec - CLIP_LEAD_IN)
+  const length = Math.min(CLIP_MAX_SECONDS, Math.max(0.2, o.endSec + CLIP_TAIL - start))
+  const args = [
+    '-nostdin',
+    '-hide_banner',
+    '-loglevel',
+    'error',
+    '-y',
+    '-ss',
+    start.toFixed(3),
+    '-i',
+    ffInputArg(o.input),
+    '-t',
+    length.toFixed(3)
+  ]
+  if (o.audioStream != null) args.push('-map', `0:${o.audioStream}`)
+  else args.push('-map', '0:a:0')
+  args.push('-vn', '-sn', '-dn', '-c:a', 'aac', '-b:a', '128k', '-ac', '2')
+  args.push(ffInputArg(o.output))
+  return args
+}

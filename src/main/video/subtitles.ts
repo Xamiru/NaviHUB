@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, statSync } from 'fs'
+import { existsSync, readdirSync, rmSync, statSync } from 'fs'
 import { basename, dirname, extname, join } from 'path'
 import { createHash } from 'crypto'
 import { mediaUrl } from '@shared/mediaUrl'
@@ -170,7 +170,8 @@ export function listTracks(
 // while a conversion is running.
 export async function ensureExtracted(
   absVideo: string,
-  track: VideoSubtitleTrack
+  track: VideoSubtitleTrack,
+  timeoutMs?: number
 ): Promise<VideoSubtitleTrack> {
   if (track.url || !track.id.startsWith('embedded:')) return track
   if (!track.textual) return track
@@ -200,9 +201,19 @@ export async function ensureExtracted(
         output: absOut,
         typeIndex,
         format: track.format
-      })
+      }),
+      timeoutMs
     )
-    if (err || !existsSync(absOut)) return track
+    if (err || !existsSync(absOut)) {
+      // A timed-out or failed ffmpeg can leave a truncated file. Remove it, or
+      // the next call would find it and serve a partial track as complete.
+      try {
+        rmSync(absOut, { force: true })
+      } catch {
+        // best effort
+      }
+      return track
+    }
   }
   return { ...track, url: mediaUrl(relOut) }
 }

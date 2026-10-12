@@ -37,3 +37,19 @@ export function formatVideoStudyTime(secondsValue: number): string {
 export function formatVideoStudyCue(range: VideoStudyRange): string {
   return `Start ${formatVideoStudyTime(range.start)}, stop ${formatVideoStudyTime(range.end)}`
 }
+
+// The in-app player's study range, carried as ?start=S&end=E on a /watch
+// route. A missing or invalid pair means "no range", never an error.
+export function parseWatchRange(
+  params: { get(name: string): string | null },
+  duration?: number | null
+): VideoStudyRange | null {
+  const start = params.get('start')
+  const end = params.get('end')
+  if (!start?.trim() || !end?.trim()) return null
+  return parseVideoStudyRange(start, end, duration)
+}
+
+export function watchRangeSearch(range: VideoStudyRange): string {
+  return `start=${Math.floor(range.start)}&end=${Math.ceil(range.end)}`
+}

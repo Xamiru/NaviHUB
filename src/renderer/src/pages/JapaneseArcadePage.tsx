@@ -4,6 +4,7 @@ import PageHeader from '../components/PageHeader'
 import Tabs, { TabPanel } from '../components/Tabs'
 import QuizRecord from '../components/QuizRecord'
 import { Group, Pill } from '../components/PillGroup'
+import SessionLauncher from '../components/japanese/SessionLauncher'
 import ArcadeShell, { type RaceItem, type RaceSpec } from '../components/japanese/ArcadeShell'
 import { api } from '../lib/api'
 import { usePersistedState } from '../lib/navState'
@@ -109,34 +110,40 @@ function KanaRace() {
   if (spec) return <ArcadeShell spec={spec} onExit={() => setSpec(null)} />
 
   return (
-    <div className="space-y-4">
-      <div className="card p-5 space-y-4">
-        {SECTIONS.map((section) => (
-          <div key={section.title}>
-            <p className="label mb-2">{section.title}</p>
-            <div className="flex flex-wrap gap-1.5">
-              {section.rows.map((r) => (
-                <button
-                  key={r.key}
-                  aria-pressed={rows.includes(r.key)}
-                  className={`chip-toggle ${rows.includes(r.key) ? 'chip-toggle-active' : ''}`}
-                  onClick={() => toggle(r.key)}
-                >
-                  {r.label}
-                </button>
-              ))}
-            </div>
+    <SessionLauncher
+      summary={
+        <div>
+          <p className="text-2xl font-semibold text-white">Sixty seconds of kana</p>
+          <p className="mt-2 text-sm text-gray-400">
+            Type the romaji; a correct reading moves on by itself. {chars.length} kana selected.
+          </p>
+        </div>
+      }
+      defaults={`${rows.length} row${rows.length === 1 ? '' : 's'}`}
+      startLabel="Start 60-second race"
+      onStart={start}
+      disabled={chars.length === 0}
+      error={chars.length === 0 ? 'Pick at least one row under Options.' : null}
+      options={SECTIONS.map((section) => (
+        <div key={section.title}>
+          <p className="label mb-2">{section.title}</p>
+          <div className="flex flex-wrap gap-1.5">
+            {section.rows.map((r) => (
+              <button
+                key={r.key}
+                aria-pressed={rows.includes(r.key)}
+                className={`chip-toggle ${rows.includes(r.key) ? 'chip-toggle-active' : ''}`}
+                onClick={() => toggle(r.key)}
+              >
+                {r.label}
+              </button>
+            ))}
           </div>
-        ))}
-        <p className="text-xs text-gray-500">
-          Type the romaji; a correct reading advances on its own. {chars.length} kana selected.
-        </p>
-        <button className="btn-primary w-full" disabled={chars.length === 0} onClick={start}>
-          Start 60 s race
-        </button>
-      </div>
+        </div>
+      ))}
+    >
       <QuizRecord kind="kanaRace" />
-    </div>
+    </SessionLauncher>
   )
 }
 
@@ -176,23 +183,30 @@ function ReadingRace() {
   if (spec) return <ArcadeShell spec={spec} onExit={() => setSpec(null)} />
 
   return (
-    <div className="space-y-4">
-      <div className="card p-5 space-y-5">
+    <SessionLauncher
+      summary={
+        <div>
+          <p className="text-2xl font-semibold text-white">Sixty seconds of readings</p>
+          <p className="mt-2 text-sm text-gray-400">
+            Type each word’s reading in romaji or kana. Every reading the dictionary lists counts.
+          </p>
+        </div>
+      }
+      defaults={source === 'cards' ? 'my cards' : source === 'frequency' ? 'frequent words' : 'my cards and frequent words'}
+      startLabel="Start 60-second race"
+      onStart={() => void start()}
+      starting={loading}
+      error={error}
+      options={
         <Group label="Words">
           <Pill active={source === 'cards'} onClick={() => setSource('cards')} label="My cards" />
           <Pill active={source === 'frequency'} onClick={() => setSource('frequency')} label="Frequent words" />
           <Pill active={source === 'both'} onClick={() => setSource('both')} label="Both" />
         </Group>
-        <p className="text-xs text-gray-500">
-          Type the reading in romaji or kana. Every reading the dictionary attests for the word counts.
-        </p>
-        {error && <p className="text-sm text-signal-anomaly">{error}</p>}
-        <button className="btn-primary w-full" disabled={loading} onClick={() => void start()}>
-          {loading ? 'Building the deck…' : 'Start 60 s race'}
-        </button>
-      </div>
+      }
+    >
       <QuizRecord kind="readingRace" />
-    </div>
+    </SessionLauncher>
   )
 }
 
@@ -263,39 +277,49 @@ function ConjRace() {
   if (spec) return <ArcadeShell spec={spec} onExit={() => setSpec(null)} />
 
   return (
-    <div className="space-y-4">
-      <div className="card p-5 space-y-5">
+    <SessionLauncher
+      summary={
         <div>
-          <p className="label mb-2">Forms</p>
-          <div className="flex flex-wrap gap-1.5">
-            {DOJO_FORMS.map((f) => (
-              <button
-                key={f}
-                aria-pressed={forms.includes(f)}
-                className={`chip-toggle ${forms.includes(f) ? 'chip-toggle-active' : ''}`}
-                onClick={() => toggleForm(f)}
-              >
-                {FORM_LABELS[f]}
-              </button>
-            ))}
-          </div>
+          <p className="text-2xl font-semibold text-white">Sixty seconds of verb forms</p>
+          <p className="mt-2 text-sm text-gray-400">
+            Type the asked-for form and press Enter, so a typo does not cost the clock twice.
+          </p>
         </div>
-        <button
-          aria-pressed={useCards}
-          className={`chip-toggle ${useCards ? 'chip-toggle-active' : ''}`}
-          onClick={() => setUseCards((v) => !v)}
-        >
-          Include my learned verbs
-        </button>
-        <p className="text-xs text-gray-500">
-          Answers are checked on Enter — these are long, and a typo should not cost the clock twice.
-        </p>
-        {error && <p className="text-sm text-signal-anomaly">{error}</p>}
-        <button className="btn-primary w-full" disabled={loading || forms.length === 0} onClick={() => void start()}>
-          {loading ? 'Building the deck…' : 'Start 60 s race'}
-        </button>
-      </div>
+      }
+      defaults={`${forms.map((f) => FORM_LABELS[f]).join(', ') || 'no forms'}${useCards ? ' · with my verbs' : ''}`}
+      startLabel="Start 60-second race"
+      onStart={() => void start()}
+      starting={loading}
+      disabled={forms.length === 0}
+      error={error ?? (forms.length === 0 ? 'Pick at least one form under Options.' : null)}
+      options={
+        <>
+          <div>
+            <p className="label mb-2">Forms</p>
+            <div className="flex flex-wrap gap-1.5">
+              {DOJO_FORMS.map((f) => (
+                <button
+                  key={f}
+                  aria-pressed={forms.includes(f)}
+                  className={`chip-toggle ${forms.includes(f) ? 'chip-toggle-active' : ''}`}
+                  onClick={() => toggleForm(f)}
+                >
+                  {FORM_LABELS[f]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button
+            aria-pressed={useCards}
+            className={`chip-toggle ${useCards ? 'chip-toggle-active' : ''}`}
+            onClick={() => setUseCards((v) => !v)}
+          >
+            Include my learned verbs
+          </button>
+        </>
+      }
+    >
       <QuizRecord kind="conjRace" />
-    </div>
+    </SessionLauncher>
   )
 }

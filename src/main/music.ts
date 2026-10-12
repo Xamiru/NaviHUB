@@ -9,6 +9,8 @@ import { musicRootDir, absoluteMediaPath, mediaRoot } from './files'
 import * as tasks from './tasks'
 import { claimMusicMaintenance, releaseMusicMaintenance } from './musicMaintenance'
 import { resolveAllSpotifyItems } from './repos/musicSpotifyRepo'
+import { reattachOrphans, refreshSnapshots } from './repos/musicLinkRepo'
+import { logInfo, logWarn } from './logBus'
 import type { MusicDeleteResult, MusicScanStatus, MusicScanSummary } from '@shared/types'
 
 // ---------------------------------------------------------------------------
@@ -717,6 +719,7 @@ async function scanLibrary(reader: TagReader, handle: tasks.TaskHandle): Promise
       return syncLibrary(albums, parsed, coverByAlbumDir)
     })()
     resolveAllSpotifyItems()
+    reattachMusicLinks()
     return { ...counts, skippedRootFiles, durationMs: Date.now() - startedAt }
   } catch (e) {
     scanState.error = e instanceof Error ? e.message : String(e)
@@ -724,6 +727,18 @@ async function scanLibrary(reader: TagReader, handle: tasks.TaskHandle): Promise
   } finally {
     scanState.running = false
     scanState.phase = 'idle'
+  }
+}
+
+// A moved or renamed file is a new row, so links to the old one were orphaned
+// by the prune; move them to the matching new row. Never fails the scan.
+function reattachMusicLinks(): void {
+  try {
+    refreshSnapshots()
+    const moved = reattachOrphans()
+    if (moved) logInfo('db', `re-attached ${moved} music link${moved === 1 ? '' : 's'} after the scan`)
+  } catch (e) {
+    logWarn('db', `music link re-attach failed: ${e instanceof Error ? e.message : String(e)}`)
   }
 }
 

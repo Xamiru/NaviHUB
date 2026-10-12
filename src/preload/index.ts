@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import type { NaviApi } from '@shared/api'
 
 // Implements the NaviApi surface by forwarding to main over IPC.
@@ -24,6 +24,17 @@ const api: NaviApi = {
     remove: (id) => ipcRenderer.invoke('musicSmart:remove', id),
     preview: (rules, page) => ipcRenderer.invoke('musicSmart:preview', rules, page),
     queue: (id) => ipcRenderer.invoke('musicSmart:queue', id)
+  },
+  musicLinks: {
+    forOwner: (owner) => ipcRenderer.invoke('musicLinks:forOwner', owner),
+    forMediaIds: (mediaIds) => ipcRenderer.invoke('musicLinks:forMediaIds', mediaIds),
+    labels: () => ipcRenderer.invoke('musicLinks:labels'),
+    search: (query) => ipcRenderer.invoke('musicLinks:search', query),
+    create: (input) => ipcRenderer.invoke('musicLinks:create', input),
+    update: (id, patch) => ipcRenderer.invoke('musicLinks:update', id, patch),
+    reorder: (owner, orderedIds) => ipcRenderer.invoke('musicLinks:reorder', owner, orderedIds),
+    remove: (id) => ipcRenderer.invoke('musicLinks:remove', id),
+    browse: () => ipcRenderer.invoke('musicLinks:browse')
   },
   vnExplore: {
     discover: (input) => ipcRenderer.invoke('vnExplore:discover', input),
@@ -80,6 +91,9 @@ const api: NaviApi = {
     statusCounts: (mediaType) => ipcRenderer.invoke('media:statusCounts', mediaType),
     facets: (mediaType) => ipcRenderer.invoke('media:facets', mediaType),
     timeStats: () => ipcRenderer.invoke('media:timeStats'),
+    timeStatsType: (mediaType) => ipcRenderer.invoke('media:timeStatsType', mediaType),
+    libraryInsights: () => ipcRenderer.invoke('media:libraryInsights'),
+    creditTime: () => ipcRenderer.invoke('media:creditTime'),
     jpMilestones: () => ipcRenderer.invoke('media:jpMilestones'),
     resumePoints: () => ipcRenderer.invoke('media:resumePoints'),
     activityHeatmap: () => ipcRenderer.invoke('media:activityHeatmap')
@@ -219,18 +233,29 @@ const api: NaviApi = {
     removeItem: (itemId) => ipcRenderer.invoke('tierLists:removeItem', itemId)
   },
   checklist: {
-    status: () => ipcRenderer.invoke('checklist:status'),
+    status: (day) => ipcRenderer.invoke('checklist:status', day),
     addTask: (key, cadence) => ipcRenderer.invoke('checklist:addTask', key, cadence),
     removeTask: (id) => ipcRenderer.invoke('checklist:removeTask', id),
     setTarget: (id, target) => ipcRenderer.invoke('checklist:setTarget', id, target),
+    setDays: (id, days) => ipcRenderer.invoke('checklist:setDays', id, days),
     reorder: (cadence, orderedIds) =>
       ipcRenderer.invoke('checklist:reorder', cadence, orderedIds),
-    logMedia: (taskKey, cadence, mediaId) =>
-      ipcRenderer.invoke('checklist:logMedia', taskKey, cadence, mediaId),
+    logMedia: (taskKey, cadence, mediaId, day) =>
+      ipcRenderer.invoke('checklist:logMedia', taskKey, cadence, mediaId, day),
+    logSession: (taskKey, cadence, mediaId, day) =>
+      ipcRenderer.invoke('checklist:logSession', taskKey, cadence, mediaId, day),
     undoLog: (logId) => ipcRenderer.invoke('checklist:undoLog', logId),
-    tick: (taskKey, cadence) => ipcRenderer.invoke('checklist:tick', taskKey, cadence),
-    untick: (taskKey, cadence) => ipcRenderer.invoke('checklist:untick', taskKey, cadence),
-    credit: (taskKey, cadence) => ipcRenderer.invoke('checklist:credit', taskKey, cadence)
+    tick: (taskKey, cadence, day) => ipcRenderer.invoke('checklist:tick', taskKey, cadence, day),
+    untick: (taskKey, cadence, day) =>
+      ipcRenderer.invoke('checklist:untick', taskKey, cadence, day),
+    credit: (taskKey, cadence, amount, day) =>
+      ipcRenderer.invoke('checklist:credit', taskKey, cadence, amount, day),
+    skip: (taskId, cadence, skipped, day) =>
+      ipcRenderer.invoke('checklist:skip', taskId, cadence, skipped, day),
+    createCustom: (input, cadence, days) =>
+      ipcRenderer.invoke('checklist:createCustom', input, cadence, days),
+    updateCustom: (id, input) => ipcRenderer.invoke('checklist:updateCustom', id, input),
+    deleteCustom: (id) => ipcRenderer.invoke('checklist:deleteCustom', id)
   },
   anilist: {
     search: (query) => ipcRenderer.invoke('anilist:search', query),
@@ -327,13 +352,19 @@ const api: NaviApi = {
   pictures: {
     list: (mediaId, kind) => ipcRenderer.invoke('pictures:list', mediaId, kind),
     sources: (mediaId, kind) => ipcRenderer.invoke('pictures:sources', mediaId, kind),
-    search: (mediaId, source, query, page) =>
-      ipcRenderer.invoke('pictures:search', mediaId, source, query, page),
+    search: (mediaId, source, query, page, minSize) =>
+      ipcRenderer.invoke('pictures:search', mediaId, source, query, page, minSize),
     addFromSearch: (mediaId, kind, result) =>
       ipcRenderer.invoke('pictures:addFromSearch', mediaId, kind, result),
     addFromUrl: (mediaId, kind, url) =>
       ipcRenderer.invoke('pictures:addFromUrl', mediaId, kind, url),
     addFromFiles: (mediaId, kind) => ipcRenderer.invoke('pictures:addFromFiles', mediaId, kind),
+    addFromPaths: (mediaId, kind, paths) =>
+      ipcRenderer.invoke('pictures:addFromPaths', mediaId, kind, paths),
+    pathForFile: (file) => webUtils.getPathForFile(file),
+    replace: (imageId, result) => ipcRenderer.invoke('pictures:replace', imageId, result),
+    fileInfo: (imageId) => ipcRenderer.invoke('pictures:fileInfo', imageId),
+    showInFolder: (imageId) => ipcRenderer.invoke('pictures:showInFolder', imageId),
     remove: (imageId) => ipcRenderer.invoke('pictures:remove', imageId),
     toggleSlideshow: (imageId) => ipcRenderer.invoke('pictures:toggleSlideshow', imageId),
     setBackground: (mediaId, imageId) =>
@@ -474,6 +505,8 @@ const api: NaviApi = {
     importPreset: (key) => ipcRenderer.invoke('dict:importPreset', key),
     importZip: () => ipcRenderer.invoke('dict:importZip'),
     importStatus: () => ipcRenderer.invoke('dict:importStatus'),
+    installStarter: () => ipcRenderer.invoke('dict:installStarter'),
+    starterStatus: () => ipcRenderer.invoke('dict:starterStatus'),
     remove: (id) => ipcRenderer.invoke('dict:remove', id),
     sentences: (term, limit) => ipcRenderer.invoke('dict:sentences', term, limit),
     importSentences: () => ipcRenderer.invoke('dict:importSentences'),
@@ -573,7 +606,11 @@ const api: NaviApi = {
     files: (mediaId) => ipcRenderer.invoke('video:files', mediaId),
     openExternal: (ref) => ipcRenderer.invoke('video:openExternal', ref),
     tools: () => ipcRenderer.invoke('video:tools'),
-    markWatched: (ref, watched) => ipcRenderer.invoke('video:markWatched', ref, watched)
+    markWatched: (ref, watched) => ipcRenderer.invoke('video:markWatched', ref, watched),
+    source: (ref) => ipcRenderer.invoke('video:source', ref),
+    subtitleTrack: (ref, trackId) => ipcRenderer.invoke('video:subtitleTrack', ref, trackId),
+    markProgress: (ref, seconds) => ipcRenderer.invoke('video:markProgress', ref, seconds),
+    clipAudio: (input) => ipcRenderer.invoke('video:clipAudio', input)
   },
   music: {
     pickRoot: () => ipcRenderer.invoke('music:pickRoot'),

@@ -31,11 +31,19 @@ export async function pickFile(): Promise<string | null> {
   return insideRoot(result.filePaths[0])
 }
 
-export async function openLocal(localPath: string): Promise<void> {
+// The one way a stored Football path becomes an absolute one: validated, then
+// realpath-contained in the Football root. Shared by external open and the
+// in-app player so neither can follow a link out of the folder.
+export function resolveLocal(localPath: string): { relPath: string; absPath: string } {
   const relativePath = validateFootballRelativePath(localPath)
   const abs = absoluteMediaPath(`football/${relativePath}`)
   insideRoot(abs)
-  const error = await shell.openPath(abs)
+  return { relPath: `football/${relativePath}`, absPath: abs }
+}
+
+export async function openLocal(localPath: string): Promise<void> {
+  const { absPath } = resolveLocal(localPath)
+  const error = await shell.openPath(absPath)
   if (error) throw new Error(error)
 }
 

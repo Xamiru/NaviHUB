@@ -176,6 +176,26 @@ export default defineEvent({
           loc: { section: 'The Breakup of Yugoslavia, 1990–1992', para: '6' }
         }
       ]
+    },
+    {
+      ref: 'event:srebrenica-massacre',
+      rel: 'related',
+      cites: [
+        {
+          source: 'hrw-1995-the-fall-of-srebrenica-and-the-failure-of-un-peacekeeping',
+          loc: { section: 'The Fall of Srebrenica and the Failure of UN Peacekeeping', para: '8' }
+        }
+      ]
+    },
+    {
+      ref: 'event:dayton-agreement',
+      rel: 'followed-by',
+      cites: [
+        {
+          source: 'state-dept-1995-11-30-summary-of-the-general-framework-agreement',
+          loc: { section: 'Summary of the General Framework Agreement', para: '2' }
+        }
+      ]
     }
   ],
   sections: [

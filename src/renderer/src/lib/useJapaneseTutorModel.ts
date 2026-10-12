@@ -1,10 +1,10 @@
 import { useQueries, useQuery } from '@tanstack/react-query'
 import type { QuizHistory, QuizKind } from '@shared/types'
-import { buildTutorPlan, historyEvidence } from '@shared/japanese/tutor'
+import { buildTutorPlan, historyEvidence, type TutorBudget } from '@shared/japanese/tutor'
 import { api } from './api'
 import { qk } from './queryKeys'
 import { statusesFrom, useSettings } from './hooks'
-import { loadJpDailyTarget } from './japanesePrefs'
+import { KANA_KNOWN_SETTING, loadJpDailyTarget } from './japanesePrefs'
 import { readerPath } from './readerPath'
 import { ANIME, MANGA, VISUAL_NOVEL } from './mediaConfig'
 
@@ -13,34 +13,42 @@ export const TUTOR_HISTORY_KINDS: QuizKind[] = [
   'listening',
   'jpImmersion',
   'jpReading',
-  'jpOutput'
+  'jpOutput',
+  'kana'
 ]
 
-export function useJapaneseTutorModel() {
-  const { data: stats } = useQuery({
+// `budget` is the session length picked on Today; the Tutor page and the
+// session runner read the full sixty-minute loop unless told otherwise.
+export function useJapaneseTutorModel(budget: TutorBudget = 60) {
+  const statsQuery = useQuery({
     queryKey: qk.japanese.stats,
     queryFn: () => api.japanese.stats(),
     staleTime: 0
   })
-  const { data: detail } = useQuery({
+  const detailQuery = useQuery({
     queryKey: qk.japanese.statsDetail,
     queryFn: () => api.japanese.statsDetail(),
     staleTime: 0
   })
-  const { data: roadmap } = useQuery({
+  const roadmapQuery = useQuery({
     queryKey: qk.japanese.roadmap,
     queryFn: () => api.japanese.roadmap()
   })
-  const { data: tutorDays } = useQuery({
+  const tutorDaysQuery = useQuery({
     queryKey: qk.japanese.tutorDays,
     queryFn: () => api.japanese.tutorDays(30),
     staleTime: 0
   })
-  const { data: tutorErrors } = useQuery({
+  const tutorErrorsQuery = useQuery({
     queryKey: qk.japanese.tutorErrors,
     queryFn: () => api.japanese.tutorErrors(200),
     staleTime: 0
   })
+  const stats = statsQuery.data
+  const detail = detailQuery.data
+  const roadmap = roadmapQuery.data
+  const tutorDays = tutorDaysQuery.data
+  const tutorErrors = tutorErrorsQuery.data
   const { data: settings } = useSettings()
   const { data: manga = [] } = useQuery({
     queryKey: qk.media.list({ mediaType: 'manga' }),
@@ -92,9 +100,17 @@ export function useJapaneseTutorModel() {
     historyQueries.every((query) => !!query.data) &&
     (!currentManga || !!mangaLibrary) &&
     (!currentAnime || !!videoLibrary)
+  const core = [statsQuery, detailQuery, roadmapQuery, tutorDaysQuery, tutorErrorsQuery, ...historyQueries]
+  // A failed local read must show a retry, never a plan built from missing data.
+  const failed = core.some((query) => query.isError)
+  const retry = (): void => {
+    for (const query of core) if (query.isError) void query.refetch()
+  }
   if (!ready) {
     return {
       ready: false as const,
+      failed,
+      retry,
       stats: null,
       detail: null,
       roadmap: null,
@@ -141,11 +157,18 @@ export function useJapaneseTutorModel() {
     chaptersRead: detail.journey.chaptersRead,
     hasReadingMedia: !!nextChapter || !!currentVisualNovel,
     hasListeningMedia: (videoLibrary?.files.length ?? 0) > 0,
-    readingRoute
+    readingRoute,
+    budgetMinutes: budget,
+    kanaNeeded: kanaNeeded(settings, history.kana),
+    totalReviews: detail.totalReviews,
+    nextLesson: roadmap.nextLesson ? { id: roadmap.nextLesson.id, title: roadmap.nextLesson.title } : null
   })
 
   return {
     ready: true as const,
+    failed: false,
+    retry,
+    kanaNeeded: kanaNeeded(settings, history.kana),
     stats,
     detail,
     roadmap,
@@ -161,4 +184,15 @@ export function useJapaneseTutorModel() {
     videoLibrary,
     nextChapter
   }
+}
+
+// Kana stays in the plan until the learner says they read it, or ten recent
+// drills average 90% or better.
+export function kanaNeeded(
+  settings: Record<string, string> | undefined,
+  kana: QuizHistory | undefined
+): boolean {
+  if (settings?.[KANA_KNOWN_SETTING] === '1') return false
+  const practice = historyEvidence(kana)
+  return !(practice.sessions >= 10 && (practice.accuracy ?? 0) >= 90)
 }

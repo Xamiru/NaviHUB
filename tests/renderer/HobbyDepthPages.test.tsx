@@ -71,6 +71,10 @@ vi.mock('../../src/renderer/src/lib/api', () => ({
     files: { pickImage: async () => null }
   }
 }))
+// The linked-music section needs the audio player; its own tests are MusicLinks.test.tsx.
+vi.mock('../../src/renderer/src/components/music/FranchiseMusic', () => ({
+  default: () => null
+}))
 vi.mock('../../src/renderer/src/components/reader/MiningPanel', () => ({
   default: (props: { mediaId: number; blockText: string; initialTerm: string }) => (
     <aside aria-label="Mining context">

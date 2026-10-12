@@ -59,10 +59,84 @@ describe('Japanese Tutor plan', () => {
   it('holds lessons while unseen cards remain without removing the route', () => {
     const plan = buildTutorPlan(evidence({ unseen: 17, phonology: { sessions: 0, accuracy: null } }))
     expect(plan.lessonHeld).toBe(true)
+    // An untried skill is named for the plan page but never becomes a repair block.
+    expect(plan.weakness).toMatchObject({ skill: 'sound', score: null })
+    expect(plan.tasks.at(-1)).toMatchObject({ skill: 'curriculum', priority: 'optional' })
+  })
+
+  it('adds a repair block only for a measured weak result', () => {
+    const plan = buildTutorPlan(evidence({ phonology: { sessions: 4, accuracy: 50 } }))
     expect(plan.tasks.at(-1)).toMatchObject({
       skill: 'sound',
-      route: '/japanese/phonology'
+      route: '/japanese/phonology',
+      minutes: 5
     })
+  })
+
+  it('keeps the loop order and drops later blocks for shorter budgets', () => {
+    const skills = (budgetMinutes: 10 | 20 | 40 | 60) =>
+      buildTutorPlan(evidence({ budgetMinutes })).tasks.map((task) => [task.skill, task.minutes])
+    expect(skills(10)).toEqual([['recall', 10]])
+    expect(skills(20)).toEqual([['recall', 10], ['reading', 10]])
+    expect(skills(40)).toEqual([['recall', 15], ['listening', 10], ['reading', 15]])
+    expect(buildTutorPlan(evidence({ budgetMinutes: 60 })).totalMinutes).toBe(60)
+    for (const budgetMinutes of [10, 20, 40, 60] as const) {
+      expect(buildTutorPlan(evidence({ budgetMinutes })).totalMinutes).toBe(budgetMinutes)
+    }
+  })
+
+  it('alternates the twenty-minute second block toward the less practised skill', () => {
+    const plan = buildTutorPlan(
+      evidence({ budgetMinutes: 20, listening: { sessions: 2, accuracy: 82 }, reading: { sessions: 9, accuracy: 80 } })
+    )
+    expect(plan.tasks.map((task) => task.skill)).toEqual(['recall', 'listening'])
+  })
+
+  it('starts a brand-new learner with kana and the sound system', () => {
+    const fresh = evidence({
+      due: 0,
+      unseen: 0,
+      frontierStep: 1,
+      totalReviews: 0,
+      kanaNeeded: true,
+      nextLesson: { id: 5, title: 'Greetings' }
+    })
+    expect(buildTutorPlan({ ...fresh, budgetMinutes: 10 }).tasks.map((t) => t.route)).toEqual([
+      '/japanese/kana'
+    ])
+    expect(buildTutorPlan({ ...fresh, budgetMinutes: 20 }).tasks.map((t) => t.skill)).toEqual([
+      'kana',
+      'sound'
+    ])
+    expect(buildTutorPlan({ ...fresh, budgetMinutes: 40 }).tasks.at(-1)).toMatchObject({
+      skill: 'lesson',
+      route: '/japanese/lessons/5'
+    })
+  })
+
+  it('opens with the next lesson when there is nothing to review yet', () => {
+    const plan = buildTutorPlan(
+      evidence({
+        due: 0,
+        unseen: 0,
+        frontierStep: 1,
+        totalReviews: 0,
+        budgetMinutes: 20,
+        nextLesson: { id: 9, title: 'Particles' }
+      })
+    )
+    expect(plan.tasks.map((task) => [task.skill, task.title])).toEqual([
+      ['lesson', 'Learn: Particles'],
+      ['recall', 'Introduce up to 10 new cards'],
+      // No known words yet, so the listening slot uses the sound-system units.
+      ['sound', 'One sound-system unit']
+    ])
+    expect(plan.totalMinutes).toBe(20)
+  })
+
+  it('reads graded passages instead of native media during the foundation phase', () => {
+    const plan = buildTutorPlan(evidence({ frontierStep: 2 }))
+    expect(plan.tasks.find((task) => task.skill === 'reading')?.route).toBe('/japanese/reading')
   })
 
   it('turns missing or weak evidence into a named remediation target', () => {

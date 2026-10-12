@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   assertSafeArgPath,
+  buildClipArgs,
   buildProbeArgs,
   buildSubtitleExtractArgs,
+  CLIP_MAX_SECONDS,
+  decideDecodable,
   ffInputArg
 } from '../src/main/video/playability'
 import {
@@ -126,5 +129,76 @@ describe('ffmpeg argv safety', () => {
     expect(subtitle[subtitle.indexOf('-i') + 1]).toBe('file:/a/in.mkv')
     expect(subtitle).toContain('0:s:2')
     expect(subtitle.at(-1)).toBe('file:/b/out.ass')
+  })
+})
+
+describe('decideDecodable', () => {
+  const at = (
+    platform: NodeJS.Platform,
+    videoCodec: string | null,
+    audioCodec: string | null,
+    ext = '.mkv'
+  ): string => decideDecodable({ ext, videoCodec, audioCodec, platform }).verdict
+
+  it('plays what Chromium decodes on every platform, Hi10P and FLAC included', () => {
+    for (const platform of ['linux', 'win32', 'darwin'] as const) {
+      expect(at(platform, 'h264', 'aac')).toBe('ok')
+      expect(at(platform, 'h264', 'flac')).toBe('ok')
+      expect(at(platform, 'vp9', 'opus')).toBe('ok')
+      expect(at(platform, 'av1', 'pcm_s16le', '.mp4')).toBe('ok')
+      expect(at(platform, 'h264', null, '.webm')).toBe('ok')
+    }
+  })
+
+  it('refuses HEVC on Linux and defers to the OS decoder elsewhere', () => {
+    expect(at('linux', 'hevc', 'aac')).toBe('unsupported')
+    expect(at('win32', 'hevc', 'aac')).toBe('uncertain')
+    expect(at('darwin', 'hevc', 'aac')).toBe('uncertain')
+  })
+
+  it('never lets a silent-audio codec through as ok', () => {
+    expect(at('linux', 'h264', 'ac3')).toBe('unsupported')
+    expect(at('linux', 'h264', 'eac3')).toBe('unsupported')
+    expect(at('win32', 'h264', 'ac3')).toBe('uncertain')
+    for (const platform of ['linux', 'win32'] as const) {
+      expect(at(platform, 'h264', 'dts')).toBe('unsupported')
+      expect(at(platform, 'h264', 'truehd')).toBe('unsupported')
+    }
+  })
+
+  it('keeps the worst finding and names it', () => {
+    expect(decideDecodable({ ext: '.mkv', videoCodec: 'hevc', audioCodec: 'dts', platform: 'win32' })).toEqual({
+      verdict: 'unsupported',
+      reason: 'DTS audio cannot be decoded inside NaviHUB.'
+    })
+  })
+
+  it('refuses containers Chromium cannot demux and old video codecs', () => {
+    expect(at('linux', 'h264', 'aac', '.avi')).toBe('unsupported')
+    expect(at('linux', 'h264', 'aac', '.ts')).toBe('unsupported')
+    expect(at('linux', 'mpeg4', 'mp3')).toBe('unsupported')
+  })
+
+  it('is uncertain without probe data, so the renderer watchdog decides', () => {
+    expect(at('linux', null, null, '.mp4')).toBe('uncertain')
+  })
+})
+
+describe('buildClipArgs', () => {
+  it('cuts a padded, bounded audio-only clip with file: paths', () => {
+    const args = buildClipArgs({ input: '/v/ep.mkv', output: '/a/out.m4a', startSec: 10, endSec: 12, audioStream: 2 })
+    expect(args).toContain('file:/v/ep.mkv')
+    expect(args[args.length - 1]).toBe('file:/a/out.m4a')
+    expect(args[args.indexOf('-ss') + 1]).toBe('9.850')
+    expect(args[args.indexOf('-map') + 1]).toBe('0:2')
+    expect(args).toContain('-vn')
+    const long = buildClipArgs({ input: '/v/ep.mkv', output: '/a/o.m4a', startSec: 0, endSec: 600 })
+    expect(Number(long[long.indexOf('-t') + 1])).toBe(CLIP_MAX_SECONDS)
+    expect(long[long.indexOf('-map') + 1]).toBe('0:a:0')
+  })
+
+  it('refuses option-like or relative paths', () => {
+    expect(() => buildClipArgs({ input: '-i', output: '/a/o.m4a', startSec: 0, endSec: 1 })).toThrow()
+    expect(() => buildClipArgs({ input: '/v/a.mkv', output: 'o.m4a', startSec: 0, endSec: 1 })).toThrow()
   })
 })

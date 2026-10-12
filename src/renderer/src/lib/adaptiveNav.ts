@@ -52,7 +52,7 @@ const LIBRARY_DRAWER_ITEMS: ArchiveNavItem[] = [
 
 const LOCAL_DRAWER_ITEMS: ArchiveNavItem[] = [
   { to: '/music', label: 'Music', visibilityKey: 'music' },
-  { to: '/pictures', label: 'Pictures', visibilityKey: 'pictures' }
+  { to: '/gallery', label: 'Gallery', visibilityKey: 'pictures' }
 ]
 
 const ARCHIVES_DRAWER_ITEMS: ArchiveNavItem[] = [
@@ -150,7 +150,7 @@ export function archiveAreaForPath(pathname: string): ArchiveArea {
   if (underAny(pathname, ['/settings', '/tasks', '/bulk', '/torrents'])) return 'system'
   if (underAny(pathname, ['/japanese', '/english', '/programming'])) return 'learn'
   if (underAny(pathname, ['/franchises', '/history', '/wrestling', '/football'])) return 'archives'
-  if (underAny(pathname, ['/music', '/pictures', '/now-playing'])) return 'local'
+  if (underAny(pathname, ['/music', '/gallery', '/now-playing'])) return 'local'
   if (underAny(pathname, ['/quiz'])) return 'quiz'
   if (
     underAny(pathname, MEDIA_CONFIGS.map((cfg) => cfg.basePath)) ||
@@ -289,15 +289,14 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
   if (pathname.startsWith('/japanese')) {
     return {
       title: 'Japanese',
-      descriptor: 'Knowledge map',
+      descriptor: 'Study',
       items: [
         { to: '/japanese', label: 'Today' },
-        { to: '/japanese/tutor', label: 'Tutor' },
-        { to: '/japanese/roadmap', label: 'Roadmap' },
+        { to: '/japanese/roadmap', label: 'Path' },
         { to: '/japanese/review', label: 'Review' },
         { to: '/japanese/dictionary', label: 'Dictionary' },
-        { to: '/japanese/kana', label: 'Drills' },
-        { to: '/japanese/guide', label: 'Guide' }
+        { to: '/japanese/tools', label: 'Tools' },
+        { to: '/japanese/stats', label: 'Stats' }
       ]
     }
   }
@@ -368,18 +367,19 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
         { to: '/music/smart', label: 'Smart Playlists' },
         { to: '/music/downloads', label: 'Downloads' },
         { to: '/music/liked', label: 'Liked' },
+        { to: '/music/soundtracks', label: 'Soundtracks' },
         { to: '/music/stats', label: 'Listening Stats' },
         { to: '/now-playing', label: 'Now Playing' }
       ]
     }
   }
-  if (pathname.startsWith('/pictures')) {
+  if (pathname.startsWith('/gallery')) {
     return {
-      title: 'Pictures',
+      title: 'Gallery',
       descriptor: 'Image archive',
       items: [
-        { to: '/pictures', label: 'Gallery' },
-        { to: '/pictures/albums', label: 'Albums' }
+        { to: '/gallery', label: 'Pictures' },
+        { to: '/gallery/albums', label: 'Albums' }
       ]
     }
   }

@@ -73,7 +73,7 @@ export default function PictureAlbumsPage(): React.JSX.Element {
           {list.map((a) => (
             <Link
               key={a.id}
-              to={`/pictures/albums/${a.id}`}
+              to={`/gallery/albums/${a.id}`}
               className="card group overflow-hidden p-0 hover:border-accent"
             >
               <div className="aspect-video overflow-hidden">

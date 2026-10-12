@@ -332,3 +332,95 @@ describe('quiz pool process requests', () => {
     expect(() => runQuizPoolRequest('toString', [])).toThrow('Unknown quiz request')
   })
 })
+
+describe('quiz pool creditTime (/stats people and studios)', () => {
+  const cfg = {
+    animeEp: 24,
+    tvEp: 40,
+    mangaCh: 5,
+    bookPage: 1.5,
+    completed: { anime: 'Completed', movie: 'Watched', manga: 'Completed' }
+  }
+
+  function title(
+    name: string,
+    type: string,
+    fields: { status?: string; total?: number; progress?: number } = {}
+  ): number {
+    return Number(
+      db
+        .prepare(
+          `INSERT INTO media_item (media_type, title, status, total_units, progress)
+           VALUES (?, ?, ?, ?, ?)`
+        )
+        .run(type, name, fields.status ?? null, fields.total ?? null, fields.progress ?? 0)
+        .lastInsertRowid
+    )
+  }
+  const person = (name: string) =>
+    Number(db.prepare('INSERT INTO person (name) VALUES (?)').run(name).lastInsertRowid)
+  const credit = (mediaId: number, personId: number, role: string) =>
+    db
+      .prepare('INSERT INTO credit (media_id, person_id, role) VALUES (?, ?, ?)')
+      .run(mediaId, personId, role)
+  const groups = () =>
+    runQuizPoolRequest('creditTime', [cfg]) as {
+      key: string
+      entries: { name: string; minutes: number; titleCount: number }[]
+    }[]
+
+  it('ranks people by the time of consumed titles, one count per title', () => {
+    const long = title('Long show', 'anime', { status: 'Completed', total: 50 })
+    const short = title('Short show', 'anime', { progress: 5 })
+    const planned = title('Planned', 'anime', { status: 'Plan to Watch', total: 100 })
+    const kana = person('Kana')
+    const rie = person('Rie')
+    // Three roles in one show still count that show once.
+    credit(long, kana, 'voice_actor')
+    credit(long, kana, 'voice_actor')
+    credit(long, kana, 'voice_actor')
+    credit(short, rie, 'voice_actor')
+    credit(planned, rie, 'voice_actor')
+    const voice = groups().find((g) => g.key === 'voice')!
+    expect(voice.entries).toEqual([
+      expect.objectContaining({ name: 'Kana', minutes: 50 * 24, titleCount: 1 }),
+      expect.objectContaining({ name: 'Rie', minutes: 5 * 24, titleCount: 1 })
+    ])
+  })
+
+  it('groups writers with mangaka and includes studios', () => {
+    const manga = title('Manga', 'manga', { status: 'Completed', total: 20 })
+    const film = title('Film', 'movie', { status: 'Watched', total: 100 })
+    credit(manga, person('Author'), 'mangaka')
+    credit(film, person('Screenwriter'), 'writer')
+    credit(film, person('Director'), 'director')
+    const studio = Number(
+      db.prepare("INSERT INTO company (name) VALUES ('Studio A')").run().lastInsertRowid
+    )
+    db.prepare(
+      "INSERT INTO media_company (media_id, company_id, role) VALUES (?, ?, 'production_studio')"
+    ).run(film, studio)
+    const result = groups()
+    // 20 ch × 5 and 100 min tie; the earlier person wins the tie.
+    expect(result.find((g) => g.key === 'writer')!.entries.map((e) => e.name)).toEqual([
+      'Author',
+      'Screenwriter'
+    ])
+    expect(result.find((g) => g.key === 'director')!.entries[0].minutes).toBe(100)
+    expect(result.find((g) => g.key === 'studio')!.entries[0]).toMatchObject({
+      name: 'Studio A',
+      minutes: 100
+    })
+    // Empty groups are left out.
+    expect(result.some((g) => g.key === 'actor')).toBe(false)
+  })
+
+  it('recomputes after the library changes', () => {
+    const show = title('Show', 'anime', { progress: 2 })
+    const va = person('VA')
+    credit(show, va, 'voice_actor')
+    expect(groups()[0].entries[0].minutes).toBe(48)
+    db.prepare('UPDATE media_item SET progress = 4 WHERE id = ?').run(show)
+    expect(groups()[0].entries[0].minutes).toBe(96)
+  })
+})

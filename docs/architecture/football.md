@@ -63,6 +63,7 @@ Scores are always visible. `/football/current` reads the last stored snapshot an
 Football media is manual only:
 
 - local files must already be beneath `football.dir`; the DB stores a relative path, and `football/` resolves through the guarded `absoluteMediaPath` branch;
+- a local file plays in the in-app player (`/watch/football/:id`); `football/media.ts:resolveLocal` is the one realpath-contained path resolution shared by the player and the system-player fallback (see [video.md](video.md));
 - HTTP(S) links open in the browser and are never embedded or downloaded;
 - an attachment can link to many entities;
 - footage linked to a match derives onto both teams and its competition without duplicate media rows;

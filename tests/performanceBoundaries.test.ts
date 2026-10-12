@@ -72,10 +72,18 @@ describe('renderer loading boundaries', () => {
 
 describe('main-process loading boundaries', () => {
   it('keeps the quiz pool process free of electron and the main connection', () => {
-    for (const file of ['src/main/quizPoolChild.ts', 'src/main/quizPoolsCore.ts', 'src/main/repos/quizRepo.ts']) {
+    for (const file of [
+      'src/main/quizPoolChild.ts',
+      'src/main/quizPoolsCore.ts',
+      'src/main/repos/quizRepo.ts',
+      'src/main/repos/creditTimeRepo.ts',
+      'src/shared/timeStats.ts'
+    ]) {
       const src = read(file)
       expect(src, file).not.toMatch(/from 'electron'/)
       expect(src, file).not.toMatch(/db\/connection'/)
+      // settingsRepo imports db/connection, so the child would die at startup.
+      expect(src, file).not.toMatch(/settingsRepo'/)
     }
     expect(read('src/main/quizPools.ts')).toContain("import childPath from './quizPoolChild?modulePath'")
     expect(read('src/main/index.ts')).toMatch(/stopQuizPools\(\)[\s\S]*closeDatabase\(\)/)

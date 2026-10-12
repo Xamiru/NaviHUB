@@ -1,15 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type Database from 'better-sqlite3'
 import { createTestDb } from './helpers'
+import { mkdtempSync, mkdirSync, writeFileSync } from 'fs'
+import { tmpdir } from 'os'
+import { join } from 'path'
 import {
   addFromFiles,
+  addFromPaths,
   addFromSearch,
   addFromUrl,
   forgetSlideshowForMedia,
+  imageFileInfo,
+  isAcceptedImagePath,
   listImages,
   listSources,
   parseWallhaven,
   removeImage,
+  replaceImage,
   searchTmdbBackdrops,
   searchWallhaven,
   setBackground,
@@ -37,6 +44,7 @@ import {
   untagImages
 } from '../src/main/pictureLibrary'
 import * as settingsRepo from '../src/main/repos/settingsRepo'
+import { isLarger, nextResolutionTier, sourcePageUrl } from '../src/shared/pictures'
 import type { WallpaperSearchResult } from '../src/shared/types'
 
 // Wallpapers/fan art against the real schema: Wallhaven URL/parse invariants
@@ -127,6 +135,16 @@ describe('wallhavenSearchUrl', () => {
     expect(url.searchParams.get('categories')).toBe('111')
     expect(url.searchParams.get('purity')).toBe('100')
     expect(url.searchParams.get('page')).toBe('3')
+  })
+
+  it('adds atleast only for a positive minimum size, keeping purity=100', () => {
+    const url = new URL(wallhavenSearchUrl('Berserk', 1, { width: 2560, height: 1440 }))
+    expect(url.searchParams.get('atleast')).toBe('2560x1440')
+    expect(url.searchParams.get('purity')).toBe('100')
+    expect(new URL(wallhavenSearchUrl('Berserk', 1, null)).searchParams.has('atleast')).toBe(false)
+    expect(
+      new URL(wallhavenSearchUrl('Berserk', 1, { width: 0, height: 1440 })).searchParams.has('atleast')
+    ).toBe(false)
   })
 
   it('clamps the page to at least 1', () => {
@@ -597,6 +615,54 @@ describe('listGallery', () => {
     expect(ids({ inSlideshow: true })).toEqual([film.id])
   })
 
+  it('filters by minimum resolution on the shorter side, ignoring unknown sizes', async () => {
+    const uhd = await addFromUrl(1, 'wallpaper', 'https://x.com/uhd.jpg')
+    const phone = await addFromUrl(1, 'fanart', 'https://x.com/phone.jpg')
+    const qhd = await addFromUrl(2, 'wallpaper', 'https://x.com/qhd.jpg')
+    const small = await addFromUrl(2, 'wallpaper', 'https://x.com/small.jpg')
+    const unknown = await addFromUrl(null, 'wallpaper', 'https://x.com/unknown.jpg')
+    setDims(uhd.id, 3840, 2160)
+    setDims(phone.id, 1080, 2400)
+    setDims(qhd.id, 2560, 1440)
+    setDims(small.id, 2048, 1000)
+    db.prepare('UPDATE media_image SET width=NULL, height=NULL WHERE id=?').run(unknown.id)
+    const ids = (f: Parameters<typeof listGallery>[0]): number[] =>
+      listGallery(f).map((i) => i.id).sort((a, b) => a - b)
+
+    expect(ids({ resolution: 'fhd' })).toEqual([uhd.id, phone.id, qhd.id])
+    expect(ids({ resolution: 'qhd' })).toEqual([uhd.id, qhd.id])
+    expect(ids({ resolution: 'uhd' })).toEqual([uhd.id])
+    // A wide 2048x1000 is under 1080p; unknown and unreadable sizes are in no tier.
+    expect(ids({ resolution: 'low' })).toEqual([small.id])
+    expect(listGallery({ sort: 'largest' }).map((i) => i.id)).toEqual([
+      uhd.id,
+      qhd.id,
+      phone.id,
+      small.id,
+      unknown.id
+    ])
+  })
+
+  it('searches title, file name, source and tags, every word required', async () => {
+    const berserk = await addFromUrl(1, 'wallpaper', 'https://x.com/eclipse.jpg')
+    const film = await addFromUrl(2, 'wallpaper', 'https://x.com/rain.jpg')
+    const loose = await addFromUrl(null, 'fanart', 'https://x.com/100%_done.jpg')
+    tagImages([film.id], 'Neon city')
+    const ids = (search: string): number[] =>
+      listGallery({ search }).map((i) => i.id).sort((a, b) => a - b)
+
+    expect(ids('berserk')).toEqual([berserk.id])
+    expect(ids('ECLIPSE')).toEqual([berserk.id])
+    expect(ids('neon')).toEqual([film.id])
+    expect(ids('blade neon')).toEqual([film.id])
+    expect(ids('blade eclipse')).toEqual([])
+    expect(ids('url')).toEqual([berserk.id, film.id, loose.id])
+    // LIKE wildcards are literal.
+    expect(ids('100%')).toEqual([loose.id])
+    expect(ids('%')).toEqual([loose.id])
+    expect(ids('   ')).toEqual([berserk.id, film.id, loose.id])
+  })
+
   it('sorts by title with Unsorted last, and by the album order inside an album', async () => {
     const loose = await addFromUrl(null, 'wallpaper', 'https://x.com/a.jpg')
     const film = await addFromUrl(2, 'wallpaper', 'https://x.com/b.jpg')
@@ -700,5 +766,149 @@ describe('slideshow mirror', () => {
   it('rejects an unknown source or a missing album', async () => {
     expect(() => setSlideshowSource('album:99')).toThrow(/Album not found/)
     expect(() => setSlideshowSource('everything' as never)).toThrow(/Unknown/)
+  })
+})
+
+describe('resolution helpers', () => {
+  it('names the next tier above the shorter side, oriented like the image', () => {
+    expect(nextResolutionTier(1280, 720)).toEqual({ width: 1920, height: 1080 })
+    expect(nextResolutionTier(1920, 1080)).toEqual({ width: 2560, height: 1440 })
+    expect(nextResolutionTier(1440, 2560)).toEqual({ width: 2160, height: 3840 })
+    expect(nextResolutionTier(3840, 2160)).toBeNull()
+    expect(nextResolutionTier(null, 1080)).toBeNull()
+  })
+
+  it('counts a result as larger only when its shorter side beats the current one', () => {
+    expect(isLarger({ width: 2560, height: 1440 }, 1920, 1080)).toBe(true)
+    expect(isLarger({ width: 3440, height: 1080 }, 1920, 1080)).toBe(false)
+    expect(isLarger({ width: null, height: null }, 1920, 1080)).toBe(true)
+  })
+
+  it('links Wallhaven and Danbooru files to their pages and keeps other URLs', () => {
+    expect(sourcePageUrl('wallhaven', 'https://w.wallhaven.cc/full/x8/wallhaven-x8g2o3.jpg')).toBe(
+      'https://wallhaven.cc/w/x8g2o3'
+    )
+    expect(
+      sourcePageUrl('danbooru', 'https://cdn.donmai.us/original/ab/cd/ABCDEF0123456789abcdef0123456789.png')
+    ).toBe('https://danbooru.donmai.us/posts?tags=md5%3Aabcdef0123456789abcdef0123456789')
+    expect(sourcePageUrl('tmdb', 'https://image.tmdb.org/t/p/original/a.jpg')).toBe(
+      'https://image.tmdb.org/t/p/original/a.jpg'
+    )
+    expect(sourcePageUrl('file', null)).toBeNull()
+    expect(sourcePageUrl('url', 'file:///etc/passwd')).toBeNull()
+  })
+})
+
+describe('addFromPaths', () => {
+  it('copies dropped image files and counts everything else as skipped', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'navihub-drop-'))
+    const good = join(dir, 'wall.PNG')
+    writeFileSync(good, 'x')
+    const notImage = join(dir, 'notes.txt')
+    writeFileSync(notImage, 'x')
+    const folder = join(dir, 'folder.jpg')
+    mkdirSync(folder)
+    files.copyImageInto.mockImplementation(
+      (src: string, subdir: string) => `pictures/${subdir}/${src.split('/').pop()}`
+    )
+
+    const result = addFromPaths(null, 'wallpaper', [
+      good,
+      notImage,
+      folder,
+      'relative.jpg',
+      join(dir, 'missing.jpg'),
+      42
+    ])
+    expect(result.added).toHaveLength(1)
+    expect(result.skipped).toBe(5)
+    expect(files.copyImageInto).toHaveBeenCalledTimes(1)
+    expect(files.copyImageInto).toHaveBeenCalledWith(good, 'Unsorted/wallpapers')
+    expect(result.added[0]).toMatchObject({ mediaId: null, source: 'file' })
+    expect(() => addFromPaths(1, 'cover' as never, [good])).toThrow('Unknown picture kind')
+  })
+
+  it('accepts only absolute paths with an image extension', () => {
+    expect(isAcceptedImagePath('/a/b.jpeg')).toBe(true)
+    expect(isAcceptedImagePath('/a/b.WebP')).toBe(true)
+    expect(isAcceptedImagePath('b.jpg')).toBe(false)
+    expect(isAcceptedImagePath('/a/b.svg')).toBe(false)
+    expect(isAcceptedImagePath(null)).toBe(false)
+  })
+})
+
+describe('imageFileInfo', () => {
+  it('reports size and format, or a null size for a missing file', async () => {
+    const img = await addFromUrl(1, 'wallpaper', 'https://x.com/one.jpg')
+    expect(imageFileInfo(img.id)).toEqual({ bytes: null, format: 'JPEG' })
+    files.absoluteMediaPath.mockImplementation(() => __filename)
+    try {
+      expect(imageFileInfo(img.id).bytes).toBeGreaterThan(0)
+    } finally {
+      files.absoluteMediaPath.mockImplementation((rel: string) => `/nonexistent-test-root/${rel}`)
+    }
+  })
+})
+
+describe('replaceImage', () => {
+  const bigger: WallpaperSearchResult = {
+    source: 'wallhaven',
+    id: 'big1',
+    thumbUrl: 'https://th/big1.jpg',
+    fullUrl: 'https://w.wallhaven.cc/full/bi/wallhaven-big1.jpg',
+    width: 3840,
+    height: 2160
+  }
+
+  it('keeps the row and its personal state while swapping the file', async () => {
+    const img = await addFromUrl(1, 'wallpaper', 'https://x.com/small.jpg')
+    setDims(img.id, 1280, 720)
+    await setFavorite([img.id], true)
+    tagImages([img.id], 'Night')
+    const album = await createAlbum('Desk', [img.id])
+    setBackground(1, img.id)
+    toggleSlideshow(img.id)
+    files.copyIntoSlideshow.mockClear()
+    files.removeSlideshowCopy.mockClear()
+    files.absoluteMediaPath.mockClear()
+
+    const replaced = await replaceImage(img.id, bigger)
+    expect(replaced).toMatchObject({
+      id: img.id,
+      filePath: 'pictures/Berserk (anime)/wallpapers/wallhaven-big1.jpg',
+      sourceUrl: bigger.fullUrl,
+      source: 'wallhaven',
+      width: 3840,
+      height: 2160,
+      isFavorite: true,
+      isBackground: true,
+      inSlideshow: true
+    })
+    expect(replaced.tagIds).toHaveLength(1)
+    expect(listGallery({ albumId: album.id }).map((i) => i.id)).toEqual([img.id])
+    // The old file is deleted and the slideshow copy is redone from the new one.
+    expect(files.absoluteMediaPath).toHaveBeenCalledWith(img.filePath)
+    expect(files.removeSlideshowCopy).toHaveBeenCalledTimes(1)
+    expect(files.copyIntoSlideshow).toHaveBeenCalledWith(
+      '/nonexistent-test-root/pictures/Berserk (anime)/wallpapers/wallhaven-big1.jpg',
+      'Berserk - wallhaven-big1.jpg'
+    )
+  })
+
+  it('changes nothing when the download fails', async () => {
+    const img = await addFromUrl(1, 'wallpaper', 'https://x.com/small.jpg')
+    files.downloadImageTo.mockResolvedValueOnce(null)
+    files.absoluteMediaPath.mockClear()
+    await expect(replaceImage(img.id, bigger)).rejects.toThrow('download failed')
+    expect(listImages(1, 'wallpaper')[0]).toMatchObject({ filePath: img.filePath, sourceUrl: img.sourceUrl })
+    expect(files.absoluteMediaPath).not.toHaveBeenCalledWith(img.filePath)
+  })
+
+  it('refuses a result already saved for the same title and kind', async () => {
+    const img = await addFromUrl(1, 'wallpaper', 'https://x.com/small.jpg')
+    await addFromUrl(1, 'wallpaper', bigger.fullUrl)
+    files.downloadImageTo.mockClear()
+    await expect(replaceImage(img.id, bigger)).rejects.toThrow('already saved')
+    expect(files.downloadImageTo).not.toHaveBeenCalled()
   })
 })

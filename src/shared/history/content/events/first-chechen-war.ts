@@ -197,6 +197,19 @@ export default defineEvent({
           loc: { section: 'Movements Toward Sovereignty, Chechnya', para: '19' }
         }
       ]
+    },
+    {
+      ref: 'event:second-chechen-war',
+      rel: 'followed-by',
+      cites: [
+        {
+          source: 'hrw-2004-world-report-glad-to-be-deceived-chechnya',
+          loc: {
+            section: '“Glad to be Deceived”: the International Community and Chechnya',
+            para: '13'
+          }
+        }
+      ]
     }
   ],
   sections: [

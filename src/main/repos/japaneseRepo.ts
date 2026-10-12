@@ -974,7 +974,9 @@ const TUTOR_SKILLS = new Set<JpTutorSkill>([
   'listening',
   'reading',
   'output',
-  'curriculum'
+  'curriculum',
+  'kana',
+  'lesson'
 ])
 
 function tutorText(value: string, label: string, max: number): string {

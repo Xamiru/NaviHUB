@@ -1,5 +1,5 @@
-import { unlinkSync } from 'fs'
-import { basename, extname } from 'path'
+import { statSync, unlinkSync } from 'fs'
+import { basename, extname, isAbsolute } from 'path'
 import { getSqlite } from './db/connection'
 import {
   absoluteMediaPath,
@@ -14,6 +14,7 @@ import {
 } from './files'
 import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import { probeImageDims } from './imageDims'
+import { logWarn } from './logBus'
 import { fetchBackdrops } from './tmdb'
 import * as settingsRepo from './repos/settingsRepo'
 import * as links from './repos/externalLinkRepo'
@@ -46,12 +47,20 @@ const TMDB_IMG = 'https://image.tmdb.org/t/p'
 
 // purity=100 pins results to SFW only — a deliberate invariant, not a default.
 // categories=111 = general + anime + people.
-export function wallhavenSearchUrl(query: string, page: number): string {
+// minSize adds Wallhaven's atleast=WxH, used when looking for a larger copy.
+export function wallhavenSearchUrl(
+  query: string,
+  page: number,
+  minSize?: { width: number; height: number } | null
+): string {
   const url = new URL(WALLHAVEN_API)
   url.searchParams.set('q', query)
   url.searchParams.set('categories', '111')
   url.searchParams.set('purity', '100')
   url.searchParams.set('page', String(Math.max(1, Math.floor(page))))
+  const w = Math.floor(Number(minSize?.width))
+  const h = Math.floor(Number(minSize?.height))
+  if (w > 0 && h > 0) url.searchParams.set('atleast', `${w}x${h}`)
   return url.toString()
 }
 
@@ -91,8 +100,12 @@ export function tmdbBackdropResults(
 
 // ---------------- searches ----------------
 
-export async function searchWallhaven(query: string, page = 1): Promise<WallpaperSearchPage> {
-  const res = await fetchWithRetry(wallhavenSearchUrl(query, page), {
+export async function searchWallhaven(
+  query: string,
+  page = 1,
+  minSize?: { width: number; height: number } | null
+): Promise<WallpaperSearchPage> {
+  const res = await fetchWithRetry(wallhavenSearchUrl(query, page, minSize), {
     headers: { Accept: 'application/json' },
     maxResponseBytes: MAX_API_RESPONSE_BYTES
   })
@@ -167,10 +180,11 @@ export async function searchSource(
   mediaId: number | null,
   source: WallpaperSource,
   query: string,
-  page = 1
+  page = 1,
+  minSize: { width: number; height: number } | null = null
 ): Promise<WallpaperSearchPage> {
   if (mediaId == null) {
-    if (source === 'wallhaven') return searchWallhaven(query, page)
+    if (source === 'wallhaven') return searchWallhaven(query, page, minSize)
     if (source === 'danbooru') return art.searchDanbooru(query, page)
     throw new Error('Unsorted pictures can only browse Wallhaven and Danbooru')
   }
@@ -178,7 +192,7 @@ export async function searchSource(
   const steamId = steamAppOf(mediaId, m)
   switch (source) {
     case 'wallhaven':
-      return searchWallhaven(query, page)
+      return searchWallhaven(query, page, minSize)
     case 'tmdb':
       return searchTmdbBackdrops(mediaId)
     case 'danbooru':
@@ -344,14 +358,79 @@ async function addDownloaded(
   return insertImage(mediaId, kind, filePath, url, source, width, height)
 }
 
+// Saved Browse picks are named "<source>-<provider id>".
+function searchBaseName(result: WallpaperSearchResult): string {
+  const stem = result.id.replace(/^\//, '').replace(/\.\w+$/, '').replace(/[^\w-]+/g, '-')
+  return `${result.source}-${stem}`
+}
+
 export async function addFromSearch(
   mediaId: number | null,
   kind: ImageKind,
   result: WallpaperSearchResult
 ): Promise<MediaImage> {
-  const stem = result.id.replace(/^\//, '').replace(/\.\w+$/, '').replace(/[^\w-]+/g, '-')
-  const baseName = `${result.source}-${stem}`
-  return addDownloaded(mediaId, kind, result.fullUrl, baseName, result.source, result.width, result.height)
+  return addDownloaded(
+    mediaId,
+    kind,
+    result.fullUrl,
+    searchBaseName(result),
+    result.source,
+    result.width,
+    result.height
+  )
+}
+
+// Swaps an image for a larger copy from a Browse result while keeping the ROW,
+// so its favorite, albums, tags, background flag and slideshow place survive.
+// The new file is downloaded first; a failed download changes nothing. The
+// old file is deleted only after the row points at the new one.
+export async function replaceImage(
+  imageId: number,
+  result: WallpaperSearchResult
+): Promise<MediaImage> {
+  const db = getSqlite()
+  const image = getImage(imageId)
+  const clash = db
+    .prepare('SELECT id FROM media_image WHERE media_id IS ? AND kind=? AND source_url=? AND id<>?')
+    .get(image.mediaId, image.kind, result.fullUrl, imageId)
+  if (clash) throw new Error('That picture is already saved here')
+  const subdir = subdirFor(mediaOrUnsorted(image.mediaId), image.kind)
+  const filePath = await downloadImageTo(result.fullUrl, subdir, searchBaseName(result))
+  if (!filePath) throw new Error('Image download failed — check your connection.')
+  let { width, height } = result
+  if (!width || !height) {
+    const found = probeImageDims(absoluteMediaPath(filePath))
+    width = found?.width ?? 0
+    height = found?.height ?? 0
+  }
+  const changed = db
+    .prepare('UPDATE media_image SET file_path=?, source_url=?, source=?, width=?, height=? WHERE id=?')
+    .run(filePath, result.fullUrl, result.source, width, height, imageId).changes
+  if (changed === 0) {
+    // Removed while the download ran: drop the orphan file.
+    deletePicturesFile(filePath)
+    throw new Error('Image not found')
+  }
+  if (image.filePath !== filePath) deletePicturesFile(image.filePath)
+  if (image.inSlideshow) {
+    // The folder copy is of the old file; copy the new one in its place.
+    removeFromSlideshow(imageId)
+    try {
+      addToSlideshow(imageId)
+    } catch (e) {
+      logWarn('app', `Slideshow copy of replaced image ${imageId} failed: ${String(e)}`)
+    }
+  }
+  return getImage(imageId)
+}
+
+function deletePicturesFile(relPath: string): void {
+  if (!relPath.startsWith('pictures/')) return
+  try {
+    unlinkSync(absoluteMediaPath(relPath))
+  } catch {
+    /* already gone or unwritable */
+  }
 }
 
 function parseImageUrl(url: string): URL {
@@ -378,17 +457,76 @@ export async function addFromUrl(
 }
 
 export async function addFromFiles(mediaId: number | null, kind: ImageKind): Promise<MediaImage[]> {
-  const media = mediaOrUnsorted(mediaId)
+  mediaOrUnsorted(mediaId) // an unknown title fails before the picker opens
   const picked = await pickImageFiles()
   if (picked.length === 0) return []
-  const subdir = subdirFor(media, kind)
-  const added: MediaImage[] = []
-  for (const src of picked) {
-    const filePath = copyImageInto(src, subdir)
-    if (!filePath) continue // unreadable file — skip rather than abort the batch
-    added.push(insertImage(mediaId, kind, filePath, null, 'file', null, null))
+  return copyIntoGallery(mediaId, kind, picked).added
+}
+
+const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp'])
+const IMAGE_KINDS: ReadonlySet<string> = new Set<ImageKind>(['wallpaper', 'fanart'])
+
+// Dropped paths come from the renderer, so only absolute paths with an image
+// extension pass; the file itself is checked when it is copied.
+export function isAcceptedImagePath(path: unknown): path is string {
+  return (
+    typeof path === 'string' && isAbsolute(path) && IMAGE_EXTENSIONS.has(extname(path).toLowerCase())
+  )
+}
+
+function isRegularFile(path: string): boolean {
+  try {
+    return statSync(path).isFile()
+  } catch {
+    return false
   }
-  return added
+}
+
+// Files dropped on the gallery. Anything that is not an image file is skipped
+// and counted rather than aborting the batch.
+export function addFromPaths(
+  mediaId: number | null,
+  kind: ImageKind,
+  paths: unknown[]
+): { added: MediaImage[]; skipped: number } {
+  if (!IMAGE_KINDS.has(kind)) throw new Error('Unknown picture kind')
+  const list = Array.isArray(paths) ? paths : []
+  const accepted = list.filter((p): p is string => isAcceptedImagePath(p) && isRegularFile(p))
+  const result = copyIntoGallery(mediaId, kind, accepted)
+  return { added: result.added, skipped: result.skipped + list.length - accepted.length }
+}
+
+// Copies local files into pictures.dir; an unreadable one is skipped.
+function copyIntoGallery(
+  mediaId: number | null,
+  kind: ImageKind,
+  paths: string[]
+): { added: MediaImage[]; skipped: number } {
+  const subdir = subdirFor(mediaOrUnsorted(mediaId), kind)
+  const added: MediaImage[] = []
+  for (const src of paths) {
+    const filePath = copyImageInto(src, subdir)
+    if (filePath) added.push(insertImage(mediaId, kind, filePath, null, 'file', null, null))
+  }
+  return { added, skipped: paths.length - added.length }
+}
+
+// Size and format for the Lightbox caption. bytes is null when the file is
+// missing (an unmounted drive).
+export function imageFileInfo(imageId: number): { bytes: number | null; format: string | null } {
+  const image = getImage(imageId)
+  let bytes: number | null = null
+  try {
+    bytes = statSync(absoluteMediaPath(image.filePath)).size
+  } catch {
+    /* missing file */
+  }
+  const ext = extname(image.filePath).slice(1).toUpperCase()
+  return { bytes, format: ext === 'JPG' ? 'JPEG' : ext || null }
+}
+
+export function imageAbsolutePath(imageId: number): string {
+  return absoluteMediaPath(getImage(imageId).filePath)
 }
 
 // Sources for a hand-picked cover/photo (imageOverrideRepo.setManual). Both

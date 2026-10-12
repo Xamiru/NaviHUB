@@ -112,6 +112,7 @@ export default function EnglishSpellingPage() {
       <div className="p-6 max-w-[1320px] mx-auto">
         <PageHeader back={{ to: '/english', label: 'English' }} title="Spelling" />
         <TypedDrill
+          japanese={false}
           title="Spelling"
           items={items}
           kind="englishSpelling"

@@ -87,7 +87,7 @@ export function mapTrack(r: Record<string, unknown>): MusicTrack {
   }
 }
 
-function mapAlbumSummary(r: Record<string, unknown>): MusicAlbumSummary {
+export function mapAlbumSummary(r: Record<string, unknown>): MusicAlbumSummary {
   return {
     id: r.id as number,
     artistId: r.artist_id as number,

@@ -12,7 +12,7 @@ things that were tried and rejected, and the gotchas that were paid for once alr
 | Adding or changing a media type; wallpapers/fan art; books; game launching and playtime; seasonal shelves; list filtering and sorting | [media-types.md](media-types.md) |
 | A games importer, or wondering why RAWG/IGDB/Steam all appear in the tree | [importers.md](importers.md) |
 | The manga scanner, EPUB books, the manga/book readers, mokuro OCR | [readers.md](readers.md) |
-| Linked local videos, external playback, metadata and subtitle corpus | [video.md](video.md) |
+| Linked local videos, the in-app player and its decode gate, external playback, metadata, subtitles and mining | [video.md](video.md) |
 | "Open with NaviHUB", double-click handling, desktop registration | [file-associations.md](file-associations.md) |
 | The Japanese section — packs, drills, SRS, ghosts, the i+1 feed, the kana keyboard | [japanese.md](japanese.md) |
 | The English section — dictionaries, SRS, drills, writing feedback | [english.md](english.md) |

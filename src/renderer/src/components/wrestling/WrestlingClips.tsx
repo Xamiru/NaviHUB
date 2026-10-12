@@ -1,5 +1,5 @@
 import { useId, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
@@ -357,11 +357,15 @@ export function ClipCard({
   highlighted?: boolean
 }): JSX.Element {
   const qc = useQueryClient()
+  const navigate = useNavigate()
   async function toggleFavorite(): Promise<void> {
     await api.wrestling.setClipFavorite(clip.id, !clip.favorite)
     await qc.invalidateQueries({ queryKey: qk.wrestling.all })
   }
-  async function open(): Promise<void> {
+  function play(): void {
+    navigate(`/watch/clip/${clip.id}`)
+  }
+  async function openExternal(): Promise<void> {
     try {
       await api.wrestling.openClip(clip.id)
     } catch (err) {
@@ -376,10 +380,10 @@ export function ClipCard({
       <button
         type="button"
         className="relative block aspect-video w-full overflow-hidden bg-surface-base text-left"
-        onClick={open}
+        onClick={play}
         disabled={!clip.available}
         aria-label={clip.available ? `Play ${clip.title}` : `${clip.title}: file unavailable`}
-        title={clip.available ? 'Open in your video player' : 'File unavailable'}
+        title={clip.available ? 'Play' : 'File unavailable'}
       >
         <CoverImage path={clipImage(clip)} alt="" className="h-full w-full object-cover" thumbWidth={480} />
         <span className="media-contrast absolute left-2 top-2 rounded bg-black/70 px-1.5 py-0.5 text-[11px] uppercase tracking-wide">
@@ -421,6 +425,17 @@ export function ClipCard({
           <button type="button" className="btn-ghost px-2 py-1 text-xs" onClick={() => onEdit(clip)}>
             Edit
           </button>
+          {clip.available && (
+            <button
+              type="button"
+              className="btn-ghost px-2 py-1 text-xs"
+              title="Open in the system player"
+              aria-label={`Open in the system player: ${clip.title}`}
+              onClick={() => void openExternal()}
+            >
+              External
+            </button>
+          )}
           <AddToListMenu kind="wrestlingClip" entityId={clip.id} />
         </div>
       </div>

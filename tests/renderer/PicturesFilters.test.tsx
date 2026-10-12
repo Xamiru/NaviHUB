@@ -1,11 +1,15 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, expect, it, vi } from 'vitest'
 import PicturesPage from '../../src/renderer/src/pages/PicturesPage'
 
-const { gallery, setSlideshowSource } = vi.hoisted(() => ({ gallery: vi.fn(), setSlideshowSource: vi.fn() }))
+const { gallery, setSlideshowSource, addFromPaths } = vi.hoisted(() => ({
+  gallery: vi.fn(),
+  setSlideshowSource: vi.fn(),
+  addFromPaths: vi.fn()
+}))
 vi.mock('../../src/renderer/src/lib/api', () => ({
   api: {
     pictures: {
@@ -14,7 +18,9 @@ vi.mock('../../src/renderer/src/lib/api', () => ({
       albums: async () => [{ id: 3, name: 'Desktop rotation' }],
       slideshowSource: async () => 'manual',
       setSlideshowSource: (...args: unknown[]) => setSlideshowSource(...args),
-      openSlideshowFolder: vi.fn()
+      openSlideshowFolder: vi.fn(),
+      pathForFile: (file: File) => `/drop/${file.name}`,
+      addFromPaths: (...args: unknown[]) => addFromPaths(...args)
     }
   }
 }))
@@ -27,7 +33,18 @@ beforeEach(() => {
   vi.clearAllMocks()
   gallery.mockResolvedValue([{ id: 1 }])
   setSlideshowSource.mockResolvedValue({ added: 2, removed: 0, failed: 0 })
+  addFromPaths.mockResolvedValue({ added: [{ id: 9 }], skipped: 0 })
 })
+
+function renderPage(): void {
+  render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <MemoryRouter>
+        <PicturesPage />
+      </MemoryRouter>
+    </QueryClientProvider>
+  )
+}
 
 it('filters with pills and switches the slideshow mirror from one menu', async () => {
   const user = userEvent.setup()
@@ -50,4 +67,28 @@ it('filters with pills and switches the slideshow mirror from one menu', async (
   expect(screen.getByRole('menuitem', { name: '✓ Mirror manual picks' })).toBeInTheDocument()
   await user.click(screen.getByRole('menuitem', { name: 'Mirror album: Desktop rotation' }))
   expect(setSlideshowSource).toHaveBeenCalledWith('album:3')
+})
+
+it('filters by resolution and search, and sorts largest first', async () => {
+  const user = userEvent.setup()
+  renderPage()
+  expect(await screen.findByRole('heading', { name: 'Gallery' })).toBeInTheDocument()
+  await user.click(within(screen.getByRole('group', { name: 'Resolution' })).getByRole('button', { name: '4K+' }))
+  await waitFor(() => expect(gallery).toHaveBeenLastCalledWith(expect.objectContaining({ resolution: 'uhd' })))
+  await user.type(screen.getByRole('searchbox', { name: 'Search pictures' }), ' neon city ')
+  await waitFor(() =>
+    expect(gallery).toHaveBeenLastCalledWith(expect.objectContaining({ search: 'neon city', resolution: 'uhd' }))
+  )
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Sort' }), 'largest')
+  await waitFor(() => expect(gallery).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'largest' })))
+})
+
+it('adds dropped files to Unsorted as wallpapers by default', async () => {
+  renderPage()
+  expect(await screen.findByText('1 pictures shown')).toBeInTheDocument()
+  const file = new File(['x'], 'wall.png', { type: 'image/png' })
+  fireEvent.drop(screen.getByRole('heading', { name: 'Gallery' }), {
+    dataTransfer: { types: ['Files'], files: [file] }
+  })
+  await waitFor(() => expect(addFromPaths).toHaveBeenCalledWith(null, 'wallpaper', ['/drop/wall.png']))
 })

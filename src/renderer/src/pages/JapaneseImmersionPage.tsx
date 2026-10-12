@@ -11,8 +11,10 @@ import TutorSessionContinue from '../components/TutorSessionContinue'
 import {
   formatVideoStudyCue,
   formatVideoStudyTime,
-  parseVideoStudyRange
+  parseVideoStudyRange,
+  watchRangeSearch
 } from '@shared/videoStudyRange'
+import { toastError } from '../lib/toast'
 
 type PassId = 'cold' | 'jp-subs' | 'transcript' | 'shadow' | 'retell'
 
@@ -175,10 +177,17 @@ export default function JapaneseImmersionPage() {
           subtitle={`${media.title} · ${file.title} · ${stage.duration}. ${stage.target}`}
           actions={
             <>
+              <Link
+                className="btn-primary"
+                to={`/watch/file/${file.id}?${watchRangeSearch(studyRange)}`}
+                title="Plays only this range, pauses at the stop cue, and offers Replay and Loop"
+              >
+                Play range in NaviHUB
+              </Link>
               <button
                 type="button"
-                className="btn-primary"
-                onClick={() => void api.video.openExternal({ kind: 'file', fileId: file.id })}
+                className="btn-ghost"
+                onClick={() => void api.video.openExternal({ kind: 'file', fileId: file.id }).catch(toastError)}
               >
                 Open in system player
               </button>
@@ -199,8 +208,8 @@ export default function JapaneseImmersionPage() {
             <section className="mb-7 border-y border-accent/40 bg-accent/5 px-1 py-5">
               <h2 className="text-lg font-semibold text-white">{rangeCue}</h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-400">
-                Open the file once, seek to the start, and pause at the stop cue after every pass.
-                Keep the player unrestricted if you need surrounding context; only this range counts for the drill.
+                Play the range in NaviHUB: it starts at the cue, pauses at the stop cue, and Shift+R replays it for the next pass.
+                In the system player, seek to the start and pause at the stop cue yourself. Surrounding context is fine; only this range counts for the drill.
               </p>
             </section>
             <Section title="Five-pass protocol" subtitle={`${passes.length} of ${PASSES.length} marked`}>

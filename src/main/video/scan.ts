@@ -187,6 +187,8 @@ export interface ScopedFileRow {
   title: string
   sortOrder: number
   duration: number | null
+  videoCodec: string | null
+  audioCodec: string | null
   resumeSeconds: number | null
   watchedAt: string | null
 }
@@ -203,6 +205,8 @@ export function scopedFileById(scope: VideoScope, fileId: number): ScopedFileRow
     title: r.title as string,
     sortOrder: r.sort_order as number,
     duration: (r.duration as number | null) ?? null,
+    videoCodec: (r.video_codec as string | null) ?? null,
+    audioCodec: (r.audio_codec as string | null) ?? null,
     resumeSeconds: (r.resume_seconds as number | null) ?? null,
     watchedAt: (r.watched_at as string | null) ?? null
   }
@@ -512,4 +516,42 @@ export function markWatched(
 ): { mediaId: number; firstTime: boolean } | null {
   const r = markWatchedIn(VIDEO_SCOPES.video, fileId, watched)
   return r ? { mediaId: r.ownerId, firstTime: r.firstTime } : null
+}
+
+// The in-app player's resume position. It writes resume_seconds ONLY: a
+// position is not progress, and media_item.progress moves solely through the
+// watched transition (checklistRepo.logProgress in ipc.ts). null clears it, so
+// a finished file reopens from the start.
+export function markProgressIn(scope: VideoScope, fileId: number, seconds: number | null): void {
+  const value = seconds == null || !Number.isFinite(seconds) || seconds < 1 ? null : seconds
+  getSqlite()
+    .prepare(`UPDATE ${scope.table} SET resume_seconds = ?, updated_at = datetime('now') WHERE id = ?`)
+    .run(value, fileId)
+}
+
+// Previous/next file of the same owner in card order. A loose wrestling file
+// has no owner and therefore nothing to step through.
+export function neighboursIn(
+  scope: VideoScope,
+  fileId: number
+): {
+  prev: { fileId: number; title: string } | null
+  next: { fileId: number; title: string } | null
+} {
+  const db = getSqlite()
+  const row = db
+    .prepare(`SELECT ${scope.ownerCol} AS owner_id, sort_order FROM ${scope.table} WHERE id = ?`)
+    .get(fileId) as { owner_id: number | null; sort_order: number } | undefined
+  if (!row || row.owner_id == null) return { prev: null, next: null }
+  const pick = (order: 'DESC' | 'ASC', cmp: '<' | '>'): { fileId: number; title: string } | null => {
+    const r = db
+      .prepare(
+        `SELECT id, title FROM ${scope.table}
+         WHERE ${scope.ownerCol} = ? AND (sort_order, id) ${cmp} (?, ?)
+         ORDER BY sort_order ${order}, id ${order} LIMIT 1`
+      )
+      .get(row.owner_id, row.sort_order, fileId) as { id: number; title: string } | undefined
+    return r ? { fileId: r.id, title: r.title } : null
+  }
+  return { prev: pick('DESC', '<'), next: pick('ASC', '>') }
 }

@@ -160,7 +160,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Mahmoud Abbas',
+      ref: 'person:mahmoud-abbas',
       role: 'signatory',
       side: 'plo',
       cites: [

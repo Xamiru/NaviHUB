@@ -27,7 +27,7 @@ describe('adaptive archive navigation', () => {
     ['/tv', 'library'],
     ['/tv/42/edit', 'library'],
     ['/football/match/42', 'archives'],
-    ['/pictures/albums/3', 'local'],
+    ['/gallery/albums/3', 'local'],
     ['/music/liked', 'local'],
     ['/now-playing', 'local'],
     ['/people/42', 'library'],
@@ -78,15 +78,16 @@ describe('adaptive archive navigation', () => {
     })
     expect(archiveContextForPath('/music/liked').items).not.toContainEqual({ to: '/music/journal', label: 'Journal' })
     expect(archiveContextForPath('/music/smart/7').items).toContainEqual({ to: '/music/smart', label: 'Smart Playlists' })
+    expect(archiveContextForPath('/music/soundtracks').items).toContainEqual({ to: '/music/soundtracks', label: 'Soundtracks' })
     expect(archiveContextForPath('/music/downloads').items).toContainEqual({
       to: '/music/downloads',
       label: 'Downloads'
     })
-    expect(archiveContextForPath('/pictures/albums/3')).toMatchObject({
-      title: 'Pictures',
+    expect(archiveContextForPath('/gallery/albums/3')).toMatchObject({
+      title: 'Gallery',
       items: [
-        { to: '/pictures', label: 'Gallery' },
-        { to: '/pictures/albums', label: 'Albums' }
+        { to: '/gallery', label: 'Pictures' },
+        { to: '/gallery/albums', label: 'Albums' }
       ]
     })
     expect(archiveContextForPath('/english/review')).toMatchObject({
@@ -100,9 +101,17 @@ describe('adaptive archive navigation', () => {
       to: '/programming/sql',
       label: 'SQL Sandbox'
     })
-    expect(archiveContextForPath('/japanese/output').items).toContainEqual({
-      to: '/japanese/tutor',
-      label: 'Tutor'
+    expect(archiveContextForPath('/japanese/output').items.map((i) => i.label)).toEqual([
+      'Today',
+      'Path',
+      'Review',
+      'Dictionary',
+      'Tools',
+      'Stats'
+    ])
+    expect(archiveContextForPath('/japanese/tools').items).toContainEqual({
+      to: '/japanese/tools',
+      label: 'Tools'
     })
   })
 
@@ -205,7 +214,7 @@ it('groups drawers by kind and keeps no single-item drawer', () => {
   ]
   expect(groups('library')).toEqual(['Media', 'Connections', 'Organise'])
   expect(groups('system')).toEqual(['Get content', 'Upkeep'])
-  expect(drawerItemsForArea('local').map((i) => i.to)).toEqual(['/music', '/pictures'])
+  expect(drawerItemsForArea('local').map((i) => i.to)).toEqual(['/music', '/gallery'])
   expect(drawerItemsForArea('archives').map((i) => i.to)).toEqual([
     '/franchises',
     '/history',
@@ -233,7 +242,7 @@ describe('navigation against the real route table', () => {
   const concrete = (route: string) => route.replace(/:[a-zA-Z]+/g, '7')
   const routed = routes.map((r) => new RegExp(`^${r.replace(/:[a-zA-Z]+/g, '[^/]+')}$`))
   // Chromeless readers, Home's own pages, search and redirect-only legacy URLs.
-  const homeOrChromeless = /^\/($|search|stats|checklist|read\/|guides)/
+  const homeOrChromeless = /^\/($|search|stats|checklist|read\/|watch\/|guides|pictures)/
 
   it('links every drawer and Topbar destination to a routed page', () => {
     const items = [...RAIL_AREAS, 'system' as const].flatMap((area) => drawerItemsForArea(area))

@@ -162,4 +162,35 @@ describe('interactive Tutor session', () => {
       strongest: 'Listen: 100%'
     })
   })
+
+  it('completes kana and lesson blocks from their own evidence', () => {
+    const fresh: TutorTask[] = [
+      { skill: 'kana', title: 'Kana', detail: '', minutes: 10, route: '/japanese/kana', reason: '', priority: 'required' },
+      { skill: 'lesson', title: 'Learn', detail: '', minutes: 5, route: '/japanese/lessons/1', reason: '', priority: 'required' }
+    ]
+    const base = state({
+      tasks: fresh,
+      baseline: { due: 0, reviewsToday: 0, introducedToday: 0, chaptersRead: 0, learnedLessons: 1 }
+    })
+    const short = tutorSessionProgress(
+      base,
+      evidence({ learnedLessons: 1, histories: { kana: history('kana', 6, 8, '2026-08-30 10:05:00') } })
+    )
+    expect(short.map((item) => item.complete)).toEqual([false, false])
+
+    const done = tutorSessionProgress(
+      base,
+      evidence({ learnedLessons: 2, histories: { kana: history('kana', 18, 20, '2026-08-30 10:05:00') } })
+    )
+    expect(done.map((item) => item.complete)).toEqual([true, true])
+    expect(done.every((item) => item.repair === null)).toBe(true)
+  })
+
+  it('never completes a lesson block from a session saved without a lesson baseline', () => {
+    const lessonOnly: TutorTask[] = [
+      { skill: 'lesson', title: 'Learn', detail: '', minutes: 5, route: '/japanese/lessons/1', reason: '', priority: 'required' }
+    ]
+    const progress = tutorSessionProgress(state({ tasks: lessonOnly }), evidence({ learnedLessons: 9 }))
+    expect(progress[0].complete).toBe(false)
+  })
 })

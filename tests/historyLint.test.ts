@@ -104,3 +104,15 @@ describe('History lint: quotes cut badly', () => {
     expect(keys).toContain('bad-locator|event:sample-revolution|q94')
   })
 })
+
+describe('History lint: apparatus inside quotes', () => {
+  it('flags figure references and numbered recitals', () => {
+    const keys = lint((all) => {
+      const e = find<HistoryEvent>(all, 'event', 'sample-revolution')
+      e.sections[0].quotes.push({ ...q('q95'), text: 'The quake destroyed most of the city (FIGURE 1).' })
+      e.sections[0].quotes.push({ ...q('q96'), text: 'C. whereas the enclave fell in July.' })
+    })
+    expect(keys).toContain('ocr|event:sample-revolution|q95')
+    expect(keys).toContain('ocr|event:sample-revolution|q96')
+  })
+})

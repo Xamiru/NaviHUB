@@ -3,10 +3,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { useDialog } from '../lib/hooks'
-import { toastError } from '../lib/toast'
+import { toast, toastError } from '../lib/toast'
+import { isLarger, nextResolutionTier } from '@shared/pictures'
 import type {
   ImageKind,
   MediaDetail,
+  MediaImage,
   WallpaperSearchResult,
   WallpaperSource,
   WallpaperSourceInfo
@@ -26,6 +28,9 @@ interface Props {
   m: BrowseTarget
   kind: ImageKind
   onClose: () => void
+  // Looking for a larger copy of this image: only larger results show, and a
+  // pick replaces it in place (keeping its favorite, albums and tags).
+  replace?: MediaImage
 }
 
 // Browse online art sources and save picks straight into the library. The
@@ -35,9 +40,10 @@ interface Props {
 // Searches run in the
 // main process (renderer CSP blocks remote fetch); the thumbnails themselves
 // are plain remote <img>, which img-src allows.
-export default function ImageBrowseDialog({ m, kind, onClose }: Props): React.JSX.Element {
+export default function ImageBrowseDialog({ m, kind, onClose, replace }: Props): React.JSX.Element {
   const panelRef = useDialog(onClose)
   const label = kind === 'wallpaper' ? 'wallpapers' : 'fan art'
+  const minSize = replace ? nextResolutionTier(replace.width, replace.height) : null
 
   const sources = useQuery({
     queryKey: qk.pictures.sources(m.id, kind),
@@ -59,13 +65,13 @@ export default function ImageBrowseDialog({ m, kind, onClose }: Props): React.JS
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-label={`Browse ${label}`}
+        aria-label={replace ? 'Find a larger version' : `Browse ${label}`}
         tabIndex={-1}
         className="card w-full max-w-4xl p-5 mt-4"
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold">
-            Browse {label} — {m.title}
+            {replace ? 'Find a larger version' : `Browse ${label}`} — {m.title}
           </h2>
           <button
             className="text-gray-500 hover:text-white text-xl leading-none"
@@ -76,6 +82,12 @@ export default function ImageBrowseDialog({ m, kind, onClose }: Props): React.JS
           </button>
         </div>
 
+        {replace?.width && replace.height ? (
+          <p className="mb-3 text-sm text-gray-400">
+            This one is {replace.width}×{replace.height}. Only larger results are shown
+            {minSize ? `; Wallhaven searches at ${minSize.width}×${minSize.height} or more` : ''}.
+          </p>
+        ) : null}
         {sources.isError && <p className="text-sm text-red-400 mb-3">Could not load sources.</p>}
         {current && list.length > 1 && (
           <Tabs
@@ -90,12 +102,23 @@ export default function ImageBrowseDialog({ m, kind, onClose }: Props): React.JS
         {current && (
           <TabPanel tabsId={tabsId} value={current.source}>
             {/* Keyed so each source keeps no stale query/page from another. */}
-            <SourcePanel key={current.source} m={m} kind={kind} info={current} />
+            <SourcePanel
+              key={current.source}
+              m={m}
+              kind={kind}
+              info={current}
+              replace={replace}
+              minSize={minSize}
+              onReplaced={onClose}
+            />
           </TabPanel>
         )}
 
         <p className="text-xs text-gray-400 mt-4">
-          Click an image to download it into your pictures folder. Results are safe-for-work only.
+          {replace
+            ? 'Click an image to replace the current one; its favorite, albums and tags stay. '
+            : 'Click an image to download it into your pictures folder. '}
+          Results are safe-for-work only.
         </p>
       </div>
     </div>
@@ -105,11 +128,17 @@ export default function ImageBrowseDialog({ m, kind, onClose }: Props): React.JS
 function SourcePanel({
   m,
   kind,
-  info
+  info,
+  replace,
+  minSize,
+  onReplaced
 }: {
   m: BrowseTarget
   kind: ImageKind
   info: WallpaperSourceInfo
+  replace?: MediaImage
+  minSize: { width: number; height: number } | null
+  onReplaced: () => void
 }): React.JSX.Element {
   const qc = useQueryClient()
   const [query, setQuery] = useState(info.query ?? '')
@@ -121,8 +150,8 @@ function SourcePanel({
 
   const searchable = info.query !== null
   const search = useQuery({
-    queryKey: qk.pictures.search(m.id, info.source, submitted ?? '', page),
-    queryFn: () => api.pictures.search(m.id, info.source, submitted ?? '', page),
+    queryKey: qk.pictures.search(m.id, info.source, submitted ?? '', page, minSize),
+    queryFn: () => api.pictures.search(m.id, info.source, submitted ?? '', page, minSize),
     enabled:
       !info.needsKey && submitted !== null && (!searchable || submitted.trim().length > 0),
     // Keep the grid and pager up while the next page loads.
@@ -141,7 +170,12 @@ function SourcePanel({
         : api.pictures.list(mediaId, kind)
   })
 
-  const results = search.data?.results ?? []
+  const found = search.data?.results ?? []
+  const results =
+    replace?.width && replace.height
+      ? found.filter((r) => isLarger(r, replace.width as number, replace.height as number))
+      : found
+  const hidden = found.length - results.length
   const lastPage = search.data?.lastPage ?? 1
   // Danbooru searches by character tag far better than by title.
   const characters = info.source === 'danbooru' ? m.characters.slice(0, 8) : []
@@ -160,6 +194,20 @@ function SourcePanel({
     if (statusOf(r)) return
     setPending((p) => ({ ...p, [r.fullUrl]: 'busy' }))
     try {
+      if (replace) {
+        const updated = await api.pictures.replace(replace.id, r)
+        void qc.invalidateQueries({ queryKey: qk.pictures.all })
+        // A replaced page background is painted from the title's detail.
+        if (mediaId != null) void qc.invalidateQueries({ queryKey: qk.media.detail(mediaId) })
+        toast(
+          updated.width && updated.height
+            ? `Replaced with the ${updated.width}×${updated.height} version`
+            : 'Replaced',
+          'success'
+        )
+        onReplaced()
+        return
+      }
       await api.pictures.addFromSearch(m.id, kind, r)
       setPending((p) => ({ ...p, [r.fullUrl]: 'added' }))
       if (mediaId != null) void qc.invalidateQueries({ queryKey: qk.pictures.list(mediaId, kind) })
@@ -239,7 +287,14 @@ function SourcePanel({
         </p>
       )}
       {search.isSuccess && !search.isFetching && results.length === 0 && (
-        <p className="text-sm text-gray-400 mb-3">No results.</p>
+        <p className="text-sm text-gray-400 mb-3">
+          {hidden > 0 ? 'No larger results on this page.' : 'No results.'}
+        </p>
+      )}
+      {hidden > 0 && results.length > 0 && (
+        <p className="text-xs text-gray-400 mb-3">
+          {hidden} smaller result{hidden === 1 ? '' : 's'} hidden
+        </p>
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -251,7 +306,9 @@ function SourcePanel({
               className="group relative aspect-video overflow-hidden rounded-md bg-base-700 text-left"
               onClick={() => void pick(r)}
               disabled={status === 'added'}
-              title={status === 'added' ? 'Already saved' : 'Save to library'}
+              title={
+                status === 'added' ? 'Already saved' : replace ? 'Replace with this' : 'Save to library'
+              }
             >
               <img
                 src={r.thumbUrl}

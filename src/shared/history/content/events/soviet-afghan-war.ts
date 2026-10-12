@@ -160,6 +160,16 @@ export default defineEvent({
           loc: { section: 'The Soviet Decision to Withdraw, 1986-88', para: '3' }
         }
       ]
+    },
+    {
+      ref: 'event:war-in-afghanistan-2001',
+      rel: 'followed-by',
+      cites: [
+        {
+          source: 'millercenter-gregg-gw-bush-life-in-brief',
+          loc: { section: 'George W. Bush: Life in Brief', para: '12' }
+        }
+      ]
     }
   ],
   sections: [

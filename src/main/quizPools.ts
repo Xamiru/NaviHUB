@@ -89,7 +89,7 @@ function runInChild(method: QuizPoolMethod, args: readonly unknown[]): Promise<C
       logWarn('proc', `quiz pools: ${method} exceeded ${TIMEOUT_MS} ms, process stopped`)
       pending.fail(CHILD_RESTARTED, proc)
       stop(proc)
-      reject(new Error('Building this quiz took over a minute and was stopped. Try again.'))
+      reject(new Error('This took over a minute and was stopped. Try again.'))
     }, TIMEOUT_MS)
     pending.add(id, { proc, resolve, reject, clearTimer: () => clearTimeout(timer) })
     try {

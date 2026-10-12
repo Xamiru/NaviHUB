@@ -1330,8 +1330,8 @@ export const quizSession = sqliteTable(
 )
 
 // ---------------------------------------------------------------------------
-// Daily / weekly checklist — enabled board rows + the activity log behind them.
-// The item catalog itself is code (src/shared/checklist.ts), not a table.
+// Daily / weekly checklist — board rows, rule history, custom items, skips and
+// the activity log. The built-in catalog is code (src/shared/checklist.ts).
 // ---------------------------------------------------------------------------
 export const checklistTask = sqliteTable(
   'checklist_task',
@@ -1340,7 +1340,9 @@ export const checklistTask = sqliteTable(
     taskKey: text('task_key').notNull(),
     cadence: text('cadence').notNull(),
     target: integer('target'),
+    days: integer('days'),
     sortOrder: integer('sort_order').notNull().default(0),
+    removedAt: text('removed_at'),
     createdAt: text('created_at')
       .notNull()
       .default(sql`(datetime('now'))`)
@@ -1359,12 +1361,55 @@ export const checklistLog = sqliteTable(
     periodKey: text('period_key').notNull(),
     mediaId: integer('media_id'),
     payload: text('payload'),
+    amount: integer('amount').notNull().default(1),
     createdAt: text('created_at')
       .notNull()
       .default(sql`(datetime('now'))`)
   },
   (t) => ({
     byTask: index('idx_checklist_log_task').on(t.taskKey, t.cadence, t.periodKey)
+  })
+)
+
+export const checklistRule = sqliteTable(
+  'checklist_rule',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    taskId: integer('task_id').notNull(),
+    fromDay: text('from_day').notNull(),
+    target: integer('target'),
+    days: integer('days'),
+    active: integer('active').notNull().default(1)
+  },
+  (t) => ({
+    uniq: unique('uniq_checklist_rule').on(t.taskId, t.fromDay)
+  })
+)
+
+export const checklistCustom = sqliteTable('checklist_custom', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  label: text('label').notNull(),
+  unit: text('unit'),
+  target: integer('target').notNull().default(1),
+  note: text('note'),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(datetime('now'))`)
+})
+
+export const checklistSkip = sqliteTable(
+  'checklist_skip',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    taskId: integer('task_id').notNull().default(0),
+    cadence: text('cadence').notNull(),
+    periodKey: text('period_key').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    uniq: unique('uniq_checklist_skip').on(t.taskId, t.cadence, t.periodKey)
   })
 )
 
@@ -2546,4 +2591,33 @@ export const historyUserEntity = sqliteTable('history_user_entity', {
 }, (t) => ({
   id: check('history_user_entity_id', sql`${t.id} LIKE 'my-%'`),
   kind: check('history_user_entity_kind', sql`${t.kind} IN ('event','person','period','place','source','interpretation')`)
+}))
+export const mediaMusicLink = sqliteTable('media_music_link', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  mediaId: integer('media_id').references(() => mediaItem.id, { onDelete: 'cascade' }),
+  wrestlerId: integer('wrestler_id').references(() => wrestlingWrestler.id, { onDelete: 'cascade' }),
+  kind: text('kind').notNull(),
+  albumId: integer('album_id').references(() => musicAlbum.id, { onDelete: 'set null' }),
+  trackId: integer('track_id').references(() => musicTrack.id, { onDelete: 'set null' }),
+  themeExternalId: text('theme_external_id'),
+  label: text('label').notNull().default(''),
+  sortOrder: integer('sort_order').notNull().default(0),
+  snapArtist: text('snap_artist').notNull(),
+  snapAlbum: text('snap_album').notNull(),
+  snapTitle: text('snap_title'),
+  snapDuration: real('snap_duration'),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`)
+}, (t) => ({
+  kind: check('media_music_link_kind', sql`${t.kind} IN ('album','track')`),
+  owner: check('media_music_link_owner', sql`(${t.mediaId} IS NOT NULL) + (${t.wrestlerId} IS NOT NULL) = 1`),
+  trackOnly: check(
+    'media_music_link_track_only',
+    sql`${t.kind} = 'track' OR (${t.trackId} IS NULL AND ${t.themeExternalId} IS NULL AND ${t.snapTitle} IS NULL)`
+  ),
+  albumOnly: check('media_music_link_album_only', sql`${t.kind} = 'album' OR ${t.albumId} IS NULL`),
+  themeMedia: check('media_music_link_theme_media', sql`${t.themeExternalId} IS NULL OR ${t.mediaId} IS NOT NULL`),
+  byMedia: index('idx_media_music_link_media').on(t.mediaId),
+  byWrestler: index('idx_media_music_link_wrestler').on(t.wrestlerId),
+  byAlbum: index('idx_media_music_link_album').on(t.albumId),
+  byTrack: index('idx_media_music_link_track').on(t.trackId)
 }))

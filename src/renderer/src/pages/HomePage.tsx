@@ -32,6 +32,7 @@ import CoverImage from '../components/CoverImage'
 import Section from '../components/Section'
 import EmptyState from '../components/EmptyState'
 import ThemedFailure from '../components/theme/ThemedFailure'
+import ChecklistQuickCard from '../components/checklist/ChecklistQuickCard'
 import PageStatus from '../components/PageStatus'
 import { useScoreMax, useSettings } from '../lib/hooks'
 import { TypedText } from '../components/theme/ThemeText'
@@ -993,51 +994,18 @@ function Spotlight({ pool, fromBacklog }: { pool: MediaSummary[]; fromBacklog: b
 }
 
 // Door into the cross-library time-spent stats, with a live "days" headline.
-// Today's routine at a glance. staleTime 0 keeps it honest after logging an
-// episode or finishing a review session elsewhere in the app.
+// Today's routine with one-click actions. staleTime 0 keeps it honest after
+// logging an episode or finishing a review session elsewhere in the app.
 function ChecklistCard() {
   const { data, isPending, isError, refetch } = useQuery({
-    queryKey: qk.checklist.status,
+    queryKey: qk.checklist.status(null),
     queryFn: () => api.checklist.status(),
     staleTime: 0
   })
   if (isPending || isError) {
     return <HomeReadState title="your checklist" pending={isPending} retry={() => void refetch()} />
   }
-  const daily = data?.daily ?? []
-  const done = daily.filter((t) => t.done).length
-  const streak = data?.streak.current ?? 0
-  const pct = daily.length ? Math.round((done / daily.length) * 100) : 0
-  // The weekly half rides the same query and was simply never shown, so a card
-  // reading "3 of 5 done today" gave no hint that a weekly item was still open.
-  const weeklyOpen = (data?.weekly ?? []).filter((t) => !t.done).length
-  return (
-    <DoorCard
-      to="/checklist"
-      eyebrow="Routine"
-      title={daily.length === 0 ? 'Checklist' : `${done} of ${daily.length} done today`}
-      body={
-        daily.length === 0
-          ? 'Set up the things you want to do every day and week.'
-          : 'Your daily and weekly routine, tracked automatically.'
-      }
-      value={
-        daily.length > 0 ? (
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-base-900/60">
-            <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
-          </div>
-        ) : undefined
-      }
-      meta={
-        [
-          streak > 0 ? `${streak} day${streak === 1 ? '' : 's'} in a row` : null,
-          weeklyOpen > 0 ? `${weeklyOpen} weekly open` : null
-        ]
-          .filter(Boolean)
-          .join(' · ') || undefined
-      }
-    />
-  )
+  return <ChecklistQuickCard data={data} />
 }
 
 // Japanese SRS at a glance: cards due now, today's pulse in the meta line.
@@ -1118,7 +1086,7 @@ function PlayCard() {
   )
 }
 
-// One random favorite from the Pictures gallery, drawn again on each visit to
+// One random favorite from the Gallery, drawn again on each visit to
 // Home but not on window focus, so it never swaps under the user.
 function PictureCard() {
   const [viewing, setViewing] = useState(false)
@@ -1150,8 +1118,8 @@ function PictureCard() {
       </button>
       <div className="flex items-center justify-between gap-3 px-4 py-2">
         <p className="min-w-0 truncate text-sm text-gray-300">{name}</p>
-        <Link to="/pictures" className="shrink-0 text-xs text-gray-500 hover:text-accent">
-          Pictures →
+        <Link to="/gallery" className="shrink-0 text-xs text-gray-500 hover:text-accent">
+          Gallery →
         </Link>
       </div>
       {viewing && (
@@ -1456,6 +1424,7 @@ function resumeLabel(p: ResumePoint): string {
 }
 
 function resumeHref(p: ResumePoint): string {
+  if (p.kind === 'video') return `/watch/file/${p.refId}`
   const basePath = p.media.mediaType === 'book' ? '/books' : '/manga'
   return readerPath(basePath, p.media.id, { id: p.refId, dirPath: p.dirPath })
 }
@@ -1469,17 +1438,6 @@ function ResumeAction({
   className: string
   children: ReactNode
 }): JSX.Element {
-  if (point.kind === 'video') {
-    return (
-      <button
-        type="button"
-        className={`${className} text-left`}
-        onClick={() => void api.video.openExternal({ kind: 'file', fileId: point.refId }).catch(toastError)}
-      >
-        {children}
-      </button>
-    )
-  }
   return (
     <Link to={resumeHref(point)} className={className}>
       {children}

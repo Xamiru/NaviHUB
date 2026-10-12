@@ -313,30 +313,26 @@ export default function JapaneseGuidePage() {
           <div id="jp-guide-day" className="scroll-mt-6">
             <Section title="A day">
               <div className="card p-4">
-                <ol className="list-inside list-decimal space-y-1 text-sm text-gray-300">
-                  <li>Clear due reviews and stay inside the daily new-card budget.</li>
-                  <li>Listen for ten minutes: guided sentences early, local video from Step 10.</li>
-                  <li>Read for twenty minutes and mine only recurring or scene-critical language.</li>
-                  <li>Produce one controlled response, compare it, and repair it.</li>
-                  <li>Use the final five minutes for a lesson only when the unseen backlog is clear.</li>
-                </ol>
+                <p className="text-sm leading-relaxed text-gray-300">
+                  Open Today, pick how many minutes you have (10, 20, 40 or 60), and press Start. The
+                  session walks you through each part in order and ticks it off when it is done.
+                </p>
                 <dl className="mt-4 space-y-3">
                   <div>
-                    <dt className="font-medium">One hour</dt>
+                    <dt className="font-medium">What a full hour holds</dt>
                     <dd className="mt-0.5 text-sm leading-relaxed text-gray-400">
-                      Use 15 minutes for review, 10 listening, 20 reading, 10 controlled output, and 5
-                      for the next lesson or the weakest measured skill. Short on time? Keep review,
-                      listening, and reading; the lesson keeps.
+                      15 minutes of review, 10 of listening, 20 of reading, 10 making your own
+                      sentences, and 5 for the next lesson or your weakest measured skill. Shorter
+                      sessions keep the same order and drop the later parts.
                     </dd>
                   </div>
                   <div>
-                    <dt className="font-medium">Starting out (kana done)</dt>
+                    <dt className="font-medium">Starting out</dt>
                     <dd className="mt-0.5 text-sm leading-relaxed text-gray-400">
-                      Install the core packs first (the Set up list on the Japanese page), keep the kana
-                      drill in rotation until reading it is automatic, and start Step 01 at ~10 new cards
-                      a day. Reading starts week one, not after grammar — the sentence feed works from
-                      your very first learned words, and around Step 03 an easy manga plus its Vocab deck
-                      takes over.
+                      Kana comes first: short daily rounds until reading it is automatic. Install the
+                      offline dictionaries with the button on Today, then start Step 01 at about 10 new
+                      cards a day. Reading starts in week one with the graded passages; real manga takes
+                      over once the passages feel easy.
                     </dd>
                   </div>
                 </dl>

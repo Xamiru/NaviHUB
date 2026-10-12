@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -6,34 +6,36 @@ import { qk } from '../lib/queryKeys'
 import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
-import StatTile from '../components/StatTile'
 import EmptyState from '../components/EmptyState'
 import CoverImage from '../components/CoverImage'
 import CalendarHeatmap from '../components/CalendarHeatmap'
+import ThemedFailure from '../components/theme/ThemedFailure'
 import { Group, Pill } from '../components/PillGroup'
+import {
+  CreditTimeSection,
+  DecadesSection,
+  ScoresSection
+} from '../components/stats/LibraryInsightsSections'
 import { usePersistedState } from '../lib/navState'
+import { useIncrementalList } from '../lib/hooks'
 import { configFor, fmtMinutesAsHours, pathForMedia } from '../lib/mediaConfig'
 import { MEDIA_TYPE_COLORS } from '../lib/mediaColors'
+import { approx, fmtStatHours } from '../lib/statsFormat'
 import type { LibraryTimeStats, TimeStatsByType, TimeStatsItem } from '@shared/types'
 
 // "Days watched" across the whole library — total time consumed, normalized to
-// minutes by mediaRepo.timeStats, split by type and ranked into leaderboards.
-// Estimated types (anime/tv/manga) are labeled with a leading ≈ throughout.
+// minutes by mediaRepo.timeStats (rules in @shared/timeStats), split by type and
+// ranked into leaderboards, plus the activity grid and the library insights.
+// Every estimated figure wears a leading ≈ taken from its own `estimated` flag.
 
 const MINUTES_PER_DAY = 1440
 
-// Headline magnitude: past two full days show days (one decimal), else hours.
+// Headline magnitude: past two full days show days (one decimal), past 90
+// minutes hours, else minutes.
 function headlineTime(minutes: number): { value: string; unit: string } {
   if (minutes >= 48 * 60) return { value: (minutes / MINUTES_PER_DAY).toFixed(1), unit: 'days' }
-  return { value: String(Math.round(minutes / 60)), unit: minutes < 90 ? 'minutes' : 'hours' }
-}
-
-// Compact per-item / per-type duration ("42 min", "9.5 h", "312 h").
-function fmtHours(minutes: number): string {
-  if (minutes <= 0) return '0'
-  if (minutes < 60) return `${Math.round(minutes)} min`
-  const h = minutes / 60
-  return `${h >= 10 ? Math.round(h).toLocaleString() : h.toFixed(1)} h`
+  if (minutes >= 90) return { value: String(Math.round(minutes / 60)), unit: 'hours' }
+  return { value: String(Math.round(minutes)), unit: 'minutes' }
 }
 
 // Secondary context line for a leaderboard row, formatted from the raw tracking
@@ -71,55 +73,129 @@ function scrollToType(mediaType: string): void {
   document.getElementById(`type-${mediaType}`)?.scrollIntoView({ behavior: 'smooth' })
 }
 
-// Five dated logs existed and this page rendered a calendar for none of them.
-// One grid over all of it, with a per-source switch — the honest answer to
-// "where did this year go", built from data already being written.
+// The activity source and measure outlive the visit: a localStorage pref, read
+// once to seed the history-entry state.
+const SOURCE_PREF = 'stats.activitySource'
+const MEASURE_PREF = 'stats.activityMeasure'
+
+function readPref(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function writePref(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    /* storage unavailable: the choice lasts for this visit only */
+  }
+}
+
+// One grid over every dated log the app keeps. A review, a played track and a
+// logged episode are not the same unit, so the grid opens on one source (the
+// last one picked); the combined count is still there as its own pill.
 function ActivitySection() {
-  const [source, setSource] = usePersistedState<string>('statsActivitySource', 'all')
-  const { data } = useQuery({
+  const [initialSource] = useState(() => readPref(SOURCE_PREF) ?? '')
+  const [initialMeasure] = useState(() => readPref(MEASURE_PREF) ?? 'count')
+  const [picked, setPicked] = usePersistedState<string>('statsActivitySource', initialSource)
+  const [measure, setMeasure] = usePersistedState<string>('statsActivityMeasure', initialMeasure)
+  const { data, isPending, isError, refetch } = useQuery({
     queryKey: qk.media.activityHeatmap,
     queryFn: () => api.media.activityHeatmap()
   })
-  if (!data) return null
-  const active = data.sources.find((s) => s.key === source)
-  const days = active ? active.days : data.combined
-  const total = days.reduce((n, d) => n + d.count, 0)
-  if (total === 0) return null
+  if (isPending) return null
+  if (isError) {
+    return (
+      <Section title="Activity" subtitle="last 12 months" className="mb-8">
+        <ThemedFailure
+          message="The activity history could not be read."
+          onRetry={() => void refetch()}
+          retryLabel="Retry activity"
+        />
+      </Section>
+    )
+  }
   // Sources with nothing in the window would be dead pills.
   const shown = data.sources.filter((s) => s.days.length > 0)
+  if (shown.length === 0) return null
+  const source =
+    picked === 'all' || shown.some((s) => s.key === picked) ? picked : shown[0].key
+  const active = shown.find((s) => s.key === source)
+  const minutes = !!active?.hasMinutes && measure === 'minutes'
+  const days = active
+    ? active.days.map((d) => ({ day: d.day, count: minutes ? (d.minutes ?? 0) : d.count }))
+    : data.combined
+  const pick = (key: string) => {
+    setPicked(key)
+    writePref(SOURCE_PREF, key)
+  }
+  const pickMeasure = (key: string) => {
+    setMeasure(key)
+    writePref(MEASURE_PREF, key)
+  }
   return (
     <Section title="Activity" subtitle="last 12 months" className="mb-8">
-      <div className="mb-3">
+      <div className="mb-3 flex flex-wrap items-end gap-x-6 gap-y-3">
         <Group label="Show">
-          <Pill label="Everything" active={source === 'all'} onClick={() => setSource('all')} />
           {shown.map((s) => (
-            <Pill
-              key={s.key}
-              label={s.label}
-              active={source === s.key}
-              onClick={() => setSource(s.key)}
-            />
+            <Pill key={s.key} label={s.label} active={source === s.key} onClick={() => pick(s.key)} />
           ))}
+          <Pill label="All sources (count)" active={source === 'all'} onClick={() => pick('all')} />
         </Group>
+        {active?.hasMinutes && (
+          <Group label="Measure">
+            <Pill label="Count" active={!minutes} onClick={() => pickMeasure('count')} />
+            <Pill label="Minutes" active={minutes} onClick={() => pickMeasure('minutes')} />
+          </Group>
+        )}
       </div>
-      <CalendarHeatmap days={days} unit={active ? active.label.toLowerCase() : 'things done'} />
+      <CalendarHeatmap
+        days={days}
+        unit={minutes ? 'minutes' : active ? active.label.toLowerCase() : 'things done'}
+      />
     </Section>
   )
 }
 
 export default function StatsPage() {
-  const { data: stats } = useQuery({
+  const {
+    data: stats,
+    isPending,
+    isError,
+    refetch
+  } = useQuery({
     queryKey: qk.media.timeStats,
     queryFn: () => api.media.timeStats(),
     staleTime: 0
   })
 
-  if (!stats) return <PageStatus>Loading…</PageStatus>
-
   return (
     <div className="mx-auto max-w-[1400px] p-6">
-      <PageHeader title="Time spent" />
-      {stats.consumedCount === 0 ? (
+      <PageHeader
+        title="Stats"
+        actions={
+          <>
+            <Link to="/music/stats" className="btn-ghost">
+              Music stats
+            </Link>
+            <Link to="/japanese/stats" className="btn-ghost">
+              Japanese stats
+            </Link>
+          </>
+        }
+      />
+      {isPending ? (
+        <PageStatus>Loading…</PageStatus>
+      ) : isError ? (
+        <ThemedFailure
+          message="Your time stats could not be read."
+          onRetry={() => void refetch()}
+          retryLabel="Retry stats"
+        />
+      ) : stats.consumedCount === 0 ? (
         <EmptyState
           title="Nothing logged yet"
           body="Set progress, watch counts, or a completed status on your titles and this page fills in."
@@ -131,6 +207,41 @@ export default function StatsPage() {
   )
 }
 
+function Highlight({
+  label,
+  item,
+  sub
+}: {
+  label: string
+  item: TimeStatsItem
+  sub: string
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-3 rounded-lg bg-base-900/50 p-3">
+      <Link to={pathForMedia(item)} className="shrink-0" tabIndex={-1} aria-hidden="true">
+        <CoverImage
+          path={item.coverPath}
+          alt={item.title}
+          thumbWidth={96}
+          className="h-16 w-11 rounded object-cover"
+        />
+      </Link>
+      <div className="min-w-0">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-400">
+          {label}
+        </p>
+        <Link
+          to={pathForMedia(item)}
+          className="mt-0.5 line-clamp-2 text-sm font-semibold hover:text-accent"
+        >
+          {item.title}
+        </Link>
+        <p className="mt-0.5 text-xs text-gray-400">{sub}</p>
+      </div>
+    </div>
+  )
+}
+
 function StatsContent({ stats }: { stats: LibraryTimeStats }) {
   const nonzero = useMemo(
     () => stats.byType.filter((t) => t.minutes > 0).sort((a, b) => b.minutes - a.minutes),
@@ -138,46 +249,57 @@ function StatsContent({ stats }: { stats: LibraryTimeStats }) {
   )
   const head = headlineTime(stats.totalMinutes)
   const anyEstimated = nonzero.some((t) => t.estimated)
-
-  // Fun equivalences straight off the total (client-side, no repo support).
-  const equivalences = [
-    `${(stats.totalMinutes / MINUTES_PER_DAY).toFixed(1)} days non-stop`,
-    `${((stats.totalMinutes / (365 * MINUTES_PER_DAY)) * 100).toFixed(1)}% of a year`,
-    `${Math.round(stats.totalMinutes / (40 * 60)).toLocaleString()} work-weeks`
-  ]
+  const yearShare = ((stats.totalMinutes / (365 * MINUTES_PER_DAY)) * 100).toFixed(1)
 
   return (
     <>
-      {/* Hero */}
+      {/* Hero: the total, with the two standout titles beside it */}
       <div className="card-glow relative mb-8 overflow-hidden p-6">
-        <div className="relative">
-          <div className="text-xs font-semibold uppercase tracking-widest text-accent">
-            Time spent
-          </div>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-5xl font-bold">
-              {anyEstimated ? '≈' : ''}
-              {head.value}
-            </span>
-            <span className="text-2xl font-semibold text-gray-300">{head.unit}</span>
-          </div>
-          <div className="mt-1 text-sm text-gray-400">
-            {fmtHours(stats.totalMinutes)} across {stats.consumedCount} of {stats.libraryCount}{' '}
-            titles
-          </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {equivalences.map((e) => (
-              <span key={e} className="chip">
-                {e}
+        <div className="relative grid gap-6 lg:grid-cols-[1fr_minmax(0,22rem)] lg:items-center">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-widest text-accent">
+              Time spent
+            </div>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className="text-5xl font-bold">
+                {anyEstimated ? '≈' : ''}
+                {head.value}
               </span>
-            ))}
+              <span className="text-2xl font-semibold text-gray-300">{head.unit}</span>
+            </div>
+            <div className="mt-1 text-sm text-gray-400">
+              {approx(anyEstimated)}
+              {fmtStatHours(stats.totalMinutes)} across {stats.consumedCount} of{' '}
+              {stats.libraryCount} titles
+            </div>
+            <div className="mt-3">
+              <span className="chip">{yearShare}% of a year</span>
+            </div>
           </div>
+          {(stats.longest || stats.mostRevisited) && (
+            <div className="grid gap-2">
+              {stats.longest && (
+                <Highlight
+                  label="Biggest time sink"
+                  item={stats.longest}
+                  sub={`${approx(stats.longest.estimated)}${fmtStatHours(stats.longest.minutes)}`}
+                />
+              )}
+              {stats.mostRevisited && (
+                <Highlight
+                  label="Most revisited"
+                  item={stats.mostRevisited}
+                  sub={`${stats.mostRevisited.times}× consumed`}
+                />
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Split bar */}
       <ActivitySection />
 
+      {/* Split bar */}
       <Section title="Where the time went">
         <div className="flex h-5 w-full gap-[2px] overflow-hidden rounded-full bg-base-800">
           {nonzero.map((t) => {
@@ -190,7 +312,7 @@ function StatsContent({ stats }: { stats: LibraryTimeStats }) {
                 onClick={() => scrollToType(t.mediaType)}
                 className="h-full transition-opacity hover:opacity-80"
                 style={{ width: `${pct}%`, background: MEDIA_TYPE_COLORS[t.mediaType] }}
-                title={`${cfg.plural} · ${t.estimated ? '≈ ' : ''}${fmtHours(t.minutes)} · ${pct.toFixed(0)}%`}
+                title={`${cfg.plural} · ${approx(t.estimated)}${fmtStatHours(t.minutes)} · ${pct.toFixed(0)}%`}
                 aria-label={`Jump to ${cfg.plural}`}
               />
             )
@@ -212,9 +334,9 @@ function StatsContent({ stats }: { stats: LibraryTimeStats }) {
                   style={{ background: MEDIA_TYPE_COLORS[t.mediaType] }}
                 />
                 <span>{cfg.plural}</span>
-                <span className="text-gray-500">
-                  {t.estimated ? '≈ ' : ''}
-                  {fmtHours(t.minutes)} · {pct.toFixed(0)}%
+                <span className="text-gray-400">
+                  {approx(t.estimated)}
+                  {fmtStatHours(t.minutes)} · {pct.toFixed(0)}%
                 </span>
               </button>
             )
@@ -222,50 +344,30 @@ function StatsContent({ stats }: { stats: LibraryTimeStats }) {
         </div>
       </Section>
 
-      {/* Headline tiles */}
-      <Section title="Highlights">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile label="Total time" value={fmtHours(stats.totalMinutes)} accent sub="normalized" />
-        <StatTile
-          label="Titles consumed"
-          value={stats.consumedCount}
-          sub={`of ${stats.libraryCount}`}
-        />
-        {stats.longest && (
-          <StatTile
-            label="Biggest time sink"
-            value={stats.longest.title}
-            sub={`${stats.longest.mediaType === 'game' || stats.longest.mediaType === 'visual_novel' || stats.longest.mediaType === 'movie' ? '' : '≈ '}${fmtHours(stats.longest.minutes)}`}
-          />
-        )}
-        {stats.mostRevisited && (
-          <StatTile
-            label="Most revisited"
-            value={stats.mostRevisited.title}
-            sub={`${stats.mostRevisited.times}× consumed`}
-          />
-        )}
-        </div>
-      </Section>
-
       {/* Per-type leaderboards */}
       <Section title="Top titles by type">
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid items-start gap-6 lg:grid-cols-2">
           {nonzero.map((t) => (
             <TypeLeaderboard key={t.mediaType} t={t} />
           ))}
         </div>
       </Section>
 
+      <ScoresSection />
+      <DecadesSection />
+      <CreditTimeSection />
+
       {/* Footnote */}
       <p className="text-xs text-gray-400">
-        ≈ Anime, TV and manga are estimates — episodes/chapters × per-unit minutes (real per-title
-        runtimes from AniList/TMDB when available, otherwise the defaults you set in{' '}
+        ≈ marks estimates. Anime, TV, manga and books are counted as episodes, chapters or pages ×
+        per-unit minutes (real per-title runtimes from AniList/TMDB when available, otherwise the
+        defaults you set in{' '}
         <Link to="/settings" className="text-accent hover:underline">
           Settings
         </Link>
-        ). Games and visual novels use your logged playtime directly (replays already included).
-        Movies count runtime × times watched.
+        ), times every pass. Games and visual novels use your logged playtime (replays already
+        included); a finished one with no playtime logged counts its listed length instead. Movies
+        count runtime × times watched.
       </p>
     </>
   )
@@ -274,7 +376,16 @@ function StatsContent({ stats }: { stats: LibraryTimeStats }) {
 function TypeLeaderboard({ t }: { t: TimeStatsByType }) {
   const cfg = configFor(t.mediaType)
   const color = MEDIA_TYPE_COLORS[t.mediaType]
-  const topMinutes = t.topItems[0]?.minutes || 1
+  const [expanded, setExpanded] = usePersistedState<boolean>(`statsShowAll-${t.mediaType}`, false)
+  const all = useQuery({
+    queryKey: qk.media.timeStatsType(t.mediaType),
+    queryFn: () => api.media.timeStatsType(t.mediaType),
+    enabled: expanded
+  })
+  const items = expanded && all.data ? all.data : t.topItems
+  const { visible, sentinelRef, hasMore } = useIncrementalList(items)
+  const topMinutes = items[0]?.minutes || 1
+  const canExpand = t.itemCount > t.topItems.length
   return (
     <div id={`type-${t.mediaType}`} className="card p-4">
       <div className="mb-3 flex items-center gap-3">
@@ -289,19 +400,22 @@ function TypeLeaderboard({ t }: { t: TimeStatsByType }) {
             )}
           </div>
           <div className="text-xs text-gray-400">
-            {t.estimated ? '≈ ' : ''}
-            {fmtHours(t.minutes)} · {t.itemCount} {t.itemCount === 1 ? 'title' : 'titles'}
+            {approx(t.estimated)}
+            {fmtStatHours(t.minutes)} · {t.itemCount} {t.itemCount === 1 ? 'title' : 'titles'}
           </div>
         </div>
       </div>
       <ol className="space-y-2">
-        {t.topItems.map((it, i) => (
+        {visible.map((it, i) => (
           <li key={it.id} className="flex items-center gap-3">
-            <span className="w-4 shrink-0 text-right text-sm text-gray-500">{i + 1}</span>
-            <Link to={pathForMedia(it)} className="shrink-0">
+            <span className="w-6 shrink-0 text-right text-sm tabular-nums text-gray-400">
+              {i + 1}
+            </span>
+            <Link to={pathForMedia(it)} className="shrink-0" tabIndex={-1} aria-hidden="true">
               <CoverImage
                 path={it.coverPath}
                 alt={it.title}
+                thumbWidth={96}
                 className="h-14 w-10 rounded object-cover"
               />
             </Link>
@@ -311,11 +425,11 @@ function TypeLeaderboard({ t }: { t: TimeStatsByType }) {
                   {it.title}
                 </Link>
                 <span className="shrink-0 text-sm text-gray-300">
-                  {t.estimated ? '≈ ' : ''}
-                  {fmtHours(it.minutes)}
+                  {approx(it.estimated)}
+                  {fmtStatHours(it.minutes)}
                 </span>
               </div>
-              <div className="mt-0.5 text-xs text-gray-500">{detailLine(it)}</div>
+              <div className="mt-0.5 text-xs text-gray-400">{detailLine(it)}</div>
               <div className="mt-1 h-1 rounded-full bg-base-700">
                 <div
                   className="h-full rounded-full"
@@ -330,6 +444,30 @@ function TypeLeaderboard({ t }: { t: TimeStatsByType }) {
           </li>
         ))}
       </ol>
+      {hasMore && <div ref={sentinelRef} className="h-px" />}
+      {expanded && all.isError && (
+        <p className="mt-3 text-xs text-gray-400" role="status">
+          The full list could not be read.{' '}
+          <button
+            type="button"
+            className="text-accent hover:underline"
+            onClick={() => void all.refetch()}
+          >
+            Retry
+          </button>
+        </p>
+      )}
+      {canExpand && (
+        <button
+          type="button"
+          className="btn-ghost mt-3 w-full justify-center text-sm"
+          aria-expanded={expanded}
+          onClick={() => setExpanded(!expanded)}
+          disabled={expanded && all.isPending}
+        >
+          {expanded ? (all.isPending ? 'Loading…' : 'Show less') : `Show all ${t.itemCount}`}
+        </button>
+      )}
     </div>
   )
 }

@@ -5,6 +5,7 @@ import { isTestableKey } from '@shared/keyTests'
 import * as playthroughs from './repos/playthroughRepo'
 import * as musicJournal from './repos/musicJournalRepo'
 import * as musicSmart from './repos/musicSmartRepo'
+import * as musicLinks from './repos/musicLinkRepo'
 import * as vnExplore from './vndbExplore'
 import * as vnCapture from './repos/vnCaptureRepo'
 import * as journeys from './repos/wrestlingJourneyRepo'
@@ -119,10 +120,11 @@ import * as footballRepo from './repos/footballRepo'
 import * as footballSync from './football/sync'
 import * as footballMedia from './football/media'
 import * as scan from './video/scan'
-import type { VideoFileRef } from '@shared/types'
+import type { VideoFileRef, VideoSourceRef } from '@shared/types'
 import { VIDEO_SCOPES, type VideoScope } from './video/scope'
 import * as tokenizer from './tokenizer'
 import * as dictImporter from './dict/importer'
+import * as starterInstall from './dict/starterInstall'
 import * as dictLookup from './dict/lookup'
 import * as dictSentences from './dict/sentences'
 import * as dictStrokes from './dict/strokes'
@@ -169,6 +171,16 @@ export function registerIpc(): void {
   ipcMain.handle('musicSmart:remove', (_e, id) => musicSmart.remove(id))
   ipcMain.handle('musicSmart:preview', (_e, rules, page) => musicSmart.preview(rules, page))
   ipcMain.handle('musicSmart:queue', (_e, id) => musicSmart.queue(id))
+  // ---- musicLinks ----
+  ipcMain.handle('musicLinks:forOwner', (_e, owner) => musicLinks.listForOwner(owner))
+  ipcMain.handle('musicLinks:forMediaIds', (_e, mediaIds) => musicLinks.listForMediaIds(mediaIds))
+  ipcMain.handle('musicLinks:labels', (_e) => musicLinks.labels())
+  ipcMain.handle('musicLinks:search', (_e, query) => musicLinks.searchCandidates(query))
+  ipcMain.handle('musicLinks:create', (_e, input) => musicLinks.create(input))
+  ipcMain.handle('musicLinks:update', (_e, id, patch) => musicLinks.update(id, patch))
+  ipcMain.handle('musicLinks:reorder', (_e, owner, orderedIds) => musicLinks.reorder(owner, orderedIds))
+  ipcMain.handle('musicLinks:remove', (_e, id) => musicLinks.remove(id))
+  ipcMain.handle('musicLinks:browse', (_e) => musicLinks.browse())
 
   // ---- VN captured text ----
   // ---- VN discovery and editions ----
@@ -245,6 +257,12 @@ export function registerIpc(): void {
   ipcMain.handle('media:statusCounts', (_e, mediaType) => mediaRepo.statusCounts(mediaType))
   ipcMain.handle('media:facets', (_e, mediaType) => mediaRepo.facets(mediaType))
   ipcMain.handle('media:timeStats', () => mediaRepo.timeStats())
+  ipcMain.handle('media:timeStatsType', (_e, mediaType) => mediaRepo.timeStatsForType(mediaType))
+  ipcMain.handle('media:libraryInsights', () => mediaRepo.libraryInsights())
+  // Every credit of every consumed title: off main, like the library-wide quiz reads.
+  ipcMain.handle('media:creditTime', () =>
+    callQuizPools('creditTime', mediaRepo.timeStatsConfig())
+  )
   ipcMain.handle('media:jpMilestones', () => mediaRepo.jpMilestones())
   ipcMain.handle('media:resumePoints', () => mediaRepo.resumePoints())
   ipcMain.handle('media:activityHeatmap', () => mediaRepo.activityHeatmap())
@@ -470,26 +488,44 @@ export function registerIpc(): void {
   ipcMain.handle('tierLists:removeItem', (_e, itemId) => tierListRepo.removeItem(itemId))
 
   // ---- checklist (daily / weekly recurring board) ----
-  ipcMain.handle('checklist:status', () => checklistRepo.status(todayLocal()))
-  ipcMain.handle('checklist:addTask', (_e, key, cadence) => checklistRepo.addTask(key, cadence))
-  ipcMain.handle('checklist:removeTask', (_e, id) => checklistRepo.removeTask(id))
-  ipcMain.handle('checklist:setTarget', (_e, id, target) => checklistRepo.setTarget(id, target))
+  ipcMain.handle('checklist:status', (_e, day) => checklistRepo.status(todayLocal(), day))
+  ipcMain.handle('checklist:addTask', (_e, key, cadence) =>
+    checklistRepo.addTask(key, cadence, todayLocal())
+  )
+  ipcMain.handle('checklist:removeTask', (_e, id) => checklistRepo.removeTask(id, todayLocal()))
+  ipcMain.handle('checklist:setTarget', (_e, id, target) =>
+    checklistRepo.setTarget(id, target, todayLocal())
+  )
+  ipcMain.handle('checklist:setDays', (_e, id, days) =>
+    checklistRepo.setDays(id, days, todayLocal())
+  )
   ipcMain.handle('checklist:reorder', (_e, cadence, orderedIds) =>
     checklistRepo.reorder(cadence, orderedIds)
   )
-  ipcMain.handle('checklist:logMedia', (_e, taskKey, cadence, mediaId) =>
-    checklistRepo.logProgress(mediaId, todayLocal(), { key: taskKey, cadence })
+  ipcMain.handle('checklist:logMedia', (_e, taskKey, cadence, mediaId, day) =>
+    checklistRepo.logProgress(mediaId, todayLocal(), { key: taskKey, cadence }, { day })
+  )
+  ipcMain.handle('checklist:logSession', (_e, taskKey, cadence, mediaId, day) =>
+    checklistRepo.logSession(taskKey, cadence, mediaId, todayLocal(), day)
   )
   ipcMain.handle('checklist:undoLog', (_e, logId) => checklistRepo.undoLog(logId))
-  ipcMain.handle('checklist:tick', (_e, taskKey, cadence) =>
-    checklistRepo.tick(taskKey, cadence, todayLocal())
+  ipcMain.handle('checklist:tick', (_e, taskKey, cadence, day) =>
+    checklistRepo.tick(taskKey, cadence, todayLocal(), day)
   )
-  ipcMain.handle('checklist:untick', (_e, taskKey, cadence) =>
-    checklistRepo.untick(taskKey, cadence, todayLocal())
+  ipcMain.handle('checklist:untick', (_e, taskKey, cadence, day) =>
+    checklistRepo.untick(taskKey, cadence, todayLocal(), day)
   )
-  ipcMain.handle('checklist:credit', (_e, taskKey, cadence) =>
-    checklistRepo.credit(taskKey, cadence, todayLocal())
+  ipcMain.handle('checklist:credit', (_e, taskKey, cadence, amount, day) =>
+    checklistRepo.credit(taskKey, cadence, todayLocal(), amount ?? 1, day)
   )
+  ipcMain.handle('checklist:skip', (_e, taskId, cadence, skipped, day) =>
+    checklistRepo.skip(taskId, cadence, skipped, todayLocal(), day)
+  )
+  ipcMain.handle('checklist:createCustom', (_e, input, cadence, days) =>
+    checklistRepo.createCustom(input, cadence, days, todayLocal())
+  )
+  ipcMain.handle('checklist:updateCustom', (_e, id, input) => checklistRepo.updateCustom(id, input))
+  ipcMain.handle('checklist:deleteCustom', (_e, id) => checklistRepo.deleteCustom(id))
 
   // ---- Japanese learning ----
   ipcMain.handle('japanese:listCourses', () => japaneseRepo.listCourses())
@@ -576,6 +612,28 @@ export function registerIpc(): void {
   })
   ipcMain.handle('dict:importZip', () => dictImporter.importZipViaDialog())
   ipcMain.handle('dict:importStatus', () => dictImporter.getImportStatus())
+  ipcMain.handle('dict:installStarter', () =>
+    starterInstall.runStarterInstall({
+      facts: () => ({
+        dicts: dictImporter.listDictionaries(),
+        krad: dictKrad.getKradSetInfo() != null,
+        grammar: dictGrammar.getGrammarBankInfo() != null,
+        sentences: dictSentences.getSentenceBankInfo() != null
+      }),
+      install: async (key) => {
+        if (key === 'jmdict') await dictImporter.importPreset('jmdict-en')
+        else if (key === 'freq') await dictImporter.importPreset('jpdb-freq')
+        else if (key === 'kanjidic') await dictImporter.importPreset('kanjidic-en')
+        else if (key === 'krad') await dictKrad.importKrad()
+        else if (key === 'grammar') await dictGrammar.importGrammar()
+        else await dictSentences.importSentences()
+        // Same as the single-pack handlers: the frequency bank feeds the
+        // known-word baseline, which is not part of its cache key.
+        coverageRepo.invalidateBaseline()
+      }
+    })
+  )
+  ipcMain.handle('dict:starterStatus', () => starterInstall.getStarterInstallStatus())
   ipcMain.handle('dict:remove', (_e, id) => {
     const res = dictImporter.removeDictionary(id)
     coverageRepo.invalidateBaseline()
@@ -700,13 +758,26 @@ export function registerIpc(): void {
   // ---- linked local videos ----
   const videoScopeFor = (ref: VideoFileRef): VideoScope =>
     ref.kind === 'file' ? VIDEO_SCOPES.video : VIDEO_SCOPES.wrestling
+  const isFileRef = (ref: VideoSourceRef): ref is VideoFileRef =>
+    ref.kind === 'file' || ref.kind === 'wrestling'
 
   ipcMain.handle('video:attachFolder', (_e, mediaId) => video.attachFolder(mediaId))
   ipcMain.handle('video:rescan', (_e, mediaId) => video.rescan(mediaId))
   ipcMain.handle('video:detach', (_e, mediaId) => video.detach(mediaId))
   ipcMain.handle('video:files', (_e, mediaId) => video.files(mediaId))
-  ipcMain.handle('video:openExternal', (_e, ref) => video.openExternal(ref))
+  // One external-open call for every source kind, so the player's fallback
+  // never branches per kind. Clips and Football media keep their own guards.
+  ipcMain.handle('video:openExternal', (_e, ref: VideoSourceRef) => video.openExternal(ref))
   ipcMain.handle('video:tools', () => video.detectTools())
+  ipcMain.handle('video:source', (_e, ref) => video.source(ref))
+  ipcMain.handle('video:subtitleTrack', (_e, ref, trackId) => video.subtitleTrack(ref, trackId))
+  ipcMain.handle('video:clipAudio', (_e, input) => video.clipAudio(input))
+  // A resume position only. It never logs progress: that happens once, on the
+  // watched transition below.
+  ipcMain.handle('video:markProgress', (_e, ref: VideoSourceRef, seconds: number | null) => {
+    if (!isFileRef(ref)) return
+    video.markProgressIn(videoScopeFor(ref), ref.fileId, seconds)
+  })
   // Finishing an episode is a media-progress event, so the FIRST time a file
   // becomes watched it goes through checklistRepo.logProgress — the app's one
   // "I watched another one" write (status promotion, rewatch wrap, checklist
@@ -860,8 +931,8 @@ export function registerIpc(): void {
   // ---- pictures (wallpapers + fan art) ----
   ipcMain.handle('pictures:list', (_e, mediaId, kind) => pictures.listImages(mediaId, kind))
   ipcMain.handle('pictures:sources', (_e, mediaId, kind) => pictures.listSources(mediaId, kind))
-  ipcMain.handle('pictures:search', (_e, mediaId, source, query, page) =>
-    pictures.searchSource(mediaId, source, query, page)
+  ipcMain.handle('pictures:search', (_e, mediaId, source, query, page, minSize) =>
+    pictures.searchSource(mediaId, source, query, page, minSize)
   )
   ipcMain.handle('pictures:addFromSearch', (_e, mediaId, kind, result) =>
     pictures.addFromSearch(mediaId, kind, result)
@@ -871,6 +942,14 @@ export function registerIpc(): void {
   )
   ipcMain.handle('pictures:addFromFiles', (_e, mediaId, kind) =>
     pictures.addFromFiles(mediaId, kind)
+  )
+  ipcMain.handle('pictures:addFromPaths', (_e, mediaId, kind, paths) =>
+    pictures.addFromPaths(mediaId, kind, paths)
+  )
+  ipcMain.handle('pictures:replace', (_e, imageId, result) => pictures.replaceImage(imageId, result))
+  ipcMain.handle('pictures:fileInfo', (_e, imageId) => pictures.imageFileInfo(imageId))
+  ipcMain.handle('pictures:showInFolder', (_e, imageId) =>
+    shell.showItemInFolder(pictures.imageAbsolutePath(imageId))
   )
   ipcMain.handle('pictures:remove', (_e, imageId) => pictures.removeImage(imageId))
   ipcMain.handle('pictures:toggleSlideshow', (_e, imageId) => pictures.toggleSlideshow(imageId))

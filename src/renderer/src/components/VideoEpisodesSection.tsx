@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { formatTime } from '@shared/subtitles'
 import type { MediaDetail, VideoFile } from '@shared/types'
@@ -11,8 +12,9 @@ import { celebrateProgress } from '../lib/themeFx'
 
 // Linked-video entry point on an anime/movie/tv detail page. Mirrors
 // MangaChaptersSection: attach a folder from the video library, list what was
-// scanned, then launch files in the operating system's default video app.
-// Watched marks remain manual and credit progress through the usual path.
+// scanned, then play files in the in-app player (which falls back to the
+// system player for codecs it cannot decode). Every row also opens externally.
+// Finishing a file in the player, or ticking it by hand, credits progress.
 export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Element {
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
@@ -68,7 +70,9 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
   const continueFile = files.find((f) => !f.watchedAt)
   const watched = files.filter((f) => f.watchedAt).length
 
-  const open = (f: VideoFile): void => {
+  const navigate = useNavigate()
+  const play = (f: VideoFile): void => navigate(`/watch/file/${f.id}`)
+  const openExternal = (f: VideoFile): void => {
     void api.video.openExternal({ kind: 'file', fileId: f.id }).catch(toastError)
   }
 
@@ -83,15 +87,15 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
             Link video folder
           </button>
           <span className="text-xs text-gray-400">
-            Point at this title&apos;s folder to open episodes in your system video player.
+            Point at this title&apos;s folder to play its episodes here.
           </span>
         </div>
       ) : (
         <>
           <div className="mb-2 flex items-center gap-2 text-sm">
             {continueFile && (
-              <button className="btn-ghost px-3 py-1" onClick={() => open(continueFile)}>
-                Open next · {continueFile.title}
+              <button className="btn-ghost px-3 py-1" onClick={() => play(continueFile)}>
+                {continueFile.resumeSeconds ? 'Resume' : 'Play next'} · {continueFile.title}
               </button>
             )}
             <button className="btn-ghost px-3 py-1" disabled={busy} onClick={() => void rescan()}>
@@ -106,7 +110,7 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
           </div>
           <div className="max-h-72 space-y-1 overflow-y-auto pr-1">
             {files.map((f) => (
-              <EpisodeRow key={f.id} f={f} onOpen={() => open(f)} onChange={refresh} />
+              <EpisodeRow key={f.id} f={f} onExternal={() => openExternal(f)} onChange={refresh} />
             ))}
           </div>
         </>
@@ -117,11 +121,11 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
 
 function EpisodeRow({
   f,
-  onOpen,
+  onExternal,
   onChange
 }: {
   f: VideoFile
-  onOpen: () => void
+  onExternal: () => void
   onChange: () => void
 }): JSX.Element {
   async function toggleWatched(): Promise<void> {
@@ -145,16 +149,25 @@ function EpisodeRow({
       >
         {f.watchedAt ? '✓' : '○'}
       </button>
-      <button className="min-w-0 flex-1 truncate text-left text-sm" onClick={onOpen}>
+      <Link to={`/watch/file/${f.id}`} className="min-w-0 flex-1 truncate text-left text-sm hover:text-accent">
         {f.title}
-      </button>
+      </Link>
+      {f.resumeSeconds != null && !f.watchedAt && (
+        <span className="chip shrink-0 text-xs" title="Resumes from here in the player">
+          at {formatTime(f.resumeSeconds)}
+        </span>
+      )}
       {f.duration != null && (
-        <span className="chip shrink-0 text-[10px]">
+        <span className="chip shrink-0 text-xs">
           {formatTime(f.duration)}
         </span>
       )}
-      <button className="btn-ghost shrink-0 px-2 py-0.5 text-xs" onClick={onOpen}>
-        Open
+      <button
+        className="btn-ghost shrink-0 px-2 py-0.5 text-xs"
+        title="Open in the system player"
+        onClick={onExternal}
+      >
+        External
       </button>
     </div>
   )

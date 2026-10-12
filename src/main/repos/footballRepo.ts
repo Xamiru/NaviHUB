@@ -1496,6 +1496,11 @@ export function saveMedia(input: FootballMediaInput): FootballMedia {
   return asMedia(row)
 }
 
+export function getMedia(id: number): FootballMedia | null {
+  const row = getSqlite().prepare(`SELECT * FROM football_media WHERE id=?`).get(id) as Row | undefined
+  return row ? asMedia(row) : null
+}
+
 export function removeMedia(id: number): void {
   getSqlite().prepare(`DELETE FROM football_media WHERE id=?`).run(id)
 }

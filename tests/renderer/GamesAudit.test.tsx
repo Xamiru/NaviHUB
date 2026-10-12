@@ -32,6 +32,10 @@ vi.mock('../../src/renderer/src/lib/api', () => ({
   }
 }))
 
+// The linked-music section needs the audio player; its own tests are MusicLinks.test.tsx.
+vi.mock('../../src/renderer/src/components/music/FranchiseMusic', () => ({
+  default: () => null
+}))
 vi.mock('../../src/renderer/src/components/FranchiseBackground', () => ({
   default: () => null
 }))

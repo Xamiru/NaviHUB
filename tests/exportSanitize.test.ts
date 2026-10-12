@@ -115,6 +115,9 @@ function seed(): void {
     INSERT INTO checklist_task (task_key, cadence) VALUES ('anime-episode', 'daily');
     INSERT INTO checklist_log (task_key, cadence, period_key, media_id, payload)
       VALUES ('anime-episode', 'daily', '2026-07-25', 1, '{"title":"Cowboy Bebop"}');
+    INSERT INTO checklist_rule (task_id, from_day, target, days, active) VALUES (1, '2026-07-25', 2, 5, 1);
+    INSERT INTO checklist_custom (label, unit, target, note) VALUES ('Workout', 'sets', 3, 'Knees');
+    INSERT INTO checklist_skip (task_id, cadence, period_key) VALUES (0, 'daily', '2026-07-26');
 
     INSERT INTO en_word (word, meaning, pos) VALUES ('ephemeral', 'Lasting a short time.', 'adjective');
     INSERT INTO en_review_log (word_id, grade, interval_days, ease) VALUES (1, 'good', 1, 2.5);
@@ -256,7 +259,7 @@ describe('export sanitize', () => {
       'picture_album', 'picture_album_item', 'picture_tag', 'picture_tag_link',
       'quiz_session',
       'game_session',
-      'checklist_task', 'checklist_log', 'en_word', 'en_review_log', 'en_writing', 'prog_progress',
+      'checklist_task', 'checklist_log', 'checklist_rule', 'checklist_custom', 'checklist_skip', 'en_word', 'en_review_log', 'en_writing', 'prog_progress',
       'prog_attempt', 'prog_cli_miss', 'prog_solve',
       // Scan cache + remux index: rows point at the exporter's own userData,
       // and resume positions are personal. sanitizeSql.cjs has always deleted
@@ -394,7 +397,7 @@ describe('custom export policy', () => {
 
 // New listening/run annotations are always private, even when progress is exported.
 describe('listening and playthrough export privacy', () => {
-  it('removes personal track tags, smart playlist rules and game journals', () => {
+  it('removes personal track tags, smart playlist rules, music links and game journals', () => {
     const copy = createTestDb()
     copy.exec(`INSERT INTO media_item(id,media_type,title) VALUES(1,'game','Game');
       INSERT INTO game_playthrough(id,media_id,title,kind,state) VALUES(1,1,'Private run','first','active');
@@ -403,9 +406,11 @@ describe('listening and playthrough export privacy', () => {
       INSERT INTO music_album(id,artist_id,title,dir_path) VALUES(1,1,'Album','Artist/Album');
       INSERT INTO music_track(id,album_id,artist_id,file_path,title) VALUES(1,1,1,'song.mp3','Song');
       INSERT INTO music_track_personal(track_id,standout,tags_json) VALUES(1,1,'["private"]');
-      INSERT INTO music_smart_playlist(title,rules_json) VALUES('Private rules','{}');`)
+      INSERT INTO music_smart_playlist(title,rules_json) VALUES('Private rules','{}');
+      INSERT INTO media_music_link(media_id,kind,track_id,label,snap_artist,snap_album,snap_title)
+        VALUES(1,'track',1,'OST','Artist','Album','Song');`)
     sanitizeDb(copy, { includeProgress: true, includeRatings: true })
-    for (const table of ['game_playthrough', 'game_playthrough_note', 'music_track_personal', 'music_smart_playlist']) {
+    for (const table of ['game_playthrough', 'game_playthrough_note', 'music_track_personal', 'music_smart_playlist', 'media_music_link']) {
       expect(copy.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get()).toEqual({ n: 0 })
     }
     expect(copy.pragma('foreign_key_check')).toEqual([])
