@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'armenian-genocide',
   names: [
     { text: 'Armenian Genocide', lang: 'en', role: 'primary' },
-    { text: 'Հայոց ցեղասպանություն', lang: 'hy', role: 'native' },
     {
       text: 'Meds Yeghern',
       lang: 'en',

@@ -25,8 +25,7 @@ export default defineEvent({
           loc: { section: 'Transformation and Terror', para: '9' }
         }
       ]
-    },
-    { text: 'Большой террор', lang: 'ru', role: 'native' }
+    }
   ],
   researched: '2026-10-08',
   type: 'other',

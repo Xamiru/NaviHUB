@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'second-italo-ethiopian-war',
   names: [
-    { text: 'Second Italo-Ethiopian War', lang: 'en', role: 'primary' },
-    { text: 'Abessinienkrieg', lang: 'de', role: 'alternative' }
+    { text: 'Second Italo-Ethiopian War', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'war',

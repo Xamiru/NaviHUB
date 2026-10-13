@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'persian-coup-of-1921',
   names: [
     { text: 'Persian coup d’état of 1921', lang: 'en', role: 'primary' },
-    { text: 'کودتای ۱۲۹۹', lang: 'fa', role: 'native' },
     {
       text: 'Coup d’état of 1299/1921',
       lang: 'en',
@@ -208,7 +207,7 @@ export default defineEvent({
         },
         {
           id: 'q2',
-          text: 'The coup was directed not at the Qajar monarchy as such but at the cabinet of Sepahdār-e Aʿẓam Fatḥ-Allāh-e Akbar and the oligarchy of land­owners and bureaucratic officials that controlled the regime.',
+          text: 'The coup was directed not at the Qajar monarchy as such but at the cabinet of Sepahdār-e Aʿẓam Fatḥ-Allāh-e Akbar and the oligarchy of landowners and bureaucratic officials that controlled the regime.',
           lang: 'en',
           cite: {
             source: 'iranica-shambayati-coup-detat-of-1921',
@@ -234,7 +233,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'During the tumultuous years of the Constitutional Revolution (q.v.) and World War I provincial leaders and foreign powers had gained ascendancy in Persia, and the Qajar state had lacked the financial and mili­tary means to assert its sovereignty.',
+          text: 'During the tumultuous years of the Constitutional Revolution (q.v.) and World War I provincial leaders and foreign powers had gained ascendancy in Persia, and the Qajar state had lacked the financial and military means to assert its sovereignty.',
           lang: 'en',
           cite: {
             source: 'iranica-shambayati-coup-detat-of-1921',
@@ -267,7 +266,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q6',
-          text: 'Martial law was imposed on Tehran: All gatherings were banned, the press was suspended, government departments were closed for reorganiza­tion, and bars, gambling clubs, and theaters were closed down',
+          text: 'Martial law was imposed on Tehran: All gatherings were banned, the press was suspended, government departments were closed for reorganization, and bars, gambling clubs, and theaters were closed down',
           lang: 'en',
           cite: {
             source: 'iranica-shambayati-coup-detat-of-1921',
@@ -332,7 +331,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q9',
-        text: 'Under these circumstances, on Friday, 29 Bahman 1299/18 February 1921, 2,200 men of the Cossack Brigade (q.v.) and 100 gendarmes began a march from Qazvīn to­ward Tehran under the command of Reżā Khan, ignoring repeated royal orders to return to their barracks',
+        text: 'Under these circumstances, on Friday, 29 Bahman 1299/18 February 1921, 2,200 men of the Cossack Brigade (q.v.) and 100 gendarmes began a march from Qazvīn toward Tehran under the command of Reżā Khan, ignoring repeated royal orders to return to their barracks',
         lang: 'en',
         cite: {
           source: 'iranica-shambayati-coup-detat-of-1921',

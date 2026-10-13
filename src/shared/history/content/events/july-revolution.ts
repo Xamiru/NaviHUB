@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'july-revolution',
   names: [
     { text: 'July Revolution', lang: 'en', role: 'primary' },
-    { text: 'Révolution de Juillet', lang: 'fr', role: 'native' },
     {
       text: 'Revolution of 1830',
       lang: 'en',

@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'falklands-war',
   names: [
     { text: 'Falklands War', lang: 'en', role: 'primary' },
-    { text: 'Guerra de las Malvinas', lang: 'es', role: 'native' },
     {
       text: 'Anglo-Argentine War of 1982',
       lang: 'en',

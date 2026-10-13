@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'battle-of-blood-river',
   names: [
-    { text: 'Battle of Blood River', lang: 'en', role: 'primary' },
-    { text: 'Slag van Bloedrivier', lang: 'af', role: 'native' }
+    { text: 'Battle of Blood River', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'battle',

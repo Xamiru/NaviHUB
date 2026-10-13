@@ -4,10 +4,8 @@ export default defineEvent({
   id: 'iranian-nuclear-program-crisis',
   names: [
     { text: 'Iranian nuclear program crisis', lang: 'en', role: 'primary' },
-    { text: 'بحران هسته‌ای ایران', lang: 'fa', role: 'native' },
     { text: 'Iran nuclear crisis', lang: 'en', role: 'alternative' },
-    { text: 'Iran nuclear dispute', lang: 'en', role: 'alternative' },
-    { text: 'پرونده هسته‌ای ایران', lang: 'fa', role: 'alternative' }
+    { text: 'Iran nuclear dispute', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-13',
   type: 'crisis',
@@ -469,7 +467,7 @@ export default defineEvent({
         },
         {
           id: 'q16',
-          text: 'Reaffirms that Iran shall without further delay take the steps required by the IAEA Board of Governors in its resolution GOV/2006/14, which are essential to ​build confidence in the exclusively peaceful purpose of its nuclear programme and to resolve outstanding questions, and, in this context, affirms its decision that Iran shall without delay take the steps required in paragraph 2 of resolution 1737 (2006), and underlines that the IAEA has sought confirmation that Iran will apply Code 3.1 modified;',
+          text: 'Reaffirms that Iran shall without further delay take the steps required by the IAEA Board of Governors in its resolution GOV/2006/14, which are essential to build confidence in the exclusively peaceful purpose of its nuclear programme and to resolve outstanding questions, and, in this context, affirms its decision that Iran shall without delay take the steps required in paragraph 2 of resolution 1737 (2006), and underlines that the IAEA has sought confirmation that Iran will apply Code 3.1 modified;',
           lang: 'en',
           cite: { source: 'unsc-resolution-1803-2008', loc: { section: 'Resolution 1803 (2008)' } },
           provenance: {

@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'russian-bombardment-of-the-imam-reza-shrine',
   names: [
-    { text: 'Russian bombardment of the Imam Reza shrine', lang: 'en', role: 'primary' },
-    { text: 'توپ‌باران حرم امام رضا', lang: 'fa', role: 'native' }
+    { text: 'Russian bombardment of the Imam Reza shrine', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'massacre',

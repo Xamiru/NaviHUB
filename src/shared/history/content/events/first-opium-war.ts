@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'first-opium-war',
   names: [
     { text: 'First Opium War', lang: 'en', role: 'primary' },
-    { text: '第一次鴉片戰爭', lang: 'zh', role: 'native' },
     {
       text: 'first Anglo-Chinese war',
       lang: 'en',

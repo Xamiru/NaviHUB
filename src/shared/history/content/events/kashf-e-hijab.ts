@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'kashf-e-hijab',
   names: [
     { text: 'Kashf-e hijab', lang: 'en', role: 'primary' },
-    { text: 'کشف حجاب', lang: 'fa', role: 'native', translit: 'kašf-e ḥejāb' },
     {
       text: 'Mandatory Unveiling Act of 1936',
       lang: 'en',

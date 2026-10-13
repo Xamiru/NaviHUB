@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'assassination-of-ali-razmara',
   names: [
-    { text: 'Assassination of Ali Razmara', lang: 'en', role: 'primary' },
-    { text: 'ترور حاجعلی رزم‌آرا', lang: 'fa', role: 'native' }
+    { text: 'Assassination of Ali Razmara', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'assassination',

@@ -5917,7 +5917,10 @@ export interface HistoryTimelineItem {
 }
 
 export interface HistoryDecadeSummary {
+  /** A front page: a decade from 1700, a century or half-millennium before (shared/history/buckets.ts). */
   start: number
+  span: number
+  label: string
   events: number
   read: number
 }
@@ -5945,8 +5948,13 @@ export interface HistoryBorders {
   quantum: number
   /** First year the world set covers; earlier years draw the early layer and Europe. */
   worldFrom: number
-  /** Where the 1800-1885 world layer (Cliopatria) comes from, when present. */
+  /** Where the 1700-1885 world layer (Cliopatria) comes from, when present. */
   earlyUrl?: string
+  /**
+   * The first year of the separate pre-1700 file (history:bordersAncient), so the
+   * slider can reach back before that file is loaded.
+   */
+  ancientFrom?: number
   /** Each shape: rings of delta-encoded [x, y, dx, dy, ...] integers. */
   shapes: number[][][]
   units: HistoryMapUnit[]
@@ -6014,7 +6022,11 @@ export interface HistoryMediaCard {
 }
 
 export interface HistoryDecade {
+  /** First year of the front page: a decade from 1700, a century or half-millennium before. */
   start: number
+  span: number
+  /** "1720s", "16th century", "1000–501 BCE". */
+  label: string
   lead: HistoryRefInfo[]
   byRegion: Array<{ region: RegionKey; items: HistoryRefInfo[] }>
   /** Events that began in an earlier decade and run into this one. */
@@ -6099,6 +6111,8 @@ export interface HistoryArticleView {
   note: HistoryNote | null
   /** Iran-related entities show Solar Hijri dates. */
   solarHijri: boolean
+  /** Iran and Middle East entities show lunar Hijri dates between the Hijra and 1925. */
+  lunarHijri: boolean
   /** State pages: holders of the state's offices, in office order. */
   rulers: HistoryRuler[]
   /** State pages: the states that succeeded this one. */

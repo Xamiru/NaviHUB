@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'launch-of-sputnik-1',
   names: [
-    { text: 'Launch of Sputnik 1', lang: 'en', role: 'primary' },
-    { text: 'Спутник-1', lang: 'ru', role: 'native' }
+    { text: 'Launch of Sputnik 1', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'discovery',

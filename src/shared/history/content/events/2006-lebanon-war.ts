@@ -4,10 +4,8 @@ export default defineEvent({
   id: '2006-lebanon-war',
   names: [
     { text: '2006 Lebanon war', lang: 'en', role: 'primary' },
-    { text: 'حرب تموز', lang: 'ar', role: 'native', translit: 'ḥarb Tammūz' },
     { text: 'Israel–Hezbollah war', lang: 'en', role: 'alternative' },
-    { text: 'Second Lebanon War', lang: 'en', role: 'alternative' },
-    { text: 'מלחמת לבנון השנייה', lang: 'he', role: 'alternative' }
+    { text: 'Second Lebanon War', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-13',
   type: 'war',

@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'first-serbian-uprising',
   names: [
-    { text: 'First Serbian Uprising', lang: 'en', role: 'primary' },
-    { text: 'Први српски устанак', lang: 'sr', role: 'native' }
+    { text: 'First Serbian Uprising', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'uprising',

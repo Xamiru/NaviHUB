@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'ottoman-persian-war-1821-1823',
   names: [
-    { text: 'Ottoman–Persian War of 1821–1823', lang: 'en', role: 'primary' },
-    { text: 'جنگ ایران و عثمانی ۱۸۲۱–۱۸۲۳', lang: 'fa', role: 'native' }
+    { text: 'Ottoman–Persian War of 1821–1823', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'war',

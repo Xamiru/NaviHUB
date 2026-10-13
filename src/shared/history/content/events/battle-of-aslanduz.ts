@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'battle-of-aslanduz',
   names: [
-    { text: 'Battle of Aslanduz', lang: 'en', role: 'primary' },
-    { text: 'نبرد اصلاندوز', lang: 'fa', role: 'native' }
+    { text: 'Battle of Aslanduz', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'battle',

@@ -4,8 +4,6 @@ export default defineEvent({
   id: 'iranian-cultural-revolution',
   names: [
     { text: 'Cultural Revolution in Iran', lang: 'en', role: 'primary' },
-    { text: 'انقلاب فرهنگی', lang: 'fa', role: 'native' },
-    { text: 'ستاد انقلاب فرهنگی', lang: 'fa', role: 'alternative' },
     { text: 'Iranian Cultural Revolution', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-08',

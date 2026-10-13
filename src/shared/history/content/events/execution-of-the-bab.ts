@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'execution-of-the-bab',
   names: [
-    { text: 'Execution of the Bab', lang: 'en', role: 'primary' },
-    { text: 'اعدام باب', lang: 'fa', role: 'native' }
+    { text: 'Execution of the Bab', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'religious',

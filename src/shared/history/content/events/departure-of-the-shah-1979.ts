@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'departure-of-the-shah-1979',
   names: [
     { text: 'Departure of the Shah', lang: 'en', role: 'primary' },
-    { text: 'خروج شاه از ایران', lang: 'fa', role: 'native', translit: 'Xoruj-e Šāh az Irān' },
     {
       text: 'Flight of the Shah',
       lang: 'en',

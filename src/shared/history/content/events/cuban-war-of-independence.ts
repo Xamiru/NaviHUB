@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'cuban-war-of-independence',
   names: [
-    { text: 'Cuban War of Independence', lang: 'en', role: 'primary' },
-    { text: 'Guerra de Independencia cubana', lang: 'es', role: 'native' }
+    { text: 'Cuban War of Independence', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'war',

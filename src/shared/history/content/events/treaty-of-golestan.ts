@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'treaty-of-golestan',
   names: [
     { text: 'Treaty of Golestan', lang: 'en', role: 'primary' },
-    { text: 'عهدنامه گلستان', lang: 'fa', role: 'native' },
     {
       text: 'Treaty of Gulistan',
       lang: 'en',

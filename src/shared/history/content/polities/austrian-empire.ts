@@ -3,8 +3,7 @@ import { definePolity } from '../../schema'
 export default definePolity({
   id: 'austrian-empire',
   names: [
-    { text: 'Austrian Empire', lang: 'en', role: 'primary' },
-    { text: 'Kaisertum Österreich', lang: 'de', role: 'native' }
+    { text: 'Austrian Empire', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   polityType: 'empire',

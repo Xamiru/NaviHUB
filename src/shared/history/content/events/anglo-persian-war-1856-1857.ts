@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'anglo-persian-war-1856-1857',
   names: [
-    { text: 'Anglo-Persian War', lang: 'en', role: 'primary' },
-    { text: 'جنگ ایران و انگلیس', lang: 'fa', role: 'native' }
+    { text: 'Anglo-Persian War', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'war',

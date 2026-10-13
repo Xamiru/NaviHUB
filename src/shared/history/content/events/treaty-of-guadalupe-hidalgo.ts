@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'treaty-of-guadalupe-hidalgo',
   names: [
-    { text: 'Treaty of Guadalupe Hidalgo', lang: 'en', role: 'primary' },
-    { text: 'Tratado de Guadalupe Hidalgo', lang: 'es', role: 'native' }
+    { text: 'Treaty of Guadalupe Hidalgo', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'treaty',

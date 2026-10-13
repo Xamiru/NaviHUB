@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'expedition-of-the-thousand',
   names: [
-    { text: 'Expedition of the Thousand', lang: 'en', role: 'primary' },
-    { text: 'Spedizione dei Mille', lang: 'it', role: 'native' }
+    { text: 'Expedition of the Thousand', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'expedition',

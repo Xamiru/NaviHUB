@@ -4,8 +4,6 @@ export default defineEvent({
   id: 'ceasefire-of-the-iran-iraq-war',
   names: [
     { text: 'Ceasefire of the Iran–Iraq War', lang: 'en', role: 'primary' },
-    { text: 'آتش‌بس جنگ ایران و عراق', lang: 'fa', role: 'native' },
-    { text: 'وقف إطلاق النار بين العراق وإيران', lang: 'ar', role: 'native' },
     {
       text: 'Resolution 598',
       lang: 'en',

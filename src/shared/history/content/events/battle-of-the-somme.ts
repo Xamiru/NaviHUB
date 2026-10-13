@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'battle-of-the-somme',
   names: [
     { text: 'Battle of the Somme', lang: 'en', role: 'primary' },
-    { text: 'Bataille de la Somme', lang: 'fr', role: 'native' },
     {
       text: 'Schlacht an der Somme',
       lang: 'de',

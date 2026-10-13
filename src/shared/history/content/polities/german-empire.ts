@@ -4,7 +4,6 @@ export default definePolity({
   id: 'german-empire',
   names: [
     { text: 'German Empire', lang: 'en', role: 'primary' },
-    { text: 'Deutsches Kaiserreich', lang: 'de', role: 'native' },
     {
       text: 'Second Reich',
       lang: 'en',

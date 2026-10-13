@@ -3,8 +3,7 @@ import { definePolity } from '../../schema'
 export default definePolity({
   id: 'russian-empire',
   names: [
-    { text: 'Russian Empire', lang: 'en', role: 'primary' },
-    { text: 'Российская империя', lang: 'ru', role: 'native' }
+    { text: 'Russian Empire', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   polityType: 'empire',

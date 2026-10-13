@@ -62,6 +62,26 @@ describe('renderer loading boundaries', () => {
     expect(detail).toContain("import('@shared/franchises')")
   })
 
+  it('loads the styled-subtitle renderer (jassub) only on demand', () => {
+    const walk = (dir: string): string[] =>
+      readdirSync(fileURLToPath(new URL(`../${dir}`, import.meta.url)), { withFileTypes: true }).flatMap((d) =>
+        d.isDirectory() ? walk(`${dir}/${d.name}`) : /\.tsx?$/.test(d.name) ? [`${dir}/${d.name}`] : []
+      )
+    for (const file of walk('src/renderer/src')) {
+      const src = read(file)
+      // The WASM worker and its bundle reach the page only through import():
+      // lib/jassubAssets.ts is the one static importer of jassub's assets, and
+      // nothing imports it, or jassub itself, statically.
+      if (!file.endsWith('lib/jassubAssets.ts')) {
+        expect(src, file).not.toMatch(/^import [^\n]* from 'jassub/m)
+      }
+      expect(src, file).not.toMatch(/^import [^\n]* from '[^']*jassubAssets'/m)
+    }
+    const layer = read('src/renderer/src/components/video/StyledSubtitleLayer.tsx')
+    expect(layer).toContain("import('jassub')")
+    expect(layer).toContain("import('../../lib/jassubAssets')")
+  })
+
   it('does not poll prep-deck status while the coverage panel is idle', () => {
     const coverage = read('src/renderer/src/components/japanese/CoverageSection.tsx')
     expect(coverage).toContain('queryKey: qk.japanese.prepDeckStatus')
@@ -190,7 +210,8 @@ describe('reader font packaging', () => {
       '@dnd-kit/core',
       '@dnd-kit/sortable',
       '@dnd-kit/utilities',
-      'drizzle-orm'
+      'drizzle-orm',
+      'jassub'
     ]) {
       expect(pkg.dependencies, name).not.toHaveProperty(name)
       expect(pkg.devDependencies, name).toHaveProperty(name)

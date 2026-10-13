@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import {
   assertSafeArgPath,
+  buildAttachmentDumpArgs,
   buildClipArgs,
   buildProbeArgs,
   buildSubtitleExtractArgs,
   CLIP_MAX_SECONDS,
   decideDecodable,
-  ffInputArg
+  ffInputArg,
+  safeFontFileName
 } from '../src/main/video/playability'
 import {
+  fontAttachments,
   isTextualSubtitle,
   parseProbeJson,
   pickAudioStream,
@@ -200,5 +203,60 @@ describe('buildClipArgs', () => {
   it('refuses option-like or relative paths', () => {
     expect(() => buildClipArgs({ input: '-i', output: '/a/o.m4a', startSec: 0, endSec: 1 })).toThrow()
     expect(() => buildClipArgs({ input: '/v/a.mkv', output: 'o.m4a', startSec: 0, endSec: 1 })).toThrow()
+  })
+})
+
+describe('font attachments', () => {
+  const probeWith = (streams: Record<string, unknown>[]): string =>
+    JSON.stringify({ format: {}, streams })
+
+  it('lists attached fonts by absolute index and ignores other attachments', () => {
+    const probe = parseProbeJson(
+      probeWith([
+        { index: 0, codec_type: 'video', codec_name: 'h264' },
+        { index: 1, codec_type: 'subtitle', codec_name: 'ass' },
+        { index: 2, codec_type: 'attachment', tags: { filename: 'A-OTF Shin Go.otf', mimetype: 'application/vnd.ms-opentype' } },
+        { index: 3, codec_type: 'attachment', tags: { filename: 'cover.jpg', mimetype: 'image/jpeg' } },
+        { index: 4, codec_type: 'attachment', tags: { filename: 'font', mimetype: 'application/x-truetype-font' } },
+        { index: 5, codec_type: 'attachment', tags: {} }
+      ])
+    )!
+    expect(probe.attachments?.map((a) => a.index)).toEqual([2, 3, 4])
+    expect(fontAttachments(probe).map((a) => a.index)).toEqual([2, 4])
+    // Attachments stay 'other' streams, which no stream picker or extractor maps.
+    expect(probe.streams.filter((s) => s.type !== 'other').map((s) => s.type)).toEqual([
+      'video',
+      'subtitle'
+    ])
+  })
+
+  it('keeps cache names inside the folder, unique and font-typed', () => {
+    expect(safeFontFileName('A-OTF Shin Go.otf', 2)).toBe('2-A-OTF Shin Go.otf')
+    expect(safeFontFileName('../../evil/..ttf', 3)).toBe('3-font.ttf')
+    expect(safeFontFileName('C:\\fonts\\メイリオ.TTC', 4)).toBe('4-____.ttc')
+    expect(safeFontFileName('-rf', 5)).toBe('5-rf.ttf')
+    expect(safeFontFileName('x'.repeat(300) + '.woff2', 6)).toMatch(/^6-x{80}\.woff2$/)
+  })
+
+  it('dumps each attachment to an absolute file: path before the input', () => {
+    const args = buildAttachmentDumpArgs({
+      input: '/v/ep.mkv',
+      attachments: [
+        { index: 2, output: '/c/fonts/2-a.otf' },
+        { index: 4, output: '/c/fonts/4-b.ttf' }
+      ]
+    })
+    expect(args).toEqual([
+      '-nostdin', '-hide_banner', '-loglevel', 'error', '-y',
+      '-dump_attachment:2', 'file:/c/fonts/2-a.otf',
+      '-dump_attachment:4', 'file:/c/fonts/4-b.ttf',
+      '-i', 'file:/v/ep.mkv'
+    ])
+    expect(() =>
+      buildAttachmentDumpArgs({ input: '/v/ep.mkv', attachments: [{ index: 2, output: 'rel.ttf' }] })
+    ).toThrow()
+    expect(() =>
+      buildAttachmentDumpArgs({ input: '/v/ep.mkv', attachments: [{ index: -1, output: '/c/a.ttf' }] })
+    ).toThrow()
   })
 })

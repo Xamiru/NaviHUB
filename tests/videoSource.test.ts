@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import os from 'node:os'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -303,6 +303,94 @@ describe('embedded subtitle extraction', () => {
     const second = await video.subtitleTrack({ kind: 'file', fileId: id }, 'embedded:0')
     expect(ran).toBe(true)
     expect(second?.url).not.toBeNull()
+  })
+})
+
+describe('attached subtitle fonts', () => {
+  function withFonts(file = 'Show/01.mkv'): number {
+    const id = addEpisode(makeMedia(), file, 1)
+    probe = {
+      durationSec: 1440,
+      startTimeSec: 0,
+      formatName: 'matroska,webm',
+      sizeBytes: 1,
+      streams: [stream(0, 0, 'video', 'h264'), stream(1, 0, 'subtitle', 'ass', 'jpn')],
+      attachments: [
+        { index: 2, filename: 'Gothic.ttf', mimetype: 'application/x-truetype-font' },
+        { index: 3, filename: 'poster.jpg', mimetype: 'image/jpeg' }
+      ]
+    }
+    ffmpegPresent = true
+    return id
+  }
+  const dumpTargets = (args: string[]): string[] =>
+    args.filter((_a, i) => args[i - 1]?.startsWith('-dump_attachment:')).map((a) => a.replace(/^file:/, ''))
+  const fontFiles = (): string[] => readdirSync(join(root, 'videocache', 'fonts')).sort()
+
+  it('extracts fonts once and serves them from videocache', async () => {
+    const id = withFonts()
+    let runs = 0
+    ffmpegRun = (args) => {
+      runs++
+      for (const out of dumpTargets(args)) writeFileSync(out, 'font-bytes')
+      return 'At least one output file must be specified'
+    }
+    const ref = { kind: 'file', fileId: id } as const
+    const first = await video.subtitleFonts(ref)
+    expect(first).toHaveLength(1)
+    expect(first[0]).toMatch(/^navimg:\/\/videocache\/fonts\/[0-9a-f]{40}\.ttf$/)
+    expect(await video.subtitleFonts(ref)).toEqual(first)
+    expect(runs).toBe(1)
+  })
+
+  it('runs one dump for concurrent requests and shares fonts across episodes', async () => {
+    const first = withFonts('Show/01.mkv')
+    const second = addEpisode(makeMedia('Other'), 'Show/02.mkv', 2)
+    let runs = 0
+    ffmpegRun = (args) => {
+      runs++
+      for (const out of dumpTargets(args)) writeFileSync(out, 'same-font')
+      return 'At least one output file must be specified'
+    }
+    const [a, b] = await Promise.all([
+      video.subtitleFonts({ kind: 'file', fileId: first }),
+      video.subtitleFonts({ kind: 'file', fileId: first })
+    ])
+    expect(runs).toBe(1)
+    expect(b).toEqual(a)
+    expect(await video.subtitleFonts({ kind: 'file', fileId: second })).toEqual(a)
+    expect(fontFiles().filter((f) => f.endsWith('.ttf'))).toHaveLength(1)
+    expect(fontFiles().some((f) => f.endsWith('.partial'))).toBe(false)
+  })
+
+  it('discards a partial dump so a later open retries', async () => {
+    const id = withFonts()
+    let written: string[] = []
+    ffmpegRun = (args) => {
+      written = dumpTargets(args)
+      for (const out of written) writeFileSync(out, 'trunc')
+      return 'killed after timeout'
+    }
+    expect(await video.subtitleFonts({ kind: 'file', fileId: id })).toEqual([])
+    expect(written.every((f) => !existsSync(f))).toBe(true)
+    expect(fontFiles()).toEqual([])
+    let runs = 0
+    ffmpegRun = (args) => {
+      runs++
+      for (const out of dumpTargets(args)) writeFileSync(out, 'font-bytes')
+      return null
+    }
+    expect(await video.subtitleFonts({ kind: 'file', fileId: id })).toHaveLength(1)
+    expect(runs).toBe(1)
+  })
+
+  it('returns nothing without ffmpeg or attachments', async () => {
+    const id = withFonts()
+    ffmpegPresent = false
+    expect(await video.subtitleFonts({ kind: 'file', fileId: id })).toEqual([])
+    probe = null
+    ffmpegPresent = true
+    expect(await video.subtitleFonts({ kind: 'file', fileId: id })).toEqual([])
   })
 })
 

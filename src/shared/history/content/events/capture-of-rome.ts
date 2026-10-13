@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'capture-of-rome',
   names: [
     { text: 'Capture of Rome', lang: 'en', role: 'primary' },
-    { text: 'Presa di Roma', lang: 'it', role: 'native' },
     {
       text: 'Besetzung Roms',
       lang: 'de',

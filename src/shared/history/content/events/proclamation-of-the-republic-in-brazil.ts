@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'proclamation-of-the-republic-in-brazil',
   names: [
-    { text: 'Proclamation of the Republic in Brazil', lang: 'en', role: 'primary' },
-    { text: 'Proclamação da República', lang: 'pt', role: 'native' }
+    { text: 'Proclamation of the Republic in Brazil', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'coup',

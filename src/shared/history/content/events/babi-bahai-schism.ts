@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'babi-bahai-schism',
   names: [
     { text: 'Babi–Bahai schism', lang: 'en', role: 'primary' },
-    { text: 'انشعاب بهائی و ازلی', lang: 'fa', role: 'native' },
     { text: 'Split between Bahāʾ-Allāh and Ṣobḥ-e Azal', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-08',

@@ -4,7 +4,6 @@ export default definePolity({
   id: 'qing-empire',
   names: [
     { text: 'Qing Empire', lang: 'en', role: 'primary' },
-    { text: '大清', lang: 'zh', role: 'native', translit: 'Da Qing' },
     {
       text: 'Chinese Empire',
       lang: 'en',

@@ -198,7 +198,8 @@ function articleView(): HistoryArticleView {
     archive: [],
     mark: { read: null, favorite: false },
     note: null,
-    solarHijri: true
+    solarHijri: true,
+    lunarHijri: true
   }
 }
 

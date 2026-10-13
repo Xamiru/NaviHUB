@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'march-on-rome',
   names: [
-    { text: 'March on Rome', lang: 'en', role: 'primary' },
-    { text: 'Marcia su Roma', lang: 'it', role: 'native' },
-    { text: 'Marche sur Rome', lang: 'fr', role: 'alternative' }
+    { text: 'March on Rome', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'coup',

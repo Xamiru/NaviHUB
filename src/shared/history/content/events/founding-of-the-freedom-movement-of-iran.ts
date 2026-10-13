@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'founding-of-the-freedom-movement-of-iran',
   names: [
     { text: 'Founding of the Freedom Movement of Iran', lang: 'en', role: 'primary' },
-    { text: 'تأسیس نهضت آزادی ایران', lang: 'fa', role: 'native' },
     {
       text: 'Liberation Movement of Iran',
       lang: 'en',
@@ -18,8 +17,7 @@ export default defineEvent({
           }
         }
       ]
-    },
-    { text: 'Nahżat-e āzādi-e Irān', lang: 'fa-Latn', role: 'alternative' }
+    }
   ],
   researched: '2026-10-08',
   type: 'founding',

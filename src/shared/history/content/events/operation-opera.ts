@@ -5,8 +5,6 @@ export default defineEvent({
   names: [
     { text: 'Operation Opera', lang: 'en', role: 'primary' },
     { text: 'Israeli strike on the Osirak reactor', lang: 'en', role: 'alternative' },
-    { text: 'عملية أوبرا', lang: 'ar', role: 'alternative' },
-    { text: 'מבצע אופרה', lang: 'he', role: 'native' },
     {
       text: 'Osiraq',
       lang: 'en',

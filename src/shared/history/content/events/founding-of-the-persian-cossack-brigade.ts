@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'founding-of-the-persian-cossack-brigade',
   names: [
     { text: 'Founding of the Persian Cossack Brigade', lang: 'en', role: 'primary' },
-    { text: 'تأسیس بریگاد قزاق', lang: 'fa', role: 'native' },
     {
       text: 'Berīgād-e qazzāq',
       lang: 'fa-Latn',
@@ -165,7 +164,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q2',
-          text: 'On his second journey to Europe, in 1295/1878, Nāṣer-al-Dīn Shah (1264­-1313/1848-96) had been favorably impressed by the uniforms, equipment, and precision drills of the Russian Cossacks who had escorted him across Transcaucasia. He therefore asked the viceroy of the Caucasus, Grand Duke Mikhail Nikolaevich, to send Russian officers to train a Cossack-style cavalry in Persia.',
+          text: 'On his second journey to Europe, in 1295/1878, Nāṣer-al-Dīn Shah (1264-1313/1848-96) had been favorably impressed by the uniforms, equipment, and precision drills of the Russian Cossacks who had escorted him across Transcaucasia. He therefore asked the viceroy of the Caucasus, Grand Duke Mikhail Nikolaevich, to send Russian officers to train a Cossack-style cavalry in Persia.',
           lang: 'en',
           cite: {
             source: 'iranica-atkin-cossack-brigade',
@@ -198,7 +197,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'The man selected to organize the Persian Cossack unit was Lieutenant-Colonel A. I. Domantovich, a general staff officer who happened to be in Trans­caucasia, having just returned from service in the Russo-Ottoman war of 1878-79. He arrived in Persia knowing little more about the country than some sto­ries of its ancient past and the murder of Ambassador A. S. Griboyedov during the siege of the Russian embassy in 1244/1829.',
+          text: 'The man selected to organize the Persian Cossack unit was Lieutenant-Colonel A. I. Domantovich, a general staff officer who happened to be in Transcaucasia, having just returned from service in the Russo-Ottoman war of 1878-79. He arrived in Persia knowing little more about the country than some stories of its ancient past and the murder of Ambassador A. S. Griboyedov during the siege of the Russian embassy in 1244/1829.',
           lang: 'en',
           cite: {
             source: 'iranica-atkin-cossack-brigade',
@@ -283,7 +282,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q8',
-        text: 'Domantovich and a handful of other Russian commis­sioned and noncommissioned officers began to orga­nize and train the Cossack regiment in April 1879; the shah was so pleased with the results that in the summer he decided to expand the regiment to a brigade.',
+        text: 'Domantovich and a handful of other Russian commissioned and noncommissioned officers began to organize and train the Cossack regiment in April 1879; the shah was so pleased with the results that in the summer he decided to expand the regiment to a brigade.',
         lang: 'en',
         cite: {
           source: 'iranica-atkin-cossack-brigade',

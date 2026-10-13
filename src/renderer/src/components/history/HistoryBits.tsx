@@ -2,8 +2,14 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import {
   formatHistDate,
+  formatGregorian,
+  formatLunarHijri,
   formatOldStyle,
   formatSolarHijri,
+  compareDates,
+  isJulianEraDay,
+  julianDayToGregorian,
+  SOLAR_HIJRI_ADOPTED,
   isProlepticSolarHijri
 } from '@shared/history/calendars'
 import { HOLDER_KINDS, type Claim, type HistDate, type Holder } from '@shared/history/schema'
@@ -41,28 +47,43 @@ export function ImageCredit({ image, className = '' }: { image: HistoryImage | n
   )
 }
 
-/** Gregorian first; Solar Hijri and Old Style forms beneath when they apply. */
+/**
+ * The stored date first; Solar Hijri, lunar Hijri and Old Style forms beneath
+ * when they apply. A day before the Gregorian reform is stored in the Julian
+ * calendar (HistDate), so it reads "(Julian)" with its proleptic Gregorian
+ * form beneath, and the Hijri forms are computed from that Gregorian day.
+ */
 export function HistDateText({
   date,
   solarHijri,
+  lunarHijri,
   short,
   inline
 }: {
   date: HistDate
   solarHijri?: boolean
+  lunarHijri?: boolean
   short?: boolean
   inline?: boolean
 }) {
-  const sh = solarHijri ? formatSolarHijri(date.d) : null
-  const shUpper = solarHijri && date.notAfter ? formatSolarHijri(date.notAfter) : null
-  const os = date.julian ? formatOldStyle(date.d) : null
+  const julianEra = isJulianEraDay(date.d)
+  // Hijri forms come from the Gregorian day; a Julian-era day converts first.
+  const g = (s: string): string => (isJulianEraDay(s) ? julianDayToGregorian(s) : s)
+  const sh = solarHijri ? formatSolarHijri(g(date.d)) : null
+  const shUpper = solarHijri && date.notAfter ? formatSolarHijri(g(date.notAfter)) : null
+  const ah = lunarHijri && compareDates(date.d, SOLAR_HIJRI_ADOPTED) < 0 ? formatLunarHijri(g(date.d)) : null
+  const ahUpper = ah && date.notAfter ? formatLunarHijri(g(date.notAfter)) : null
+  const os = date.julian && !julianEra ? formatOldStyle(date.d) : null
   const extra = [
+    julianEra && `${formatGregorian(julianDayToGregorian(date.d), { short })} proleptic Gregorian`,
+    ah && `${date.approx ? 'c. ' : ''}${ah}${ahUpper ? ` to ${ahUpper}` : ''} AH (tabular)`,
     sh && `${date.approx ? 'c. ' : ''}${sh}${shUpper ? ` to ${shUpper}` : ''} SH${isProlepticSolarHijri(date.d) ? ' (proleptic)' : ''}`,
     os && `${os} Old Style`
-  ].filter(Boolean)
+  ].filter((t): t is string => !!t)
+  const main = julianEra ? `${formatHistDate(date, { short })} (Julian)` : formatHistDate(date, { short })
   return (
     <span className={inline ? '' : 'inline-flex flex-col'}>
-      <span className="tabular-nums">{formatHistDate(date, { short })}</span>
+      <span className="tabular-nums">{main}</span>
       {extra.map((t) => (
         <span key={t} className={`tabular-nums text-ink-muted ${inline ? 'ml-2 text-[0.85em]' : 'text-xs'}`}>
           {inline ? `· ${t}` : t}
@@ -140,13 +161,15 @@ export function ClaimView<T>({
 export function DateClaim({
   claim,
   solarHijri,
+  lunarHijri,
   short
 }: {
   claim: Claim<HistDate> | undefined
   solarHijri?: boolean
+  lunarHijri?: boolean
   short?: boolean
 }) {
-  return <ClaimView claim={claim} render={(d) => <HistDateText date={d} solarHijri={solarHijri} short={short} />} />
+  return <ClaimView claim={claim} render={(d) => <HistDateText date={d} solarHijri={solarHijri} lunarHijri={lunarHijri} short={short} />} />
 }
 
 export function NativeName({ native, className = '' }: { native: { text: string; lang: string } | null; className?: string }) {

@@ -771,6 +771,7 @@ export function registerIpc(): void {
   ipcMain.handle('video:tools', () => video.detectTools())
   ipcMain.handle('video:source', (_e, ref) => video.source(ref))
   ipcMain.handle('video:subtitleTrack', (_e, ref, trackId) => video.subtitleTrack(ref, trackId))
+  ipcMain.handle('video:subtitleFonts', (_e, ref) => video.subtitleFonts(ref))
   ipcMain.handle('video:clipAudio', (_e, input) => video.clipAudio(input))
   // A resume position only. It never logs progress: that happens once, on the
   // watched transition below.
@@ -1003,6 +1004,7 @@ export function registerIpc(): void {
   // ---- history (curated content loaded on first use + personal layer) ----
   ipcMain.handle('history:overview', async () => (await loadHistory()).overview())
   ipcMain.handle('history:borders', async () => (await loadHistoryMap()).borders())
+  ipcMain.handle('history:bordersAncient', async () => (await loadHistoryMap()).ancientBorders())
   ipcMain.handle('history:mapPins', async () => (await loadHistory()).mapPins())
   ipcMain.handle('history:mapPolities', async () => (await loadHistory()).mapPolities())
   ipcMain.handle('history:themes', async () => (await loadHistory()).themes())

@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'assassination-of-indira-gandhi',
   names: [
-    { text: 'Assassination of Indira Gandhi', lang: 'en', role: 'primary' },
-    { text: 'इंदिरा गांधी की हत्या', lang: 'hi', role: 'native' }
+    { text: 'Assassination of Indira Gandhi', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'assassination',

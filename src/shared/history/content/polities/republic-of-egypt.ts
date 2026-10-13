@@ -4,7 +4,6 @@ export default definePolity({
   id: 'republic-of-egypt',
   names: [
     { text: 'Republic of Egypt', lang: 'en', role: 'primary' },
-    { text: 'جمهورية مصر', lang: 'ar', role: 'native' },
     {
       text: 'United Arab Republic',
       lang: 'en',

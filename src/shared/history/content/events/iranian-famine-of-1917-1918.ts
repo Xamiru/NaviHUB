@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'iranian-famine-of-1917-1918',
   names: [
-    { text: 'Iranian famine of 1917–1918', lang: 'en', role: 'primary' },
-    { text: 'قحطی بزرگ', lang: 'fa', role: 'native' }
+    { text: 'Iranian famine of 1917–1918', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-06',
   type: 'famine',

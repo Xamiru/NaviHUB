@@ -4,8 +4,6 @@ export default defineEvent({
   id: '18-tir-student-protests',
   names: [
     { text: 'Iranian student protests of July 1999', lang: 'en', role: 'primary' },
-    { text: 'اعتراضات دانشجویی تیر ۱۳۷۸', lang: 'fa', role: 'native' },
-    { text: '۱۸ تیر', lang: 'fa', role: 'alternative', translit: 'hejdah-e tir' },
     { text: 'Tehran University dormitory raid', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-10',

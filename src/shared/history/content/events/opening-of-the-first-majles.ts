@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'opening-of-the-first-majles',
   names: [
-    { text: 'Opening of the first Majles', lang: 'en', role: 'primary' },
-    { text: 'گشایش مجلس اول', lang: 'fa', role: 'native' }
+    { text: 'Opening of the first Majles', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'founding',

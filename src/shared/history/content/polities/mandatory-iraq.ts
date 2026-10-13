@@ -3,8 +3,7 @@ import { definePolity } from '../../schema'
 export default definePolity({
   id: 'mandatory-iraq',
   names: [
-    { text: 'Mandatory Iraq', lang: 'en', role: 'primary' },
-    { text: 'العراق', lang: 'ar', role: 'native' }
+    { text: 'Mandatory Iraq', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   polityType: 'mandate',

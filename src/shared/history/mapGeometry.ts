@@ -73,6 +73,27 @@ export interface MapLayers {
  */
 export const EUROPE_FROM = 1816
 
+/** Before this year the borders live in the separate, lazily loaded ancient file. */
+export const ANCIENT_TO = 1700
+
+/**
+ * The main borders with the pre-1700 file appended: its shape numbers move past
+ * the main file's, so layersAt, colours and state links work across the seam.
+ */
+export function withAncient(main: HistoryBorders, ancient: Pick<HistoryBorders, 'shapes' | 'units'>): HistoryBorders {
+  const offset = main.shapes.length
+  return {
+    ...main,
+    shapes: [...main.shapes, ...ancient.shapes],
+    units: [...main.units, ...ancient.units.map((u) => ({ ...u, shape: u.shape + offset }))]
+  }
+}
+
+/** A map year as a reader writes it: 1730, or 480 BCE (year -479). */
+export function mapYearLabel(year: number): string {
+  return year <= 0 ? `${1 - year} BCE` : String(year)
+}
+
 const active = (u: HistoryMapUnit, year: number): boolean => u.from <= year && year < u.to
 
 /** The units to draw for `year` (a decimal year). */

@@ -13,11 +13,11 @@ import {
   GUESS_TRACK_CLIP_SECONDS,
   GUESS_TRACK_ROUND_LENGTH,
   buildGuessTrackQuestions,
-  guessTrackArtistInitial,
   guessTrackClipSeconds,
-  guessTrackHintVisible,
+  guessTrackHints,
   guessTrackIdentityCount,
   guessTrackMusicEntry,
+  guessTrackNearMiss,
   guessTrackThemeEntry,
   initialGuessTrackRound,
   searchGuessTrackChoices,
@@ -44,6 +44,8 @@ import { useAllCompletedStatuses } from '../lib/hooks'
 import { usePersistedState } from '../lib/navState'
 import { usePlayerControls } from '../lib/player'
 import { useTabLeaveGuard } from '../lib/browserTabs'
+import { audioOnsetSeconds } from '../lib/audioOnset'
+import { useQuizClip } from '../lib/quizClip'
 
 type Phase = 'setup' | 'play' | 'summary'
 type ThemeScope = 'completed' | 'all'
@@ -53,12 +55,21 @@ interface TrackResult {
   recordingKey: string
   title: string
   performer: string
+  context: string
+  coverPath: string | null
   solved: boolean
   attempts: number
   points: number
 }
 
+// A playable source plus where its sound starts, so clips skip leading silence.
+interface LoadedAudio {
+  src: string
+  offset: number
+}
+
 const MAX_DEAL = 10
+const TIMELINE_SECONDS = GUESS_TRACK_CLIP_SECONDS[GUESS_TRACK_CLIP_SECONDS.length - 1]
 
 function playablePlaylistTracks(items: MusicPlaylistItem[]): MusicTrack[] {
   const tracks = items.flatMap((item) => {
@@ -75,6 +86,53 @@ function playablePlaylistTracks(items: MusicPlaylistItem[]): MusicTrack[] {
 
 function quizKind(source: GuessTrackSource): QuizKind {
   return source === 'theme' ? 'guessTrackTheme' : 'guessTrackMusic'
+}
+
+function timelinePercent(seconds: number): string {
+  return `${(Math.min(Math.max(seconds, 0), TIMELINE_SECONDS) / TIMELINE_SECONDS) * 100}%`
+}
+
+/**
+ * The clip timeline and its cutoff (`useQuizClip`): a 1 second clip stops
+ * within a frame of its mark. Only this component re-renders while playing.
+ */
+function ClipTimeline({
+  trackId,
+  clipSeconds,
+  startOffset
+}: {
+  trackId: string
+  clipSeconds: number
+  startOffset: number
+}): React.JSX.Element {
+  const elapsed = useQuizClip(trackId, startOffset, clipSeconds)
+
+  return (
+    <div role="img" aria-label={`${clipSeconds} of ${TIMELINE_SECONDS} seconds unlocked`}>
+      <div className="relative h-3 overflow-hidden rounded-full border border-base-600 bg-base-800">
+        <div className="absolute inset-y-0 left-0 bg-accent/25" style={{ width: timelinePercent(clipSeconds) }} />
+        <div className="absolute inset-y-0 left-0 bg-accent" style={{ width: timelinePercent(elapsed) }} />
+        {GUESS_TRACK_CLIP_SECONDS.slice(0, -1).map((seconds) => (
+          <div
+            key={seconds}
+            className="absolute inset-y-0 w-px bg-base-500"
+            style={{ left: timelinePercent(seconds) }}
+          />
+        ))}
+      </div>
+      <div className="relative mt-1.5 h-4 text-xs tabular-nums text-gray-500" aria-hidden="true">
+        {GUESS_TRACK_CLIP_SECONDS.map((seconds, index) => (
+          <span
+            key={seconds}
+            className={`absolute ${index === GUESS_TRACK_CLIP_SECONDS.length - 1 ? '-translate-x-full' : '-translate-x-1/2'} ${seconds <= clipSeconds ? 'text-accent' : ''}`}
+            style={{ left: timelinePercent(seconds) }}
+          >
+            {seconds}s
+          </span>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 function PlayIcon(): React.JSX.Element {
@@ -130,7 +188,6 @@ export default function GuessTrackPage() {
   const [results, setResults] = useState<TrackResult[]>([])
   const [newBest, setNewBest] = useState(false)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
-  const [clipRun, setClipRun] = useState(0)
 
   const questionsRef = useRef<GuessTrackQuestion[]>([])
   const sparesRef = useRef<GuessTrackQuestion[]>([])
@@ -139,7 +196,8 @@ export default function GuessTrackPage() {
   const roundRef = useRef<GuessTrackRoundState>(initialGuessTrackRound())
   const resultsRef = useRef<TrackResult[]>([])
   const activeEntryRef = useRef<GuessTrackEntry | null>(null)
-  const srcCacheRef = useRef(new Map<string, string>())
+  const loadCacheRef = useRef(new Map<string, Promise<LoadedAudio | null>>())
+  const loadedRef = useRef(new Map<string, LoadedAudio>())
   const audioRequestRef = useRef(0)
   const transitionLockRef = useRef(false)
   const loggedRef = useRef(false)
@@ -199,23 +257,6 @@ export default function GuessTrackPage() {
   }, [])
 
   useEffect(() => {
-    if (
-      phase !== 'play' ||
-      round.status !== 'playing' ||
-      !player.isPlaying ||
-      !player.track?.id.startsWith('quiz-guess-track-')
-    )
-      return
-    const id = window.setTimeout(() => {
-      if (player.isPlaying && player.track?.id.startsWith('quiz-guess-track-')) player.toggle()
-    }, guessTrackClipSeconds(round) * 1000)
-    return () => window.clearTimeout(id)
-    // player methods are stable; depending on the whole context object would
-    // restart this cutoff on every current-time update.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, round, player.isPlaying, player.track?.id, clipRun])
-
-  useEffect(() => {
     if (phase !== 'play') return
     function onKey(event: KeyboardEvent): void {
       const target = event.target as HTMLElement
@@ -233,34 +274,50 @@ export default function GuessTrackPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, round.status])
 
-  function startResolvedPlayback(entry: GuessTrackEntry, src: string): void {
+  function startResolvedPlayback(entry: GuessTrackEntry, loaded: LoadedAudio): void {
     activeEntryRef.current = entry
     const trackId = `quiz-guess-track-${entry.key}`
-    if (player.track?.id === trackId) {
-      player.seek(0)
-      if (!player.isPlaying) player.toggle()
+    // Read the live controls: this runs after awaits, when the render's
+    // `player` snapshot may be stale.
+    const activePlayer = playerRef.current
+    if (activePlayer.track?.id === trackId) {
+      activePlayer.seek(loaded.offset)
+      if (!activePlayer.isPlaying) activePlayer.toggle()
     } else {
-      player.play({
-        id: trackId,
-        src,
-        title: 'Song Quiz',
-        subtitle: null,
-        context: '???',
-        coverPath: null,
-        mediaId: null
-      })
+      activePlayer.playQueue(
+        [
+          {
+            id: trackId,
+            src: loaded.src,
+            title: 'Song Quiz',
+            subtitle: null,
+            context: '???',
+            coverPath: null,
+            mediaId: null
+          }
+        ],
+        0,
+        { startTime: loaded.offset }
+      )
     }
-    setClipRun((value) => value + 1)
   }
 
-  async function resolveEntry(entry: GuessTrackEntry, request: number): Promise<string | null> {
-    const cached = srcCacheRef.current.get(entry.key)
-    if (cached) return cached
-    let src = entry.audioUrl
-    if (entry.audioPath) src = (await api.files.resolveUrl(entry.audioPath)) ?? entry.audioUrl
-    if (request !== audioRequestRef.current || !src) return null
-    srcCacheRef.current.set(entry.key, src)
-    return src
+  // Cached per entry for the session, so the prefetch of the next track and
+  // the question itself share one resolution and one silence scan.
+  function loadEntry(entry: GuessTrackEntry): Promise<LoadedAudio | null> {
+    let pending = loadCacheRef.current.get(entry.key)
+    if (!pending) {
+      pending = (async () => {
+        let src = entry.audioUrl
+        if (entry.audioPath) src = (await api.files.resolveUrl(entry.audioPath)) ?? entry.audioUrl
+        if (!src) return null
+        const loaded = { src, offset: await audioOnsetSeconds(src) }
+        loadedRef.current.set(entry.key, loaded)
+        return loaded
+      })().catch(() => null)
+      loadCacheRef.current.set(entry.key, pending)
+    }
+    return pending
   }
 
   async function beginQuestion(question: GuessTrackQuestion, index: number): Promise<void> {
@@ -270,9 +327,9 @@ export default function GuessTrackPage() {
     let candidate: GuessTrackQuestion | undefined = question
     while (candidate && request === audioRequestRef.current) {
       for (const entry of candidate.entries) {
-        const src = await resolveEntry(entry, request)
+        const loaded = await loadEntry(entry)
         if (request !== audioRequestRef.current) return
-        if (!src) continue
+        if (!loaded) continue
         const resolved = { ...candidate, mystery: entry }
         questionsRef.current[index] = resolved
         currentRef.current = resolved
@@ -288,7 +345,9 @@ export default function GuessTrackPage() {
         setSuggestionsOpen(false)
         setFeedback(null)
         setAudioLoading(false)
-        startResolvedPlayback(entry, src)
+        startResolvedPlayback(entry, loaded)
+        const upcoming = questionsRef.current[index + 1]
+        if (upcoming) void loadEntry(upcoming.entries[0])
         return
       }
       setAudioNotice('A track file was unavailable. Replacing it without using an attempt.')
@@ -302,8 +361,8 @@ export default function GuessTrackPage() {
   function replayCurrentClip(): void {
     const entry = activeEntryRef.current
     if (!entry || audioLoading) return
-    const src = srcCacheRef.current.get(entry.key)
-    if (src) startResolvedPlayback(entry, src)
+    const loaded = loadedRef.current.get(entry.key)
+    if (loaded) startResolvedPlayback(entry, loaded)
   }
 
   function revealTrack(next: GuessTrackRoundState): void {
@@ -314,6 +373,8 @@ export default function GuessTrackPage() {
       recordingKey: question.recordingKey,
       title: entry.title,
       performer: entry.performer,
+      context: entry.context,
+      coverPath: entry.coverPath,
       solved: next.status === 'correct',
       attempts: next.attempts.length,
       points: next.points
@@ -322,8 +383,8 @@ export default function GuessTrackPage() {
     setResults(resultsRef.current)
     setScore((value) => value + next.points)
     if (result.solved) setSolved((value) => value + 1)
-    const src = srcCacheRef.current.get(entry.key)
-    if (src) startResolvedPlayback(entry, src)
+    const loaded = loadedRef.current.get(entry.key)
+    if (loaded) startResolvedPlayback(entry, loaded)
   }
 
   function applyTransition(next: GuessTrackRoundState, outcome: 'wrong' | 'correct' | 'failed'): void {
@@ -333,7 +394,13 @@ export default function GuessTrackPage() {
     setQuery('')
     setSuggestionsOpen(false)
     if (outcome === 'wrong') {
-      setFeedback(`Not this track. The ${guessTrackClipSeconds(next)} second intro is now unlocked.`)
+      const near = next.attempts[next.attempts.length - 1]?.near
+      const miss = near
+        ? source === 'theme'
+          ? 'Right anime, wrong theme.'
+          : 'Right artist, wrong song.'
+        : 'Not this track.'
+      setFeedback(`${miss} The ${guessTrackClipSeconds(next)} second intro is now unlocked.`)
       transitionLockRef.current = false
       replayCurrentClip()
       return
@@ -345,10 +412,12 @@ export default function GuessTrackPage() {
   function submitAnswer(): void {
     if (!selected || roundRef.current.status !== 'playing' || transitionLockRef.current) return
     transitionLockRef.current = true
+    const question = currentRef.current
     const transition = submitGuessTrack(
       roundRef.current,
       selected,
-      currentRef.current?.validKeys ?? []
+      question?.validKeys ?? [],
+      question ? guessTrackNearMiss(selected, question.entries) : false
     )
     if (transition.outcome === 'repeated') {
       setFeedback('That recording has already been tried. Choose another track.')
@@ -470,10 +539,17 @@ export default function GuessTrackPage() {
           eras: eras.length ? eras : null
         }
         const songs: QuizSong[] = await api.quiz.songPool(filter)
-        entries = songs.map(guessTrackThemeEntry).filter((entry) => entry != null)
+        entries = songs.map((song) => guessTrackThemeEntry(song)).filter((entry) => entry != null)
       } else {
         const tracks = await loadMusicTracks()
-        entries = tracks.map(guessTrackMusicEntry).filter((entry) => entry != null)
+        const albumList = await qc.fetchQuery({
+          queryKey: qk.music.albums(''),
+          queryFn: () => api.music.albums()
+        })
+        const years = new Map(albumList.map((album): [number, number | null] => [album.id, album.year]))
+        entries = tracks
+          .map((track) => guessTrackMusicEntry(track, years.get(track.albumId) ?? null))
+          .filter((entry) => entry != null)
       }
       const identities = guessTrackIdentityCount(entries)
       if (identities < GUESS_TRACK_ROUND_LENGTH) {
@@ -488,7 +564,8 @@ export default function GuessTrackPage() {
       sparesRef.current = dealt.slice(GUESS_TRACK_ROUND_LENGTH)
       answerPoolRef.current = entries
       resultsRef.current = []
-      srcCacheRef.current.clear()
+      loadCacheRef.current.clear()
+      loadedRef.current.clear()
       seedRef.current = seed
       loggedRef.current = false
       transitionLockRef.current = false
@@ -689,16 +766,38 @@ export default function GuessTrackPage() {
           {results.map((result, index) => (
             <div key={`${result.recordingKey}-${index}`} className="flex items-center gap-4 py-3 text-sm">
               <span className="w-6 text-gray-500 tabular-nums">{index + 1}</span>
+              <CoverImage
+                path={result.coverPath}
+                alt=""
+                thumbWidth={96}
+                fallback={source === 'music' ? 'music' : 'initial'}
+                className={`${source === 'music' ? 'aspect-square' : 'aspect-[2/3]'} w-10 shrink-0 rounded`}
+              />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium text-white">{result.title}</p>
-                <p className="truncate text-gray-500">{result.performer}</p>
+                <p className="truncate text-gray-500">
+                  {result.performer}
+                  {result.context ? ` · ${result.context}` : ''}
+                </p>
               </div>
-              <span className="text-gray-400">{result.solved ? `${result.points} pts` : 'Missed'}</span>
+              <span className={result.solved ? 'text-gray-300' : 'text-gray-500'}>
+                {result.solved ? `${result.points} pts · ${result.attempts} ${result.attempts === 1 ? 'try' : 'tries'}` : 'Missed'}
+              </span>
             </div>
           ))}
         </div>
         <div className="mt-6 flex gap-2">
-          <button className="btn-primary flex-1" onClick={() => setPhase('setup')}>Play again</button>
+          <button
+            className="btn-primary flex-1"
+            onClick={() => {
+              // Back on setup first, so a source that no longer deals shows its error there.
+              setPhase('setup')
+              void startGame()
+            }}
+          >
+            Play again
+          </button>
+          <button className="btn-ghost flex-1" onClick={() => setPhase('setup')}>Change settings</button>
           <Link to="/quiz" className="btn-ghost flex-1 text-center">Quiz Home</Link>
         </div>
       </StudySessionFrame>
@@ -707,6 +806,8 @@ export default function GuessTrackPage() {
 
   const revealed = round.status !== 'playing'
   const entry = activeEntryRef.current
+  const hints = entry ? guessTrackHints(entry, round) : []
+  const nearLabel = source === 'theme' ? 'right anime' : 'right artist'
   return (
     <StudySessionFrame
       title="Guess the Track"
@@ -723,7 +824,7 @@ export default function GuessTrackPage() {
                   <li key={seconds} className="flex items-start justify-between gap-3">
                     <span>{seconds}s clip</span>
                     <span className={attempt ? 'text-gray-300' : 'text-gray-600'}>
-                      {attempt?.label ??
+                      {(attempt && `${attempt.label}${attempt.near ? ` (${nearLabel})` : ''}`) ??
                         (round.status === 'playing' && index === round.attempts.length
                           ? 'Ready'
                           : 'Locked')}
@@ -735,7 +836,8 @@ export default function GuessTrackPage() {
           </SessionEvidence>
           <SessionEvidence title="Scoring">
             This track is currently worth {round.status === 'playing' ? 6 - round.attempts.length : round.points} points.
-            Replaying the unlocked clip is free.
+            Replaying the unlocked clip is free. The year appears after three misses and the
+            artist after five.
           </SessionEvidence>
         </>
       }
@@ -786,27 +888,11 @@ export default function GuessTrackPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6" aria-label="Clip duration stages">
-            {GUESS_TRACK_CLIP_SECONDS.map((seconds, index) => {
-              const active = index === round.attempts.length
-              const unlocked = index <= round.attempts.length
-              return (
-                <div
-                  key={seconds}
-                  className={`rounded-md border px-2 py-3 text-center transition-colors ${
-                    active
-                      ? 'border-accent bg-accent/10 text-accent'
-                      : unlocked
-                        ? 'border-base-500 bg-base-700 text-gray-300'
-                        : 'border-base-700 bg-base-800 text-gray-600'
-                  }`}
-                >
-                  <span className="block text-lg font-semibold tabular-nums">{seconds}</span>
-                  <span className="text-[10px] uppercase tracking-wide">seconds</span>
-                </div>
-              )
-            })}
-          </div>
+          <ClipTimeline
+            trackId={`quiz-guess-track-${entry.key}`}
+            clipSeconds={guessTrackClipSeconds(round)}
+            startOffset={loadedRef.current.get(entry.key)?.offset ?? 0}
+          />
 
           <button
             className="mt-6 flex w-full items-center justify-center gap-3 rounded-lg border border-accent bg-base-800 px-6 py-7 text-lg font-semibold text-white transition-colors hover:bg-base-700 disabled:opacity-50"
@@ -817,12 +903,12 @@ export default function GuessTrackPage() {
             Replay {guessTrackClipSeconds(round)} second clip
           </button>
 
-          {guessTrackHintVisible(round) && (
-            <div className="mt-5 rounded-md border border-base-600 bg-base-800/60 p-4 text-sm text-gray-300">
-              {source === 'theme'
-                ? `Performer: ${entry.performer}`
-                : `Primary artist starts with “${guessTrackArtistInitial(entry.performer)}”.`}
-            </div>
+          {hints.length > 0 && (
+            <ul className="mt-5 space-y-1 rounded-md border border-base-600 bg-base-800/60 p-4 text-sm text-gray-300">
+              {hints.map((hint) => (
+                <li key={hint}>{hint}</li>
+              ))}
+            </ul>
           )}
 
           <div className="relative mt-6">
@@ -838,11 +924,12 @@ export default function GuessTrackPage() {
               autoComplete="off"
               value={query}
               placeholder={source === 'theme' ? 'Song or anime title' : 'Song or artist'}
-              onFocus={() => setSuggestionsOpen(true)}
+              onFocus={() => setSuggestionsOpen(query.trim() !== '' && !selected)}
+              onBlur={() => setSuggestionsOpen(false)}
               onChange={(event) => {
                 setQuery(event.target.value)
                 setSelected(null)
-                setSuggestionsOpen(true)
+                setSuggestionsOpen(event.target.value.trim() !== '')
                 setActiveSuggestion(0)
               }}
               onKeyDown={onAnswerKeyDown}

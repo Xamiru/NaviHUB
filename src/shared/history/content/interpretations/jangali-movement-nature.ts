@@ -129,7 +129,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q6',
-          text: 'were not territorially separatist, but aimed to establish stable yet accountable political arrangements that would redress local grievances about an unfair distribution of power between central govern­ment and local authorities throughout Iran.',
+          text: 'were not territorially separatist, but aimed to establish stable yet accountable political arrangements that would redress local grievances about an unfair distribution of power between central government and local authorities throughout Iran.',
           lang: 'en',
           cite: {
             source: 'eo1418-atabaki-persia-iran',

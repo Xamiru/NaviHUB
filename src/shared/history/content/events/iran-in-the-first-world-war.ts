@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'iran-in-the-first-world-war',
   names: [
-    { text: 'Iran in the First World War', lang: 'en', role: 'primary' },
-    { text: 'ایران در جنگ جهانی اول', lang: 'fa', role: 'native' }
+    { text: 'Iran in the First World War', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'occupation',
@@ -347,7 +346,7 @@ export default defineEvent({
         },
         {
           id: 'q7',
-          text: 'One might well ask what sense there could be in Iran’s announc­ement of its neutr­ality when Russian troops were already occupying a sizeable part of Iranian northern territory.',
+          text: 'One might well ask what sense there could be in Iran’s announcement of its neutrality when Russian troops were already occupying a sizeable part of Iranian northern territory.',
           lang: 'en',
           cite: {
             source: 'eo1418-atabaki-persia-iran',

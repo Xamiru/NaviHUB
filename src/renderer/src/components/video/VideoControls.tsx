@@ -2,9 +2,10 @@ import { useId, useState } from 'react'
 import { formatTime, type SubCue } from '@shared/subtitles'
 import type { VideoSubtitleTrack } from '@shared/types'
 import { usePopover } from '../../lib/hooks'
-import { PLAYBACK_RATES } from '../../lib/videoPrefs'
+import { PLAYBACK_RATES, type SubtitleLook } from '../../lib/videoPrefs'
 import { Field } from '../Field'
 import { NextIcon, PauseIcon, PlayIcon, PrevIcon } from '../PlayerIcons'
+import SubtitleStylePanel from './SubtitleStylePanel'
 import SubtitleTrackMenu from './SubtitleTrackMenu'
 import VideoTimeline from './VideoTimeline'
 
@@ -82,6 +83,7 @@ export interface VideoControlsProps {
   hasPrev: boolean
   hasNext: boolean
   visible: boolean
+  hoverHandlers?: { onMouseEnter: () => void; onMouseLeave: () => void }
   onToggle: () => void
   onSeek: (t: number) => void
   onPrevEpisode: () => void
@@ -101,27 +103,40 @@ export interface VideoControlsProps {
   onExternal: () => void
   onHelp: () => void
   onMenuOpenChange: (open: boolean) => void
+  look: SubtitleLook
+  styledSubs: boolean
+  styledStatus: string | null
+  onLook: (patch: Partial<SubtitleLook>) => void
+  onStyledSubs: (on: boolean) => void
 }
 
 export default function VideoControls(props: VideoControlsProps): JSX.Element {
-  const [menuOpen, setMenuOpen] = useState(false)
+  // One anchored panel at a time: the subtitle tracks or the subtitle style.
+  const [openPanel, setOpenPanel] = useState<'tracks' | 'style' | null>(null)
   const menuId = useId()
-  const setMenu = (open: boolean): void => {
-    setMenuOpen(open)
-    props.onMenuOpenChange(open)
+  const styleId = useId()
+  const setPanel = (panel: 'tracks' | 'style' | null): void => {
+    setOpenPanel(panel)
+    props.onMenuOpenChange(panel != null)
   }
-  const { panelRef, triggerRef } = usePopover(menuOpen, () => setMenu(false), {
+  const menuOpen = openPanel === 'tracks'
+  const styleOpen = openPanel === 'style'
+  const setMenu = (open: boolean): void => setPanel(open ? 'tracks' : null)
+  const { panelRef, triggerRef } = usePopover(menuOpen, () => setPanel(null), {
     initialFocus: 'first'
   })
+  const style = usePopover(styleOpen, () => setPanel(null), { initialFocus: 'first' })
   const hasSubs = props.tracks.length > 0
 
   return (
     <div
-      className={`media-contrast absolute inset-x-0 bottom-0 z-20 bg-base-900/90 px-4 py-2 backdrop-blur transition-opacity duration-300 focus-within:opacity-100 ${
-        props.visible ? 'opacity-100' : 'opacity-0'
+      {...props.hoverHandlers}
+      className={`media-contrast absolute inset-x-0 bottom-0 z-30 bg-base-900/90 px-4 py-2 backdrop-blur transition-opacity duration-300 has-[:focus-visible]:pointer-events-auto has-[:focus-visible]:opacity-100 ${
+        props.visible ? 'opacity-100' : 'pointer-events-none opacity-0'
       }`}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         {(props.hasPrev || props.hasNext) && (
@@ -245,6 +260,28 @@ export default function VideoControls(props: VideoControlsProps): JSX.Element {
               onPick={props.onPickTrack}
               onDialogueOnly={props.onDialogueOnly}
               onSubOffset={props.onSubOffset}
+            />
+          )}
+          <button
+            ref={style.triggerRef}
+            type="button"
+            className="rounded px-2 py-1 text-xs text-gray-400 hover:text-gray-200"
+            title="Subtitle size, font, colour and position"
+            aria-expanded={styleOpen}
+            aria-controls={styleOpen ? styleId : undefined}
+            onClick={() => setPanel(styleOpen ? null : 'style')}
+          >
+            Style
+          </button>
+          {styleOpen && (
+            <SubtitleStylePanel
+              id={styleId}
+              panelRef={style.panelRef}
+              look={props.look}
+              styledSubs={props.styledSubs}
+              styledStatus={props.styledStatus}
+              onChange={props.onLook}
+              onStyledSubs={props.onStyledSubs}
             />
           )}
           {hasSubs && (

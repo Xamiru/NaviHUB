@@ -4,7 +4,6 @@ export default definePolity({
   id: 'emirate-of-bukhara',
   names: [
     { text: 'Emirate of Bukhara', lang: 'en', role: 'primary' },
-    { text: 'امارت بخارا', lang: 'fa', role: 'native' },
     {
       text: 'Khanate of Bukhara',
       lang: 'en',

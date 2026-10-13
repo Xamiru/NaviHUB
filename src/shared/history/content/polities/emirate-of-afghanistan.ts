@@ -3,8 +3,7 @@ import { definePolity } from '../../schema'
 export default definePolity({
   id: 'emirate-of-afghanistan',
   names: [
-    { text: 'Emirate of Afghanistan', lang: 'en', role: 'primary' },
-    { text: 'امارت افغانستان', lang: 'fa', role: 'native' }
+    { text: 'Emirate of Afghanistan', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   polityType: 'emirate',

@@ -3,8 +3,7 @@ import { definePeriod } from '../../schema'
 export default definePeriod({
   id: 'premiership-of-mohammad-mosaddegh',
   names: [
-    { text: 'Premiership of Mohammad Mosaddegh', lang: 'en', role: 'primary' },
-    { text: 'دولت محمد مصدق', lang: 'fa', role: 'native' }
+    { text: 'Premiership of Mohammad Mosaddegh', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-07',
   periodType: 'regime',

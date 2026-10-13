@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'six-day-war',
   names: [
     { text: 'Six-Day War', lang: 'en', role: 'primary' },
-    { text: 'מלחמת ששת הימים', lang: 'he', role: 'native' },
     {
       text: 'June 1967 War',
       lang: 'en',

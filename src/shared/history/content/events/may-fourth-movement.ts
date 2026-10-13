@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'may-fourth-movement',
   names: [
     { text: 'May Fourth Movement', lang: 'en', role: 'primary' },
-    { text: '五四運動', lang: 'zh', role: 'native', translit: 'Wǔsì Yùndòng' },
     {
       text: 'New Culture Movement',
       lang: 'en',

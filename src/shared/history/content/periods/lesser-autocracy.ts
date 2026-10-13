@@ -3,8 +3,7 @@ import { definePeriod } from '../../schema'
 export default definePeriod({
   id: 'lesser-autocracy',
   names: [
-    { text: 'Lesser Autocracy', lang: 'en', role: 'primary' },
-    { text: 'استبداد صغیر', lang: 'fa', role: 'native', translit: 'estebdād-e ṣaḡīr' }
+    { text: 'Lesser Autocracy', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-07',
   periodType: 'regime',

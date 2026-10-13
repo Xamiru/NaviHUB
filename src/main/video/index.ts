@@ -22,7 +22,14 @@ export {
   takeProgressUndo
 } from './scan'
 export { detectTools } from './ffmpeg'
-export { clipAudio, openExternal, scopeOfFile, source, subtitleTrack } from './source'
+export {
+  clipAudio,
+  openExternal,
+  scopeOfFile,
+  source,
+  subtitleFonts,
+  subtitleTrack
+} from './source'
 
 // Wires the real prober into the scanner. ffprobe metadata feeds episode
 // details, the player's decode gate and offline subtitle extraction; playback

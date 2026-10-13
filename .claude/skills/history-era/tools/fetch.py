@@ -117,13 +117,22 @@ def decode(raw):
             pass
     return raw.decode('cp1252', errors='replace')
 
+# Invisible formatting characters (soft hyphen, word joiner, zero-width space) never reach a quote;
+# stripping them must never renumber a page's paragraphs.
+INVISIBLE = re.compile('[\u00ad\u2060\u200b]')
+
+
 def paragraphs(url):
     raw = get(url)
     text = decode(raw)
     if url.endswith('.txt'):
-        return [re.sub(r'\s+', ' ', b).strip() for b in re.split(r'\n\s*\n', text) if b.strip()]
-    p = P(SKIP - {'form'} if url in KEEP_FORMS else None); p.feed(text); p.flush()
-    return p.parts
+        parts = [re.sub(r'\s+', ' ', b).strip() for b in re.split(r'\n\s*\n', text) if b.strip()]
+    else:
+        p = P(SKIP - {'form'} if url in KEEP_FORMS else None); p.feed(text); p.flush()
+        parts = p.parts
+    # Cleaned per paragraph, never dropped: a paragraph that held only an invisible
+    # character keeps its place, so paragraph numbers stay what committed locators say.
+    return [INVISIBLE.sub('', x) for x in parts]
 
 def tagged(url):
     raw = decode(get(url))

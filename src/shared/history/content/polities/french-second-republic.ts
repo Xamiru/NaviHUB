@@ -3,8 +3,7 @@ import { definePolity } from '../../schema'
 export default definePolity({
   id: 'french-second-republic',
   names: [
-    { text: 'French Second Republic', lang: 'en', role: 'primary' },
-    { text: 'Deuxième République', lang: 'fr', role: 'native' }
+    { text: 'French Second Republic', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   polityType: 'republic',

@@ -70,7 +70,7 @@ function Decades({ overview }: { overview: HistoryOverview }) {
   const { data, dataUpdatedAt } = useQuery({ queryKey: qk.history.decade(decade), queryFn: () => api.history.decade(decade) })
   useHistoryImageRefresh(dataUpdatedAt)
   return (
-    <Section title="Decades" subtitle="A front page for each decade">
+    <Section title="Front pages" subtitle="A page for each decade, and for each century before 1700">
       <nav className="mb-5 flex flex-wrap items-center gap-2" aria-label="Decades">
         {overview.decades.map((d) => (
           <button
@@ -80,7 +80,7 @@ function Decades({ overview }: { overview: HistoryOverview }) {
             aria-pressed={d.start === decade}
             onClick={() => setDecade(d.start)}
           >
-            {d.start}s <span className={d.start === decade ? 'opacity-70' : 'text-gray-500'}>{d.read > 0 ? `${d.read}/${d.events}` : d.events}</span>
+            {d.label} <span className={d.start === decade ? 'opacity-70' : 'text-gray-500'}>{d.read > 0 ? `${d.read}/${d.events}` : d.events}</span>
           </button>
         ))}
       </nav>
@@ -148,7 +148,7 @@ export default function HistoryHomePage() {
         {empty || !data.range ? (
           <EmptyState
             title="Nothing researched yet"
-            body="History fills in one research session at a time, decade by decade from the 1900s. Each entry is built only from quoted, cited sources."
+            body="History fills in one research session at a time, decade by decade and era by era. Each entry is built only from quoted, cited sources."
           />
         ) : (
           <>

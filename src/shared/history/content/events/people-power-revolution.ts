@@ -14,8 +14,7 @@ export default defineEvent({
           loc: { section: 'From Aquino\'s Assassination to People\'s Power', para: '7' }
         }
       ]
-    },
-    { text: 'Lakas ng Bayan', lang: 'tl', role: 'native' }
+    }
   ],
   researched: '2026-10-08',
   type: 'revolution',

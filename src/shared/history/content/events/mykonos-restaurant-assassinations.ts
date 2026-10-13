@@ -4,8 +4,6 @@ export default defineEvent({
   id: 'mykonos-restaurant-assassinations',
   names: [
     { text: 'Mykonos restaurant assassinations', lang: 'en', role: 'primary' },
-    { text: 'ترور رستوران میکونوس', lang: 'fa', role: 'native' },
-    { text: 'Mykonos-Attentat', lang: 'de', role: 'alternative' },
     { text: 'Mykonos trial', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-10',

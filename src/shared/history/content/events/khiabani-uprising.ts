@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'khiabani-uprising',
   names: [
     { text: 'Khiabani uprising', lang: 'en', role: 'primary' },
-    { text: 'قیام شیخ محمد خیابانی', lang: 'fa', role: 'native' },
     {
       text: 'Ᾱzādisetān autonomous government',
       lang: 'fa-Latn',

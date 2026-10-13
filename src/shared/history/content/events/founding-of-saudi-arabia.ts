@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'founding-of-saudi-arabia',
   names: [
     { text: 'Founding of the Kingdom of Saudi Arabia', lang: 'en', role: 'primary' },
-    { text: 'المملكة العربية السعودية', lang: 'ar', role: 'native' },
     {
       text: 'Kingdom of Hejaz and Nejd and its Dependencies',
       lang: 'en',

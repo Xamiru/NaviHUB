@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'meiji-restoration',
   names: [
-    { text: 'Meiji Restoration', lang: 'en', role: 'primary' },
-    { text: '明治維新', lang: 'ja', role: 'native' }
+    { text: 'Meiji Restoration', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'revolution',

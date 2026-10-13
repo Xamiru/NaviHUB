@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'coronation-of-mohammad-reza-shah',
   names: [
-    { text: 'Coronation of Mohammad Reza Shah', lang: 'en', role: 'primary' },
-    { text: 'تاجگذاری محمدرضا شاه', lang: 'fa', role: 'native' }
+    { text: 'Coronation of Mohammad Reza Shah', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'other',

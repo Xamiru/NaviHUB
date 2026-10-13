@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'orange-revolution',
   names: [
-    { text: 'Orange Revolution', lang: 'en', role: 'primary' },
-    { text: 'Помаранчева революція', lang: 'uk', role: 'native' }
+    { text: 'Orange Revolution', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-12',
   type: 'revolution',

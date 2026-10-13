@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'gallipoli-campaign',
   names: [
     { text: 'Gallipoli campaign', lang: 'en', role: 'primary' },
-    { text: 'Çanakkale Savaşı', lang: 'tr', role: 'native' },
     { text: 'Dardanelles campaign', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-08',

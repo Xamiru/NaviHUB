@@ -3,8 +3,7 @@ import { definePolity } from '../../schema'
 export default definePolity({
   id: 'french-fourth-republic',
   names: [
-    { text: 'French Fourth Republic', lang: 'en', role: 'primary' },
-    { text: 'Quatrième République', lang: 'fr', role: 'native' }
+    { text: 'French Fourth Republic', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   polityType: 'republic',

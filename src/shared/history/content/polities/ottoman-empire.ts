@@ -5,12 +5,6 @@ export default definePolity({
   names: [
     { text: 'Ottoman Empire', lang: 'en', role: 'primary' },
     {
-      text: 'دولت عليه عثمانيه',
-      lang: 'ota',
-      role: 'native',
-      translit: 'Devlet-i ʿAliyye-yi ʿOsmâniyye'
-    },
-    {
       text: 'Turkish Empire',
       lang: 'en',
       role: 'alternative',

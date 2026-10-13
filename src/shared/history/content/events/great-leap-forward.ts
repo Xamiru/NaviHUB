@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'great-leap-forward',
   names: [
-    { text: 'Great Leap Forward', lang: 'en', role: 'primary' },
-    { text: '大跃进', lang: 'zh', role: 'native' }
+    { text: 'Great Leap Forward', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'economic',

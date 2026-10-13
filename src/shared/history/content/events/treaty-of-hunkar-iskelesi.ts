@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'treaty-of-hunkar-iskelesi',
   names: [
     { text: 'Treaty of Hünkâr İskelesi', lang: 'en', role: 'primary' },
-    { text: 'Hünkâr İskelesi Antlaşması', lang: 'tr', role: 'native' },
     {
       text: 'Treaty of Unkiar-Skelessi',
       lang: 'en',

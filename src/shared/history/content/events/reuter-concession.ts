@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'reuter-concession',
   names: [
-    { text: 'Reuter concession', lang: 'en', role: 'primary' },
-    { text: 'امتیاز رویتر', lang: 'fa', role: 'native' }
+    { text: 'Reuter concession', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'economic',

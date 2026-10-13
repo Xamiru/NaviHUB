@@ -26,7 +26,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q2',
-          text: 'According to one report, in 1233/1817-18 Jehādīya (Fighters against the infidels) by Mīrzā ʿĪsā Farāhānī Qāʾemmaqām was printed by Moḥammad-ʿAlī b. Ḥājj Moḥammad-Ḥosayn Āštīānī at Tabrīz; it was reprinted the next year by Zayn-al­-ʿĀbedīn (Tarbīat, apud Maḥbūbī, p. 212).',
+          text: 'According to one report, in 1233/1817-18 Jehādīya (Fighters against the infidels) by Mīrzā ʿĪsā Farāhānī Qāʾemmaqām was printed by Moḥammad-ʿAlī b. Ḥājj Moḥammad-Ḥosayn Āštīānī at Tabrīz; it was reprinted the next year by Zayn-al-ʿĀbedīn (Tarbīat, apud Maḥbūbī, p. 212).',
           lang: 'en',
           cite: { source: 'iranica-floor-cap', loc: { section: 'ČĀP', para: '9' } },
           provenance: {

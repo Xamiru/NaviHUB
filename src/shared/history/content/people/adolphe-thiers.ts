@@ -149,7 +149,7 @@ export default definePerson({
         },
         {
           id: 'q9',
-          text: 'Thiers composed a ministry, and announced that the first duty of the government ​before examining constitutional questions, would be to reorganize the forces of the nation in order to provide for the enormous war indemnity which had to be paid to Germany before the territory could be liberated from the presence of the invader.',
+          text: 'Thiers composed a ministry, and announced that the first duty of the government before examining constitutional questions, would be to reorganize the forces of the nation in order to provide for the enormous war indemnity which had to be paid to Germany before the territory could be liberated from the presence of the invader.',
           lang: 'en',
           cite: {
             source: 'britannica-1911-france-history',

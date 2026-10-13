@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'soviet-afghan-war',
   names: [
-    { text: 'Soviet–Afghan War', lang: 'en', role: 'primary' },
-    { text: 'Война в Афганистане', lang: 'ru', role: 'native' },
-    { text: 'جنگ شوروی در افغانستان', lang: 'fa', role: 'native' }
+    { text: 'Soviet–Afghan War', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-10',
   type: 'war',

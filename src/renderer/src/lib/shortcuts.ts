@@ -54,6 +54,7 @@ export const VIDEO_PLAYER_SHORTCUTS: ShortcutRow[] = [
   { keys: ['T', 'M', 'C'], label: 'Transcript, mining panel, capture' },
   { keys: ['N', 'P'], label: 'Next / previous file' },
   { keys: ['F', 'O'], label: 'Fullscreen, open externally' },
+  { keys: ['Double-click'], label: 'Fullscreen (a single click does nothing)' },
   { keys: ['0-9'], label: 'Jump to 0-90 percent' },
   { keys: ['Esc'], label: 'Close panels / leave the player' }
 ]

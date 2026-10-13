@@ -14,11 +14,6 @@ export default defineEvent({
           loc: { section: 'U.S.-Soviet Relations, 1981–1991', para: '7' }
         }
       ]
-    },
-    {
-      text: 'Договор о ликвидации ракет средней и меньшей дальности',
-      lang: 'ru',
-      role: 'native'
     }
   ],
   researched: '2026-10-08',

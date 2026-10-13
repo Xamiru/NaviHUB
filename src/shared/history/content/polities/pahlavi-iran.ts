@@ -5,12 +5,6 @@ export default definePolity({
   names: [
     { text: 'Pahlavi Iran', lang: 'en', role: 'primary' },
     {
-      text: 'کشور شاهنشاهی ایران',
-      lang: 'fa',
-      role: 'native',
-      translit: 'Kešvar-e Šāhanšāhi-ye Irān'
-    },
-    {
       text: 'Persia',
       lang: 'en',
       role: 'former',

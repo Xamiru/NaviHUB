@@ -9,12 +9,6 @@ export default defineEvent({
       role: 'primary'
     },
     {
-      text: 'قانون اساسی جمهوری اسلامی ایران',
-      lang: 'fa',
-      role: 'native',
-      translit: 'Qānun-e asāsi-ye Jomhuri-ye Eslāmi-ye Irān'
-    },
-    {
       text: 'Constitution of 1358 Š.',
       lang: 'en',
       role: 'alternative',

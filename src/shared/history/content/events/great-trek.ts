@@ -16,8 +16,7 @@ export default defineEvent({
           loc: { section: 'The Great Trek', para: '2' }
         }
       ]
-    },
-    { text: 'Groot Trek', lang: 'af', role: 'native' }
+    }
   ],
   researched: '2026-10-08',
   type: 'migration',

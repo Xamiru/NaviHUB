@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'soviet-persian-treaty-of-1921',
   names: [
     { text: 'Soviet–Persian Treaty of 1921', lang: 'en', role: 'primary' },
-    { text: 'عهدنامه مودت ایران و شوروی ۱۹۲۱', lang: 'fa', role: 'native' },
     {
       text: 'Irano-Soviet Friendship Treaty of 1921',
       lang: 'en',

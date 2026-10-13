@@ -24,6 +24,8 @@ const OCR = [
   /β\d/,
   /\b(?:toobtain|hisbeing|asone|onethird|anti-Alliedactivities)\b/,
   /\[\[Page /,
+  // Invisible characters copied from the page: soft hyphen, word joiner, zero-width space.
+  /[\u00ad\u2060\u200b]/,
   /\b[a-z]+ C (?:of|Kurdish)\b/,
   // Apparatus copied with the sentence: figure and table references, numbered recitals.
   /\((?:FIGURE|Figure|TABLE|Table) \d+\)|\bsee (?:Table|Figure) \d+\b/,
@@ -39,6 +41,7 @@ const MIDSTORY = /^(A (few|couple of) (days|weeks|months|years) later|(Some|Two|
  */
 const STATE_OUTLETS = /(^|\.)(khamenei\.ir|imam-khomeini\.ir|leader\.ir|president\.ir|irna\.ir|presstv\.ir|tasnimnews\.com|farsnews\.ir|mehrnews\.com)$/
 const OPENER_LANGS = new Set(['en', 'fa'])
+const TITLED_KINDS = new Set(['event', 'period', 'polity', 'theme'])
 const RESULT_SECTIONS = new Set(['consequences', 'aftermath', 'legacy'])
 
 function norm(s: string): string {
@@ -68,6 +71,21 @@ function opener(sections: Section[] | undefined): Quote | undefined {
 }
 
 const hasLang = (names: NameVariant[], lang: string): boolean => names.some((n) => n.lang === lang)
+
+/** Every dated claim on an entity, with its path. */
+function dateClaims(e: HistoryEntity): Array<[string, { alts: Array<{ value: unknown }> }]> {
+  const out: Array<[string, { alts: Array<{ value: unknown }> }]> = []
+  const o = e as unknown as Record<string, unknown>
+  for (const k of ['start', 'end', 'born', 'died']) {
+    const c = o[k] as { alts?: Array<{ value: unknown }> } | undefined
+    if (c?.alts) out.push([k, c as { alts: Array<{ value: unknown }> }])
+  }
+  const course = (o.course as Array<{ date?: { alts: Array<{ value: unknown }> } }> | undefined) ?? []
+  course.forEach((c, i) => {
+    if (c.date) out.push([`course[${i}]`, c.date])
+  })
+  return out
+}
 
 export function lintCatalog(catalog: HistoryCatalog, entities: HistoryEntity[]): Issue[] {
   const issues: Issue[] = []
@@ -144,6 +162,14 @@ export function lintCatalog(catalog: HistoryCatalog, entities: HistoryEntity[]):
     const sections = 'sections' in e ? (e.sections as Section[]) : undefined
     const first = opener(sections)
 
+    // A title in another language is a source's title, never our translation (2026-10-13).
+    // People's and places' own names in their own script may stand uncited.
+    if (TITLED_KINDS.has(e.kind)) {
+      e.names.forEach((n, i) => {
+        if (n.lang !== 'en' && !n.cites?.length) add('uncited-title', ref, `the ${n.lang} title "${n.text}" cites no source`, `names[${i}]`)
+      })
+    }
+
     if (e.kind !== 'theme' && e.kind !== 'period') {
       if (!first) add('no-overview', ref, 'the page has no overview')
       else {
@@ -164,6 +190,14 @@ export function lintCatalog(catalog: HistoryCatalog, entities: HistoryEntity[]):
 
     const own = quotesOf(e)
     quoteChecks(ref, own)
+
+    // A day and the year it falls in are one value at two precisions, not a dispute.
+    for (const [path, claim] of dateClaims(e)) {
+      const ds = claim.alts.map((a) => (a.value as { d?: string }).d).filter((d): d is string => typeof d === 'string')
+      if (ds.some((a) => ds.some((b) => a !== b && b.startsWith(a + '-')))) {
+        add('false-dispute', ref, `${path} pairs a date with a coarser form of itself`, path)
+      }
+    }
 
     // The same words twice on one page (the entity plus the interpretations about it).
     const page = [...own, ...(aboutPage.get(ref) ?? [])]
@@ -190,7 +224,6 @@ export function lintCatalog(catalog: HistoryCatalog, entities: HistoryEntity[]):
         const match = !s.polity ? polityByName.get(norm(s.name)) : undefined
         if (match) add('state-unlinked', ref, `side "${s.name}" is a state with a page (${match})`, `sides[${i}]`)
       })
-      if (e.regions.includes('iran') && !hasLang(e.names, 'fa')) add('missing-native-name', ref, 'an Iran event without a Persian name')
       if (e.prominence <= 2) {
         if (!e.course?.length) add('thin-lead', ref, 'a leading event without a dated course of events')
         if (!sections?.some((s) => RESULT_SECTIONS.has(s.kind))) add('thin-lead', ref, 'a leading event without consequences', 'sections')

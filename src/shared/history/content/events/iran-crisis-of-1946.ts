@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'iran-crisis-of-1946',
   names: [
     { text: 'Iran crisis of 1946', lang: 'en', role: 'primary' },
-    { text: 'بحران آذربایجان', lang: 'fa', role: 'native' },
     {
       text: 'Azarbaijan Crisis',
       lang: 'en',

@@ -3,13 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'return-of-ruhollah-khomeini',
   names: [
-    { text: 'Return of Ruhollah Khomeini', lang: 'en', role: 'primary' },
-    {
-      text: 'بازگشت امام خمینی به ایران',
-      lang: 'fa',
-      role: 'native',
-      translit: 'Bāzgašt-e Emām Ḵomeyni be Irān'
-    }
+    { text: 'Return of Ruhollah Khomeini', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-09',
   type: 'other',

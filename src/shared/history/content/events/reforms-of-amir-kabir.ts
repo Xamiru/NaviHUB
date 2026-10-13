@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'reforms-of-amir-kabir',
   names: [
-    { text: 'Reforms of Amir Kabir', lang: 'en', role: 'primary' },
-    { text: 'اصلاحات امیرکبیر', lang: 'fa', role: 'native' }
+    { text: 'Reforms of Amir Kabir', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'reform',

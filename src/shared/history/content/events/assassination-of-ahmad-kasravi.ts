@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'assassination-of-ahmad-kasravi',
   names: [
-    { text: 'Assassination of Ahmad Kasravi', lang: 'en', role: 'primary' },
-    { text: 'ترور احمد کسروی', lang: 'fa', role: 'native' }
+    { text: 'Assassination of Ahmad Kasravi', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'assassination',

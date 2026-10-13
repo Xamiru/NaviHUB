@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'balfour-declaration',
   names: [
-    { text: 'Balfour Declaration', lang: 'en', role: 'primary' },
-    { text: 'הצהרת בלפור', lang: 'he', role: 'alternative' },
-    { text: 'وعد بلفور', lang: 'ar', role: 'alternative' }
+    { text: 'Balfour Declaration', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'other',

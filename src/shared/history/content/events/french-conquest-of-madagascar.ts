@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'french-conquest-of-madagascar',
   names: [
-    { text: 'French conquest of Madagascar (1895)', lang: 'en', role: 'primary' },
-    { text: 'Expédition de Madagascar', lang: 'fr', role: 'alternative' }
+    { text: 'French conquest of Madagascar (1895)', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'invasion',

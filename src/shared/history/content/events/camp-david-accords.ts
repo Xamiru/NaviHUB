@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'camp-david-accords',
   names: [
-    { text: 'Camp David Accords', lang: 'en', role: 'primary' },
-    { text: 'اتفاقيات كامب ديفيد', lang: 'ar', role: 'alternative' },
-    { text: 'הסכמי קמפ דייוויד', lang: 'he', role: 'alternative' }
+    { text: 'Camp David Accords', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-09',
   type: 'treaty',

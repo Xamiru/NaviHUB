@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'arab-revolt',
   names: [
     { text: 'Arab Revolt', lang: 'en', role: 'primary' },
-    { text: 'الثورة العربية الكبرى', lang: 'ar', role: 'native' },
     {
       text: 'Great Arab Revolt',
       lang: 'en',

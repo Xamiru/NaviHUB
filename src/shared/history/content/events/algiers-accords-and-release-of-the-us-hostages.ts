@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'algiers-accords-and-release-of-the-us-hostages',
   names: [
     { text: 'Algiers Accords and release of the US hostages', lang: 'en', role: 'primary' },
-    { text: 'بیانیه‌های الجزایر و آزادی گروگان‌های آمریکایی', lang: 'fa', role: 'native' },
     { text: 'Algiers Declarations', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-08',

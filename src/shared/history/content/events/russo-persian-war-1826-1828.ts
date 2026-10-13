@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'russo-persian-war-1826-1828',
   names: [
     { text: 'Russo-Persian War of 1826–1828', lang: 'en', role: 'primary' },
-    { text: 'جنگ دوم ایران و روس', lang: 'fa', role: 'native' },
     {
       text: 'Second Russo-Persian War',
       lang: 'en',

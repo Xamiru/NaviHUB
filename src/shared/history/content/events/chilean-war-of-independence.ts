@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'chilean-war-of-independence',
   names: [
-    { text: 'Chilean War of Independence', lang: 'en', role: 'primary' },
-    { text: 'Guerra de la Independencia de Chile', lang: 'es', role: 'native' }
+    { text: 'Chilean War of Independence', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'war',

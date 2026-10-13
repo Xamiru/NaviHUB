@@ -5,12 +5,6 @@ export default defineEvent({
   names: [
     { text: 'Kurdish uprising in Iran (1979)', lang: 'en', role: 'primary' },
     {
-      text: 'قیام کردستان ۱۳۵۸',
-      lang: 'fa',
-      role: 'native',
-      translit: 'Qiyām-e Kordestān-e 1358'
-    },
-    {
       text: 'Three-Month War',
       lang: 'en',
       role: 'alternative',

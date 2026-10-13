@@ -4,7 +4,6 @@ export default definePolity({
   id: 'pakistan',
   names: [
     { text: 'Pakistan', lang: 'en', role: 'primary' },
-    { text: 'پاکستان', lang: 'ur', role: 'native' },
     {
       text: 'Dominion of Pakistan',
       lang: 'en',

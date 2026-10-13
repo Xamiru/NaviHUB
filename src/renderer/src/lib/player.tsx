@@ -85,6 +85,9 @@ interface PlayerControlsValue {
   moveInQueue: (from: number, to: number) => void
   toggle: () => void
   seek: (time: number) => void
+  // Reads the live audio position. Timed clips poll this instead of the
+  // 4 Hz timeupdate state, so a cutoff lands within a frame of its mark.
+  getCurrentTime: () => number
   setVolume: (v: number) => void
   stop: () => void
   // null releases the session back to the music player.
@@ -363,6 +366,8 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
     if (a && Number.isFinite(time)) a.currentTime = time
   }, [])
 
+  const getCurrentTime = useCallback(() => audioRef.current?.currentTime ?? 0, [])
+
   const setVolume = useCallback((v: number) => {
     setVolumeState(v)
     savePlayerPrefs({ volume: v })
@@ -469,6 +474,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
       moveInQueue,
       toggle,
       seek,
+      getCurrentTime,
       setVolume,
       stop,
       claimMediaSession
@@ -495,6 +501,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
       moveInQueue,
       toggle,
       seek,
+      getCurrentTime,
       setVolume,
       stop,
       claimMediaSession

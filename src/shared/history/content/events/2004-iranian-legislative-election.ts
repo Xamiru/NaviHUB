@@ -4,7 +4,6 @@ export default defineEvent({
   id: '2004-iranian-legislative-election',
   names: [
     { text: '2004 Iranian legislative election', lang: 'en', role: 'primary' },
-    { text: 'انتخابات هفتمین دوره مجلس شورای اسلامی', lang: 'fa', role: 'native' },
     { text: 'Seventh Majles election', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-13',

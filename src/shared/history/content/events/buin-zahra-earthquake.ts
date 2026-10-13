@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'buin-zahra-earthquake',
   names: [
-    { text: 'Buin Zahra earthquake', lang: 'en', role: 'primary' },
-    { text: 'زمین‌لرزه بوئین‌زهرا', lang: 'fa', role: 'native' }
+    { text: 'Buin Zahra earthquake', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-07',
   type: 'disaster',

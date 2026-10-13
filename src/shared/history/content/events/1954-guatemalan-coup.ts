@@ -4,7 +4,6 @@ export default defineEvent({
   id: '1954-guatemalan-coup',
   names: [
     { text: '1954 Guatemalan coup', lang: 'en', role: 'primary' },
-    { text: 'Golpe de Estado en Guatemala de 1954', lang: 'es', role: 'native' },
     {
       text: 'Operation PBSUCCESS',
       lang: 'en',

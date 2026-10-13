@@ -72,7 +72,9 @@ export default function VideoTimeline({
         />
         <input
           type="range"
-          className="range-thumb"
+          // timeline-range takes clicks on the whole track (a click jumps there,
+          // then drags); range-thumb alone passes the track's clicks through.
+          className="range-thumb timeline-range"
           aria-label="Position"
           min={0}
           max={span || 1}

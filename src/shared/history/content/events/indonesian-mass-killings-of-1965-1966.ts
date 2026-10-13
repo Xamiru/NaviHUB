@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'indonesian-mass-killings-of-1965-1966',
   names: [
     { text: 'Indonesian mass killings of 1965–1966', lang: 'en', role: 'primary' },
-    { text: 'Pembantaian di Indonesia 1965–1966', lang: 'id', role: 'native' },
     {
       text: 'September 30 Movement (Gestapu)',
       lang: 'en',

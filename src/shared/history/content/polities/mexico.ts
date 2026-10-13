@@ -4,7 +4,6 @@ export default definePolity({
   id: 'mexico',
   names: [
     { text: 'Mexico', lang: 'en', role: 'primary' },
-    { text: 'Estados Unidos Mexicanos', lang: 'es', role: 'native' },
     {
       text: 'República Mexicana',
       lang: 'es',

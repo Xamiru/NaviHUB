@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'battle-of-carabobo',
   names: [
-    { text: 'Battle of Carabobo', lang: 'en', role: 'primary' },
-    { text: 'Batalla de Carabobo', lang: 'es', role: 'native' }
+    { text: 'Battle of Carabobo', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'battle',

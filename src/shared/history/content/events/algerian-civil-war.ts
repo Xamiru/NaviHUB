@@ -4,8 +4,6 @@ export default defineEvent({
   id: 'algerian-civil-war',
   names: [
     { text: 'Algerian Civil War', lang: 'en', role: 'primary' },
-    { text: 'الحرب الأهلية الجزائرية', lang: 'ar', role: 'native' },
-    { text: 'guerre civile algérienne', lang: 'fr', role: 'alternative' },
     { text: 'Algerian conflict', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-13',

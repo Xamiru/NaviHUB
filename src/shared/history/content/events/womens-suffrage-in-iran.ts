@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'womens-suffrage-in-iran',
   names: [
-    { text: 'Women’s suffrage in Iran', lang: 'en', role: 'primary' },
-    { text: 'حق رأی زنان در ایران', lang: 'fa', role: 'native' }
+    { text: 'Women’s suffrage in Iran', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'law',

@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'tabriz-uprising-1978',
   names: [
-    { text: 'Tabriz uprising of February 1978', lang: 'en', role: 'primary' },
-    { text: 'قیام تبریز', lang: 'fa', role: 'native' },
-    { text: 'قیام ۲۹ بهمن', lang: 'fa', role: 'alternative' }
+    { text: 'Tabriz uprising of February 1978', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-10',
   type: 'uprising',

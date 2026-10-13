@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'crimean-war',
   names: [
     { text: 'Crimean War', lang: 'en', role: 'primary' },
-    { text: 'Крымская война', lang: 'ru', role: 'native' },
     {
       text: 'guerre de Crimée',
       lang: 'fr',

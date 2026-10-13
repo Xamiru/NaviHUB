@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'russian-revolution-of-1917',
   names: [
     { text: 'Russian Revolution of 1917', lang: 'en', role: 'primary' },
-    { text: 'Революция 1917 года', lang: 'ru', role: 'native' },
     {
       text: 'February Revolution',
       lang: 'en',

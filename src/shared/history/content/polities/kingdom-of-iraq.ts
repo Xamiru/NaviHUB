@@ -3,8 +3,7 @@ import { definePolity } from '../../schema'
 export default definePolity({
   id: 'kingdom-of-iraq',
   names: [
-    { text: 'Kingdom of Iraq', lang: 'en', role: 'primary' },
-    { text: 'المملكة العراقية', lang: 'ar', role: 'native' }
+    { text: 'Kingdom of Iraq', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   polityType: 'kingdom',

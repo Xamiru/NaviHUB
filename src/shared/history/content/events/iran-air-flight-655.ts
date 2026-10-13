@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'iran-air-flight-655',
   names: [
     { text: 'Iran Air Flight 655', lang: 'en', role: 'primary' },
-    { text: 'پرواز ۶۵۵ ایران‌ایر', lang: 'fa', role: 'native' },
     {
       text: 'Downing of the Iran Air Airbus',
       lang: 'en',
@@ -15,8 +14,7 @@ export default defineEvent({
           loc: { section: 'IRAQ vii. IRAN-IRAQ WAR', para: '43' }
         }
       ]
-    },
-    { text: 'سرنگونی ایرباس', lang: 'fa', role: 'alternative' }
+    }
   ],
   researched: '2026-10-09',
   type: 'disaster',

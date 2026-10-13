@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'hundred-days',
   names: [
-    { text: 'Hundred Days', lang: 'en', role: 'primary' },
-    { text: 'Cent-Jours', lang: 'fr', role: 'native' }
+    { text: 'Hundred Days', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'war',

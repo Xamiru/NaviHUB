@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'battle-of-adwa',
   names: [
     { text: 'Battle of Adwa', lang: 'en', role: 'primary' },
-    { text: 'የዓድዋ ጦርነት', lang: 'am', role: 'native' },
     {
       text: 'Adua',
       lang: 'de',

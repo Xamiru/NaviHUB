@@ -3,8 +3,7 @@ import { definePolity } from '../../schema'
 export default definePolity({
   id: 'republic-of-cuba',
   names: [
-    { text: 'Republic of Cuba', lang: 'en', role: 'primary' },
-    { text: 'República de Cuba', lang: 'es', role: 'native' }
+    { text: 'Republic of Cuba', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   polityType: 'republic',

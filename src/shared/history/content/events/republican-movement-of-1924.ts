@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'republican-movement-of-1924',
   names: [
-    { text: 'Republican movement of 1924', lang: 'en', role: 'primary' },
-    { text: 'جمهوری‌خواهی', lang: 'fa', role: 'native' }
+    { text: 'Republican movement of 1924', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'movement',

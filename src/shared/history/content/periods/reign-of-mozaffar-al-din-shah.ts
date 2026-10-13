@@ -3,8 +3,7 @@ import { definePeriod } from '../../schema'
 export default definePeriod({
   id: 'reign-of-mozaffar-al-din-shah',
   names: [
-    { text: 'Reign of Mozaffar al-Din Shah', lang: 'en', role: 'primary' },
-    { text: 'سلطنت مظفرالدین شاه', lang: 'fa', role: 'native' }
+    { text: 'Reign of Mozaffar al-Din Shah', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-06',
   periodType: 'reign',

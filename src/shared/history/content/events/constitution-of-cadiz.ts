@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'constitution-of-cadiz',
   names: [
     { text: 'Constitution of Cádiz', lang: 'en', role: 'primary' },
-    { text: 'Constitución de Cádiz', lang: 'es', role: 'native' },
     {
       text: 'Constitution of 1812',
       lang: 'en',

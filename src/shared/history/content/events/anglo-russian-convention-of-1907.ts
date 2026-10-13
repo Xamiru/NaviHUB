@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'anglo-russian-convention-of-1907',
   names: [
     { text: 'Anglo-Russian Convention of 1907', lang: 'en', role: 'primary' },
-    { text: 'قرارداد ۱۹۰۷', lang: 'fa', role: 'native' },
     { text: 'Anglo-Russian Agreement of 1907', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-08',

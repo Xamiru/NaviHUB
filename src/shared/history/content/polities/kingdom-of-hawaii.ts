@@ -4,7 +4,6 @@ export default definePolity({
   id: 'kingdom-of-hawaii',
   names: [
     { text: 'Kingdom of Hawaii', lang: 'en', role: 'primary' },
-    { text: 'Ke Aupuni Hawaiʻi', lang: 'haw', role: 'native' },
     {
       text: 'Hawaiian Kingdom',
       lang: 'en',

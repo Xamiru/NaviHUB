@@ -4,7 +4,6 @@ export default definePolity({
   id: 'empire-of-japan',
   names: [
     { text: 'Empire of Japan', lang: 'en', role: 'primary' },
-    { text: '大日本帝國', lang: 'ja', role: 'native', translit: 'Dai Nippon Teikoku' },
     {
       text: 'Japan',
       lang: 'en',

@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'french-coup-of-1851',
   names: [
-    { text: 'French coup of 2 December 1851', lang: 'en', role: 'primary' },
-    { text: 'Coup d\'État du 2 décembre 1851', lang: 'fr', role: 'native' }
+    { text: 'French coup of 2 December 1851', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'coup',

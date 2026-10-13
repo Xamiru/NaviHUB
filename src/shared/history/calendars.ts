@@ -289,6 +289,79 @@ export function formatOldStyle(s: string): string | null {
   return `${j.d} ${GREGORIAN_MONTHS[j.m - 1]} ${yearLabel(j.y)}`
 }
 
+// ---- Lunar Hijri (tabular) ----
+// The arithmetical Islamic calendar (30-year cycle, leap years 2, 5, 7, 10, 13,
+// 16, 18, 21, 24, 26, 29), epoch 1 Muharram 1 AH = 16 July 622 Julian. Real
+// dates followed the sighted moon and can differ from it by a day or two, so
+// the UI labels it as the tabular reckoning.
+
+const ISLAMIC_EPOCH = 1948440
+
+export function lunarHijriToJdn(y: number, m: number, d: number): number {
+  return d + Math.ceil(29.5 * (m - 1)) + (y - 1) * 354 + Math.floor((3 + 11 * y) / 30) + ISLAMIC_EPOCH - 1
+}
+
+export function jdnToLunarHijri(jdn: number): Ymd | null {
+  if (jdn < ISLAMIC_EPOCH) return null
+  const y = Math.floor((30 * (jdn - ISLAMIC_EPOCH) + 10646) / 10631)
+  const m = Math.min(12, Math.ceil((jdn - (29 + lunarHijriToJdn(y, 1, 1))) / 29.5) + 1)
+  return { y, m, d: jdn - lunarHijriToJdn(y, m, 1) + 1 }
+}
+
+export const LUNAR_HIJRI_MONTHS = [
+  'Muharram',
+  'Safar',
+  'Rabiʿ I',
+  'Rabiʿ II',
+  'Jumada I',
+  'Jumada II',
+  'Rajab',
+  'Shaʿban',
+  'Ramadan',
+  'Shawwal',
+  'Dhu al-Qaʿda',
+  'Dhu al-Hijja'
+]
+
+/**
+ * Lunar Hijri form of a date at its own precision, like formatSolarHijri:
+ * partial dates become ranges. Null before the Hijra.
+ */
+export function formatLunarHijri(s: string): string | null {
+  const p = parseDate(s)
+  if (!p) return null
+  const { first, last } = dateBounds(p)
+  const a = jdnToLunarHijri(gregorianToJdn(first.y, first.m, first.d))
+  const b = jdnToLunarHijri(gregorianToJdn(last.y, last.m, last.d))
+  if (!a || !b) return null
+  const mon = (m: number): string => LUNAR_HIJRI_MONTHS[m - 1]
+  if (p.precision === 'day') return `${a.d} ${mon(a.m)} ${a.y}`
+  if (p.precision === 'month') {
+    if (a.y === b.y) return a.m === b.m ? `${mon(a.m)} ${a.y}` : `${mon(a.m)} to ${mon(b.m)} ${a.y}`
+    return `${mon(a.m)} ${a.y} to ${mon(b.m)} ${b.y}`
+  }
+  return a.y === b.y ? String(a.y) : `${a.y} to ${b.y}`
+}
+
+/** The Gregorian reform took effect on 15 October 1582. */
+export const GREGORIAN_REFORM = '1582-10-15'
+
+/** True for a stored day before the reform: it is a Julian date (HistDate). */
+export function isJulianEraDay(s: string): boolean {
+  const p = parseDate(s)
+  return !!p && p.precision === 'day' && compareDates(s, GREGORIAN_REFORM) < 0
+}
+
+const pad = (n: number, w: number): string => (n < 0 ? '-' : '') + String(Math.abs(n)).padStart(w, '0')
+
+/** The proleptic Gregorian form of a stored Julian-era day, as a date string. */
+export function julianDayToGregorian(s: string): string {
+  const p = parseDate(s)
+  if (!p || p.precision !== 'day') return s
+  const g = julianToGregorian({ y: p.y, m: p.m!, d: p.d! })
+  return `${pad(g.y, 4)}-${pad(g.m, 2)}-${pad(g.d, 2)}`
+}
+
 const PERSIAN_DIGITS = '۰۱۲۳۴۵۶۷۸۹'
 export function toPersianDigits(s: string | number): string {
   return String(s).replace(/\d/g, (c) => PERSIAN_DIGITS[Number(c)])

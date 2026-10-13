@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'treaty-of-paris-1857',
   names: [
-    { text: 'Treaty of Paris (1857)', lang: 'en', role: 'primary' },
-    { text: 'عهدنامه پاریس', lang: 'fa', role: 'native' }
+    { text: 'Treaty of Paris (1857)', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'treaty',

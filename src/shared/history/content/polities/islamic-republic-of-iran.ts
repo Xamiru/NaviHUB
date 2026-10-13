@@ -3,13 +3,7 @@ import { definePolity } from '../../schema'
 export default definePolity({
   id: 'islamic-republic-of-iran',
   names: [
-    { text: 'Islamic Republic of Iran', lang: 'en', role: 'primary' },
-    {
-      text: 'جمهوری اسلامی ایران',
-      lang: 'fa',
-      role: 'native',
-      translit: 'Jomhūrī-ye Eslāmī-ye Īrān'
-    }
+    { text: 'Islamic Republic of Iran', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-09',
   polityType: 'republic',

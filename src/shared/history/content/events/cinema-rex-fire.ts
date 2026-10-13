@@ -14,12 +14,6 @@ export default defineEvent({
           loc: { section: 'The Coming of the Revolution', para: '9' }
         }
       ]
-    },
-    {
-      text: 'آتش‌سوزی سینما رکس آبادان',
-      lang: 'fa',
-      role: 'native',
-      translit: 'Ātaš-suzi-ye sinemā Reks-e Ābādān'
     }
   ],
   researched: '2026-10-09',

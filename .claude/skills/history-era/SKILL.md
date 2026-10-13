@@ -72,7 +72,7 @@ JFK Library.
   own `Source` with `translationOf` pointing at the original.
 - Mark omissions inside a quote with `[…]`. Never alter words, spelling or punctuation.
 - Dates, figures and places are `Claim`s with citations. When sources disagree, record every value
-  with `heldBy`; never pick one. Old Style dates: store the Gregorian `d` and set `julian: true`.
+  with `heldBy`; never pick one. Old Style dates after the 1582 reform: store the Gregorian `d` and set `julian: true`. A day before 15 October 1582 is stored exactly as the source gives it, in the Julian calendar, never converted.
   A less precise value from another source (`1902` beside `1902-05-21`) is not a disagreement:
   keep the precise one only, or the page marks the date disputed.
 
@@ -139,8 +139,11 @@ they go further down the page, never first (user, 2026-10-07).
   hyphen-space breaks); re-fetch a clean copy or choose another passage.
 - **Participants link to their person page** whenever it exists; every person page has a lede,
   birth and death when any source states them, offices, and a portrait.
-- **Native-script names** for every non-English subject (Persian for Iran events, Kurdish,
-  Azerbaijani, Arabic, Chinese… as the subject's own).
+- **Native-script names** for every non-English person and place (Persian for Iranians, Kurdish,
+  Azerbaijani, Arabic, Chinese… as the subject's own); for an event or state only a title a
+  source uses. A title of an event, period, state or
+  theme in another language is a source's title, never your translation: it carries `cites`
+  (lint `uncited-title`). A person's or place's own name in its own script may stand uncited.
 - **Governments and rulers make claims, not narratives.** A ruler's memoir or speech, a party
   resolution or a state website (Khamenei.ir, imam-khomeini.ir, IRNA, Press TV…) is never cited for a
   fact, a date or narration. Its words appear only as an `official` position (shown as

@@ -3,7 +3,17 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'lei-aurea',
   names: [
-    { text: 'Lei Áurea', lang: 'pt', role: 'primary' },
+    {
+      text: 'Lei Áurea',
+      lang: 'pt',
+      role: 'primary',
+      cites: [
+        {
+          source: 'lei-aurea-1888',
+          loc: { section: 'Lei nº 3.353, de 13 de maio de 1888 (Lei Áurea)' }
+        }
+      ]
+    },
     {
       text: 'Golden Law',
       lang: 'en',

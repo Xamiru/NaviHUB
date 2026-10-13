@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'belgian-customs-reform',
   names: [
-    { text: 'Belgian reform of the Persian customs', lang: 'en', role: 'primary' },
-    { text: 'اصلاح گمرکات به دست بلژیکی‌ها', lang: 'fa', role: 'native' }
+    { text: 'Belgian reform of the Persian customs', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'reform',
@@ -117,7 +116,7 @@ export default defineEvent({
         },
         {
           id: 'q2',
-          text: 'Persia, Russia, and England, equally anxious not to introduce into the Persian civil service officials from powerful and expan­sive countries, preferred to employ Belgians.',
+          text: 'Persia, Russia, and England, equally anxious not to introduce into the Persian civil service officials from powerful and expansive countries, preferred to employ Belgians.',
           lang: 'en',
           cite: {
             source: 'iranica-destree-belgian-iranian-relations',

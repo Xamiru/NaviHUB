@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'fall-of-the-berlin-wall',
   names: [
     { text: 'Fall of the Berlin Wall', lang: 'en', role: 'primary' },
-    { text: 'Mauerfall', lang: 'de', role: 'native' },
     {
       text: 'Opening of the Berlin Wall',
       lang: 'en',

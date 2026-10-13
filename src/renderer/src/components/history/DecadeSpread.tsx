@@ -51,7 +51,7 @@ function LeadCard({ info, big }: { info: HistoryRefInfo; big?: boolean }) {
 export default function DecadeSpread({ data }: { data: HistoryDecade }) {
   const [lead, ...second] = data.lead
   if (!lead && data.continuing.length === 0) {
-    return <div className="card p-8 text-sm text-ink-muted">Nothing researched for the {data.start}s yet.</div>
+    return <div className="card p-8 text-sm text-ink-muted">Nothing researched for the {data.label} yet.</div>
   }
   const aside = data.continuing.length > 0 || data.born.length > 0 || data.died.length > 0
   return (
@@ -136,7 +136,7 @@ export default function DecadeSpread({ data }: { data: HistoryDecade }) {
       </div>
 
       {data.media.length > 0 && (
-        <Section title="In your library" subtitle="Titles linked to this decade's events" className="mt-8">
+        <Section title="In your library" subtitle="Titles linked to these years' events" className="mt-8">
           <MediaShelf cards={data.media} />
         </Section>
       )}

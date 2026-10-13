@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'spanish-civil-war',
   names: [
     { text: 'Spanish Civil War', lang: 'en', role: 'primary' },
-    { text: 'Guerra Civil Española', lang: 'es', role: 'native' },
     {
       text: 'Guerra de España',
       lang: 'es',

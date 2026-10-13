@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'dissolution-of-the-soviet-union',
   names: [
     { text: 'Dissolution of the Soviet Union', lang: 'en', role: 'primary' },
-    { text: 'Распад СССР', lang: 'ru', role: 'native' },
     {
       text: 'Collapse of the Soviet Union',
       lang: 'en',

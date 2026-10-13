@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'trans-iranian-railway',
   names: [
-    { text: 'Trans-Iranian Railway', lang: 'en', role: 'primary' },
-    { text: 'راه‌آهن سراسری ایران', lang: 'fa', role: 'native' }
+    { text: 'Trans-Iranian Railway', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'economic',

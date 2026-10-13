@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'handover-of-hong-kong',
   names: [
     { text: 'Handover of Hong Kong', lang: 'en', role: 'primary' },
-    { text: '香港回歸', lang: 'zh', role: 'native', translit: 'Xiānggǎng huíguī' },
     {
       text: 'Hong Kong\'s reversion to Chinese sovereignty',
       lang: 'en',

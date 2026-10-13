@@ -3,8 +3,7 @@ import { definePeriod } from '../../schema'
 export default definePeriod({
   id: 'spanish-reconquest-of-chile',
   names: [
-    { text: 'Spanish Reconquest of Chile', lang: 'en', role: 'primary' },
-    { text: 'La Reconquista', lang: 'es', role: 'native' }
+    { text: 'Spanish Reconquest of Chile', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-07',
   periodType: 'regime',

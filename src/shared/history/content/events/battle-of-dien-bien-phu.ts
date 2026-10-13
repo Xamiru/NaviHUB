@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'battle-of-dien-bien-phu',
   names: [
-    { text: 'Battle of Dien Bien Phu', lang: 'en', role: 'primary' },
-    { text: 'Chiến dịch Điện Biên Phủ', lang: 'vi', role: 'native' }
+    { text: 'Battle of Dien Bien Phu', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'battle',

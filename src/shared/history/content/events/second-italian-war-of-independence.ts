@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'second-italian-war-of-independence',
   names: [
-    { text: 'Second Italian War of Independence', lang: 'en', role: 'primary' },
-    { text: 'Seconda guerra d\'indipendenza italiana', lang: 'it', role: 'native' }
+    { text: 'Second Italian War of Independence', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'war',

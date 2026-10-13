@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'nayriz-upheaval',
   names: [
-    { text: 'Nayriz upheaval of 1850', lang: 'en', role: 'primary' },
-    { text: 'قیام بابیان نیریز', lang: 'fa', role: 'native' }
+    { text: 'Nayriz upheaval of 1850', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'uprising',

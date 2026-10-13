@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'naser-al-din-shahs-first-european-journey',
   names: [
-    { text: 'Naser al-Din Shah’s first European journey', lang: 'en', role: 'primary' },
-    { text: 'سفر اول ناصرالدین شاه به فرنگ', lang: 'fa', role: 'native' }
+    { text: 'Naser al-Din Shah’s first European journey', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'other',

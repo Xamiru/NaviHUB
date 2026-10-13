@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'reform-and-opening-up',
   names: [
     { text: 'Reform and opening up', lang: 'en', role: 'primary' },
-    { text: '改革开放', lang: 'zh', role: 'native', translit: 'Gǎigé kāifàng' },
     {
       text: 'Four Modernizations',
       lang: 'en',
@@ -15,8 +14,7 @@ export default defineEvent({
           loc: { section: 'The Four Modernizations, 1979-82', para: '-1' }
         }
       ]
-    },
-    { text: '四个现代化', lang: 'zh', role: 'alternative', translit: 'Sì gè xiàndàihuà' }
+    }
   ],
   researched: '2026-10-09',
   type: 'reform',

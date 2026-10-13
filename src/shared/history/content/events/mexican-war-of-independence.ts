@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'mexican-war-of-independence',
   names: [
-    { text: 'Mexican War of Independence', lang: 'en', role: 'primary' },
-    { text: 'Guerra de Independencia de México', lang: 'es', role: 'native' }
+    { text: 'Mexican War of Independence', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'war',

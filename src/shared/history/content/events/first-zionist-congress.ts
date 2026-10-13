@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'first-zionist-congress',
   names: [
-    { text: 'First Zionist Congress', lang: 'en', role: 'primary' },
-    { text: 'Erster Zionistenkongress', lang: 'de', role: 'native' }
+    { text: 'First Zionist Congress', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-06',
   type: 'conference',

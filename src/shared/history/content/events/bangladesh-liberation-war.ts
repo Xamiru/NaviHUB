@@ -5,12 +5,6 @@ export default defineEvent({
   names: [
     { text: 'Bangladesh Liberation War', lang: 'en', role: 'primary' },
     {
-      text: 'বাংলাদেশের মুক্তিযুদ্ধ',
-      lang: 'bn',
-      role: 'native',
-      translit: 'Bangladesher Muktijuddho'
-    },
-    {
       text: 'War for Bangladeshi Independence',
       lang: 'en',
       role: 'alternative',

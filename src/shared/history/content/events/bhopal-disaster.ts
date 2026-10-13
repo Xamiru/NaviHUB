@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'bhopal-disaster',
   names: [
     { text: 'Bhopal disaster', lang: 'en', role: 'primary' },
-    { text: 'भोपाल गैस त्रासदी', lang: 'hi', role: 'native' },
     {
       text: 'Bhopal Gas Leak tragedy',
       lang: 'en',

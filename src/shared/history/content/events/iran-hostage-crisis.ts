@@ -5,18 +5,6 @@ export default defineEvent({
   names: [
     { text: 'Iran hostage crisis', lang: 'en', role: 'primary' },
     {
-      text: 'بحران گروگان‌گیری',
-      lang: 'fa',
-      role: 'native',
-      translit: 'Bohrān-e gorugān-giri'
-    },
-    {
-      text: 'تسخیر سفارت آمریکا',
-      lang: 'fa',
-      role: 'alternative',
-      translit: 'Taskhir-e sefārat-e Āmrikā'
-    },
-    {
       text: 'den of spies',
       lang: 'en',
       role: 'alternative',

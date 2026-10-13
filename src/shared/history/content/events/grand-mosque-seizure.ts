@@ -5,12 +5,6 @@ export default defineEvent({
   names: [
     { text: 'Grand Mosque seizure', lang: 'en', role: 'primary' },
     {
-      text: 'اقتحام المسجد الحرام',
-      lang: 'ar',
-      role: 'native',
-      translit: 'Iqtiḥām al-Masjid al-Ḥarām'
-    },
-    {
       text: 'Occupation of the Grand Mosque, Mecca',
       lang: 'en',
       role: 'alternative',

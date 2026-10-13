@@ -4,7 +4,6 @@ export default definePolity({
   id: 'dutch-east-indies',
   names: [
     { text: 'Dutch East Indies', lang: 'en', role: 'primary' },
-    { text: 'Nederlands-Indië', lang: 'nl', role: 'native' },
     {
       text: 'Netherlands Indies',
       lang: 'en',

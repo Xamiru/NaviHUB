@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'sabra-and-shatila-massacre',
   names: [
     { text: 'Sabra and Shatila massacre', lang: 'en', role: 'primary' },
-    { text: 'مجزرة صبرا وشاتيلا', lang: 'ar', role: 'native' },
     {
       text: 'Sabra and Shatilla massacre',
       lang: 'en',

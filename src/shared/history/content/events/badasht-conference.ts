@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'badasht-conference',
   names: [
     { text: 'Conference of Badasht', lang: 'en', role: 'primary' },
-    { text: 'اجتماع بدشت', lang: 'fa', role: 'native' },
     { text: 'Badašt', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-08',

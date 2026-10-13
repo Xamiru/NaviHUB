@@ -4,7 +4,6 @@ export default definePeriod({
   id: 'presidency-of-mohammad-khatami',
   names: [
     { text: 'Presidency of Mohammad Khatami', lang: 'en', role: 'primary' },
-    { text: 'ریاست‌جمهوری محمد خاتمی', lang: 'fa', role: 'native' },
     { text: 'Khatami era', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-10',

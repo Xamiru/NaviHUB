@@ -345,6 +345,7 @@ export const qk = {
     backlinks: (mediaId: number) => ['history', 'backlinks', mediaId] as const,
     imageStatus: ['history', 'imageStatus'] as const,
     borders: ['history', 'borders'] as const,
+    bordersAncient: ['history', 'borders', 'ancient'] as const,
     mapPins: ['history', 'mapPins'] as const,
     mapPolities: ['history', 'mapPolities'] as const,
     themes: ['history', 'themes'] as const,

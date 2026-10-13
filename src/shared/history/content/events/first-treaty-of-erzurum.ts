@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'first-treaty-of-erzurum',
   names: [
     { text: 'First Treaty of Erzurum', lang: 'en', role: 'primary' },
-    { text: 'عهدنامه اول ارزروم', lang: 'fa', role: 'native' },
     {
       text: 'Erzurum treaty',
       lang: 'en',
@@ -101,7 +100,7 @@ export default defineEvent({
         },
         {
           id: 'q2',
-          text: 'The arrangements made at Zohāb were therefore reasonably flexible, and both powers were suffi­ciently preoccupied elsewhere so that the border re­mained largely unchanged until an outbreak of war in 1237/1821-22, which ended in the first Treaty of Erzurum (19 Ḏu’l-qaʿda 1238/29 July 1823).',
+          text: 'The arrangements made at Zohāb were therefore reasonably flexible, and both powers were sufficiently preoccupied elsewhere so that the border remained largely unchanged until an outbreak of war in 1237/1821-22, which ended in the first Treaty of Erzurum (19 Ḏu’l-qaʿda 1238/29 July 1823).',
           lang: 'en',
           cite: {
             source: 'iranica-mclachlan-boundaries-ottoman-empire',

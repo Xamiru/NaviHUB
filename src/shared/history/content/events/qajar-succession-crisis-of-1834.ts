@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'qajar-succession-crisis-of-1834',
   names: [
-    { text: 'Qajar succession crisis of 1834', lang: 'en', role: 'primary' },
-    { text: 'بحران جانشینی ۱۲۵۰', lang: 'fa', role: 'native' }
+    { text: 'Qajar succession crisis of 1834', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'crisis',

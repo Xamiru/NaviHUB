@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'russian-revolution-of-1905',
   names: [
-    { text: 'Russian Revolution of 1905', lang: 'en', role: 'primary' },
-    { text: 'Революция 1905 года', lang: 'ru', role: 'native' }
+    { text: 'Russian Revolution of 1905', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'revolution',

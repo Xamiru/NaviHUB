@@ -14,9 +14,7 @@ export default defineEvent({
           loc: { section: 'Transformation and Terror', para: '23' }
         }
       ]
-    },
-    { text: 'Hitler-Stalin-Pakt', lang: 'de', role: 'alternative' },
-    { text: 'Пакт Молотова — Риббентропа', lang: 'ru', role: 'native' }
+    }
   ],
   researched: '2026-10-07',
   type: 'treaty',

@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'anschluss',
   names: [
-    { text: 'Anschluss', lang: 'en', role: 'primary' },
-    { text: 'Anschluss Österreichs', lang: 'de', role: 'native' }
+    { text: 'Anschluss', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'occupation',

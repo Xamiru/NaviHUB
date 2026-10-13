@@ -3,8 +3,7 @@ import { definePolity } from '../../schema'
 export default definePolity({
   id: 'khedivate-of-egypt',
   names: [
-    { text: 'Khedivate of Egypt', lang: 'en', role: 'primary' },
-    { text: 'الخديوية المصرية', lang: 'ar', role: 'native' }
+    { text: 'Khedivate of Egypt', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   polityType: 'emirate',

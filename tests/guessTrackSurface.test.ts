@@ -28,6 +28,17 @@ describe('Guess the Track renderer contract', () => {
     expect(page).toContain('transitionLockRef.current')
   })
 
+  it('opens suggestions only for typed text and closes them on blur', () => {
+    expect(page).toContain("setSuggestionsOpen(event.target.value.trim() !== '')")
+    expect(page).toContain('onBlur={() => setSuggestionsOpen(false)}')
+  })
+
+  it('cuts clips from the live audio position, after any leading silence', () => {
+    expect(page).toContain('useQuizClip(trackId, startOffset, clipSeconds)')
+    expect(page).toContain('startTime: loaded.offset')
+    expect(page).toContain('audioOnsetSeconds(src)')
+  })
+
   it('saves the central points-session metadata', () => {
     for (const field of ['correct:', 'attempted:', 'scorePolicy:', "playMode: 'solo'", 'seed:']) {
       expect(page).toContain(field)

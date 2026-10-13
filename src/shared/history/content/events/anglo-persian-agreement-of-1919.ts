@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'anglo-persian-agreement-of-1919',
   names: [
-    { text: 'Anglo-Persian Agreement of 1919', lang: 'en', role: 'primary' },
-    { text: 'قرارداد ۱۹۱۹', lang: 'fa', role: 'native' }
+    { text: 'Anglo-Persian Agreement of 1919', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'treaty',

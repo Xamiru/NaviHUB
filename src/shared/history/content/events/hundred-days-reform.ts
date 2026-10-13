@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'hundred-days-reform',
   names: [
-    { text: 'Hundred Days\' Reform', lang: 'en', role: 'primary' },
-    { text: '戊戌變法', lang: 'zh', role: 'native' }
+    { text: 'Hundred Days\' Reform', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'reform',

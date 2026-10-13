@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'assassination-of-naser-al-din-shah',
   names: [
-    { text: 'Assassination of Naser al-Din Shah', lang: 'en', role: 'primary' },
-    { text: 'ترور ناصرالدین شاه', lang: 'fa', role: 'native' }
+    { text: 'Assassination of Naser al-Din Shah', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'assassination',

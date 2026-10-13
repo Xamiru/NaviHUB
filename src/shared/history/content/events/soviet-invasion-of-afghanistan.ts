@@ -5,18 +5,6 @@ export default defineEvent({
   names: [
     { text: 'Soviet invasion of Afghanistan', lang: 'en', role: 'primary' },
     {
-      text: 'Ввод советских войск в Афганистан',
-      lang: 'ru',
-      role: 'native',
-      translit: 'Vvod sovetskikh voysk v Afganistan'
-    },
-    {
-      text: 'تهاجم شوروی به افغانستان',
-      lang: 'fa',
-      role: 'alternative',
-      translit: 'Tahājom-e Šūravī be Afḡānestān'
-    },
-    {
       text: 'Soviet intervention in Afghanistan',
       lang: 'en',
       role: 'contested',

@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'bombardment-of-the-majles',
   names: [
     { text: 'Bombardment of the Majles', lang: 'en', role: 'primary' },
-    { text: 'به توپ بستن مجلس', lang: 'fa', role: 'native' },
     { text: 'royal coup d’état of 1908', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-08',

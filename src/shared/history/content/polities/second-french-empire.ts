@@ -3,8 +3,7 @@ import { definePolity } from '../../schema'
 export default definePolity({
   id: 'second-french-empire',
   names: [
-    { text: 'Second French Empire', lang: 'en', role: 'primary' },
-    { text: 'Second Empire', lang: 'fr', role: 'native' }
+    { text: 'Second French Empire', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   polityType: 'empire',

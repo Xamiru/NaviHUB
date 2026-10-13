@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'qom-uprising-1978',
   names: [
-    { text: 'Qom uprising of January 1978', lang: 'en', role: 'primary' },
-    { text: 'قیام ۱۹ دی', lang: 'fa', role: 'native', translit: 'Qiyām-e 19 Dey' },
-    { text: 'قیام قم', lang: 'fa', role: 'alternative', translit: 'Qiyām-e Qom' }
+    { text: 'Qom uprising of January 1978', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-09',
   type: 'uprising',

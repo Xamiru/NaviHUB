@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'battle-of-navarino',
   names: [
-    { text: 'Battle of Navarino', lang: 'en', role: 'primary' },
-    { text: 'Ναυμαχία του Ναυαρίνου', lang: 'el', role: 'native' }
+    { text: 'Battle of Navarino', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'battle',

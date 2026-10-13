@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'expulsion-of-jamal-al-din-afghani',
   names: [
-    { text: 'Expulsion of Jamal al-Din al-Afghani', lang: 'en', role: 'primary' },
-    { text: 'اخراج سید جمال‌الدین اسدآبادی', lang: 'fa', role: 'native' }
+    { text: 'Expulsion of Jamal al-Din al-Afghani', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'other',

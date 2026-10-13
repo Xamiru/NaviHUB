@@ -4,8 +4,6 @@ export default defineEvent({
   id: '1988-executions-of-iranian-political-prisoners',
   names: [
     { text: '1988 executions of Iranian political prisoners', lang: 'en', role: 'primary' },
-    { text: 'اعدام‌های دسته‌جمعی زندانیان سیاسی در سال ۱۳۶۷', lang: 'fa', role: 'native' },
-    { text: 'کشتار زندانیان سیاسی ۱۳۶۷', lang: 'fa', role: 'alternative' },
     {
       text: '1988 prison massacres',
       lang: 'en',

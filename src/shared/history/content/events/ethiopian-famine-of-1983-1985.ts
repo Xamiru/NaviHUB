@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'ethiopian-famine-of-1983-1985',
   names: [
-    { text: 'Ethiopian famine of 1983–1985', lang: 'en', role: 'primary' },
-    { text: 'የኢትዮጵያ ረሃብ', lang: 'am', role: 'native' }
+    { text: 'Ethiopian famine of 1983–1985', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'famine',

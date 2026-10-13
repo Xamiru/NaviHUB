@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'german-reunification',
   names: [
     { text: 'German reunification', lang: 'en', role: 'primary' },
-    { text: 'Deutsche Wiedervereinigung', lang: 'de', role: 'native' },
     {
       text: 'Establishment of German unity',
       lang: 'en',

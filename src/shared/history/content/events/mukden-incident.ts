@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'mukden-incident',
   names: [
     { text: 'Mukden Incident', lang: 'en', role: 'primary' },
-    { text: '九一八事变', lang: 'zh', role: 'native' },
     {
       text: 'Manchurian Incident',
       lang: 'en',
@@ -15,8 +14,7 @@ export default defineEvent({
           loc: { section: 'The Rise of the Militarists', para: '5' }
         }
       ]
-    },
-    { text: '満州事変', lang: 'ja', role: 'alternative' }
+    }
   ],
   researched: '2026-10-08',
   type: 'invasion',

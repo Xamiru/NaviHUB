@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'atomic-bombings-of-hiroshima-and-nagasaki',
   names: [
-    { text: 'Atomic bombings of Hiroshima and Nagasaki', lang: 'en', role: 'primary' },
-    { text: '広島・長崎への原子爆弾投下', lang: 'ja', role: 'native' }
+    { text: 'Atomic bombings of Hiroshima and Nagasaki', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'other',

@@ -4,7 +4,6 @@ export default definePeriod({
   id: 'turkiyah',
   names: [
     { text: 'Turkiyah', lang: 'en', role: 'primary' },
-    { text: 'التركية', lang: 'ar', role: 'native' },
     {
       text: 'Turkish regime',
       lang: 'en',

@@ -4,7 +4,6 @@ export default definePeriod({
   id: 'meiji-era',
   names: [
     { text: 'Meiji era', lang: 'en', role: 'primary' },
-    { text: '明治', lang: 'ja', role: 'native' },
     {
       text: 'Enlightened Rule',
       lang: 'en',

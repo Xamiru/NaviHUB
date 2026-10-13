@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'mexican-oil-expropriation',
   names: [
-    { text: 'Mexican oil expropriation', lang: 'en', role: 'primary' },
-    { text: 'Expropiación petrolera', lang: 'es', role: 'native' }
+    { text: 'Mexican oil expropriation', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'nationalization',

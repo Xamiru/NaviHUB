@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'anglo-soviet-invasion-of-iran',
   names: [
     { text: 'Anglo-Soviet invasion of Iran', lang: 'en', role: 'primary' },
-    { text: 'اشغال ایران در جنگ جهانی دوم', lang: 'fa', role: 'native' },
     {
       text: 'Šahrīvar 1320',
       lang: 'fa-Latn',

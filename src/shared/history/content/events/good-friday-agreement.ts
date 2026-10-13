@@ -14,8 +14,7 @@ export default defineEvent({
           loc: { section: 'The Belfast Agreement', para: '1' }
         }
       ]
-    },
-    { text: 'Comhaontú Aoine an Chéasta', lang: 'ga', role: 'native' }
+    }
   ],
   researched: '2026-10-10',
   type: 'treaty',

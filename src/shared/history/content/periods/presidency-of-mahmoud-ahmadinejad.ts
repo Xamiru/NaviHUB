@@ -4,7 +4,6 @@ export default definePeriod({
   id: 'presidency-of-mahmoud-ahmadinejad',
   names: [
     { text: 'Presidency of Mahmoud Ahmadinejad', lang: 'en', role: 'primary' },
-    { text: 'ریاست‌جمهوری محمود احمدی‌نژاد', lang: 'fa', role: 'native' },
     { text: 'Ahmadinejad era', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-13',

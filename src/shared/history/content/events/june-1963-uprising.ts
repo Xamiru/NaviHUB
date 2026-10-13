@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'june-1963-uprising',
   names: [
-    { text: 'June 1963 uprising', lang: 'en', role: 'primary' },
-    { text: 'قیام ۱۵ خرداد', lang: 'fa', role: 'native', translit: 'Qiām-e 15 Ḵordād' }
+    { text: 'June 1963 uprising', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-09',
   type: 'uprising',

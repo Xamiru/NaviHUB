@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'death-of-zahra-kazemi',
   names: [
     { text: 'Death of Zahra Kazemi', lang: 'en', role: 'primary' },
-    { text: 'مرگ زهرا کاظمی', lang: 'fa', role: 'native' },
     { text: 'Zahra Kazemi case', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-13',

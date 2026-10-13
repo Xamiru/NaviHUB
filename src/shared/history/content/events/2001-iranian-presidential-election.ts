@@ -4,7 +4,6 @@ export default defineEvent({
   id: '2001-iranian-presidential-election',
   names: [
     { text: '2001 Iranian presidential election', lang: 'en', role: 'primary' },
-    { text: 'انتخابات ریاست‌جمهوری ۱۳۸۰', lang: 'fa', role: 'native' },
     { text: 'Eighth Iranian presidential election', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-13',

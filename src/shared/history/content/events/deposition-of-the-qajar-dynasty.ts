@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'deposition-of-the-qajar-dynasty',
   names: [
-    { text: 'Deposition of the Qajar dynasty', lang: 'en', role: 'primary' },
-    { text: 'انقراض قاجاریه', lang: 'fa', role: 'native' }
+    { text: 'Deposition of the Qajar dynasty', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'dissolution',

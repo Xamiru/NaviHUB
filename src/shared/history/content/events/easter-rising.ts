@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'easter-rising',
   names: [
-    { text: 'Easter Rising', lang: 'en', role: 'primary' },
-    { text: 'Éirí Amach na Cásca', lang: 'ga', role: 'native' }
+    { text: 'Easter Rising', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'uprising',

@@ -4,7 +4,6 @@ export default defineEvent({
   id: '2008-iranian-legislative-election',
   names: [
     { text: '2008 Iranian legislative election', lang: 'en', role: 'primary' },
-    { text: 'انتخابات هشتمین دوره مجلس شورای اسلامی', lang: 'fa', role: 'native' },
     { text: 'Eighth Majles election', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-13',

@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'dismissal-of-malkom-khan',
   names: [
-    { text: 'Dismissal of Malkom Khan', lang: 'en', role: 'primary' },
-    { text: 'عزل میرزا ملکم خان', lang: 'fa', role: 'native' }
+    { text: 'Dismissal of Malkom Khan', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'crisis',

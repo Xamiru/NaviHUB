@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'sino-indian-war',
   names: [
-    { text: 'Sino-Indian War', lang: 'en', role: 'primary' },
-    { text: '中印边境战争', lang: 'zh', role: 'alternative' },
-    { text: 'भारत-चीन युद्ध', lang: 'hi', role: 'alternative' }
+    { text: 'Sino-Indian War', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'war',

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   assAlignment,
+  assDialogueOnly,
   assStyleClass,
   buildTrack,
   cueMatches,
@@ -345,6 +346,31 @@ describe('normalizeCues', () => {
     expect(out.map((c) => c.text)).toEqual(['same', '— Where?\n— Over there.'])
   })
 
+  it('never merges a sign or song into a simultaneous dialogue line', () => {
+    const out = normalizeCues([
+      cue({ start: 1, end: 9, text: 'Styled dialogue line', style: 'Default' }),
+      cue({ start: 1, end: 9, text: '行こう', style: 'JP' }),
+      cue({ start: 1, end: 9, text: 'CAFE SIGN', style: 'Sign' }),
+      cue({ start: 1, end: 9, text: 'konomichi', style: 'OP Romaji' })
+    ])
+    expect(out.map((c) => [c.style, c.text])).toEqual([
+      ['Default', 'Styled dialogue line\n行こう'],
+      ['Sign', 'CAFE SIGN'],
+      ['OP Romaji', 'konomichi']
+    ])
+    expect(filterDialogue(out).map((c) => c.text)).toEqual(['Styled dialogue line\n行こう'])
+  })
+
+  it('joins a dialogue pair even when a sign line sits between them', () => {
+    const out = normalizeCues([
+      cue({ start: 1, end: 9, text: 'A', style: 'Default' }),
+      cue({ start: 1, end: 9, text: 'SIGN', style: 'Sign' }),
+      cue({ start: 1, end: 9, text: 'B', style: 'Default' }),
+      cue({ start: 1, end: 9, text: 'SIGN', style: 'Sign' })
+    ])
+    expect(out.map((c) => c.text)).toEqual(['A\nB', 'SIGN'])
+  })
+
   it('snaps a sub-frame overlap but preserves a real one', () => {
     const out = normalizeCues([
       cue({ start: 0, end: 2.03, text: 'flicker' }),
@@ -507,5 +533,33 @@ describe('splitEnglishWords', () => {
     expect(englishLookupTerm("Cat's")).toBe('cat')
     expect(englishLookupTerm('Well-Known')).toBe('well-known')
     expect(englishLookupTerm("'quoted'")).toBe('quoted')
+  })
+})
+
+describe('assDialogueOnly', () => {
+  it('drops sign and song events and keeps everything else verbatim', () => {
+    const script = [
+      '[Script Info]',
+      'Title: Signs test',
+      '',
+      '[V4+ Styles]',
+      'Format: Name, Fontname',
+      'Style: Sign,Arial',
+      '',
+      '[Events]',
+      'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
+      'Dialogue: 0,0:00:01.00,0:00:02.00,Default,,0,0,0,,Hello, there',
+      'Dialogue: 0,0:00:01.00,0:00:02.00,Sign - Cafe,,0,0,0,,CAFE',
+      'Comment: 0,0:00:01.00,0:00:02.00,OP Romaji,,0,0,0,,template',
+      'Dialogue: 0,0:00:03.00,0:00:04.00,OP Romaji,,0,0,0,,konomichi',
+      ''
+    ].join('\r\n')
+    const out = assDialogueOnly(script)
+    expect(out).toContain('Style: Sign,Arial\r\n')
+    expect(out).toContain('Hello, there')
+    expect(out).toContain('Comment: 0,0:00:01.00')
+    expect(out).not.toContain('CAFE')
+    expect(out).not.toContain('konomichi')
+    expect(parseAss(out).map((c) => c.text)).toEqual(['Hello, there'])
   })
 })

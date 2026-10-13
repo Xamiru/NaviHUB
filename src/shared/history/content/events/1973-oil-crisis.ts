@@ -25,8 +25,7 @@ export default defineEvent({
           loc: { section: 'The Reigns of Saud and Faisal', para: '27' }
         }
       ]
-    },
-    { text: 'أزمة النفط عام 1973', lang: 'ar', role: 'alternative' }
+    }
   ],
   researched: '2026-10-09',
   type: 'economic',

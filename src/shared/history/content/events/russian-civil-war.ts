@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'russian-civil-war',
   names: [
-    { text: 'Russian Civil War', lang: 'en', role: 'primary' },
-    { text: 'Гражданская война в России', lang: 'ru', role: 'native' }
+    { text: 'Russian Civil War', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'war',

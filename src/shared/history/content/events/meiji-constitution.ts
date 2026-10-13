@@ -14,8 +14,7 @@ export default defineEvent({
           loc: { section: 'The Constitution of Japan' }
         }
       ]
-    },
-    { text: '大日本帝國憲法', lang: 'ja', role: 'native' }
+    }
   ],
   researched: '2026-10-08',
   type: 'law',

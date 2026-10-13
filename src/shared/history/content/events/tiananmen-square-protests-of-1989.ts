@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'tiananmen-square-protests-of-1989',
   names: [
     { text: 'Tiananmen Square protests of 1989', lang: 'en', role: 'primary' },
-    { text: '六四事件', lang: 'zh', role: 'native' },
     {
       text: 'Tiananmen Square, 1989',
       lang: 'en',

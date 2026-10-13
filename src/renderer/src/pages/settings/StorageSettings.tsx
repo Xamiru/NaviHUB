@@ -36,7 +36,7 @@ export function StorageUsageSettings() {
     const ok = await confirmDialog(
       entry.key === 'thumbnails'
         ? 'Clear the thumbnail cache? Thumbnails are rebuilt as covers are shown again, so grids may load more slowly for a while.'
-        : 'Clear extracted subtitles? Each track is extracted again the next time its video needs it.',
+        : 'Clear extracted subtitles and fonts? Each track and its fonts are extracted again the next time its video needs them.',
       { confirmLabel: 'Clear' }
     )
     if (!ok) return

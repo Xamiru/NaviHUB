@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'iraqi-revolution-of-1958',
   names: [
     { text: 'Iraqi revolution of 1958', lang: 'en', role: 'primary' },
-    { text: 'ثورة 14 تموز', lang: 'ar', role: 'native' },
     {
       text: 'July 14 Revolution',
       lang: 'en',

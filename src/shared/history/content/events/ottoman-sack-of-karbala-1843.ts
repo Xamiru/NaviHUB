@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'ottoman-sack-of-karbala-1843',
   names: [
-    { text: 'Ottoman sack of Karbala (1843)', lang: 'en', role: 'primary' },
-    { text: 'کشتار کربلا به دست نجیب پاشا', lang: 'fa', role: 'native' }
+    { text: 'Ottoman sack of Karbala (1843)', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'massacre',

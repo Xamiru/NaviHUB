@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'egyptian-revolution-of-1919',
   names: [
     { text: 'Egyptian Revolution of 1919', lang: 'en', role: 'primary' },
-    { text: 'ثورة 1919', lang: 'ar', role: 'native' },
     {
       text: '1919 Revolution',
       lang: 'en',

@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'prague-spring',
   names: [
-    { text: 'Prague Spring', lang: 'en', role: 'primary' },
-    { text: 'Pražské jaro', lang: 'cs', role: 'native' }
+    { text: 'Prague Spring', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'reform',

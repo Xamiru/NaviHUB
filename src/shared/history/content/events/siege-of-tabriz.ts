@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'siege-of-tabriz',
   names: [
-    { text: 'Siege of Tabriz', lang: 'en', role: 'primary' },
-    { text: 'محاصره تبریز', lang: 'fa', role: 'native' }
+    { text: 'Siege of Tabriz', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'battle',

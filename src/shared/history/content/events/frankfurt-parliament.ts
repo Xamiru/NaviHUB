@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'frankfurt-parliament',
   names: [
     { text: 'Frankfurt Parliament', lang: 'en', role: 'primary' },
-    { text: 'Frankfurter Nationalversammlung', lang: 'de', role: 'native' },
     {
       text: 'National Assembly',
       lang: 'en',

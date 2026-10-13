@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'egyptian-revolution-of-1952',
   names: [
     { text: 'Egyptian revolution of 1952', lang: 'en', role: 'primary' },
-    { text: 'ثورة 23 يوليو', lang: 'ar', role: 'native' },
     {
       text: '23 July 1952 Revolution',
       lang: 'en',

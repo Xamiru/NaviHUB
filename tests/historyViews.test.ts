@@ -104,7 +104,7 @@ describe('History overview and decade', () => {
     const marks = new Map([['event:sample-revolution', { read: '2026-10-12', favorite: false }]])
     const o = overview(index, { marks })
     expect(o.items.find((i) => i.ref === 'event:sample-revolution')).toMatchObject({ read: true, lane: 'iran', prominence: 1 })
-    expect(o.decades).toEqual([{ start: 1970, events: 2, read: 1 }])
+    expect(o.decades).toEqual([{ start: 1970, span: 10, label: '1970s', events: 2, read: 1 }])
     expect(o.counts).toMatchObject({ events: 2, people: 2, sources: 4, read: 1, personal: 1 })
   })
 

@@ -4,7 +4,6 @@ export default definePolity({
   id: 'bangladesh',
   names: [
     { text: 'Bangladesh', lang: 'en', role: 'primary' },
-    { text: 'বাংলাদেশ', lang: 'bn', role: 'native', translit: 'Bāṅlādeś' },
     {
       text: 'People’s Republic of Bangladesh',
       lang: 'en',

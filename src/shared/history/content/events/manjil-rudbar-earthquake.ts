@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'manjil-rudbar-earthquake',
   names: [
     { text: 'Manjil–Rudbar earthquake', lang: 'en', role: 'primary' },
-    { text: 'زمین‌لرزه منجیل و رودبار', lang: 'fa', role: 'native' },
     {
       text: 'Manjil-Rudbār earthquake',
       lang: 'en',

@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'anglo-persian-preliminary-treaty-of-1809',
   names: [
     { text: 'Anglo-Persian Preliminary Treaty of 1809', lang: 'en', role: 'primary' },
-    { text: 'عهدنامه مجمل ایران و انگلیس', lang: 'fa', role: 'native' },
     { text: 'Preliminary Treaty of Friendship and Alliance', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-08',

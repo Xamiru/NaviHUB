@@ -4,7 +4,6 @@ export default definePolity({
   id: 'republic-of-brazil',
   names: [
     { text: 'Republic of Brazil', lang: 'en', role: 'primary' },
-    { text: 'República Federativa do Brasil', lang: 'pt', role: 'native' },
     {
       text: 'United States of Brazil',
       lang: 'en',

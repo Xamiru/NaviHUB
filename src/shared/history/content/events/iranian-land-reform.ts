@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'iranian-land-reform',
   names: [
     { text: 'Iranian land reform', lang: 'en', role: 'primary' },
-    { text: 'اصلاحات ارضی', lang: 'fa', role: 'native' },
     {
       text: 'Land reform of 1962',
       lang: 'en',

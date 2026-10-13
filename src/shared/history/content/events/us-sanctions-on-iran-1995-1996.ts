@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'us-sanctions-on-iran-1995-1996',
   names: [
     { text: 'US sanctions on Iran, 1995–1996', lang: 'en', role: 'primary' },
-    { text: 'تحریم‌های ایالات متحده علیه ایران (۱۳۷۴–۱۳۷۵)', lang: 'fa', role: 'native' },
     {
       text: 'Iran and Libya Sanctions Act',
       lang: 'en',

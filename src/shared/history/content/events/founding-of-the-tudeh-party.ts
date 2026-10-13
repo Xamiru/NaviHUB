@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'founding-of-the-tudeh-party',
   names: [
     { text: 'Founding of the Tudeh Party', lang: 'en', role: 'primary' },
-    { text: 'حزب توده ایران', lang: 'fa', role: 'native' },
     {
       text: 'Ḥezb-e Tūda-ye Īrān',
       lang: 'fa-Latn',

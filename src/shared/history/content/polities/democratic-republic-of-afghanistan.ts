@@ -5,12 +5,6 @@ export default definePolity({
   names: [
     { text: 'Democratic Republic of Afghanistan', lang: 'en', role: 'primary' },
     {
-      text: 'جمهوری دموکراتیک افغانستان',
-      lang: 'fa',
-      role: 'native',
-      translit: 'Jomhūrī-ye Demokrātīk-e Afḡānestān'
-    },
-    {
       text: 'DRA',
       lang: 'en',
       role: 'alternative',

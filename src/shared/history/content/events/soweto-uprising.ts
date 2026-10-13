@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'soweto-uprising',
   names: [
     { text: 'Soweto uprising', lang: 'en', role: 'primary' },
-    { text: 'Soweto-opstand', lang: 'af', role: 'alternative' },
     {
       text: 'Soweto, 1976',
       lang: 'en',

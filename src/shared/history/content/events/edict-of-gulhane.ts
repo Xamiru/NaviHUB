@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'edict-of-gulhane',
   names: [
     { text: 'Edict of Gülhane', lang: 'en', role: 'primary' },
-    { text: 'Gülhane Hatt-ı Şerifi', lang: 'tr', role: 'native' },
     {
       text: 'Rescript of Gülhane',
       lang: 'en',

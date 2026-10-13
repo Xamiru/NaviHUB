@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'zanjan-upheaval',
   names: [
     { text: 'Zanjān upheaval', lang: 'en', role: 'primary' },
-    { text: 'قیام بابیان زنجان', lang: 'fa', role: 'native' },
     {
       text: 'Babi uprising of Zanjān',
       lang: 'en',

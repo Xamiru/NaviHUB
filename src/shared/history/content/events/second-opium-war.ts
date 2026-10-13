@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'second-opium-war',
   names: [
-    { text: 'Second Opium War', lang: 'en', role: 'primary' },
-    { text: '第二次鴉片戰爭', lang: 'zh', role: 'native' }
+    { text: 'Second Opium War', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'war',

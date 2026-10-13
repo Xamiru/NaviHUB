@@ -11,12 +11,12 @@ import { usePlayer } from '../lib/player'
 import { ANIME } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
 import QuizRecord from '../components/QuizRecord'
-import { HeartIcon } from '../components/PlayerIcons'
+import { HeartIcon, PauseIcon, PlayIcon } from '../components/PlayerIcons'
 import { Group, Pill } from '../components/PillGroup'
 import { ERAS } from '@shared/era'
 import type { QuizKind, QuizSong, QuizSongFilter } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
-import { pickDistractors } from '@shared/quizDistractors'
+import { animeFranchiseKey, pickSongDistractors, songRecordingIndex } from '@shared/songQuiz'
 import {
   answerIsCorrect,
   balancedDeckAvoiding,
@@ -27,7 +27,6 @@ import {
 } from '@shared/quizCore'
 import {
   initialSongAuditionIndex,
-  quizClipDurationMs,
   shouldAcceptAudioRequest,
   shouldAutoplaySongMode,
   shouldRunSongTimer,
@@ -36,6 +35,8 @@ import {
 } from '@shared/quizAudioCore'
 import { useTabLeaveGuard } from '../lib/browserTabs'
 import { loadQuizDefaults, SONG_SNIPPET_CHOICES } from '../lib/quizPrefs'
+import { audioDurationSeconds, audioOnsetSeconds } from '../lib/audioOnset'
+import { useQuizClip } from '../lib/quizClip'
 
 type Phase = 'setup' | 'play' | 'summary'
 type ListSource = 'consumed' | 'all'
@@ -51,11 +52,58 @@ interface Stats {
 
 const TIMER_SECONDS = 20
 const AUTONEXT_MS = 3500
+// The answer clock starts anyway if a started clip is still silent this long.
+const HEARD_FALLBACK_MS = 8000
 const OFFSET_MAX_FRACTION = 0.6 // never start a clip past 60% of the song
 const ARCADE_LIVES = 3
 const SNIPPET_CHOICES = SONG_SNIPPET_CHOICES // seconds; 0 = play the full clip
 
 const EMPTY_STATS: Stats = { score: 0, correct: 0, total: 0, streak: 0, best: 0 }
+
+// A resolved source with where its sound starts and how long it runs, probed
+// before playback so a random start point never plays the intro first.
+interface SongAudio {
+  src: string
+  onset: number
+  duration: number | null
+}
+
+interface RoundResult {
+  song: QuizSong
+  picked: QuizSong | null
+  correct: boolean
+}
+
+function quizTrack(song: QuizSong, src: string) {
+  // Masked so the now-playing bar, widget and OS overlay never spoil the answer.
+  return { id: `quiz-${song.themeId}`, src, title: 'Song Quiz', subtitle: null, context: '???' }
+}
+
+// Snippet cutoff and the moment sound is first heard (the answer clock waits
+// for it). Its own component, because it re-renders every frame.
+function ClipMeter({
+  trackId,
+  startOffset,
+  seconds,
+  onHeard
+}: {
+  trackId: string | null
+  startOffset: number
+  seconds: number
+  onHeard: () => void
+}) {
+  const elapsed = useQuizClip(trackId, startOffset, seconds > 0 ? seconds : null, onHeard)
+  if (seconds <= 0 || !trackId) return null
+  return (
+    <div
+      className="mx-auto mt-5 h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-base-700"
+      role="img"
+      aria-label={`${seconds} second clip`}
+    >
+      <div className="h-full bg-accent" style={{ width: `${Math.min(elapsed / seconds, 1) * 100}%` }} />
+    </div>
+  )
+}
 
 // Each mode writes its own quiz_session kind so personal bests stay meaningful:
 // accuracy for classic/reverse, speed points for arcade (SCORE_RANKED_KINDS).
@@ -112,7 +160,12 @@ export default function SongQuizPage() {
   const [loading, setLoading] = useState(false)
   const [newBest, setNewBest] = useState(false)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
-  const [clipRun, setClipRun] = useState(0)
+  // The answer clock starts once the clip is actually audible (classic/arcade).
+  const [heard, setHeard] = useState(false)
+  const [clipStart, setClipStart] = useState<{ trackId: string; offset: number } | null>(null)
+  const [results, setResults] = useState<RoundResult[]>([])
+  // Other anime that use this exact recording; all of them are correct.
+  const [sharedTitles, setSharedTitles] = useState<string[]>([])
 
   const roundKind = kindForMode(mode)
   const { data: history } = useQuery({
@@ -128,8 +181,15 @@ export default function SongQuizPage() {
   const validKeysRef = useRef<string[]>([])
   const answeredRef = useRef(false)
   const autoTimerRef = useRef<number | null>(null)
-  const offsetDoneRef = useRef<number | null>(null)
+  const heardFallbackRef = useRef<number | null>(null)
   const offsetByThemeRef = useRef(new Map<number, number>())
+  const audioCacheRef = useRef(new Map<number, Promise<SongAudio | null>>())
+  const sameRecordingRef = useRef<(song: QuizSong) => number[]>((song) => [song.mediaId])
+  const franchiseRef = useRef(new Map<number, string>())
+  const optionsRef = useRef<QuizSong[]>([])
+  const resultsRef = useRef<RoundResult[]>([])
+  const playerRef = useRef(player)
+  playerRef.current = player
   const lengthRef = useRef(0)
   const autoNextRef = useRef(true)
   const modeRef = useRef<Mode>('classic')
@@ -142,6 +202,13 @@ export default function SongQuizPage() {
   const seedRef = useRef(0)
   const rngRef = useRef<() => number>(Math.random)
 
+  function clearHeardFallback() {
+    if (heardFallbackRef.current != null) {
+      window.clearTimeout(heardFallbackRef.current)
+      heardFallbackRef.current = null
+    }
+  }
+
   function clearAuto() {
     if (autoTimerRef.current != null) {
       window.clearTimeout(autoTimerRef.current)
@@ -151,13 +218,15 @@ export default function SongQuizPage() {
 
   function stopQuizAudio() {
     playRequestRef.current++
-    if (shouldStopQuizTrack(player.track?.id)) player.stop()
+    const activePlayer = playerRef.current
+    if (shouldStopQuizTrack(activePlayer.track?.id)) activePlayer.stop()
   }
 
   // Stop playback + timers when leaving the quiz page.
   useEffect(() => {
     return () => {
       clearAuto()
+      clearHeardFallback()
       stopQuizAudio()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -169,12 +238,14 @@ export default function SongQuizPage() {
     if (phase !== 'play' || !current || answered || !timed) return
     const quizAudioPlaying = player.isPlaying && shouldStopQuizTrack(player.track?.id)
     if (!shouldRunSongTimer(modeRef.current, quizAudioPlaying)) return
+    // Loading time never costs the player: the clock waits for audible sound.
+    if (modeRef.current !== 'reverse' && !heard) return
     const id = window.setInterval(() => {
       timeLeftRef.current = Math.max(0, timeLeftRef.current - 1)
       setTimeLeft(timeLeftRef.current)
     }, 1000)
     return () => window.clearInterval(id)
-  }, [phase, current, answered, timed, player.isPlaying, player.track?.id])
+  }, [phase, current, answered, timed, heard, player.isPlaying, player.track?.id])
 
   // Time's up counts as a miss.
   useEffect(() => {
@@ -184,19 +255,6 @@ export default function SongQuizPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, answered, timed, phase, current])
 
-  // Snippet mode: pause the clip N seconds into every play (replaying re-arms,
-  // so the cap is per-play rather than per-question). Reverse pauses its
-  // decision timer during the audition; classic and arcade keep counting.
-  useEffect(() => {
-    if (phase !== 'play' || !current || answered || snippetRef.current === 0) return
-    if (!player.isPlaying || !player.track?.id.startsWith('quiz-')) return
-    const duration = quizClipDurationMs(snippetRef.current)
-    if (duration == null) return
-    const id = window.setTimeout(() => player.toggle(), duration)
-    return () => window.clearTimeout(id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, current, answered, player.isPlaying, player.track?.id, clipRun])
-
   // Keyboard. Classic/arcade: 1-4 answers, Enter advances. Reverse: 1-4
   // auditions a clip and Enter locks the auditioned one in as the answer.
   useEffect(() => {
@@ -205,7 +263,10 @@ export default function SongQuizPage() {
       const t = e.target as HTMLElement
       if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t.isContentEditable)
         return
-      if (!answeredRef.current && e.key >= '1' && e.key <= '4') {
+      if (e.code === 'Space') {
+        e.preventDefault()
+        toggleCurrentClip()
+      } else if (!answeredRef.current && e.key >= '1' && e.key <= '4') {
         e.preventDefault()
         const idx = Number(e.key) - 1
         const opt = options[idx]
@@ -230,56 +291,96 @@ export default function SongQuizPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, options, answered])
 
-  // Once the current song's duration is known, jump to a random start point.
-  useEffect(() => {
-    if (!offsetEnabled || !current || !player.track?.id.startsWith('quiz-')) return
-    // A streamed song may report Infinity/NaN duration; skip the offset then
-    // rather than seeking to a non-finite time.
-    if (!Number.isFinite(player.duration) || player.duration <= 0) return
-    const activeThemeId = Number(player.track.id.slice('quiz-'.length))
-    if (offsetDoneRef.current === activeThemeId) return
-    offsetDoneRef.current = activeThemeId
-    let offset = offsetByThemeRef.current.get(activeThemeId)
-    if (offset == null) {
-      offset = rngRef.current() * player.duration * OFFSET_MAX_FRACTION
-      offsetByThemeRef.current.set(activeThemeId, offset)
+  // Cached per theme for the session: the source, its onset and its duration
+  // are probed once, and the next song is prefetched while this one plays.
+  function loadSong(song: QuizSong): Promise<SongAudio | null> {
+    let pending = audioCacheRef.current.get(song.themeId)
+    if (!pending) {
+      pending = (async () => {
+        let src: string | null = null
+        if (song.audioPath) src = await api.files.resolveUrl(song.audioPath)
+        if (!src) src = song.audioUrl
+        if (!src) return null
+        const [onset, duration] = await Promise.all([
+          audioOnsetSeconds(src),
+          audioDurationSeconds(src)
+        ])
+        return { src, onset, duration }
+      })().catch(() => null)
+      audioCacheRef.current.set(song.themeId, pending)
     }
-    player.seek(offset)
-  }, [offsetEnabled, current, player.track?.id, player.duration, player])
+    return pending
+  }
+
+  // The random start point is drawn once per theme per question, so a replay
+  // returns to the same spot; without it, play starts where sound starts.
+  function startOffsetFor(song: QuizSong, audio: SongAudio): number {
+    if (!offsetEnabled || audio.duration == null) return audio.onset
+    let offset = offsetByThemeRef.current.get(song.themeId)
+    if (offset == null) {
+      offset = Math.max(audio.onset, rngRef.current() * audio.duration * OFFSET_MAX_FRACTION)
+      offsetByThemeRef.current.set(song.themeId, offset)
+    }
+    return offset
+  }
 
   async function playSong(song: QuizSong) {
     const request = ++playRequestRef.current
-    offsetDoneRef.current = null
-    const trackId = `quiz-${song.themeId}`
-    if (player.track?.id === trackId) {
-      let offset = 0
-      if (offsetEnabled && Number.isFinite(player.duration) && player.duration > 0) {
-        offset =
-          offsetByThemeRef.current.get(song.themeId) ??
-          rngRef.current() * player.duration * OFFSET_MAX_FRACTION
-        offsetByThemeRef.current.set(song.themeId, offset)
-        offsetDoneRef.current = song.themeId
-      }
-      player.seek(offset)
-      if (!player.isPlaying) player.toggle()
-      setClipRun((n) => n + 1)
+    const audio = await loadSong(song)
+    if (!shouldAcceptAudioRequest(playRequestRef.current, request)) return
+    if (!audio) {
+      stopQuizAudio()
+      // Nothing will ever play; let the clock run so the question can end.
+      setHeard(true)
       return
     }
-    let src: string | null = null
-    if (song.audioPath) src = await api.files.resolveUrl(song.audioPath)
-    if (!src) src = song.audioUrl
-    if (!shouldAcceptAudioRequest(playRequestRef.current, request)) return
-    // Mask the track so the now-playing bar doesn't spoil the answer.
-    if (src) {
-      player.play({ id: trackId, src, title: 'Song Quiz', subtitle: null, context: '???' })
-      setClipRun((n) => n + 1)
+    const offset = startOffsetFor(song, audio)
+    const track = quizTrack(song, audio.src)
+    setClipStart({ trackId: track.id, offset })
+    // A source that resolves but never plays (a corrupt file, a stalled
+    // stream) would otherwise hold a timed question open forever.
+    clearHeardFallback()
+    heardFallbackRef.current = window.setTimeout(() => {
+      if (shouldAcceptAudioRequest(playRequestRef.current, request)) setHeard(true)
+    }, HEARD_FALLBACK_MS)
+    const activePlayer = playerRef.current
+    if (activePlayer.track?.id === track.id) {
+      activePlayer.seek(offset)
+      if (!activePlayer.isPlaying) activePlayer.toggle()
+    } else {
+      activePlayer.playQueue([track], 0, { startTime: offset })
     }
-    else stopQuizAudio()
+  }
+
+  // Summary recap: the whole song from where its sound starts, no cutoff.
+  async function previewSong(song: QuizSong) {
+    const activePlayer = playerRef.current
+    if (activePlayer.track?.id === `quiz-${song.themeId}`) {
+      activePlayer.toggle()
+      return
+    }
+    const request = ++playRequestRef.current
+    const audio = await loadSong(song)
+    if (!audio || !shouldAcceptAudioRequest(playRequestRef.current, request)) return
+    playerRef.current.playQueue([quizTrack(song, audio.src)], 0, { startTime: audio.onset })
+  }
+
+  // Space: pause or resume the clip in play, or start it again.
+  function toggleCurrentClip() {
+    const song =
+      modeRef.current === 'reverse'
+        ? optionsRef.current[auditionedRef.current ?? 0]
+        : currentRef.current
+    if (!song) return
+    const activePlayer = playerRef.current
+    if (activePlayer.track?.id === `quiz-${song.themeId}`) activePlayer.toggle()
+    else if (modeRef.current === 'reverse') auditionAt(auditionedRef.current ?? 0)
+    else void playSong(song)
   }
 
   // Reverse mode: hear a candidate clip without answering yet.
   function auditionAt(idx: number) {
-    const opt = options[idx]
+    const opt = optionsRef.current[idx]
     if (!opt) return
     auditionedRef.current = idx
     setAuditioned(idx)
@@ -288,6 +389,7 @@ export default function SongQuizPage() {
 
   function nextQuestion() {
     clearAuto()
+    clearHeardFallback()
     auditionedRef.current = null
     setAuditioned(null)
     offsetByThemeRef.current.clear()
@@ -304,19 +406,37 @@ export default function SongQuizPage() {
       endGame()
       return
     }
-    // Distractors share the answer's era/genres when the library allows, and
-    // never another song of the SAME anime (pickDistractors dedupes by media).
-    const distractors = pickDistractors(
+    // Distractors share the answer's era/genres when the library allows, never
+    // another song of the same anime, never an anime using this very recording,
+    // and no franchise fills more than two options.
+    const sameRecording = sameRecordingRef.current(song)
+    const franchises = franchiseRef.current
+    const distractors = pickSongDistractors(
       shuffle(poolRef.current, rngRef.current),
       song,
       3,
-      [],
+      sameRecording,
+      (value) => franchises.get(value.mediaId) ?? animeFranchiseKey(value.animeTitle),
       rngRef.current
     )
     const nextOptions = shuffle([song, ...distractors], rngRef.current)
     currentRef.current = song
-    validKeysRef.current = [songAnswerKey(modeRef.current, song)]
+    // Classic/arcade accept every anime that uses the recording; reverse keys
+    // clips by theme, and no clip of the same recording is ever offered.
+    validKeysRef.current =
+      modeRef.current === 'reverse'
+        ? [songAnswerKey(modeRef.current, song)]
+        : sameRecording.map((mediaId) => songAnswerKey(modeRef.current, { mediaId, themeId: 0 }))
+    setSharedTitles(
+      sameRecording
+        .filter((mediaId) => mediaId !== song.mediaId)
+        .map((mediaId) => poolRef.current.find((value) => value.mediaId === mediaId)?.animeTitle)
+        .filter((title): title is string => Boolean(title))
+    )
     answeredRef.current = false
+    optionsRef.current = nextOptions
+    setHeard(false)
+    setClipStart(null)
     setCurrent(song)
     setOptions(nextOptions)
     setPicked(null)
@@ -333,6 +453,10 @@ export default function SongQuizPage() {
     } else {
       stopQuizAudio()
     }
+    // Prefetch: every clip a reverse question can audition, and the next answer.
+    if (modeRef.current === 'reverse') for (const option of nextOptions) void loadSong(option)
+    const upcoming = deckRef.current[deckRef.current.length - 1]
+    if (upcoming) void loadSong(upcoming)
   }
 
   function handleAnswer(key: string | null) {
@@ -357,6 +481,15 @@ export default function SongQuizPage() {
       correctCount += 1
     }
     livesRef.current = livesLeft
+    const answer = currentRef.current
+    if (answer) {
+      const picked =
+        key == null
+          ? null
+          : (optionsRef.current.find((option) => songAnswerKey(modeRef.current, option) === key) ?? null)
+      resultsRef.current = [...resultsRef.current, { song: answer, picked, correct }]
+      setResults(resultsRef.current)
+    }
     const next: Stats = {
       score,
       correct: correctCount,
@@ -463,6 +596,13 @@ export default function SongQuizPage() {
         return
       }
       poolRef.current = pool
+      sameRecordingRef.current = songRecordingIndex(pool)
+      franchiseRef.current = new Map(
+        pool.map((song): [number, string] => [song.mediaId, animeFranchiseKey(song.animeTitle)])
+      )
+      audioCacheRef.current.clear()
+      resultsRef.current = []
+      setResults([])
       seedRef.current = quizSeed(`${Date.now()}-${Math.random()}`)
       rngRef.current = seededRng(seedRef.current)
       deckRef.current = balancedDeckAvoiding(pool, (value) => value.mediaId, null, rngRef.current)
@@ -594,6 +734,7 @@ export default function SongQuizPage() {
   if (phase === 'summary') {
     const accuracy = stats.total ? Math.round((stats.correct / stats.total) * 100) : 0
     const arcade = modeRef.current === 'arcade'
+    const reverseRound = modeRef.current === 'reverse'
     return (
       <StudySessionFrame title="Song quiz complete" subtitle={arcade ? 'Arcade broadcast' : 'Challenge broadcast'}>
         <div className="py-3 text-center">
@@ -618,14 +759,74 @@ export default function SongQuizPage() {
           {newBest && <p className="mt-3 text-sm font-semibold text-accent">New personal best.</p>}
           {saveState === 'saving' && <p className="mt-3 text-sm text-gray-400">Saving session…</p>}
           {saveState === 'failed' && <p className="mt-3 text-sm text-red-400">Session was not saved.</p>}
-          <div className="mt-6 flex gap-2">
-            <button className="btn-primary flex-1" onClick={() => setPhase('setup')}>
-              Play again
-            </button>
-            <Link to="/quiz" className="btn-ghost flex-1 text-center">
-              Back to quizzes
-            </Link>
-          </div>
+        </div>
+        {results.length > 0 && (
+          <ol className="mt-4 divide-y divide-base-700 border-y border-base-700 text-left">
+            {results.map((result, index) => {
+              const trackId = `quiz-${result.song.themeId}`
+              const previewing = player.track?.id === trackId && player.isPlaying
+              const missedWith =
+                result.picked && !result.correct
+                  ? reverseRound
+                    ? `You picked the clip from ${result.picked.animeTitle}`
+                    : `You picked ${result.picked.animeTitle}`
+                  : null
+              return (
+                <li key={`${result.song.themeId}-${index}`} className="flex items-center gap-4 py-3 text-sm">
+                  <span className="w-6 text-gray-500 tabular-nums">{index + 1}</span>
+                  <CoverImage
+                    path={result.song.coverPath}
+                    alt=""
+                    thumbWidth={96}
+                    className="aspect-[2/3] w-10 shrink-0 rounded"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-white">{result.song.animeTitle}</p>
+                    <p className="truncate text-gray-400">
+                      {[result.song.slug, result.song.title].filter(Boolean).join(' · ') || 'Theme song'}
+                      {result.song.artists.length > 0 ? ` — ${result.song.artists.join(', ')}` : ''}
+                    </p>
+                    {missedWith && <p className="truncate text-gray-500">{missedWith}</p>}
+                  </div>
+                  <span className={result.correct ? 'text-green-400' : 'text-red-400'}>
+                    {result.correct ? 'Correct' : result.picked ? 'Wrong' : 'Missed'}
+                  </span>
+                  <button
+                    className="btn-ghost h-9 w-9 shrink-0 rounded-full p-0"
+                    aria-label={previewing ? `Pause ${result.song.animeTitle} theme` : `Play ${result.song.animeTitle} theme`}
+                    title={previewing ? 'Pause' : 'Play'}
+                    onClick={() => void previewSong(result.song)}
+                  >
+                    {previewing ? <PauseIcon className="mx-auto h-4 w-4" /> : <PlayIcon className="mx-auto h-4 w-4" />}
+                  </button>
+                </li>
+              )
+            })}
+          </ol>
+        )}
+        <div className="mt-6 flex gap-2">
+          <button
+            className="btn-primary flex-1"
+            onClick={() => {
+              // Back on setup first, so a pool that no longer deals shows its error there.
+              setPhase('setup')
+              void startGame()
+            }}
+          >
+            Play again
+          </button>
+          <button
+            className="btn-ghost flex-1"
+            onClick={() => {
+              stopQuizAudio()
+              setPhase('setup')
+            }}
+          >
+            Change settings
+          </button>
+          <Link to="/quiz" className="btn-ghost flex-1 text-center">
+            Back to quizzes
+          </Link>
         </div>
       </StudySessionFrame>
     )
@@ -644,6 +845,18 @@ export default function SongQuizPage() {
   // Reverse mode: which option slot holds the correct clip (for the reveal).
   const correctIdx = current ? options.findIndex((o) => o.themeId === current.themeId) : -1
   const pickedCorrect = answerIsCorrect(validKeysRef.current, picked)
+  const loadedQuizTrack = shouldStopQuizTrack(player.track?.id) ? (player.track?.id ?? null) : null
+  // Only the clip this question started is measured: until playSong has set
+  // its start, the loaded track may still be the previous question's song.
+  const clipTrack = clipStart && clipStart.trackId === loadedQuizTrack ? clipStart : null
+  const clipMeter = !answered && (
+    <ClipMeter
+      trackId={clipTrack?.trackId ?? null}
+      startOffset={clipTrack?.offset ?? 0}
+      seconds={snippetRef.current}
+      onHeard={() => setHeard(true)}
+    />
+  )
 
   return (
     <StudySessionFrame
@@ -704,6 +917,7 @@ export default function SongQuizPage() {
           <p className="mt-3 text-sm text-gray-500">
             Audition with the buttons or keys 1-4 — lock your pick with Pick / Enter.
           </p>
+          {clipMeter}
         </div>
       ) : (
         <div className="card p-8 text-center">
@@ -723,6 +937,7 @@ export default function SongQuizPage() {
               Replay
             </button>
           </div>
+          {clipMeter}
         </div>
       )}
 
@@ -822,6 +1037,11 @@ export default function SongQuizPage() {
             {current.artists.length > 0 && (
               <p className="mt-0.5 truncate text-sm text-gray-500">{current.artists.join(', ')}</p>
             )}
+            {!reverse && sharedTitles.length > 0 && (
+              <p className="mt-1 text-sm text-gray-400">
+                Same song in {sharedTitles.join(', ')}; any of them counts.
+              </p>
+            )}
           </div>
           <button className="btn-ghost shrink-0 px-4 py-2 text-sm" onClick={() => void playSong(current)}>
             Play clip
@@ -835,7 +1055,7 @@ export default function SongQuizPage() {
             className="btn-ghost px-5 py-2.5 text-base"
             onClick={() => handleAnswer(null)}
           >
-            Reveal answer
+            Reveal (counts as a miss)
           </button>
         )}
         {answered &&

@@ -4,8 +4,6 @@ export default defineEvent({
   id: 'israeli-disengagement-from-gaza',
   names: [
     { text: 'Israeli disengagement from Gaza', lang: 'en', role: 'primary' },
-    { text: 'תוכנית ההתנתקות', lang: 'he', role: 'native' },
-    { text: 'خطة فك الارتباط', lang: 'ar', role: 'alternative' },
     { text: 'Gaza disengagement plan', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-13',

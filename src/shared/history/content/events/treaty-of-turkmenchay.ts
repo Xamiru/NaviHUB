@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'treaty-of-turkmenchay',
   names: [
     { text: 'Treaty of Turkmenchay', lang: 'en', role: 'primary' },
-    { text: 'عهدنامه ترکمانچای', lang: 'fa', role: 'native' },
     {
       text: 'Treaty of Torkamānčāy',
       lang: 'fa-Latn',

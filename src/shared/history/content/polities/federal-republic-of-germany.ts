@@ -4,7 +4,6 @@ export default definePolity({
   id: 'federal-republic-of-germany',
   names: [
     { text: 'Federal Republic of Germany', lang: 'en', role: 'primary' },
-    { text: 'Bundesrepublik Deutschland', lang: 'de', role: 'native' },
     {
       text: 'West Germany',
       lang: 'en',

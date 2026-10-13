@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'founding-of-the-soviet-union',
   names: [
-    { text: 'Founding of the Soviet Union', lang: 'en', role: 'primary' },
-    { text: 'Образование СССР', lang: 'ru', role: 'native' }
+    { text: 'Founding of the Soviet Union', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'founding',

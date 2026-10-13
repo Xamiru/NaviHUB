@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'congress-of-vienna',
   names: [
-    { text: 'Congress of Vienna', lang: 'en', role: 'primary' },
-    { text: 'Wiener Kongress', lang: 'de', role: 'native' }
+    { text: 'Congress of Vienna', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'conference',

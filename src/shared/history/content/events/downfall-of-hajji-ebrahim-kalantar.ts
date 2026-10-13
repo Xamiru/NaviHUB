@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'downfall-of-hajji-ebrahim-kalantar',
   names: [
-    { text: 'Downfall of Hajji Ebrahim Kalantar', lang: 'en', role: 'primary' },
-    { text: 'قتل حاج ابراهیم کلانتر', lang: 'fa', role: 'native' }
+    { text: 'Downfall of Hajji Ebrahim Kalantar', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'other',

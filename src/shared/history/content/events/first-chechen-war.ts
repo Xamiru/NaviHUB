@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'first-chechen-war',
   names: [
     { text: 'First Chechen War', lang: 'en', role: 'primary' },
-    { text: 'Первая чеченская война', lang: 'ru', role: 'native' },
     {
       text: 'War in Chechnya',
       lang: 'en',

@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'iran-name-change-of-1935',
   names: [
     { text: 'Persia renamed Iran in international usage', lang: 'en', role: 'primary' },
-    { text: 'رسمیت نام ایران به جای پرشیا', lang: 'fa', role: 'native' },
     { text: 'Iran instead of Persia', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-08',

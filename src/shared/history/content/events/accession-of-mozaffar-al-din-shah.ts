@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'accession-of-mozaffar-al-din-shah',
   names: [
-    { text: 'Accession of Moẓaffar-al-Din Shah', lang: 'en', role: 'primary' },
-    { text: 'به تخت نشستن مظفرالدین شاه', lang: 'fa', role: 'native' }
+    { text: 'Accession of Moẓaffar-al-Din Shah', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'other',

@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'founding-of-the-peoples-republic-of-china',
   names: [
     { text: 'Founding of the People\'s Republic of China', lang: 'en', role: 'primary' },
-    { text: '中华人民共和国成立', lang: 'zh', role: 'native' },
     {
       text: 'Chinese Revolution of 1949',
       lang: 'en',

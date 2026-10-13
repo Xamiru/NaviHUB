@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'khosrow-mirza-mission-to-saint-petersburg',
   names: [
-    { text: 'Khosrow Mirza’s mission to Saint Petersburg', lang: 'en', role: 'primary' },
-    { text: 'سفارت خسرو میرزا به سن‌پترزبورگ', lang: 'fa', role: 'native' }
+    { text: 'Khosrow Mirza’s mission to Saint Petersburg', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'other',

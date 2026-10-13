@@ -4,7 +4,6 @@ export default defineEvent({
   id: '1953-iranian-coup',
   names: [
     { text: '1953 Iranian coup d’état', lang: 'en', role: 'primary' },
-    { text: 'کودتای ۲۸ مرداد ۱۳۳۲', lang: 'fa', role: 'native' },
     {
       text: 'Coup d’etat of 28 Mordād 1332',
       lang: 'en',
@@ -273,7 +272,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'COUP D’ETAT OF 1332 Š./1953. The appointment of Moḥammad Moṣaddeq (q.v.) as prime minis­ter of Persia on 9 Ordībehešt 1330 Š./29 April 1951 and the nationalization two days later of Persia’s British-owned oil industry initiated a period of tense confrontation between the Persian and British govern­ments. It lasted until the overthrow of Moṣaddeq in the coup d’etat of 28 Mordād 1332 Š./19 August 1953, which was “conceived by MI6 [the British Intelligence Service] and delivered by CIA” (Wright, p. 259).',
+          text: 'COUP D’ETAT OF 1332 Š./1953. The appointment of Moḥammad Moṣaddeq (q.v.) as prime minister of Persia on 9 Ordībehešt 1330 Š./29 April 1951 and the nationalization two days later of Persia’s British-owned oil industry initiated a period of tense confrontation between the Persian and British governments. It lasted until the overthrow of Moṣaddeq in the coup d’etat of 28 Mordād 1332 Š./19 August 1953, which was “conceived by MI6 [the British Intelligence Service] and delivered by CIA” (Wright, p. 259).',
           lang: 'en',
           cite: {
             source: 'iranica-gasiorowski-coup-detat-1953',
@@ -316,7 +315,7 @@ export default defineEvent({
         },
         {
           id: 'q3',
-          text: 'Soon after Moṣaddeq’s appointment, the British began a pro­tracted effort to have him removed from power, impos­ing economic sanctions on Persia, conducting military maneuvers in the region, and undertaking a variety of covert political activities. The most important of the covert activities were an extensive effort in the sum­mer of 1330 Š./1951 to replace him with Sayyed Żīāʾ-­al-Dīn Ṭabāṭabāʾī; a similar effort a year later to replace him with Aḥmad Qawām (Qawām-al-Salṭana)',
+          text: 'Soon after Moṣaddeq’s appointment, the British began a protracted effort to have him removed from power, imposing economic sanctions on Persia, conducting military maneuvers in the region, and undertaking a variety of covert political activities. The most important of the covert activities were an extensive effort in the summer of 1330 Š./1951 to replace him with Sayyed Żīāʾ-al-Dīn Ṭabāṭabāʾī; a similar effort a year later to replace him with Aḥmad Qawām (Qawām-al-Salṭana)',
           lang: 'en',
           cite: {
             source: 'iranica-gasiorowski-coup-detat-1953',
@@ -359,7 +358,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q7',
-          text: 'Following the break in diplomatic relations, Christopher Montague Woodhouse of M.I.-6 went to Washington, D.C. to solicit American support for the effort to overthrow Moṣaddeq. He was told that the Truman administra­tion would not participate in such an effort but that the administration of the newly elected Dwight D. Eisenhower probably would (Woodhouse, chaps. 8, 9).',
+          text: 'Following the break in diplomatic relations, Christopher Montague Woodhouse of M.I.-6 went to Washington, D.C. to solicit American support for the effort to overthrow Moṣaddeq. He was told that the Truman administration would not participate in such an effort but that the administration of the newly elected Dwight D. Eisenhower probably would (Woodhouse, chaps. 8, 9).',
           lang: 'en',
           cite: {
             source: 'iranica-gasiorowski-coup-detat-1953',
@@ -373,7 +372,7 @@ export default defineEvent({
         },
         {
           id: 'q8',
-          text: 'By then the C.I.A. team had already begun to imple­ment AJAX. It initiated a propaganda campaign against Moṣaddeq; it included planting articles in the Persian press, circulating leaflets and rumors, and possibly even financing six new anti-Moṣaddeq newspapers that suddenly appeared in Tehran.',
+          text: 'By then the C.I.A. team had already begun to implement AJAX. It initiated a propaganda campaign against Moṣaddeq; it included planting articles in the Persian press, circulating leaflets and rumors, and possibly even financing six new anti-Moṣaddeq newspapers that suddenly appeared in Tehran.',
           lang: 'en',
           cite: {
             source: 'iranica-gasiorowski-coup-detat-1953',
@@ -401,7 +400,7 @@ export default defineEvent({
         },
         {
           id: 'q10',
-          text: 'When Naṣīrī arrived at Moṣaddeq’s home he was promptly arrested, which completely disrupted the original plan. Army and police units loyal to Moṣaddeq then set up roadblocks throughout the city, began a massive hunt for Zāhedī, and arrested many of his supporters (Najātī, pp. 382-91). The general took refuge in a C.I.A. safe house, where he remained until Moṣaddeq was finally overthrown (personal inter­views). The shah fled the country, first to Baghdad and then to Rome.',
+          text: 'When Naṣīrī arrived at Moṣaddeq’s home he was promptly arrested, which completely disrupted the original plan. Army and police units loyal to Moṣaddeq then set up roadblocks throughout the city, began a massive hunt for Zāhedī, and arrested many of his supporters (Najātī, pp. 382-91). The general took refuge in a C.I.A. safe house, where he remained until Moṣaddeq was finally overthrown (personal interviews). The shah fled the country, first to Baghdad and then to Rome.',
           lang: 'en',
           cite: {
             source: 'iranica-gasiorowski-coup-detat-1953',
@@ -585,7 +584,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q18',
-        text: 'Fi­nal approval was received at a State Department meet­ing on 25 June (Roosevelt, pp. 120-24).',
+        text: 'Final approval was received at a State Department meeting on 25 June (Roosevelt, pp. 120-24).',
         lang: 'en',
         cite: {
           source: 'iranica-gasiorowski-coup-detat-1953',

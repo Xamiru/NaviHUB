@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'dreyfus-affair',
   names: [
-    { text: 'Dreyfus affair', lang: 'en', role: 'primary' },
-    { text: 'Affaire Dreyfus', lang: 'fr', role: 'native' }
+    { text: 'Dreyfus affair', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'crisis',

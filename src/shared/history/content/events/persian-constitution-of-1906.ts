@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'persian-constitution-of-1906',
   names: [
     { text: 'Persian Constitution of 1906', lang: 'en', role: 'primary' },
-    { text: 'قانون اساسی مشروطه', lang: 'fa', role: 'native' },
     {
       text: 'qānun-e asāsi',
       lang: 'fa-Latn',

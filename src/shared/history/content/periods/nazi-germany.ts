@@ -4,8 +4,7 @@ export default definePeriod({
   id: 'nazi-germany',
   names: [
     { text: 'Nazi Germany', lang: 'en', role: 'primary' },
-    { text: 'Third Reich', lang: 'en', role: 'alternative' },
-    { text: 'Drittes Reich', lang: 'de', role: 'native' }
+    { text: 'Third Reich', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-07',
   periodType: 'regime',

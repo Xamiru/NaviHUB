@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'second-intifada',
   names: [
     { text: 'Second Intifada', lang: 'en', role: 'primary' },
-    { text: 'انتفاضة الأقصى', lang: 'ar', role: 'native' },
     {
       text: 'Al-Aqsa Intifada',
       lang: 'en',
@@ -15,8 +14,7 @@ export default defineEvent({
           loc: { section: 'The Oslo Accords and the Arab-Israeli Peace Process', para: '13' }
         }
       ]
-    },
-    { text: 'האינתיפאדה השנייה', lang: 'he', role: 'alternative' }
+    }
   ],
   researched: '2026-10-13',
   type: 'uprising',

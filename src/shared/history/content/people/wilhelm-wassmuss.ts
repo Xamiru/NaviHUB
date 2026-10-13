@@ -52,7 +52,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q1',
-          text: 'Wilhelm Wassmuss (1880-1931), initially the German Acting Consul at Bushehr, later nicknamed “The Lawrence of Persia”, became the most cel­ebrat­ed of these secret agents, partly because of his dashing and adventurous lifestyle.',
+          text: 'Wilhelm Wassmuss (1880-1931), initially the German Acting Consul at Bushehr, later nicknamed “The Lawrence of Persia”, became the most celebrated of these secret agents, partly because of his dashing and adventurous lifestyle.',
           lang: 'en',
           cite: {
             source: 'eo1418-atabaki-persia-iran',

@@ -5,12 +5,6 @@ export default definePolity({
   names: [
     { text: 'Qajar Iran', lang: 'en', role: 'primary' },
     {
-      text: 'دولت علیّه ایران',
-      lang: 'fa',
-      role: 'native',
-      translit: 'Dowlat-e ʿAliyye-ye Irān'
-    },
-    {
       text: 'Persia',
       lang: 'en',
       role: 'alternative',
@@ -126,16 +120,6 @@ export default definePolity({
             at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Persia'
           }
-        },
-        {
-          id: 'q2',
-          text: 'Agha Mohammad Qajar defeated the last Zand ruler outside Kerman in 1794 and made himself master of the country, beginning the Qajar dynasty that was to last until 1925.',
-          lang: 'en',
-          cite: {
-            source: 'loc-iran-country-study-1987',
-            loc: { section: 'THE QAJARS, 1795-1925', para: '1' }
-          },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/iran/12.htm' }
         },
         {
           id: 'q3',

@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'opening-of-the-karun-river',
   names: [
     { text: 'Opening of the Karun River', lang: 'en', role: 'primary' },
-    { text: 'آزادی کشتیرانی در رود کارون', lang: 'fa', role: 'native' },
     {
       text: 'Karun proclamation',
       lang: 'en',

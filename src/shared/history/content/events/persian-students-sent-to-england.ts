@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'persian-students-sent-to-england',
   names: [
-    { text: 'First Persian students sent to England', lang: 'en', role: 'primary' },
-    { text: 'اعزام نخستین محصلان به انگلستان', lang: 'fa', role: 'native' }
+    { text: 'First Persian students sent to England', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'reform',

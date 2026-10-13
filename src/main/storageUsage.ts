@@ -21,8 +21,10 @@ export function backupsDir(): string {
   return join(app.getPath('userData'), 'backups')
 }
 
-function subtitlesDir(): string {
-  return join(videoCacheDir(), 'subs')
+// Extracted subtitle tracks and the fonts attached for styled ASS
+// (video/fonts.ts); both are rebuilt the next time a video needs them.
+function subtitleDirs(): string[] {
+  return [join(videoCacheDir(), 'subs'), join(videoCacheDir(), 'fonts')]
 }
 
 const DEFS: { key: StorageUsageKey; label: string; paths: () => string[]; clearable?: boolean }[] = [
@@ -37,7 +39,12 @@ const DEFS: { key: StorageUsageKey; label: string; paths: () => string[]; cleara
   { key: 'pictures', label: 'Pictures', paths: () => [picturesDir()] },
   { key: 'history', label: 'History archive', paths: () => [historyRootDir()] },
   { key: 'thumbnails', label: 'Thumbnail cache', paths: () => [thumbsDir()], clearable: true },
-  { key: 'subtitles', label: 'Extracted subtitles', paths: () => [subtitlesDir()], clearable: true },
+  {
+    key: 'subtitles',
+    label: 'Extracted subtitles and fonts',
+    paths: subtitleDirs,
+    clearable: true
+  },
   { key: 'logs', label: 'Logs', paths: () => [logDir()] },
   { key: 'backups', label: 'Safety copies before restore', paths: () => [backupsDir()] }
 ]
@@ -58,19 +65,17 @@ export async function usage(): Promise<StorageUsage> {
 }
 
 // Empties a regenerated cache: thumbnails are rebuilt on their next request,
-// subtitle tracks are re-extracted the next time a video wants them. Only the
-// files inside go; the folder itself stays.
+// subtitle tracks and fonts are re-extracted the next time a video wants them.
+// Only the files inside go; the folders themselves stay.
 export async function clearCache(key: StorageUsageKey): Promise<MaintenanceResult> {
-  const dir = key === 'thumbnails' ? thumbsDir() : key === 'subtitles' ? subtitlesDir() : null
-  if (!dir) throw new Error(`${key} is not a clearable cache`)
-  const before = await measureTree(dir)
-  let names: string[] = []
-  try {
-    names = await fsp.readdir(dir)
-  } catch {
-    return { ok: true, message: 'Already empty.' }
+  const dirs = key === 'thumbnails' ? [thumbsDir()] : key === 'subtitles' ? subtitleDirs() : null
+  if (!dirs) throw new Error(`${key} is not a clearable cache`)
+  const before = await measureTree(...dirs)
+  if (before.files === 0) return { ok: true, message: 'Already empty.' }
+  for (const dir of dirs) {
+    const names = await fsp.readdir(dir).catch(() => [] as string[])
+    for (const name of names) await fsp.rm(join(dir, name), { recursive: true, force: true })
   }
-  for (const name of names) await fsp.rm(join(dir, name), { recursive: true, force: true })
   logInfo('app', `cleared ${key}: ${before.files} files`)
   return { ok: true, message: `Cleared ${before.files} files.` }
 }

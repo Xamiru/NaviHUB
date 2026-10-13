@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'persian-students-sent-to-france-1859',
   names: [
-    { text: 'Persian students sent to France (1859)', lang: 'en', role: 'primary' },
-    { text: 'اعزام محصلان به فرانسه', lang: 'fa', role: 'native' }
+    { text: 'Persian students sent to France (1859)', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'cultural',
@@ -134,7 +133,7 @@ export default defineEvent({
         },
         {
           id: 'q2',
-          text: 'The success of Polak’s first students in Paris encouraged the idea of sending a much larger group abroad, and, when Ḥasan-ʿAlī Khan Amīr(-e) Neẓām Garrūsī was ap­pointed minister to Paris, a number of students were dispatched with his retinue, which left in April 1859.',
+          text: 'The success of Polak’s first students in Paris encouraged the idea of sending a much larger group abroad, and, when Ḥasan-ʿAlī Khan Amīr(-e) Neẓām Garrūsī was appointed minister to Paris, a number of students were dispatched with his retinue, which left in April 1859.',
           lang: 'en',
           cite: {
             source: 'iranica-gurney-nabavi-dar-al-fonun',
@@ -181,7 +180,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'Most stayed several years, until Nāṣer-al-Dīn Shah, who had become suspicious of the loyalty of the students abroad, abruptly ordered them to be recalled in 1284/1867. Back in Persia several taught at Dār al-fonūn and introduced, through their publications and teaching, the latest ideas and tech­niques current in Europe (for the careers of these students, see Maḥbūbī, Moʾassasāt I, pp. 321-28).',
+          text: 'Most stayed several years, until Nāṣer-al-Dīn Shah, who had become suspicious of the loyalty of the students abroad, abruptly ordered them to be recalled in 1284/1867. Back in Persia several taught at Dār al-fonūn and introduced, through their publications and teaching, the latest ideas and techniques current in Europe (for the careers of these students, see Maḥbūbī, Moʾassasāt I, pp. 321-28).',
           lang: 'en',
           cite: {
             source: 'iranica-gurney-nabavi-dar-al-fonun',

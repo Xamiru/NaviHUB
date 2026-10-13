@@ -14,8 +14,7 @@ export default defineEvent({
           loc: { section: 'The Cultural Revolution, 1966-76', para: '5' }
         }
       ]
-    },
-    { text: '无产阶级文化大革命', lang: 'zh', role: 'native' }
+    }
   ],
   researched: '2026-10-08',
   type: 'movement',

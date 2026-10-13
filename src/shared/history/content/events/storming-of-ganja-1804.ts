@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'storming-of-ganja-1804',
   names: [
-    { text: 'Storming of Ganja (1804)', lang: 'en', role: 'primary' },
-    { text: 'سقوط گنجه', lang: 'fa', role: 'native' }
+    { text: 'Storming of Ganja (1804)', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'battle',

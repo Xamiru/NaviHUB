@@ -15,7 +15,6 @@ export default defineEvent({
         }
       ]
     },
-    { text: '尼克松访华', lang: 'zh', role: 'native', translit: 'Níkèsōng fǎnghuá' },
     {
       text: 'Shanghai Communiqué',
       lang: 'en',

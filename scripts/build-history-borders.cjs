@@ -4,12 +4,16 @@
 //
 //   node scripts/build-history-borders.cjs CShapes-2.0.geojson CShapes-Europe.geojson
 //   node scripts/build-history-borders.cjs --early cliopatria_polities_only.geojson
+//   node scripts/build-history-borders.cjs --ancient cliopatria_polities_only.geojson
 //
-// The second form adds (or replaces) the 1800-1885 world layer from Cliopatria
+// The second form adds (or replaces) the 1700-1885 world layer from Cliopatria
 // (Seshat Global History Databank; Bennett et al., Scientific Data 12:247, 2025;
 // CC BY 4.0; https://github.com/Seshat-Global-History-Databank/cliopatria) to the
 // existing borders.json, so CShapes need not be downloaded again. Before 1886 the
-// map draws it beneath CShapes-Europe. Pin the release you build from.
+// map draws it beneath CShapes-Europe. Pin the release you build from. The third
+// form writes everything Cliopatria draws before 1700 to its own file,
+// borders-ancient.json, which the app loads only when the map goes back that far,
+// and records where it begins (`ancientFrom`) in borders.json for the slider.
 //
 // Download both from https://icr.ethz.ch/data/cshapes/ (CC BY-NC-SA 4.0,
 // Schvitz, Rüegger, Girardin, Cederman, Weidmann and Gleditsch 2022). The
@@ -23,12 +27,15 @@ const path = require('path')
 
 const args = process.argv.slice(2)
 const earlyPath = args[0] === '--early' ? args[1] : null
-const [worldPath, europePath] = earlyPath ? [] : args
-if (!earlyPath && (!worldPath || !europePath)) {
-  console.error('usage: build-history-borders.cjs <CShapes-2.0.geojson> <CShapes-Europe.geojson> | --early <cliopatria.geojson>')
+const ancientPath = args[0] === '--ancient' ? args[1] : null
+const [worldPath, europePath] = earlyPath || ancientPath ? [] : args
+if (!earlyPath && !ancientPath && (!worldPath || !europePath)) {
+  console.error('usage: build-history-borders.cjs <CShapes-2.0.geojson> <CShapes-Europe.geojson> | --early <cliopatria.geojson> | --ancient <cliopatria.geojson>')
   process.exit(1)
 }
-const OUT = path.join(__dirname, '..', 'src', 'main', 'history', 'data', 'borders.json')
+const DATA = path.join(__dirname, '..', 'src', 'main', 'history', 'data')
+const MAIN = path.join(DATA, 'borders.json')
+const OUT = ancientPath ? path.join(DATA, 'borders-ancient.json') : MAIN
 const Q = 100 // 0.01 degree
 const TOLERANCE = 0.045 // degrees
 const MIN_AREA = 0.04 // square degrees: islets below this are dropped unless a unit has nothing else
@@ -130,7 +137,7 @@ function shapeId(geom) {
 
 const decimal = (y, m, d) => Math.round((y + (m - 1) / 12 + (d - 1) / 365) * 1000) / 1000
 
-const EARLY_FROM = 1800
+const EARLY_FROM = 1700
 const WORLD_FROM = 1886
 const EUROPE_FROM = 1816
 // Cliopatria polities that continue past 1886 take their CShapes (Gleditsch-Ward)
@@ -145,12 +152,13 @@ const GW_BY_WIKIDATA = {
   Q842: 698 // Oman
 }
 
-function earlyUnits(features) {
+/** Cliopatria polities drawn from `lo` until `hi` (the early layer is 1700-1885; the ancient file everything before 1700). */
+function earlyUnits(features, lo = EARLY_FROM, hi = WORLD_FROM) {
   const out = []
   for (const f of features) {
     const p = f.properties
     if (p.Type !== 'POLITY' || (p.Components && String(p.Components).trim())) continue
-    if (!(p.FromYear < WORLD_FROM && p.ToYear >= EARLY_FROM)) continue
+    if (!(p.FromYear < hi && p.ToYear >= lo)) continue
     const s = shapeId(f.geometry)
     if (!s) continue
     const q = String(p.Wikidata || '')
@@ -159,8 +167,8 @@ function earlyUnits(features) {
     // (by its label point) is kept only for the years before it, except the
     // empires that reach into Asia, whose Asian part only this layer draws.
     const inEurope = s.label[0] > -25 && s.label[0] < 45 && s.label[1] > 34 && s.label[1] < 72 && code !== 365 && code !== 640
-    const to = Math.min(p.ToYear + 1, WORLD_FROM, inEurope ? EUROPE_FROM : Infinity)
-    const from = Math.max(p.FromYear, EARLY_FROM)
+    const to = Math.min(p.ToYear + 1, hi, inEurope ? EUROPE_FROM : Infinity)
+    const from = Math.max(p.FromYear, lo)
     if (from >= to) continue
     out.push({
       set: 'early',
@@ -178,7 +186,21 @@ function earlyUnits(features) {
 }
 
 let out
-if (earlyPath) {
+if (ancientPath) {
+  const units = earlyUnits(JSON.parse(fs.readFileSync(ancientPath, 'utf8')).features, -Infinity, EARLY_FROM)
+  const main = JSON.parse(fs.readFileSync(MAIN, 'utf8'))
+  out = {
+    attribution: 'Cliopatria (Seshat Global History Databank; Bennett et al. 2025), licensed CC BY 4.0, simplified',
+    url: 'https://github.com/Seshat-Global-History-Databank/cliopatria',
+    quantum: 1 / Q,
+    worldFrom: WORLD_FROM,
+    shapes,
+    units
+  }
+  // The slider reaches this far back before the ancient file is loaded.
+  main.ancientFrom = Math.min(...units.map((u) => u.from))
+  fs.writeFileSync(MAIN, JSON.stringify(main))
+} else if (earlyPath) {
   // Keep the CShapes units and their shapes; replace any earlier early layer.
   const prev = JSON.parse(fs.readFileSync(OUT, 'utf8'))
   const kept = prev.units.filter((u) => u.set !== 'early')

@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'gaza-war-2008-2009',
   names: [
     { text: 'Gaza War (2008–2009)', lang: 'en', role: 'primary' },
-    { text: 'حرب غزة', lang: 'ar', role: 'native' },
     {
       text: 'Operation Cast Lead',
       lang: 'en',
@@ -15,8 +14,7 @@ export default defineEvent({
           loc: { section: 'World Report 2010: Israel / Occupied Palestinian Territories (OPT)' }
         }
       ]
-    },
-    { text: 'מבצע עופרת יצוקה', lang: 'he', role: 'alternative' }
+    }
   ],
   researched: '2026-10-13',
   type: 'war',

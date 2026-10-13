@@ -450,16 +450,22 @@ export function normalizeCues(raw: RawCue[]): SubCue[] {
   kept.sort((a, b) => a.start - b.start || a.end - b.end)
 
   const merged: RawCue[] = []
-  for (const cue of kept) {
-    const prev = merged[merged.length - 1]
-    if (prev && prev.start === cue.start && prev.end === cue.end) {
+  outer: for (const cue of kept) {
+    // Every cue already kept for this exact slot sits at the tail (sorted), so
+    // a sign interleaved between two dialogue lines cannot split the pair.
+    for (let j = merged.length - 1; j >= 0; j -= 1) {
+      const prev = merged[j]
+      if (prev.start !== cue.start || prev.end !== cue.end) break
       // Same slot, same text: an ASS file repeating a line across two styles.
-      if (prev.text === cue.text) continue
+      if (prev.text === cue.text) continue outer
       // Same slot, different text, same placement: a two-line dialogue pair.
       // Merging is what makes "click a word → mine the WHOLE line" correct.
-      if (prev.top === cue.top) {
+      // Only lines of one kind merge: a sign or song timed to the same scene
+      // as a dialogue line stays its own cue, or the dialogue-only filter
+      // could not remove it (a merged cue keeps the first line's style).
+      if (prev.top === cue.top && assStyleClass(prev.style) === assStyleClass(cue.style)) {
         prev.text = `${prev.text}\n${cue.text}`
-        continue
+        continue outer
       }
     }
     merged.push({ ...cue })
@@ -536,6 +542,38 @@ export function prevCue(track: CueTrack, t: number): SubCue | null {
 
 export function filterDialogue(cues: SubCue[]): SubCue[] {
   return cues.filter((c) => assStyleClass(c.style) === 'dialogue')
+}
+
+// The ASS script with its sign and song events removed, everything else kept
+// verbatim, so the styled layer honours the same dialogue-only filter as
+// filterDialogue (classified by style, as there).
+export function assDialogueOnly(text: string): string {
+  const lines = text.split(/(?<=\n)/)
+  let inEvents = false
+  let fields: string[] = ASS_DEFAULT_FORMAT
+  return lines
+    .filter((raw) => {
+      const line = raw.trim()
+      if (line.startsWith('[')) {
+        inEvents = /^\[events\]/i.test(line)
+        return true
+      }
+      if (!inEvents) return true
+      const colon = line.indexOf(':')
+      if (colon === -1) return true
+      const key = line.slice(0, colon).trim().toLowerCase()
+      const payload = line.slice(colon + 1)
+      if (key === 'format') {
+        fields = payload.split(',').map((f) => f.trim().toLowerCase())
+        return true
+      }
+      if (key !== 'dialogue') return true
+      const styleIdx = fields.indexOf('style')
+      if (styleIdx === -1) return true
+      const style = splitAssFields(payload, fields.length, fields.indexOf('text'))[styleIdx]?.trim()
+      return assStyleClass(style || null) === 'dialogue'
+    })
+    .join('')
 }
 
 export function listStyles(

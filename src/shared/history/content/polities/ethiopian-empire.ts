@@ -4,7 +4,6 @@ export default definePolity({
   id: 'ethiopian-empire',
   names: [
     { text: 'Ethiopian Empire', lang: 'en', role: 'primary' },
-    { text: 'የኢትዮጵያ ንጉሠ ነገሥት መንግሥት', lang: 'am', role: 'native' },
     {
       text: 'Ethiopia',
       lang: 'en',

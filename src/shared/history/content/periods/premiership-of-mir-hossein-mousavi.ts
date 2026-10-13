@@ -3,8 +3,7 @@ import { definePeriod } from '../../schema'
 export default definePeriod({
   id: 'premiership-of-mir-hossein-mousavi',
   names: [
-    { text: 'Premiership of Mir-Hossein Mousavi', lang: 'en', role: 'primary' },
-    { text: 'نخست‌وزیری میرحسین موسوی', lang: 'fa', role: 'native' }
+    { text: 'Premiership of Mir-Hossein Mousavi', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   periodType: 'regime',

@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'proclamation-of-the-german-empire',
   names: [
-    { text: 'Proclamation of the German Empire', lang: 'en', role: 'primary' },
-    { text: 'Kaiserproklamation', lang: 'de', role: 'native' }
+    { text: 'Proclamation of the German Empire', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'founding',

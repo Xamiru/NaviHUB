@@ -14,9 +14,7 @@ export default defineEvent({
           loc: { section: 'Israel in Lebanon', para: '8' }
         }
       ]
-    },
-    { text: 'מלחמת לבנון הראשונה', lang: 'he', role: 'native' },
-    { text: 'الاجتياح الإسرائيلي للبنان', lang: 'ar', role: 'native' }
+    }
   ],
   researched: '2026-10-08',
   type: 'invasion',

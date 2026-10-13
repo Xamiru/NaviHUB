@@ -4,9 +4,7 @@ export default defineEvent({
   id: 'death-of-ruhollah-khomeini',
   names: [
     { text: 'Death of Ruhollah Khomeini', lang: 'en', role: 'primary' },
-    { text: 'رحلت امام خمینی', lang: 'fa', role: 'native' },
-    { text: 'Succession of Ali Khamenei', lang: 'en', role: 'alternative' },
-    { text: 'انتخاب آیت‌الله خامنه‌ای به رهبری', lang: 'fa', role: 'alternative' }
+    { text: 'Succession of Ali Khamenei', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-09',
   type: 'other',

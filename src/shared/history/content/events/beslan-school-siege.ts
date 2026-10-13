@@ -14,8 +14,7 @@ export default defineEvent({
           loc: { section: 'Joint NGO statement on the Beslan Hostage Tragedy', para: '2' }
         }
       ]
-    },
-    { text: 'Беслан', lang: 'ru', role: 'native' }
+    }
   ],
   researched: '2026-10-12',
   type: 'other',

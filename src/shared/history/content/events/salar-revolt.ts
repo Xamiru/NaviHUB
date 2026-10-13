@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'salar-revolt',
   names: [
     { text: 'Salar revolt', lang: 'en', role: 'primary' },
-    { text: 'فتنه سالار', lang: 'fa', role: 'native' },
     {
       text: 'revolt in Khorasan',
       lang: 'en',

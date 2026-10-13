@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'first-printing-press-in-tabriz',
   names: [
-    { text: 'First printing press in Tabriz', lang: 'en', role: 'primary' },
-    { text: 'نخستین چاپخانه تبریز', lang: 'fa', role: 'native' }
+    { text: 'First printing press in Tabriz', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-07',
   type: 'invention',
@@ -98,7 +97,7 @@ export default defineEvent({
         },
         {
           id: 'q4',
-          text: 'At about the same time Mīrzā ʿAbd-al-Wahhāb Moʿtamed-al-Dawla spon­sored a second press, in Tehran.',
+          text: 'At about the same time Mīrzā ʿAbd-al-Wahhāb Moʿtamed-al-Dawla sponsored a second press, in Tehran.',
           lang: 'en',
           cite: { source: 'iranica-floor-cap', loc: { section: 'ČĀP', para: '8' } },
           provenance: {
@@ -114,7 +113,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'In 1240/1824-25 Fatḥ-ʿAlī Shah summoned Zayn-al-ʿĀbedīn from Tabrīz to Tehran, where he settled and printed a number of books, mostly on religious subjects, under the direction of Manūčehr Khan Moʿtamed-al-­Dawla',
+          text: 'In 1240/1824-25 Fatḥ-ʿAlī Shah summoned Zayn-al-ʿĀbedīn from Tabrīz to Tehran, where he settled and printed a number of books, mostly on religious subjects, under the direction of Manūčehr Khan Moʿtamed-al-Dawla',
           lang: 'en',
           cite: { source: 'iranica-floor-cap', loc: { section: 'ČĀP', para: '10' } },
           provenance: {

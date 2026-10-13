@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: '1997-iranian-presidential-election',
   names: [
-    { text: '1997 Iranian presidential election', lang: 'en', role: 'primary' },
-    { text: 'انتخابات ریاست‌جمهوری ۱۳۷۶', lang: 'fa', role: 'native' },
-    { text: '۲ خرداد', lang: 'fa', role: 'alternative', translit: 'dovvom-e khordad' }
+    { text: '1997 Iranian presidential election', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-10',
   type: 'election',

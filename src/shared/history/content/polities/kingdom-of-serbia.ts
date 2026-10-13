@@ -4,7 +4,6 @@ export default definePolity({
   id: 'kingdom-of-serbia',
   names: [
     { text: 'Kingdom of Serbia', lang: 'en', role: 'primary' },
-    { text: 'Краљевина Србија', lang: 'sr', role: 'native' },
     {
       text: 'Servia',
       lang: 'en',

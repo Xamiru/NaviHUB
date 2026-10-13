@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'dismissal-of-bismarck',
   names: [
-    { text: 'Dismissal of Bismarck', lang: 'en', role: 'primary' },
-    { text: 'Entlassung Bismarcks', lang: 'de', role: 'native' }
+    { text: 'Dismissal of Bismarck', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'crisis',

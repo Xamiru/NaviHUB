@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'congress-of-berlin',
   names: [
-    { text: 'Congress of Berlin', lang: 'en', role: 'primary' },
-    { text: 'Berliner Kongress', lang: 'de', role: 'native' }
+    { text: 'Congress of Berlin', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'conference',

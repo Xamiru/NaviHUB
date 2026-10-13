@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'mexican-revolution',
   names: [
-    { text: 'Mexican Revolution', lang: 'en', role: 'primary' },
-    { text: 'Revolución mexicana', lang: 'es', role: 'native' }
+    { text: 'Mexican Revolution', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'revolution',

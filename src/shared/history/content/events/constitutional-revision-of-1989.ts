@@ -8,7 +8,6 @@ export default defineEvent({
       lang: 'en',
       role: 'primary'
     },
-    { text: 'بازنگری قانون اساسی جمهوری اسلامی ایران', lang: 'fa', role: 'native' },
     { text: 'Constitutional referendum of 1989', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-08',

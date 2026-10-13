@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'founding-of-the-university-of-tehran',
   names: [
-    { text: 'Founding of the University of Tehran', lang: 'en', role: 'primary' },
-    { text: 'تأسیس دانشگاه تهران', lang: 'fa', role: 'native' }
+    { text: 'Founding of the University of Tehran', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'founding',

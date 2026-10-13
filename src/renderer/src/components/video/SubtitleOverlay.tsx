@@ -1,8 +1,10 @@
+import type { CSSProperties } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { englishLookupTerm, splitEnglishWords, type SubCue, type SubLang } from '@shared/subtitles'
 import type { JpToken } from '@shared/types'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
+import type { SubtitleLook } from '../../lib/videoPrefs'
 
 // Subtitles rendered as OUR DOM in OUR typography, so every word is a click
 // target. This is the whole reason the player can't be an mpv window and the
@@ -27,9 +29,12 @@ export interface SubtitleOverlayProps {
   secondary: SubCue[] | null
   primaryLang: SubLang
   secondaryLang: SubLang
-  fontScale: number
-  backdrop: boolean
+  look: SubtitleLook
   barsVisible: boolean
+  // false while the styled (libass) layer is drawing the primary track: only
+  // the second track is drawn here then, at the top of the frame, because
+  // libass puts the primary dialogue where the bottom lines would sit.
+  showPrimary?: boolean
   onWordPick: (pick: SubtitleWordPick) => void
   onTextSelect: (text: string, cue: SubCue, lang: 'ja' | 'en') => void
   onHoverStart?: () => void
@@ -37,24 +42,54 @@ export interface SubtitleOverlayProps {
 }
 
 // White-on-bright-frame is unreadable, and a subtitle you have to squint at is
-// worse than none. A layered shadow gives an outline without a plate; the plate
-// is a separate preference for people who want maximum contrast.
-const CUE_SHADOW = '0 0 3px #000, 0 0 6px #000, 0 2px 2px rgb(0 0 0 / 0.9)'
+// worse than none. The outline background is a layered shadow with no plate;
+// the box is a plate whose opacity the viewer chooses. Colours and font stacks
+// live in styles.css (.sub-ink-*, .sub-font-*, .sub-outline, .sub-box).
+const BASE_REM = 1.6
+
+export type CueRole = 'primary' | 'top' | 'secondary'
+
+export function cueFontRem(look: SubtitleLook, role: CueRole): number {
+  const base = BASE_REM * look.scale
+  if (role === 'top') return base * 0.8
+  if (role === 'secondary') return base * look.secondaryScale
+  return base
+}
+
+export function cueLook(look: SubtitleLook, role: CueRole): { className: string; style: CSSProperties } {
+  const className = [
+    `sub-ink-${look.color}`,
+    `sub-font-${look.font}`,
+    look.background === 'box' ? 'sub-box' : 'sub-outline',
+    role === 'primary' ? '' : 'opacity-80'
+  ].join(' ')
+  return {
+    className,
+    style: {
+      fontSize: `${cueFontRem(look, role)}rem`,
+      ['--sub-box-opacity' as string]: String(look.boxOpacity)
+    }
+  }
+}
+
+// Bottom lines sit `position` percent above the frame's bottom edge, and never
+// under the control bar while it is shown.
+export function bottomOffset(look: SubtitleLook, barsVisible: boolean): string {
+  return barsVisible ? `max(${look.position}%, 5.5rem)` : `${look.position}%`
+}
 
 function CueLine({
   cue,
   lang,
-  fontSize,
-  backdrop,
-  dim,
+  look,
+  role,
   onWordPick,
   onTextSelect
 }: {
   cue: SubCue
   lang: SubLang
-  fontSize: string
-  backdrop: boolean
-  dim: boolean
+  look: SubtitleLook
+  role: CueRole
   onWordPick: (pick: SubtitleWordPick) => void
   onTextSelect: (text: string, cue: SubCue, lang: 'ja' | 'en') => void
 }): JSX.Element {
@@ -146,14 +181,14 @@ function CueLine({
     )
   }
 
+  const styled = cueLook(look, role)
   return (
     <div
-      className={`pointer-events-auto mx-auto max-w-[92%] select-text whitespace-pre-wrap text-center leading-snug text-white ${
-        backdrop ? 'rounded-md bg-black/55 px-3 py-1 backdrop-blur-[2px]' : ''
-      } ${dim ? 'opacity-80' : ''}`}
-      style={{ fontSize, textShadow: CUE_SHADOW }}
+      className={`pointer-events-auto mx-auto max-w-[92%] select-text whitespace-pre-wrap text-center leading-snug ${styled.className}`}
+      style={styled.style}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
       onMouseUp={(e) => handleMouseUp(e)}
     >
       {lang === 'ja' ? renderJa() : lang === 'en' ? renderEn() : cue.text}
@@ -166,17 +201,29 @@ export default function SubtitleOverlay({
   secondary,
   primaryLang,
   secondaryLang,
-  fontScale,
-  backdrop,
+  look,
   barsVisible,
+  showPrimary = true,
   onWordPick,
   onTextSelect,
   onHoverStart,
   onHoverEnd
 }: SubtitleOverlayProps): JSX.Element {
-  const base = 1.6 * fontScale
-  const topCues = primary.filter((c) => c.top)
-  const bottomCues = primary.filter((c) => !c.top)
+  const shown = showPrimary ? primary : []
+  const topCues = shown.filter((c) => c.top)
+  const bottomCues = shown.filter((c) => !c.top)
+  const secondaryLines = (secondary ?? []).map((c) => (
+    <CueLine
+      key={`s${c.id}`}
+      cue={c}
+      lang={secondaryLang}
+      look={look}
+      role="secondary"
+      onWordPick={onWordPick}
+      onTextSelect={onTextSelect}
+    />
+  ))
+  const secondaryOnTop = !showPrimary
 
   return (
     <div
@@ -184,16 +231,16 @@ export default function SubtitleOverlay({
       onMouseEnter={onHoverStart}
       onMouseLeave={onHoverEnd}
     >
-      {topCues.length > 0 && (
+      {(topCues.length > 0 || (secondaryOnTop && secondaryLines.length > 0)) && (
         <div className="absolute inset-x-0 top-[6%] flex flex-col items-center gap-1">
+          {secondaryOnTop && secondaryLines}
           {topCues.map((c) => (
             <CueLine
               key={c.id}
               cue={c}
               lang={primaryLang}
-              fontSize={`${base * 0.8}rem`}
-              backdrop={backdrop}
-              dim
+              look={look}
+              role="top"
               onWordPick={onWordPick}
               onTextSelect={onTextSelect}
             />
@@ -201,34 +248,21 @@ export default function SubtitleOverlay({
         </div>
       )}
       <div
-        className={`absolute inset-x-0 flex flex-col items-center gap-1 transition-[bottom] duration-300 ${
-          barsVisible ? 'bottom-[18%]' : 'bottom-[10%]'
-        }`}
+        className="absolute inset-x-0 flex flex-col items-center gap-1 transition-[bottom] duration-300 motion-reduce:transition-none"
+        style={{ bottom: bottomOffset(look, barsVisible) }}
       >
         {bottomCues.map((c) => (
           <CueLine
             key={c.id}
             cue={c}
             lang={primaryLang}
-            fontSize={`${base}rem`}
-            backdrop={backdrop}
-            dim={false}
+            look={look}
+            role="primary"
             onWordPick={onWordPick}
             onTextSelect={onTextSelect}
           />
         ))}
-        {secondary?.map((c) => (
-          <CueLine
-            key={`s${c.id}`}
-            cue={c}
-            lang={secondaryLang}
-            fontSize={`${base * 0.72}rem`}
-            backdrop={backdrop}
-            dim
-            onWordPick={onWordPick}
-            onTextSelect={onTextSelect}
-          />
-        ))}
+        {!secondaryOnTop && secondaryLines}
       </div>
     </div>
   )

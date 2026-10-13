@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bordersRange, clampYear, decodeRing, equalEarth, layersAt, shapePath } from '../src/shared/history/mapGeometry'
+import { bordersRange, clampYear, decodeRing, equalEarth, layersAt, mapYearLabel, shapePath, withAncient } from '../src/shared/history/mapGeometry'
 import type { HistoryMapUnit } from '../src/shared/types'
 
 // The History map's pure geometry: the Equal Earth projection, the decoding of
@@ -105,5 +105,25 @@ describe('layers for a year', () => {
     expect(clampYear(2024, range)).toBe(2019)
     expect(clampYear(1801, range)).toBe(1816)
     expect(clampYear(1900, range)).toBe(1900)
+  })
+})
+
+describe('borders before 1700', () => {
+  it('appends the ancient file with its shapes renumbered past the main file', () => {
+    const main = { attribution: '', url: '', quantum: 0.01, worldFrom: 1886, shapes: [[[0, 0]], [[1, 1]]], units: [unit({ set: 'early', name: 'Qajar Dynasty', code: 630, from: 1788, to: 1886, shape: 1 })] }
+    const ancient = { shapes: [[[5, 5]]], units: [unit({ set: 'early', name: 'Safavid Dynasty', code: 161205, from: 1502, to: 1700, shape: 0 })] }
+    const merged = withAncient(main, ancient)
+    expect(merged.shapes).toHaveLength(3)
+    const safavid = merged.units.find((u) => u.code === 161205)!
+    expect(merged.shapes[safavid.shape]).toEqual([[5, 5]])
+    expect(layersAt(merged, 1600.5).states.map((u) => u.name)).toEqual(['Safavid Dynasty'])
+    expect(main.shapes).toHaveLength(2)
+  })
+
+  it('writes years before 1 CE as BCE', () => {
+    expect(mapYearLabel(1730)).toBe('1730')
+    expect(mapYearLabel(1)).toBe('1')
+    expect(mapYearLabel(0)).toBe('1 BCE')
+    expect(mapYearLabel(-479)).toBe('480 BCE')
   })
 })

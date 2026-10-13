@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'status-of-forces-agreement-of-1964',
   names: [
     { text: 'Status of Forces Agreement of 1964', lang: 'en', role: 'primary' },
-    { text: 'لایحه کاپیتولاسیون', lang: 'fa', role: 'native' },
     {
       text: 'Capitulations Agreement',
       lang: 'en',

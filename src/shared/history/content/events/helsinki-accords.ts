@@ -6,12 +6,6 @@ export default defineEvent({
     { text: 'Helsinki Final Act', lang: 'en', role: 'primary' },
     { text: 'Helsinki Accords', lang: 'en', role: 'alternative' },
     {
-      text: 'Хельсинкский заключительный акт',
-      lang: 'ru',
-      role: 'alternative',
-      translit: 'Khel’sinkskiy zaklyuchitel’nyy akt'
-    },
-    {
       text: 'Final Act of the Conference on Security and Co-operation in Europe',
       lang: 'en',
       role: 'official',

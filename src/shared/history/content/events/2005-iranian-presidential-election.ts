@@ -4,7 +4,6 @@ export default defineEvent({
   id: '2005-iranian-presidential-election',
   names: [
     { text: '2005 Iranian presidential election', lang: 'en', role: 'primary' },
-    { text: 'انتخابات ریاست‌جمهوری ۱۳۸۴', lang: 'fa', role: 'native' },
     { text: 'Ninth Iranian presidential election', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-13',

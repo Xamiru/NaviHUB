@@ -64,7 +64,7 @@ export default definePerson({
         },
         {
           id: 'q4',
-          text: 'Following the collapse of the original plan, Roosevelt and his team began to improvise a new strategy for overthrowing Moṣaddeq. After first making contin­gency plans to evacuate himself, Zāhedī, and several of their confederates in the American military attaché’s airplane',
+          text: 'Following the collapse of the original plan, Roosevelt and his team began to improvise a new strategy for overthrowing Moṣaddeq. After first making contingency plans to evacuate himself, Zāhedī, and several of their confederates in the American military attaché’s airplane',
           lang: 'en',
           cite: {
             source: 'iranica-gasiorowski-coup-detat-1953',

@@ -4,7 +4,6 @@ export default definePolity({
   id: 'french-third-republic',
   names: [
     { text: 'French Third Republic', lang: 'en', role: 'primary' },
-    { text: 'Troisième République', lang: 'fr', role: 'native' },
     {
       text: 'Dritte Republik',
       lang: 'de',

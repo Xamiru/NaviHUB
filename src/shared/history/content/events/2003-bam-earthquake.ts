@@ -4,8 +4,6 @@ export default defineEvent({
   id: '2003-bam-earthquake',
   names: [
     { text: '2003 Bam earthquake', lang: 'en', role: 'primary' },
-    { text: 'زمین‌لرزه بم', lang: 'fa', role: 'native' },
-    { text: 'زلزله بم ۱۳۸۲', lang: 'fa', role: 'alternative' },
     { text: 'Bam earthquake', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-13',

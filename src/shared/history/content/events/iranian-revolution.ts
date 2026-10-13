@@ -13,8 +13,6 @@ export default defineEvent({
         { source: 'constitute-iran-constitution-1979-rev-1989', loc: { section: 'Preamble' } }
       ]
     },
-    { text: 'انقلاب اسلامی', lang: 'fa', role: 'native', translit: 'Enqelāb-e eslāmi' },
-    { text: 'انقلاب ۱۳۵۷', lang: 'fa', role: 'alternative', translit: 'Enqelāb-e 1357' },
     {
       text: 'Revolution of 1978-79',
       lang: 'en',

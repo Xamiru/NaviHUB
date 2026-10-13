@@ -14,8 +14,7 @@ export default defineEvent({
           loc: { section: 'Prelude to Anfal' }
         }
       ]
-    },
-    { text: 'الأنفال', lang: 'ar', role: 'native' }
+    }
   ],
   researched: '2026-10-10',
   type: 'genocide',

@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'reforms-of-mirza-hosayn-khan-moshir-al-dowla',
   names: [
-    { text: 'Reforms of Mirza Hosayn Khan Moshir al-Dowla', lang: 'en', role: 'primary' },
-    { text: 'اصلاحات میرزا حسین‌خان سپهسالار', lang: 'fa', role: 'native' }
+    { text: 'Reforms of Mirza Hosayn Khan Moshir al-Dowla', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'reform',

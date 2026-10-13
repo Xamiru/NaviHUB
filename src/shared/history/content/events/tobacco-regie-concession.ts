@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'tobacco-regie-concession',
   names: [
     { text: 'Tobacco Régie concession', lang: 'en', role: 'primary' },
-    { text: 'امتیاز رژی', lang: 'fa', role: 'native' },
     {
       text: 'Tobacco Régie',
       lang: 'en',

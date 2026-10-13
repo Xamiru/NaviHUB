@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'conquest-of-tehran-1909',
   names: [
-    { text: 'Conquest of Tehran (1909)', lang: 'en', role: 'primary' },
-    { text: 'فتح تهران', lang: 'fa', role: 'native' }
+    { text: 'Conquest of Tehran (1909)', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'uprising',

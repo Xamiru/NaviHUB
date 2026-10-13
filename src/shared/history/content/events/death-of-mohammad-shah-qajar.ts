@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'death-of-mohammad-shah-qajar',
   names: [
-    { text: 'Death of Mohammad Shah Qajar', lang: 'en', role: 'primary' },
-    { text: 'درگذشت محمد شاه قاجار', lang: 'fa', role: 'native' }
+    { text: 'Death of Mohammad Shah Qajar', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'other',

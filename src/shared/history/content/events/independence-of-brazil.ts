@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'independence-of-brazil',
   names: [
-    { text: 'Independence of Brazil', lang: 'en', role: 'primary' },
-    { text: 'Independência do Brasil', lang: 'pt', role: 'native' }
+    { text: 'Independence of Brazil', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'independence',

@@ -172,7 +172,7 @@ export default definePerson({
         },
         {
           id: 'q6',
-          text: 'One proponent of such views was the powerful court minister ʿAbd-al-­Ḥosayn Teymūrtāš, who, in a cabinet meeting in 1312 Š./1933, proposed that importation of ladies’ hats from abroad be legalized',
+          text: 'One proponent of such views was the powerful court minister ʿAbd-al-Ḥosayn Teymūrtāš, who, in a cabinet meeting in 1312 Š./1933, proposed that importation of ladies’ hats from abroad be legalized',
           lang: 'en',
           cite: {
             source: 'iranica-saidi-sirjani-clothing-pahlavi',
@@ -191,7 +191,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q7',
-          text: 'In 1311 Š./1932 Teymūrtāš was dismissed; he was subsequently tried by the order of the shah and convicted of corruption and embezzlement. Five months later he was mur­dered in his prison cell',
+          text: 'In 1311 Š./1932 Teymūrtāš was dismissed; he was subsequently tried by the order of the shah and convicted of corruption and embezzlement. Five months later he was murdered in his prison cell',
           lang: 'en',
           cite: {
             source: 'iranica-sheikholeslami-courts-and-courtiers-reza-shah',

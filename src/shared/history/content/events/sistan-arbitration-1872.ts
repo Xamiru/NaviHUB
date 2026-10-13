@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'sistan-arbitration-1872',
   names: [
     { text: 'Sistan arbitration of 1872', lang: 'en', role: 'primary' },
-    { text: 'حکمیت گلداسمید در سیستان', lang: 'fa', role: 'native' },
     {
       text: 'Seistan Border Commission',
       lang: 'en',

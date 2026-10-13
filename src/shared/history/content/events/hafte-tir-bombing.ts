@@ -4,8 +4,6 @@ export default defineEvent({
   id: 'hafte-tir-bombing',
   names: [
     { text: 'Hafte Tir bombing', lang: 'en', role: 'primary' },
-    { text: 'انفجار هفتم تیر', lang: 'fa', role: 'native' },
-    { text: 'فاجعه هفتم تیر', lang: 'fa', role: 'alternative' },
     {
       text: 'Bombing of the Islamic Republican Party headquarters',
       lang: 'en',

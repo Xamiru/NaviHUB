@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'great-persian-famine',
   names: [
     { text: 'Great Persian famine', lang: 'en', role: 'primary' },
-    { text: 'قحطی بزرگ ۱۲۸۸', lang: 'fa', role: 'native' },
     {
       text: 'Great Famine',
       lang: 'en',

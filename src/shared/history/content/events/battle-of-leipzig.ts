@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'battle-of-leipzig',
   names: [
     { text: 'Battle of Leipzig', lang: 'en', role: 'primary' },
-    { text: 'Völkerschlacht bei Leipzig', lang: 'de', role: 'native' },
     {
       text: 'Battle of the Nations',
       lang: 'en',

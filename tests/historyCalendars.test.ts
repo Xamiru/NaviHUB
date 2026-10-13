@@ -105,3 +105,30 @@ describe('HistDate parsing and display', () => {
     expect(formatHistDate({ d: '1410', notAfter: '1412' })).toBe('1410 to 1412')
   })
 })
+
+describe('Lunar Hijri (tabular) dates', () => {
+  it('starts at the Hijra, 16 July 622 in the Julian calendar', async () => {
+    const { jdnToLunarHijri, julianToJdn } = await import('../src/shared/history/calendars')
+    expect(jdnToLunarHijri(julianToJdn(622, 7, 16))).toEqual({ y: 1, m: 1, d: 1 })
+    expect(jdnToLunarHijri(julianToJdn(622, 7, 15))).toBeNull()
+  })
+
+  it('round-trips every day across centuries', async () => {
+    const { jdnToLunarHijri, lunarHijriToJdn } = await import('../src/shared/history/calendars')
+    for (let jdn = 1948440; jdn < 2470000; jdn += 997) {
+      const h = jdnToLunarHijri(jdn)!
+      expect(lunarHijriToJdn(h.y, h.m, h.d)).toBe(jdn)
+    }
+  })
+
+  it('formats dates the sources give in both calendars', async () => {
+    const { formatLunarHijri } = await import('../src/shared/history/calendars')
+    // 1 Muharram 1400 AH began on 21 November 1979.
+    expect(formatLunarHijri('1979-11-21')).toBe('1 Muharram 1400')
+    // Isfahan surrendered on 12 Muharram 1135, 23 October 1722.
+    expect(formatLunarHijri('1722-10-23')).toBe('12 Muharram 1135')
+    // A Gregorian year straddles two Hijri years.
+    expect(formatLunarHijri('1514')).toBe('919 to 920')
+    expect(formatLunarHijri('0600')).toBeNull()
+  })
+})

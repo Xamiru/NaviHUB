@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'fall-of-diriyah',
   names: [
-    { text: 'Fall of Diriyah', lang: 'en', role: 'primary' },
-    { text: 'سقوط الدرعية', lang: 'ar', role: 'native' }
+    { text: 'Fall of Diriyah', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'battle',

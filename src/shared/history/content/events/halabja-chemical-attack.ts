@@ -4,9 +4,6 @@ export default defineEvent({
   id: 'halabja-chemical-attack',
   names: [
     { text: 'Halabja chemical attack', lang: 'en', role: 'primary' },
-    { text: 'کیمیابارانی هەڵەبجە', lang: 'ku', role: 'native' },
-    { text: 'هجوم حلبجة الكيميائي', lang: 'ar', role: 'native' },
-    { text: 'بمباران شیمیایی حلبچه', lang: 'fa', role: 'alternative' },
     { text: 'Halabja massacre', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-08',

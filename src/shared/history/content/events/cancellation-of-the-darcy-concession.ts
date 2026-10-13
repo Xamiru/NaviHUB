@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'cancellation-of-the-darcy-concession',
   names: [
-    { text: 'Cancellation of the D’Arcy concession', lang: 'en', role: 'primary' },
-    { text: 'لغو امتیاز دارسی', lang: 'fa', role: 'native' }
+    { text: 'Cancellation of the D’Arcy concession', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'crisis',

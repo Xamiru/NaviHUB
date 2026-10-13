@@ -17,6 +17,9 @@ function refId(ref: VideoSourceRef): number {
 
 export interface SubtitleTrackState {
   cues: CueTrack | undefined
+  // The track file's navimg URL once known (an embedded track gets one after
+  // extraction). The styled ASS layer loads the raw file from it.
+  url: string | null
   // An embedded track is being pulled out of the container (ffmpeg reads the
   // whole file, which takes a while on a large MKV).
   extracting: boolean
@@ -59,6 +62,7 @@ export function useSubtitleTrack(
   const extractFailed = needsExtract && extracted.isSuccess && !extracted.data?.url
   return {
     cues: cues.data,
+    url: url || null,
     extracting: needsExtract && extracted.isFetching,
     error: extractFailed
       ? 'This track could not be extracted. Install ffmpeg, or put a subtitle file next to the video.'

@@ -5,12 +5,6 @@ export default defineEvent({
   names: [
     { text: 'Founding of the Rastakhiz Party', lang: 'en', role: 'primary' },
     {
-      text: 'حزب رستاخیز ملت ایران',
-      lang: 'fa',
-      role: 'native',
-      translit: 'Ḥezb-e Rastāḵiz-e Mellat-e Irān'
-    },
-    {
       text: 'Resurgence Party',
       lang: 'en',
       role: 'alternative',

@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'maastricht-treaty',
   names: [
     { text: 'Maastricht Treaty', lang: 'en', role: 'primary' },
-    { text: 'Verdrag van Maastricht', lang: 'nl', role: 'native' },
     {
       text: 'Treaty on European Union',
       lang: 'en',

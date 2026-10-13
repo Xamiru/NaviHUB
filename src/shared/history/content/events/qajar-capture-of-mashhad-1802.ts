@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'qajar-capture-of-mashhad-1802',
   names: [
-    { text: 'Qajar capture of Mashhad (1802)', lang: 'en', role: 'primary' },
-    { text: 'تصرف مشهد به دست قاجاریان', lang: 'fa', role: 'native' }
+    { text: 'Qajar capture of Mashhad (1802)', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'battle',

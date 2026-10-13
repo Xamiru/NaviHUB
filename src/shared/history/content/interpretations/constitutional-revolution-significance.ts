@@ -34,7 +34,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q2',
-          text: 'The nonpolitical aims of the Constitutional Revolution—above all, secular mass education, economic development, a judiciary independent of the ʿolamāʾ, and a centralized state with a powerful army and extensive bureaucracy—set the agenda for the early reforms under Reżā Shah (1304­-20 Š./1925-41), largely at the expense of the political objectives of the revolution.',
+          text: 'The nonpolitical aims of the Constitutional Revolution—above all, secular mass education, economic development, a judiciary independent of the ʿolamāʾ, and a centralized state with a powerful army and extensive bureaucracy—set the agenda for the early reforms under Reżā Shah (1304-20 Š./1925-41), largely at the expense of the political objectives of the revolution.',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-constitutional-revolution-intellectual-background',

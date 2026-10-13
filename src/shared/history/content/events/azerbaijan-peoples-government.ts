@@ -4,8 +4,6 @@ export default defineEvent({
   id: 'azerbaijan-peoples-government',
   names: [
     { text: 'Azerbaijan People’s Government', lang: 'en', role: 'primary' },
-    { text: 'آذربایجان میللی حؤکومتی', lang: 'azb', role: 'native' },
-    { text: 'حکومت ملی آذربایجان', lang: 'fa', role: 'native' },
     {
       text: 'Autonomous Government of Azarbaijan',
       lang: 'en',

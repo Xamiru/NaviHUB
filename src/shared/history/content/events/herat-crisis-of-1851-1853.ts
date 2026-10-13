@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'herat-crisis-of-1851-1853',
   names: [
-    { text: 'Herat crisis of 1851–1853', lang: 'en', role: 'primary' },
-    { text: 'بحران هرات ۱۸۵۱–۱۸۵۳', lang: 'fa', role: 'native' }
+    { text: 'Herat crisis of 1851–1853', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'crisis',

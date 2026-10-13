@@ -154,3 +154,35 @@ export function buildClipArgs(o: {
   args.push(ffInputArg(o.output))
   return args
 }
+
+// ---- Fonts attached to the container (styled ASS subtitles) ----
+
+// A cache file name for an attachment: its own base name with anything outside
+// a conservative set replaced, and always a font extension, so a hostile tag
+// can never escape the cache folder or produce an option-like name.
+export function safeFontFileName(filename: string, index: number): string {
+  const base = filename.split(/[\\/]/).pop() ?? ''
+  const ext = /\.(ttf|otf|ttc|woff2?)$/i.exec(base)?.[1]?.toLowerCase() ?? 'ttf'
+  const stem = base
+    .replace(/\.[^.]*$/, '')
+    .replace(/[^A-Za-z0-9 _.()+-]/g, '_')
+    .replace(/^[.\-\s]+/, '')
+    .slice(0, 80)
+  return `${index}-${stem || 'font'}.${ext}`
+}
+
+// Dumps the given attachment streams, each to its own absolute path. ffmpeg
+// insists on an output file and exits non-zero without one, so callers judge
+// success by the files existing, not by the exit status.
+export function buildAttachmentDumpArgs(o: {
+  input: string
+  attachments: { index: number; output: string }[]
+}): string[] {
+  const args = ['-nostdin', '-hide_banner', '-loglevel', 'error', '-y']
+  for (const a of o.attachments) {
+    if (!Number.isInteger(a.index) || a.index < 0) throw new Error(`Bad attachment index: ${a.index}`)
+    args.push(`-dump_attachment:${a.index}`, ffInputArg(a.output))
+  }
+  args.push('-i', ffInputArg(o.input))
+  return args
+}

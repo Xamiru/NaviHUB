@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'founding-of-the-islamic-revolutionary-guard-corps',
   names: [
     { text: 'Founding of the Islamic Revolutionary Guard Corps', lang: 'en', role: 'primary' },
-    { text: 'تأسیس سپاه پاسداران انقلاب اسلامی', lang: 'fa', role: 'native' },
     {
       text: 'Pasdaran',
       lang: 'en',

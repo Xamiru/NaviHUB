@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'iranian-claim-to-bahrain',
   names: [
     { text: 'Iranian claim to Bahrain', lang: 'en', role: 'primary' },
-    { text: 'مسئله بحرین', lang: 'fa', role: 'native' },
     { text: 'Bahrain question', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-08',

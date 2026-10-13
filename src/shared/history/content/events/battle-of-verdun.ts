@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'battle-of-verdun',
   names: [
-    { text: 'Battle of Verdun', lang: 'en', role: 'primary' },
-    { text: 'Bataille de Verdun', lang: 'fr', role: 'native' },
-    { text: 'Schlacht um Verdun', lang: 'de', role: 'alternative' }
+    { text: 'Battle of Verdun', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'battle',

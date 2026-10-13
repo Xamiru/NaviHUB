@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'khrushchevs-secret-speech',
   names: [
     { text: 'Khrushchev’s secret speech', lang: 'en', role: 'primary' },
-    { text: 'О культе личности и его последствиях', lang: 'ru', role: 'native' },
     {
       text: 'Stalin’s Second Funeral',
       lang: 'en',

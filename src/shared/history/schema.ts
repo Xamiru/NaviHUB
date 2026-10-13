@@ -457,9 +457,12 @@ export interface Quote {
 }
 
 /**
- * A proleptic-Gregorian date with its precision: `YYYY`, `YYYY-MM` or
- * `YYYY-MM-DD`; years before 1 CE use astronomical numbering with a sign
- * (`-0479` is 480 BCE). Old Style and Solar Hijri forms are computed for
+ * A date with its precision: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`; years before
+ * 1 CE use astronomical numbering with a sign (`-0479` is 480 BCE). A day
+ * before the Gregorian reform (15 October 1582) is stored in the Julian
+ * calendar, as historians and the sources give it; from the reform on it is
+ * Gregorian, and `julian` marks a later Old Style source whose day was
+ * converted. Proleptic Gregorian, Old Style and Hijri forms are computed for
  * display, never stored.
  */
 export interface HistDate {

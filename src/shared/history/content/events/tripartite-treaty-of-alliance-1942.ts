@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'tripartite-treaty-of-alliance-1942',
   names: [
     { text: 'Tripartite Treaty of Alliance (1942)', lang: 'en', role: 'primary' },
-    { text: 'پیمان سه‌جانبه', lang: 'fa', role: 'native' },
     {
       text: 'Union Treaty',
       lang: 'en',

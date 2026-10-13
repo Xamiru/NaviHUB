@@ -4,8 +4,6 @@ export default defineEvent({
   id: 'japanese-annexation-of-korea',
   names: [
     { text: 'Japanese annexation of Korea', lang: 'en', role: 'primary' },
-    { text: '한일병합', lang: 'ko', role: 'native' },
-    { text: '韓国併合', lang: 'ja', role: 'alternative' },
     {
       text: 'Japan-Korea Annexation Treaty',
       lang: 'en',

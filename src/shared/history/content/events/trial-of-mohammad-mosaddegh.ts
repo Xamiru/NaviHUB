@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'trial-of-mohammad-mosaddegh',
   names: [
-    { text: 'Trial of Mohammad Mosaddegh', lang: 'en', role: 'primary' },
-    { text: 'محاکمه محمد مصدق', lang: 'fa', role: 'native' }
+    { text: 'Trial of Mohammad Mosaddegh', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'other',

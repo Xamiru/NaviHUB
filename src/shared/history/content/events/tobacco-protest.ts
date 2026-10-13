@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'tobacco-protest',
   names: [
     { text: 'Tobacco Protest', lang: 'en', role: 'primary' },
-    { text: 'جنبش تنباکو', lang: 'fa', role: 'native' },
     {
       text: 'tobacco protest movement',
       lang: 'en',

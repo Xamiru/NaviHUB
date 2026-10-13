@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'suppression-of-the-tudeh-party',
   names: [
-    { text: 'Suppression of the Tudeh Party', lang: 'en', role: 'primary' },
-    { text: 'سرکوب حزب توده ایران', lang: 'fa', role: 'native' }
+    { text: 'Suppression of the Tudeh Party', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'other',

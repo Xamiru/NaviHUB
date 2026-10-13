@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'iran-iraq-boundary-treaty-of-1937',
   names: [
     { text: 'Iran–Iraq Boundary Treaty of 1937', lang: 'en', role: 'primary' },
-    { text: 'عهدنامه مرزی ۱۹۳۷ ایران و عراق', lang: 'fa', role: 'native' },
     {
       text: 'Boundary Treaty between The Kingdom of Iraq and the Empire of Iran',
       lang: 'en',
@@ -170,7 +169,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'On 13 Tīr 1316 Š./14 July 1937 a new treaty partly redrawing the frontier along the thalweg, guaran­teeing freedom of navigation through the Šaṭṭ al-ʿArab, and recommending joint maintenance facilities was concluded',
+          text: 'On 13 Tīr 1316 Š./14 July 1937 a new treaty partly redrawing the frontier along the thalweg, guaranteeing freedom of navigation through the Šaṭṭ al-ʿArab, and recommending joint maintenance facilities was concluded',
           lang: 'en',
           cite: {
             source: 'iranica-kechichian-boundaries-iraq',
@@ -217,7 +216,7 @@ export default defineEvent({
         },
         {
           id: 'q6',
-          text: 'Neverthe­less, even though the Baghdad government conceded to Tehran sovereignty over anchorage facilities extending approximately 6 km along the shore opposite Ābādān, Iraq retained virtual control of the river until Far­vardīn, 1349 Š./April, 1969, when the Baʿthist regime decided for the first time to check the papers of ships moving up the Šaṭṭ al-ʿArab and demanded that Iranian vessels lower their flags before entering the river.',
+          text: 'Nevertheless, even though the Baghdad government conceded to Tehran sovereignty over anchorage facilities extending approximately 6 km along the shore opposite Ābādān, Iraq retained virtual control of the river until Farvardīn, 1349 Š./April, 1969, when the Baʿthist regime decided for the first time to check the papers of ships moving up the Šaṭṭ al-ʿArab and demanded that Iranian vessels lower their flags before entering the river.',
           lang: 'en',
           cite: {
             source: 'iranica-kechichian-boundaries-iraq',

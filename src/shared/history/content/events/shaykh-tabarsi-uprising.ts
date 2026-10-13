@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'shaykh-tabarsi-uprising',
   names: [
     { text: 'Shaykh Tabarsi uprising', lang: 'en', role: 'primary' },
-    { text: 'واقعه قلعه شیخ طبرسی', lang: 'fa', role: 'native' },
     {
       text: 'Bābi upheaval of Tabarsi',
       lang: 'en',

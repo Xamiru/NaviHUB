@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'nanjing-massacre',
   names: [
     { text: 'Nanjing Massacre', lang: 'en', role: 'primary' },
-    { text: '南京大屠杀', lang: 'zh', role: 'native' },
     {
       text: 'Rape of Nanjing',
       lang: 'en',

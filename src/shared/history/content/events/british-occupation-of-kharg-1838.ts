@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'british-occupation-of-kharg-1838',
   names: [
-    { text: 'British occupation of Kharg Island (1838)', lang: 'en', role: 'primary' },
-    { text: 'اشغال جزیره خارک', lang: 'fa', role: 'native' }
+    { text: 'British occupation of Kharg Island (1838)', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'occupation',

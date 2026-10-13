@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'goharshad-mosque-uprising',
   names: [
     { text: 'Goharshad Mosque rebellion', lang: 'en', role: 'primary' },
-    { text: 'قیام مسجد گوهرشاد', lang: 'fa', role: 'native' },
     {
       text: 'Gowhar-šād uprising',
       lang: 'fa-Latn',

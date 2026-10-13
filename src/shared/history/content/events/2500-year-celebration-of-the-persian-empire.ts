@@ -5,12 +5,6 @@ export default defineEvent({
   names: [
     { text: '2,500-year celebration of the Persian Empire', lang: 'en', role: 'primary' },
     {
-      text: 'جشن‌های ۲۵۰۰ ساله شاهنشاهی ایران',
-      lang: 'fa',
-      role: 'native',
-      translit: 'Jašnhā-ye 2500 sāla-ye šāhanšāhi-ye Irān'
-    },
-    {
       text: '25th Centenary Celebrations',
       lang: 'en',
       role: 'alternative',

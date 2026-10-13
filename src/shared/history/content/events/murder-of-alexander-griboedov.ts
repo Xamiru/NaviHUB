@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'murder-of-alexander-griboedov',
   names: [
-    { text: 'Murder of Alexander Griboedov', lang: 'en', role: 'primary' },
-    { text: 'قتل گریبایدوف', lang: 'fa', role: 'native' }
+    { text: 'Murder of Alexander Griboedov', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'massacre',

@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'faramush-khana',
   names: [
     { text: 'Faramush-khana', lang: 'en', role: 'primary' },
-    { text: 'فراموشخانه', lang: 'fa', role: 'native' },
     {
       text: 'Farāmūš-ḵāna',
       lang: 'en',

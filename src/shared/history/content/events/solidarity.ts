@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'solidarity',
   names: [
-    { text: 'Solidarity', lang: 'en', role: 'primary' },
-    { text: 'Solidarność', lang: 'pl', role: 'native' }
+    { text: 'Solidarity', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'movement',

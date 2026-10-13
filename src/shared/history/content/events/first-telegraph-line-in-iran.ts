@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'first-telegraph-line-in-iran',
   names: [
-    { text: 'First telegraph line in Iran', lang: 'en', role: 'primary' },
-    { text: 'نخستین خط تلگراف ایران', lang: 'fa', role: 'native' }
+    { text: 'First telegraph line in Iran', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'other',

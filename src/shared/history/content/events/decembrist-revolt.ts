@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'decembrist-revolt',
   names: [
-    { text: 'Decembrist revolt', lang: 'en', role: 'primary' },
-    { text: 'Восстание декабристов', lang: 'ru', role: 'native' }
+    { text: 'Decembrist revolt', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'uprising',

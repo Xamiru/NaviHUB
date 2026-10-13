@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'second-chechen-war',
   names: [
     { text: 'Second Chechen War', lang: 'en', role: 'primary' },
-    { text: 'Вторая чеченская война', lang: 'ru', role: 'native' },
     {
       text: 'Counter-terrorist operation in the North Caucasus',
       lang: 'en',

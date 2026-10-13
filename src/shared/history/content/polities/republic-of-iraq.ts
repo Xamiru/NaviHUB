@@ -3,8 +3,7 @@ import { definePolity } from '../../schema'
 export default definePolity({
   id: 'republic-of-iraq',
   names: [
-    { text: 'Republic of Iraq', lang: 'en', role: 'primary' },
-    { text: 'الجمهورية العراقية', lang: 'ar', role: 'native' }
+    { text: 'Republic of Iraq', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   polityType: 'republic',

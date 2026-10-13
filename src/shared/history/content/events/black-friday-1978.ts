@@ -14,13 +14,6 @@ export default defineEvent({
           loc: { section: 'The Coming of the Revolution', para: '9' }
         }
       ]
-    },
-    { text: 'جمعه سیاه', lang: 'fa', role: 'native', translit: 'Jomʿa-ye siyāh' },
-    {
-      text: 'کشتار میدان ژاله',
-      lang: 'fa',
-      role: 'alternative',
-      translit: 'Koštār-e Meydān-e Žāla'
     }
   ],
   researched: '2026-10-09',

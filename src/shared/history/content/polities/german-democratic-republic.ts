@@ -4,7 +4,6 @@ export default definePolity({
   id: 'german-democratic-republic',
   names: [
     { text: 'German Democratic Republic', lang: 'en', role: 'primary' },
-    { text: 'Deutsche Demokratische Republik', lang: 'de', role: 'native' },
     {
       text: 'East Germany',
       lang: 'en',

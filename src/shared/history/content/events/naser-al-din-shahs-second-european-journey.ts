@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'naser-al-din-shahs-second-european-journey',
   names: [
-    { text: 'Naser al-Din Shah’s second European journey', lang: 'en', role: 'primary' },
-    { text: 'سفر دوم ناصرالدین شاه به فرنگ', lang: 'fa', role: 'native' }
+    { text: 'Naser al-Din Shah’s second European journey', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'other',
@@ -80,7 +79,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'On his second journey to Europe, in 1295/1878, Nāṣer-al-Dīn Shah (1264­-1313/1848-96) had been favorably impressed by the uniforms, equipment, and precision drills of the Russian Cossacks who had escorted him across Transcaucasia.',
+          text: 'On his second journey to Europe, in 1295/1878, Nāṣer-al-Dīn Shah (1264-1313/1848-96) had been favorably impressed by the uniforms, equipment, and precision drills of the Russian Cossacks who had escorted him across Transcaucasia.',
           lang: 'en',
           cite: {
             source: 'iranica-atkin-cossack-brigade',

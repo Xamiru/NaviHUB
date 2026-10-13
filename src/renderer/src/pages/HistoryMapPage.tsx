@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNod
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { regionLabel } from '@shared/history/schema'
-import { EQUAL_EARTH_BOUNDS, EUROPE_FROM, bordersRange, clampYear, decodeRing, equalEarth, layersAt, shapePath, stateHue } from '@shared/history/mapGeometry'
+import { ANCIENT_TO, EQUAL_EARTH_BOUNDS, EUROPE_FROM, bordersRange, clampYear, decodeRing, equalEarth, layersAt, mapYearLabel, shapePath, stateHue, withAncient } from '@shared/history/mapGeometry'
 import type { HistoryMapPin, HistoryMapPolity, HistoryMapUnit } from '@shared/types'
 import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
@@ -41,7 +41,7 @@ interface View {
 }
 
 const laneStyle = (key: string): CSSProperties => ({ ['--lane' as string]: `var(--hist-${key})` })
-const yearsOf = (from: number, to: number): string => `${Math.floor(from)} to ${Math.ceil(to) - 1}`
+const yearsOf = (from: number, to: number): string => `${mapYearLabel(Math.floor(from))} to ${mapYearLabel(Math.ceil(to) - 1)}`
 
 export default function HistoryMapPage() {
   const navigate = useNavigate()
@@ -62,17 +62,31 @@ export default function HistoryMapPage() {
   const focused = useRef<string | null>(null)
   const yearParam = params.get('year')
   useEffect(() => {
-    if (yearParam && /^\d{4}$/.test(yearParam)) setYear(Number(yearParam))
+    if (yearParam && /^-?\d{1,4}$/.test(yearParam)) setYear(Number(yearParam))
   }, [yearParam, setYear])
 
-  const data = borders.data
+  // Borders before 1700 are a second file, fetched the first time the year goes
+  // back that far and merged in for the rest of the visit.
+  const [wantAncient, setWantAncient] = useState(false)
+  useEffect(() => {
+    if (year < ANCIENT_TO) setWantAncient(true)
+  }, [year])
+  const ancient = useQuery({
+    queryKey: qk.history.bordersAncient,
+    queryFn: () => api.history.bordersAncient(),
+    staleTime: Infinity,
+    enabled: wantAncient
+  })
+  const main = borders.data
+  const data = useMemo(() => (main && ancient.data ? withAncient(main, ancient.data) : main), [main, ancient.data])
   // The slider reaches back to the earliest pinned event (the 1800s), before the
   // borders begin: those years show the land without borders, and say so.
   const range = useMemo(() => {
     const r = data ? bordersRange(data) : { min: EUROPE_FROM, max: 2019 }
+    const min = Math.min(r.min, main?.ancientFrom ?? r.min)
     const first = Math.min(...(pinsQuery.data ?? []).map((p) => Math.floor(p.s)))
-    return { min: Number.isFinite(first) ? Math.min(r.min, first) : r.min, max: r.max }
-  }, [data, pinsQuery.data])
+    return { min: Number.isFinite(first) ? Math.min(min, first) : min, max: r.max }
+  }, [data, main, pinsQuery.data])
   // A remembered year or a focused event can fall outside the borders' span.
   useEffect(() => {
     if (data && !pinsQuery.isPending && clampYear(year, range) !== year) setYear(clampYear(year, range))
@@ -229,7 +243,7 @@ export default function HistoryMapPage() {
         {/* header */}
         <div className="relative z-30 flex flex-wrap items-center gap-3 border-b border-white/[0.06] px-5 py-2.5">
           <span className="hist-display text-3xl font-semibold tabular-nums tracking-tight text-ink">
-            {year}
+            {mapYearLabel(year)}
           </span>
           <span className="text-[10px] uppercase tracking-[0.2em] text-ink-muted">
             {layers.states.length} states
@@ -263,7 +277,7 @@ export default function HistoryMapPage() {
             stageRef.current = el
           }}
           tabIndex={0}
-          aria-label={`Map of ${year}. Arrow keys pan, plus and minus zoom.`}
+          aria-label={`Map of ${mapYearLabel(year)}. Arrow keys pan, plus and minus zoom.`}
           className="relative cursor-grab touch-none select-none overflow-hidden active:cursor-grabbing"
           style={{ height }}
           onKeyDown={(e) => {
@@ -437,7 +451,12 @@ export default function HistoryMapPage() {
 
           {hoverPin && <PinCard pin={hoverPin.pin} x={hoverPin.x} y={hoverPin.y} stageWidth={width} />}
 
-          {layers.noBorders && (
+          {year < ANCIENT_TO && !ancient.data && (
+            <p role="status" className="pointer-events-none absolute bottom-3 left-4 z-20 max-w-md rounded-lg bg-black/50 px-3 py-1.5 text-xs text-ink-secondary">
+              {ancient.isError ? 'The borders before 1700 could not be loaded.' : 'Loading the borders before 1700…'}
+            </p>
+          )}
+          {layers.noBorders && (year >= ANCIENT_TO || ancient.data) && (
             <p className="pointer-events-none absolute bottom-3 left-4 z-20 max-w-md rounded-lg bg-black/50 px-3 py-1.5 text-xs text-ink-secondary">
               No border data for this year; the land is shown without borders.
             </p>
@@ -451,7 +470,7 @@ export default function HistoryMapPage() {
         </div>
 
         {linkedStates.length > 0 && (
-          <nav aria-label={`States with a page in ${year}`} className="border-t border-white/[0.07] px-5 py-2 text-xs text-ink-secondary">
+          <nav aria-label={`States with a page in ${mapYearLabel(year)}`} className="border-t border-white/[0.07] px-5 py-2 text-xs text-ink-secondary">
             <span className="mr-2 text-[10px] uppercase tracking-[0.18em] text-ink-muted">States with a page</span>
             {linkedStates.map((p, i) => (
               <span key={p.ref}>
@@ -496,7 +515,7 @@ export default function HistoryMapPage() {
                 step={1}
                 value={year}
                 aria-label="Year"
-                aria-valuetext={String(year)}
+                aria-valuetext={mapYearLabel(year)}
                 onChange={(e) => {
                   setPlaying(false)
                   setYear(Number(e.target.value))
@@ -504,7 +523,7 @@ export default function HistoryMapPage() {
                 className="relative mt-6 w-full accent-white"
               />
               <div className="mt-0.5 flex justify-between text-[10px] tabular-nums text-ink-muted" aria-hidden="true">
-                <span>{range.min}</span>
+                <span>{mapYearLabel(range.min)}</span>
                 <span>{data.worldFrom}</span>
                 <span>{range.max}</span>
               </div>

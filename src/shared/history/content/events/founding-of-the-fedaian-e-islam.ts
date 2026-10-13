@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'founding-of-the-fedaian-e-islam',
   names: [
-    { text: 'Founding of the Fedaian-e Islam', lang: 'en', role: 'primary' },
-    { text: 'تأسیس فدائیان اسلام', lang: 'fa', role: 'native' },
-    { text: 'Fedāʾīān-e Eslām', lang: 'fa-Latn', role: 'alternative' }
+    { text: 'Founding of the Fedaian-e Islam', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'founding',

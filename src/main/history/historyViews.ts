@@ -2,6 +2,7 @@
 // this machine knows (marks, library matches, archive rows), all passed in.
 // historyService.ts wires the real lookups; tests pass fakes.
 
+import { bucketLabel, bucketOf, inBucket } from '@shared/history/buckets'
 import { formatHistDate } from '@shared/history/calendars'
 import { lookup } from '@shared/history/model'
 import {
@@ -128,10 +129,11 @@ function timelineItem(index: HistoryIndex, t: TimelineEntry, ctx: TimelineCtx): 
 export function overview(index: HistoryIndex, ctx: TimelineCtx): HistoryOverview {
   const items = index.events.map((t) => timelineItem(index, t, ctx))
   const periods = index.periods.map((t) => timelineItem(index, t, ctx))
-  const decades = new Map<number, { events: number; read: number }>()
+  const decades = new Map<number, { span: number; label: string; events: number; read: number }>()
   for (const t of items) {
-    const d = Math.floor(t.s / 10) * 10
-    const row = decades.get(d) ?? { events: 0, read: 0 }
+    const b = bucketOf(t.s)
+    const d = b.start
+    const row = decades.get(d) ?? { span: b.span, label: bucketLabel(b), events: 0, read: 0 }
     row.events++
     if (t.read) row.read++
     decades.set(d, row)
@@ -244,8 +246,11 @@ function startOf(t: TimelineEntry): number {
   return t.s
 }
 
-export function decade(index: HistoryIndex, start: number, ctx: ViewContext): HistoryDecade {
-  const inDecade = index.events.filter((t) => startOf(t) >= start && startOf(t) < start + 10)
+/** A front page; `start` is any year inside it (normally its first). */
+export function decade(index: HistoryIndex, year: number, ctx: ViewContext): HistoryDecade {
+  const bucket = bucketOf(year)
+  const { start } = bucket
+  const inDecade = index.events.filter((t) => inBucket(bucket, startOf(t)))
   const hasImage = (ref: string): number => {
     const e = lookup(index.catalog, ref)
     return e && imageOfEntity(e) ? 0 : 1
@@ -269,8 +274,8 @@ export function decade(index: HistoryIndex, start: number, ctx: ViewContext): Hi
     const year = (s?: string): number | null => (s ? Number(s.slice(0, s.startsWith('-') ? 5 : 4)) : null)
     const by = year(b)
     const dy = year(d)
-    if (by !== null && by >= start && by < start + 10) born.push(refInfo(index, ref, ctx.cached))
-    if (dy !== null && dy >= start && dy < start + 10) died.push(refInfo(index, ref, ctx.cached))
+    if (by !== null && inBucket(bucket, by)) born.push(refInfo(index, ref, ctx.cached))
+    if (dy !== null && inBucket(bucket, dy)) died.push(refInfo(index, ref, ctx.cached))
   }
   const continuing = index.events
     .filter((t) => startOf(t) < start && t.e !== null && t.e >= start)
@@ -287,6 +292,8 @@ export function decade(index: HistoryIndex, start: number, ctx: ViewContext): Hi
   }
   return {
     start,
+    span: bucket.span,
+    label: bucketLabel(bucket),
     lead: lead.map((t) => refInfo(index, t.ref, ctx.cached)),
     byRegion,
     continuing: continuing.map((t) => refInfo(index, t.ref, ctx.cached)),
@@ -535,6 +542,7 @@ export function article(
     mark: ctx.marks.get(ref) ?? { read: null, favorite: false },
     note: ctx.note,
     solarHijri: 'regions' in e && (e.regions as string[]).includes('iran'),
+    lunarHijri: 'regions' in e && (e.regions as string[]).some((r) => r === 'iran' || r === 'mena'),
     mapYear: mapYearOf(index, e),
     rulers,
     successors,
@@ -554,7 +562,7 @@ export function article(
 function mapYearOf(index: HistoryIndex, e: HistoryArticle): number | null {
   if (e.kind === 'polity') {
     const start = lifespan(e)?.s ?? null
-    const years = (e.cshapes ?? []).map((c) => Math.max(c.from ?? (c.set === 'world' ? 1886 : c.set === 'europe' ? 1816 : 1800), start ?? -Infinity))
+    const years = (e.cshapes ?? []).map((c) => Math.max(c.from ?? (c.set === 'world' ? 1886 : c.set === 'europe' ? 1816 : 1700), start ?? -Infinity))
     return years.length ? Math.ceil(Math.min(...years)) : null
   }
   if (e.kind !== 'event') return null
@@ -655,11 +663,12 @@ export function imageUrls(index: HistoryIndex, refs: string[]): string[] {
   return [...urls]
 }
 
-export function decadeImageUrls(index: HistoryIndex, start: number): string[] {
-  const refs = index.events.filter((t) => t.s >= start && t.s < start + 10).map((t) => t.ref)
+export function decadeImageUrls(index: HistoryIndex, year: number): string[] {
+  const bucket = bucketOf(year)
+  const refs = index.events.filter((t) => inBucket(bucket, t.s)).map((t) => t.ref)
   const inDecade = (s?: string): boolean => {
     const y = s ? Number(s.slice(0, s.startsWith('-') ? 5 : 4)) : NaN
-    return y >= start && y < start + 10
+    return inBucket(bucket, y)
   }
   const people = [...index.catalog.people.values()]
     .filter((p) => inDecade(firstValue(p.born)?.d) || inDecade(firstValue(p.died)?.d))

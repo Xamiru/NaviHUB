@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'belgian-revolution',
   names: [
-    { text: 'Belgian Revolution', lang: 'en', role: 'primary' },
-    { text: 'Révolution belge', lang: 'fr', role: 'native' }
+    { text: 'Belgian Revolution', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-07',
   type: 'revolution',

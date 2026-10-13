@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'partition-of-india',
   names: [
-    { text: 'Partition of India', lang: 'en', role: 'primary' },
-    { text: 'भारत का विभाजन', lang: 'hi', role: 'native' },
-    { text: 'تقسیم ہند', lang: 'ur', role: 'native' }
+    { text: 'Partition of India', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'partition',

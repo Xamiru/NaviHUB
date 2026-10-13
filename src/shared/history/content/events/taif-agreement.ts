@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'taif-agreement',
   names: [
     { text: 'Taif Agreement', lang: 'en', role: 'primary' },
-    { text: 'اتفاق الطائف', lang: 'ar', role: 'native' },
     {
       text: 'Ta\'if Accord',
       lang: 'en',

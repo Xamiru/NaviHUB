@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'french-protectorate-of-tunisia',
   names: [
     { text: 'French protectorate over Tunisia (1881)', lang: 'en', role: 'primary' },
-    { text: 'الحماية الفرنسية على تونس', lang: 'ar', role: 'native' },
     {
       text: 'Treaty of Bardo',
       lang: 'en',

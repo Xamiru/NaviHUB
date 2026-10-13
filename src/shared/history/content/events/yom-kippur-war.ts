@@ -29,14 +29,7 @@ export default defineEvent({
           loc: { section: 'The 1973 Arab-Israeli War', para: '1' }
         }
       ]
-    },
-    {
-      text: 'מלחמת יום הכיפורים',
-      lang: 'he',
-      role: 'native',
-      translit: 'Milḥemet Yom HaKippurim'
-    },
-    { text: 'حرب أكتوبر', lang: 'ar', role: 'alternative', translit: 'Ḥarb Uktūbar' }
+    }
   ],
   researched: '2026-10-09',
   type: 'war',

@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'eruption-of-krakatoa',
   names: [
-    { text: 'Eruption of Krakatoa', lang: 'en', role: 'primary' },
-    { text: 'Krakatau', lang: 'id', role: 'alternative' }
+    { text: 'Eruption of Krakatoa', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'disaster',

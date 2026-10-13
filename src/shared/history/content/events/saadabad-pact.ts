@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'saadabad-pact',
   names: [
-    { text: 'Saadabad Pact', lang: 'en', role: 'primary' },
-    { text: 'پیمان سعدآباد', lang: 'fa', role: 'native' },
-    { text: 'Saʿdābād Pact', lang: 'fa-Latn', role: 'alternative' }
+    { text: 'Saadabad Pact', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'treaty',

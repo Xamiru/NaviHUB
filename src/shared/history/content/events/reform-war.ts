@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'reform-war',
   names: [
     { text: 'Reform War', lang: 'en', role: 'primary' },
-    { text: 'Guerra de Reforma', lang: 'es', role: 'native' },
     {
       text: 'War of the Reform',
       lang: 'en',

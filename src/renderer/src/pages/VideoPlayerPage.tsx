@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -25,12 +25,20 @@ import { toast } from '../lib/toast'
 import { pathForMedia } from '../lib/mediaConfig'
 import { useCanGoBack } from '../lib/navState'
 import { VIDEO_PLAYER_SHORTCUTS } from '../lib/shortcuts'
-import { PLAYBACK_RATES, loadVideoPrefs, saveVideoPrefs, type VideoPrefs } from '../lib/videoPrefs'
+import {
+  PLAYBACK_RATES,
+  loadVideoPrefs,
+  lookOf,
+  saveVideoPrefs,
+  type SubtitleLook,
+  type VideoPrefs
+} from '../lib/videoPrefs'
 import { useSubtitleTrack } from '../lib/useSubtitleTrack'
 import { readDecodeStats, silentDecodeFailure } from '../lib/videoDecodeStats'
 import MiningPanel from '../components/reader/MiningPanel'
 import ShortcutHelp from '../components/reader/ShortcutHelp'
 import DecodePanel from '../components/video/DecodePanel'
+import StyledSubtitleLayer from '../components/video/StyledSubtitleLayer'
 import SubtitleOverlay, { type SubtitleWordPick } from '../components/video/SubtitleOverlay'
 import TranscriptPanel from '../components/video/TranscriptPanel'
 import VideoControls from '../components/video/VideoControls'
@@ -156,6 +164,14 @@ function Player({
 
   // ---- prefs ----
   const [prefs, setPrefs] = useState<VideoPrefs>(() => loadVideoPrefs())
+  const setLook = useCallback((patch: Partial<SubtitleLook>): void => {
+    setPrefs((p) => {
+      const next = { ...p, ...patch }
+      saveVideoPrefs(next)
+      return next
+    })
+  }, [])
+  const look = useMemo(() => lookOf(prefs), [prefs])
   const setPref = useCallback(<K extends keyof VideoPrefs>(k: K, v: VideoPrefs[K]): void => {
     setPrefs((p) => {
       const next = { ...p, [k]: v }
@@ -222,6 +238,17 @@ function Player({
   const secondary = useSubtitleTrack(sourceRef, prefs.dualSubs ? secondaryTrack : null)
   const primaryCues = primary.cues
   const secondaryCues = secondary.cues
+
+  // ---- styled ASS layer ----
+  // An ASS primary track renders as authored while playing; the clickable
+  // overlay takes the primary line whenever the layer is not drawing it.
+  const [styledFailure, setStyledFailure] = useState<string | null>(null)
+  const [styledReady, setStyledReady] = useState(false)
+  useEffect(() => setStyledFailure(null), [primary.url])
+  const styledUrl =
+    prefs.styledSubs && prefs.subsOn && primaryTrack?.format === 'ass' && !styledFailure
+      ? primary.url
+      : null
 
   // The signs/songs filter is applied once, so the overlay, the ticks and the
   // transcript agree on what "the script" is.
@@ -545,12 +572,15 @@ function Player({
   }, [])
 
   // ---- auto-hiding bars ----
-  // They stay up while paused, while a menu is open, and while any of their
-  // controls has keyboard focus (focus-within in VideoControls).
+  // They stay up while paused, while a menu is open, while the pointer is over
+  // a bar, and while one of their controls has KEYBOARD focus
+  // (has-[:focus-visible] on the bars). A mouse click leaves ordinary focus on
+  // a button, which must not pin the bars, or fullscreen never clears.
   const [barsVisible, setBarsVisible] = useState(true)
   const barsTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const keepBarRef = useRef(false)
-  keepBarRef.current = menuOpen || !playing
+  const [overBar, setOverBar] = useState(false)
+  keepBarRef.current = menuOpen || !playing || overBar
   const pokeBar = useCallback(() => {
     setBarsVisible(true)
     if (barsTimer.current) clearTimeout(barsTimer.current)
@@ -567,6 +597,31 @@ function Player({
   useEffect(() => {
     if (!playing) setBarsVisible(true)
   }, [playing])
+  useEffect(() => {
+    if (!overBar) pokeBar()
+  }, [overBar, pokeBar])
+  // Entering or leaving fullscreen restarts the hide timer.
+  useEffect(() => {
+    document.addEventListener('fullscreenchange', pokeBar)
+    return () => document.removeEventListener('fullscreenchange', pokeBar)
+  }, [pokeBar])
+  // Only a pointer that really moved counts as activity. Chromium can deliver
+  // mousemove when the content under a resting cursor changes (bars fading,
+  // subtitles appearing), which would keep waking the bars and the cursor.
+  const lastPointer = useRef<{ x: number; y: number } | null>(null)
+  const onPointerActivity = useCallback(
+    (e: ReactMouseEvent) => {
+      const last = lastPointer.current
+      lastPointer.current = { x: e.screenX, y: e.screenY }
+      if (last && last.x === e.screenX && last.y === e.screenY) return
+      pokeBar()
+    },
+    [pokeBar]
+  )
+  const barHover = {
+    onMouseEnter: () => setOverBar(true),
+    onMouseLeave: () => setOverBar(false)
+  }
 
   // ---- neighbours ----
   const goToFile = useCallback(
@@ -792,14 +847,26 @@ function Player({
   }
 
   const activeCueId = activeCues[0]?.id ?? null
+  // libass draws the primary track only while playing with no mining panel
+  // open; pausing hands the line to the clickable overlay for mining.
+  const styledDrawing = styledUrl != null && styledReady && playing && !panelOpen
   const showTranscript = hasSubs && transcriptOpen
 
   return (
-    <div ref={rootRef} className="theme-dark flex h-screen bg-black" onMouseMove={pokeBar}>
+    <div
+      ref={rootRef}
+      // Hidden bars hide the cursor too, on every descendant, so an element
+      // with its own cursor (a subtitle word) cannot bring it back.
+      className={`theme-dark flex h-screen bg-black ${
+        barsVisible ? '' : 'cursor-none [&_*]:!cursor-none'
+      }`}
+      onMouseMove={onPointerActivity}
+    >
       <div className="relative flex min-w-0 flex-1 flex-col">
         <div
-          className={`media-contrast absolute inset-x-0 top-0 z-20 flex items-center gap-3 bg-base-900/90 px-4 py-2 backdrop-blur transition-opacity duration-300 focus-within:opacity-100 ${
-            barsVisible ? 'opacity-100' : 'opacity-0'
+          {...barHover}
+          className={`media-contrast absolute inset-x-0 top-0 z-30 flex items-center gap-3 bg-base-900/90 px-4 py-2 backdrop-blur transition-opacity duration-300 has-[:focus-visible]:pointer-events-auto has-[:focus-visible]:opacity-100 ${
+            barsVisible ? 'opacity-100' : 'pointer-events-none opacity-0'
           }`}
         >
           <button type="button" className="btn-ghost px-3 py-1 text-sm" onClick={onExit}>
@@ -833,7 +900,10 @@ function Player({
           )}
         </div>
 
-        <div className="relative min-h-0 flex-1" onClick={togglePlay}>
+        {/* A single click on the picture does nothing (it only wakes the bars);
+            a double-click toggles fullscreen. Play/pause lives on Space/K, the
+            Play button and the media keys. */}
+        <div className="relative min-h-0 flex-1" onClick={pokeBar} onDoubleClick={toggleFullscreen}>
           <video
             ref={videoRef}
             className="absolute inset-0 h-full w-full bg-black object-contain"
@@ -878,14 +948,29 @@ function Player({
             }}
           />
 
+          {styledUrl && (
+            <StyledSubtitleLayer
+              key={`${styledUrl}|${prefs.dialogueOnly}`}
+              videoRef={videoRef}
+              sourceRef={sourceRef}
+              trackUrl={styledUrl}
+              dialogueOnly={prefs.dialogueOnly}
+              visible={styledDrawing}
+              scale={prefs.scale}
+              offsetSec={prefs.subOffsetSec}
+              onReady={setStyledReady}
+              onFailure={setStyledFailure}
+            />
+          )}
+
           {prefs.subsOn && hasSubs && (
             <SubtitleOverlay
               primary={activeCues}
               secondary={prefs.dualSubs ? activeSecondary : null}
               primaryLang={primaryTrack?.lang ?? 'other'}
               secondaryLang={secondaryTrack?.lang ?? 'other'}
-              fontScale={prefs.subFontScale}
-              backdrop={prefs.subBackdrop}
+              look={look}
+              showPrimary={!styledDrawing}
               barsVisible={barsVisible}
               onWordPick={onWordPick}
               onTextSelect={(text, cue, lang) => openMining(cue.text, text, lang)}
@@ -896,9 +981,10 @@ function Player({
 
           {rangeDone && range && !loopRange && (
             <div
-              className="media-contrast absolute left-1/2 top-16 z-30 -translate-x-1/2 rounded bg-base-900/90 px-4 py-2 text-sm text-gray-200"
+              className="media-contrast absolute left-1/2 top-16 z-20 -translate-x-1/2 rounded bg-base-900/90 px-4 py-2 text-sm text-gray-200"
               role="status"
               onClick={(e) => e.stopPropagation()}
+              onDoubleClick={(e) => e.stopPropagation()}
             >
               Range finished.{' '}
               <button type="button" className="btn-ghost px-2 py-0.5 text-xs" onClick={replayRange}>
@@ -909,8 +995,9 @@ function Player({
 
           {ended && (
             <div
-              className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-black/85"
+              className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/85"
               onClick={(e) => e.stopPropagation()}
+              onDoubleClick={(e) => e.stopPropagation()}
             >
               <p className="text-sm text-gray-300" role="status">
                 Finished {source.title}
@@ -963,6 +1050,7 @@ function Player({
           hasPrev={!!source.prev}
           hasNext={!!source.next}
           visible={barsVisible}
+          hoverHandlers={barHover}
           onToggle={togglePlay}
           onSeek={seekTo}
           onPrevEpisode={() => source.prev && goToFile(source.prev.fileId)}
@@ -1000,6 +1088,14 @@ function Player({
           }}
           onHelp={() => setHelpOpen(true)}
           onMenuOpenChange={setMenuOpen}
+          look={look}
+          styledSubs={prefs.styledSubs}
+          styledStatus={styledFailure}
+          onLook={setLook}
+          onStyledSubs={(on) => {
+            setStyledFailure(null)
+            setPref('styledSubs', on)
+          }}
         />
       </div>
 

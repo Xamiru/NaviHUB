@@ -80,7 +80,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q5',
-          text: 'Contrary to Żīāʾ-al-Dīn’s assertion that the British had been deceived about the real purpose of the trans­fer of the Cossacks (Wilber, pp. 41-42; Sabahi, p. 120), British military personnel do appear to have been involved in the coup.',
+          text: 'Contrary to Żīāʾ-al-Dīn’s assertion that the British had been deceived about the real purpose of the transfer of the Cossacks (Wilber, pp. 41-42; Sabahi, p. 120), British military personnel do appear to have been involved in the coup.',
           lang: 'en',
           cite: {
             source: 'iranica-shambayati-coup-detat-of-1921',

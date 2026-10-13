@@ -4,8 +4,6 @@ export default defineEvent({
   id: 'oslo-accords',
   names: [
     { text: 'Oslo Accords', lang: 'en', role: 'primary' },
-    { text: 'اتفاقية أوسلو', lang: 'ar', role: 'native' },
-    { text: 'הסכמי אוסלו', lang: 'he', role: 'native' },
     {
       text: 'Declaration of Principles on Interim Self-Government Arrangements',
       lang: 'en',

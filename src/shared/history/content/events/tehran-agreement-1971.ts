@@ -16,8 +16,7 @@ export default defineEvent({
           }
         }
       ]
-    },
-    { text: 'قرارداد تهران', lang: 'fa', role: 'native', translit: 'Qarārdād-e Tehrān' }
+    }
   ],
   researched: '2026-10-09',
   type: 'treaty',

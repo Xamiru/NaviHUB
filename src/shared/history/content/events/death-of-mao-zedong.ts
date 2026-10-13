@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'death-of-mao-zedong',
   names: [
     { text: 'Death of Mao Zedong', lang: 'en', role: 'primary' },
-    { text: '毛泽东逝世', lang: 'zh', role: 'native', translit: 'Máo Zédōng shìshì' },
     {
       text: 'Arrest of the Gang of Four',
       lang: 'en',
@@ -15,8 +14,7 @@ export default defineEvent({
           loc: { section: 'The Cultural Revolution, 1966-76', para: '23' }
         }
       ]
-    },
-    { text: '粉碎四人帮', lang: 'zh', role: 'alternative', translit: 'Fěnsuì Sìrénbāng' }
+    }
   ],
   researched: '2026-10-09',
   type: 'other',

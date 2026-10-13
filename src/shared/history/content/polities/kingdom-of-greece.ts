@@ -3,8 +3,7 @@ import { definePolity } from '../../schema'
 export default definePolity({
   id: 'kingdom-of-greece',
   names: [
-    { text: 'Kingdom of Greece', lang: 'en', role: 'primary' },
-    { text: 'Βασίλειον τῆς Ἑλλάδος', lang: 'el', role: 'native' }
+    { text: 'Kingdom of Greece', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   polityType: 'kingdom',

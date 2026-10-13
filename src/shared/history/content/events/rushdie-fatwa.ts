@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'rushdie-fatwa',
   names: [
     { text: 'Khomeini’s fatwa against Salman Rushdie', lang: 'en', role: 'primary' },
-    { text: 'فتوای امام خمینی درباره سلمان رشدی', lang: 'fa', role: 'native' },
     { text: 'Rushdie affair', lang: 'en', role: 'alternative' },
     { text: 'Satanic Verses affair', lang: 'en', role: 'alternative' }
   ],

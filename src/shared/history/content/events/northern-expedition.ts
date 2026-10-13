@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'northern-expedition',
   names: [
-    { text: 'Northern Expedition', lang: 'en', role: 'primary' },
-    { text: '北伐', lang: 'zh', role: 'native' }
+    { text: 'Northern Expedition', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'war',

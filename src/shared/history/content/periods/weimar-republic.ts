@@ -3,8 +3,7 @@ import { definePeriod } from '../../schema'
 export default definePeriod({
   id: 'weimar-republic',
   names: [
-    { text: 'Weimar Republic', lang: 'en', role: 'primary' },
-    { text: 'Weimarer Republik', lang: 'de', role: 'native' }
+    { text: 'Weimar Republic', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-06',
   periodType: 'regime',

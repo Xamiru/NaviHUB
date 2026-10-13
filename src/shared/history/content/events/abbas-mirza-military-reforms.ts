@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'abbas-mirza-military-reforms',
   names: [
     { text: 'Abbas Mirza’s military reforms', lang: 'en', role: 'primary' },
-    { text: 'نظام جدید عباس میرزا', lang: 'fa', role: 'native' },
     {
       text: 'neẓām-e jadid',
       lang: 'fa-Latn',

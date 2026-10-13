@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'perestroika-and-glasnost',
   names: [
-    { text: 'Perestroika and glasnost', lang: 'en', role: 'primary' },
-    { text: 'Перестройка и гласность', lang: 'ru', role: 'native' }
+    { text: 'Perestroika and glasnost', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'reform',

@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'fall-of-amir-kabir',
   names: [
-    { text: 'Fall and execution of Amir Kabir', lang: 'en', role: 'primary' },
-    { text: 'عزل و قتل امیرکبیر', lang: 'fa', role: 'native' }
+    { text: 'Fall and execution of Amir Kabir', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'assassination',

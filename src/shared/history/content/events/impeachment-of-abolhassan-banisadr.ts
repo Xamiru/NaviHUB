@@ -4,9 +4,7 @@ export default defineEvent({
   id: 'impeachment-of-abolhassan-banisadr',
   names: [
     { text: 'Impeachment of Abolhassan Banisadr', lang: 'en', role: 'primary' },
-    { text: 'برکناری ابوالحسن بنی‌صدر', lang: 'fa', role: 'native' },
-    { text: 'Dismissal of Bani-Sadr', lang: 'en', role: 'alternative' },
-    { text: 'عزل بنی‌صدر', lang: 'fa', role: 'alternative' }
+    { text: 'Dismissal of Bani-Sadr', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-08',
   type: 'crisis',

@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'november-uprising',
   names: [
     { text: 'November Uprising', lang: 'en', role: 'primary' },
-    { text: 'Powstanie listopadowe', lang: 'pl', role: 'native' },
     {
       text: 'November Revolt',
       lang: 'en',

@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'sharpeville-massacre',
   names: [
-    { text: 'Sharpeville massacre', lang: 'en', role: 'primary' },
-    { text: 'Sharpeville-slagting', lang: 'af', role: 'alternative' }
+    { text: 'Sharpeville massacre', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'massacre',

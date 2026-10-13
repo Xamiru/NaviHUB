@@ -3,8 +3,7 @@ import { definePolity } from '../../schema'
 export default definePolity({
   id: 'empire-of-brazil',
   names: [
-    { text: 'Empire of Brazil', lang: 'en', role: 'primary' },
-    { text: 'Império do Brasil', lang: 'pt', role: 'native' }
+    { text: 'Empire of Brazil', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   polityType: 'empire',

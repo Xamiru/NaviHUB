@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'rwandan-genocide',
   names: [
     { text: 'Rwandan genocide', lang: 'en', role: 'primary' },
-    { text: 'Jenoside yakorewe Abatutsi', lang: 'rw', role: 'native' },
     {
       text: 'Genocide against the Tutsi',
       lang: 'en',

@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'battle-of-ayacucho',
   names: [
-    { text: 'Battle of Ayacucho', lang: 'en', role: 'primary' },
-    { text: 'Batalla de Ayacucho', lang: 'es', role: 'native' }
+    { text: 'Battle of Ayacucho', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'battle',

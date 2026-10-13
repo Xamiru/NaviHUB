@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'anglo-persian-treaties-of-1801',
   names: [
-    { text: 'Anglo-Persian treaties of 1801', lang: 'en', role: 'primary' },
-    { text: 'عهدنامه‌های ملکم', lang: 'fa', role: 'native' }
+    { text: 'Anglo-Persian treaties of 1801', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'treaty',

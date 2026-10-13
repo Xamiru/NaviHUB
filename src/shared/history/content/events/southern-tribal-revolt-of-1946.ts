@@ -4,9 +4,7 @@ export default defineEvent({
   id: 'southern-tribal-revolt-of-1946',
   names: [
     { text: 'Southern tribal revolt of 1946', lang: 'en', role: 'primary' },
-    { text: 'نهضت جنوب', lang: 'fa', role: 'native' },
-    { text: 'South Resistance Movement', lang: 'en', role: 'alternative' },
-    { text: 'Nahżat-e moqāwamat-e janūb', lang: 'fa-Latn', role: 'alternative' }
+    { text: 'South Resistance Movement', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-08',
   type: 'uprising',

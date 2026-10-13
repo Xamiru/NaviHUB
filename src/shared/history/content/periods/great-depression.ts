@@ -3,8 +3,7 @@ import { definePeriod } from '../../schema'
 export default definePeriod({
   id: 'great-depression',
   names: [
-    { text: 'Great Depression', lang: 'en', role: 'primary' },
-    { text: 'Weltwirtschaftskrise', lang: 'de', role: 'alternative' }
+    { text: 'Great Depression', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-06',
   periodType: 'era',

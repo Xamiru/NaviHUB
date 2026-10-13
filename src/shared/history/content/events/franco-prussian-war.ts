@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'franco-prussian-war',
   names: [
-    { text: 'Franco-Prussian War', lang: 'en', role: 'primary' },
-    { text: 'Deutsch-Französischer Krieg', lang: 'de', role: 'alternative' },
-    { text: 'Guerre franco-allemande de 1870', lang: 'fr', role: 'alternative' }
+    { text: 'Franco-Prussian War', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'war',

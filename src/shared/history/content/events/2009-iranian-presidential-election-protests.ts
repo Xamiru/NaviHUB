@@ -4,9 +4,7 @@ export default defineEvent({
   id: '2009-iranian-presidential-election-protests',
   names: [
     { text: '2009 Iranian presidential election protests', lang: 'en', role: 'primary' },
-    { text: 'اعتراضات به نتایج انتخابات ریاست‌جمهوری ۱۳۸۸', lang: 'fa', role: 'native' },
     { text: 'Green Movement', lang: 'en', role: 'alternative' },
-    { text: 'جنبش سبز', lang: 'fa', role: 'alternative', translit: 'jonbesh-e sabz' },
     { text: 'Iranian Green Movement', lang: 'en', role: 'alternative' },
     { text: 'Post-election unrest in Iran', lang: 'en', role: 'alternative' }
   ],

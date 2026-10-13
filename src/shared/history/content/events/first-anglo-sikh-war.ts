@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'first-anglo-sikh-war',
   names: [
     { text: 'First Anglo-Sikh War', lang: 'en', role: 'primary' },
-    { text: 'ਪਹਿਲੀ ਐਂਗਲੋ-ਸਿੱਖ ਜੰਗ', lang: 'pa', role: 'native' },
     {
       text: 'First Sikh War',
       lang: 'en',

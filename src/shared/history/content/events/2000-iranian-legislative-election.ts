@@ -4,7 +4,6 @@ export default defineEvent({
   id: '2000-iranian-legislative-election',
   names: [
     { text: '2000 Iranian legislative election', lang: 'en', role: 'primary' },
-    { text: 'انتخابات ششمین دوره مجلس شورای اسلامی', lang: 'fa', role: 'native' },
     { text: 'Sixth Majles election', lang: 'en', role: 'alternative' },
     { text: 'Election of the Sixth Majles', lang: 'en', role: 'alternative' }
   ],

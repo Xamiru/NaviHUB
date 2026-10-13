@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'indonesian-national-revolution',
   names: [
     { text: 'Indonesian National Revolution', lang: 'en', role: 'primary' },
-    { text: 'Revolusi Nasional Indonesia', lang: 'id', role: 'native' },
     {
       text: 'National Revolution',
       lang: 'en',

@@ -1,6 +1,7 @@
 import type { MusicTrack, QuizSong } from './types'
 import { balancedDeal, seededRng } from './quizCore'
 import { shuffle } from './shuffle'
+import { recordingText, withoutFeaturing } from './musicSourceMatch'
 
 export const GUESS_TRACK_CLIP_SECONDS = [1, 2, 4, 7, 11, 16] as const
 export const GUESS_TRACK_ROUND_LENGTH = 5
@@ -18,6 +19,8 @@ export interface GuessTrackEntry {
   audioPath: string | null
   audioUrl: string | null
   coverPath: string | null
+  // Anime season year or album year; the first hint.
+  year: number | null
   balanceKey: string
 }
 
@@ -32,6 +35,8 @@ export interface GuessTrackAttempt {
   kind: 'guess' | 'skip'
   key: string | null
   label: string
+  // A wrong guess from the right anime (themes) or the right artist (music).
+  near?: boolean
 }
 
 export interface GuessTrackRoundState {
@@ -65,14 +70,17 @@ export function normalizeGuessTrackText(value: string): string {
 
 function normalizedPerformer(performers: readonly string[]): string {
   return performers
-    .map(normalizeGuessTrackText)
+    .map((performer) => normalizeGuessTrackText(withoutFeaturing(performer)))
     .filter(Boolean)
     .sort((a, b) => a.localeCompare(b))
     .join('|')
 }
 
+// Remaster labels and featuring credits name the same recording (the music
+// section's rule); live, acoustic, remix and other variants stay distinct.
 export function guessTrackRecordingKey(title: string, performers: readonly string[]): string {
-  return `${normalizeGuessTrackText(title)}::${normalizedPerformer(performers)}`
+  const base = recordingText(title.replace(/[’'`]/g, ''))
+  return `${normalizeGuessTrackText(base)}::${normalizedPerformer(performers)}`
 }
 
 export function guessTrackThemeEntry(song: QuizSong): GuessTrackEntry | null {
@@ -87,15 +95,19 @@ export function guessTrackThemeEntry(song: QuizSong): GuessTrackEntry | null {
     title,
     performer,
     context: song.animeTitle,
-    answerLabel: `${title} — ${song.animeTitle}`,
+    answerLabel: `${title} — ${song.animeTitle}${song.slug ? ` (${song.slug})` : ''}`,
     audioPath: song.audioPath,
     audioUrl: song.audioUrl,
     coverPath: song.coverPath,
+    year: song.year,
     balanceKey: `anime-${song.mediaId}`
   }
 }
 
-export function guessTrackMusicEntry(track: MusicTrack): GuessTrackEntry | null {
+export function guessTrackMusicEntry(
+  track: MusicTrack,
+  year: number | null = null
+): GuessTrackEntry | null {
   const title = track.title.trim()
   const performer = (track.tagArtist || track.artistName).trim()
   if (!title || !performer || !track.filePath.trim()) return null
@@ -110,6 +122,7 @@ export function guessTrackMusicEntry(track: MusicTrack): GuessTrackEntry | null 
     audioPath: `music/${track.filePath}`,
     audioUrl: null,
     coverPath: track.coverPath,
+    year,
     balanceKey: `artist-${track.artistId}`
   }
 }
@@ -148,14 +161,18 @@ export function buildGuessTrackQuestions(
   )
 }
 
+// One row per answer. Music copies of one recording collapse to the shortest
+// label (the plain title over "… - 2011 Remaster"); a theme shared by two anime
+// keeps a row per anime, so searching either show finds it.
 export function guessTrackChoices(entries: readonly GuessTrackEntry[]): GuessTrackEntry[] {
-  const seen = new Set<string>()
-  return entries.filter((entry) => {
-    const label = normalizeGuessTrackText(entry.answerLabel)
-    if (seen.has(label)) return false
-    seen.add(label)
-    return true
-  })
+  const chosen = new Map<string, GuessTrackEntry>()
+  for (const entry of entries) {
+    const id =
+      entry.source === 'music' ? entry.recordingKey : normalizeGuessTrackText(entry.answerLabel)
+    const kept = chosen.get(id)
+    if (!kept || entry.answerLabel.length < kept.answerLabel.length) chosen.set(id, entry)
+  }
+  return [...chosen.values()]
 }
 
 function searchRank(entry: GuessTrackEntry, query: string): number | null {
@@ -163,7 +180,6 @@ function searchRank(entry: GuessTrackEntry, query: string): number | null {
   const label = normalizeGuessTrackText(entry.answerLabel)
   const performer = normalizeGuessTrackText(entry.performer)
   const context = normalizeGuessTrackText(entry.context)
-  if (!query) return 10
   if (title === query) return 0
   if (title.startsWith(query)) return 1
   if (title.split(' ').some((part) => part.startsWith(query))) return 2
@@ -180,6 +196,8 @@ export function searchGuessTrackChoices(
   limit = 8
 ): GuessTrackEntry[] {
   const normalized = normalizeGuessTrackText(query)
+  // Nothing is suggested until the player types, so the list never covers Skip.
+  if (!normalized) return []
   const guessed = new Set(guessedRecordingKeys)
   return guessTrackChoices(entries)
     .map((entry) => ({ entry, rank: searchRank(entry, normalized) }))
@@ -210,18 +228,72 @@ export function guessTrackClipSeconds(state: GuessTrackRoundState): number {
   ]
 }
 
-export function guessTrackHintVisible(state: GuessTrackRoundState): boolean {
-  return state.status === 'playing' && state.attempts.length >= 4
-}
-
 export function guessTrackArtistInitial(performer: string): string {
   return Array.from(performer.trim())[0] ?? ''
+}
+
+export const GUESS_TRACK_YEAR_HINT_AFTER = 3
+export const GUESS_TRACK_ARTIST_HINT_AFTER = 5
+
+/** One ladder for both sources: the year after three misses, the artist after five. */
+export function guessTrackHints(entry: GuessTrackEntry, state: GuessTrackRoundState): string[] {
+  if (state.status !== 'playing') return []
+  const misses = state.attempts.length
+  const who = entry.source === 'theme' ? 'Performer' : 'Artist'
+  const hints: string[] = []
+  if (misses >= GUESS_TRACK_YEAR_HINT_AFTER) {
+    hints.push(
+      entry.year
+        ? `${entry.source === 'theme' ? 'Anime aired' : 'Released'} ${entry.year}`
+        : `${who} starts with “${guessTrackArtistInitial(entry.performer)}”`
+    )
+  }
+  if (misses >= GUESS_TRACK_ARTIST_HINT_AFTER) hints.push(`${who}: ${entry.performer}`)
+  return hints
+}
+
+/** A wrong pick from the same anime (themes) or artist (music) as any valid answer. */
+export function guessTrackNearMiss(
+  picked: GuessTrackEntry,
+  answers: readonly GuessTrackEntry[]
+): boolean {
+  return answers.some(
+    (answer) => answer.balanceKey === picked.balanceKey && answer.key !== picked.key
+  )
+}
+
+/**
+ * Seconds of leading silence before the first audible window, so a 1 second
+ * clip is never spent on a fade-in gap. Returns 0 when nothing is audible
+ * within `maxSeconds` (play from the start rather than guess).
+ */
+export function leadingSilenceSeconds(
+  channels: readonly Float32Array[],
+  sampleRate: number,
+  { windowSeconds = 0.02, threshold = 0.015, prerollSeconds = 0.05, maxSeconds = 20 } = {}
+): number {
+  if (channels.length === 0 || !(sampleRate > 0)) return 0
+  const length = Math.min(...channels.map((channel) => channel.length))
+  const step = Math.max(1, Math.round(windowSeconds * sampleRate))
+  const limit = Math.min(length, Math.round(maxSeconds * sampleRate))
+  for (let start = 0; start < limit; start += step) {
+    const end = Math.min(start + step, length)
+    for (const channel of channels) {
+      let sum = 0
+      for (let i = start; i < end; i++) sum += channel[i] * channel[i]
+      if (Math.sqrt(sum / (end - start)) >= threshold) {
+        return Math.round(Math.max(0, start / sampleRate - prerollSeconds) * 1000) / 1000
+      }
+    }
+  }
+  return 0
 }
 
 export function submitGuessTrack(
   state: GuessTrackRoundState,
   picked: GuessTrackEntry,
-  validKeys: readonly string[]
+  validKeys: readonly string[],
+  near = false
 ): GuessTrackTransition {
   if (state.status !== 'playing') return { state, outcome: state.status }
   if (state.guessedRecordingKeys.includes(picked.recordingKey)) {
@@ -229,7 +301,7 @@ export function submitGuessTrack(
   }
   const attempts = [
     ...state.attempts,
-    { kind: 'guess' as const, key: picked.key, label: picked.answerLabel }
+    { kind: 'guess' as const, key: picked.key, label: picked.answerLabel, near }
   ]
   const guessedRecordingKeys = [...state.guessedRecordingKeys, picked.recordingKey]
   if (validKeys.includes(picked.key)) {

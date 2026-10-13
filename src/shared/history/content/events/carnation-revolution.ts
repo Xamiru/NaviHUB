@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'carnation-revolution',
   names: [
     { text: 'Carnation Revolution', lang: 'en', role: 'primary' },
-    { text: 'Revolução dos Cravos', lang: 'pt', role: 'native' },
     {
       text: 'Revolution of 1974',
       lang: 'en',
@@ -15,8 +14,7 @@ export default defineEvent({
           loc: { section: 'THE REVOLUTION OF 1974', para: '-1' }
         }
       ]
-    },
-    { text: '25 de Abril', lang: 'pt', role: 'alternative' }
+    }
   ],
   researched: '2026-10-09',
   type: 'revolution',

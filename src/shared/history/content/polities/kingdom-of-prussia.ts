@@ -3,8 +3,7 @@ import { definePolity } from '../../schema'
 export default definePolity({
   id: 'kingdom-of-prussia',
   names: [
-    { text: 'Kingdom of Prussia', lang: 'en', role: 'primary' },
-    { text: 'Königreich Preußen', lang: 'de', role: 'native' }
+    { text: 'Kingdom of Prussia', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   polityType: 'kingdom',

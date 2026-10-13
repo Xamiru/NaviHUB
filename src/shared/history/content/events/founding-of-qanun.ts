@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'founding-of-qanun',
   names: [
-    { text: 'Founding of the newspaper Qānūn', lang: 'en', role: 'primary' },
-    { text: 'انتشار روزنامهٔ قانون', lang: 'fa', role: 'native' }
+    { text: 'Founding of the newspaper Qānūn', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'founding',

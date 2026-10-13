@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'chernobyl-disaster',
   names: [
-    { text: 'Chernobyl disaster', lang: 'en', role: 'primary' },
-    { text: 'Чорнобильська катастрофа', lang: 'uk', role: 'native' },
-    { text: 'Чернобыльская катастрофа', lang: 'ru', role: 'native' }
+    { text: 'Chernobyl disaster', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'disaster',

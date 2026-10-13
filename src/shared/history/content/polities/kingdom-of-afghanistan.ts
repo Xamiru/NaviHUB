@@ -3,8 +3,7 @@ import { definePolity } from '../../schema'
 export default definePolity({
   id: 'kingdom-of-afghanistan',
   names: [
-    { text: 'Kingdom of Afghanistan', lang: 'en', role: 'primary' },
-    { text: 'پادشاهی افغانستان', lang: 'fa', role: 'native' }
+    { text: 'Kingdom of Afghanistan', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   polityType: 'kingdom',

@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'siege-of-herat-1837-1838',
   names: [
     { text: 'Siege of Herat (1837–1838)', lang: 'en', role: 'primary' },
-    { text: 'محاصره هرات', lang: 'fa', role: 'native' },
     {
       text: 'Herat campaign',
       lang: 'en',

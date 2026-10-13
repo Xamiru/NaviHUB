@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'founding-of-the-dar-al-fonun',
   names: [
     { text: 'Founding of the Dar al-Fonun', lang: 'en', role: 'primary' },
-    { text: 'دارالفنون', lang: 'fa', role: 'native' },
     {
       text: 'Dar ol Fonun',
       lang: 'en',
@@ -113,7 +112,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'DĀR AL-FONŪN (lit., “polytechnic college”), a college founded in Tehran in 1268/1851 by Mīrzā Ṭāqī Khan Amīr-e Kabīr, which marked the begin­ning of modern education in Persia.',
+          text: 'DĀR AL-FONŪN (lit., “polytechnic college”), a college founded in Tehran in 1268/1851 by Mīrzā Ṭāqī Khan Amīr-e Kabīr, which marked the beginning of modern education in Persia.',
           lang: 'en',
           cite: {
             source: 'iranica-gurney-nabavi-dar-al-fonun',
@@ -221,7 +220,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q7',
-        text: 'It took further in­structions, specifying wider needs and different terms of service (12 Ramażān 1267/11 July 1851), before contracts were signed, on 12 Šawwāl 1267/10 August 1851.',
+        text: 'It took further instructions, specifying wider needs and different terms of service (12 Ramażān 1267/11 July 1851), before contracts were signed, on 12 Šawwāl 1267/10 August 1851.',
         lang: 'en',
         cite: {
           source: 'iranica-gurney-nabavi-dar-al-fonun',

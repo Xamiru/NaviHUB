@@ -981,6 +981,8 @@ export interface NaviApi {
     // library, marks, notes and archive files.
     overview(): Promise<HistoryOverview>
     borders(): Promise<HistoryBorders>
+    /** The borders before 1700, a separate file loaded only when asked for. */
+    bordersAncient(): Promise<HistoryBorders>
     mapPins(): Promise<HistoryMapPin[]>
     /** Map border units that have a state page (the map's click-through). */
     mapPolities(): Promise<HistoryMapPolity[]>
@@ -1355,6 +1357,9 @@ export interface NaviApi {
     source(ref: VideoSourceRef): Promise<VideoSource>
     // Extracts one embedded subtitle track on demand; sidecars come back as is.
     subtitleTrack(ref: VideoSourceRef, trackId: string): Promise<VideoSubtitleTrack | null>
+    // navimg URLs of the fonts the file attaches (fansub MKVs), extracted once
+    // for the styled ASS layer; [] without ffmpeg or attachments.
+    subtitleFonts(ref: VideoSourceRef): Promise<string[]>
     // Resume position for library episodes and wrestling files; null clears
     // it. Never logs progress. Ignored for clips and Football media.
     markProgress(ref: VideoSourceRef, seconds: number | null): Promise<void>

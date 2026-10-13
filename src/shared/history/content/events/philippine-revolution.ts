@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'philippine-revolution',
   names: [
-    { text: 'Philippine Revolution', lang: 'en', role: 'primary' },
-    { text: 'Himagsikang Pilipino', lang: 'tl', role: 'native' }
+    { text: 'Philippine Revolution', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'revolution',

@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'xinhai-revolution',
   names: [
     { text: 'Xinhai Revolution', lang: 'en', role: 'primary' },
-    { text: '辛亥革命', lang: 'zh', role: 'native', translit: 'Xīnhài Gémìng' },
     {
       text: 'Republican Revolution of 1911',
       lang: 'en',

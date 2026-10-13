@@ -9,7 +9,7 @@ import { ID_LOCK, loadCatalogEntries } from '@shared/history/catalog'
 import { buildCatalog, lookup, type CatalogEntry } from '@shared/history/model'
 import { HISTORY_SCHEMA_VERSION, primaryName, refOf, type ArchiveSuggestion, type HistoryEntity } from '@shared/history/schema'
 import { validateEntity } from '@shared/history/validate'
-import { territoryOf } from '@shared/history/mapGeometry'
+import { ANCIENT_TO, territoryOf } from '@shared/history/mapGeometry'
 import type {
   HistoryArticleView,
   HistoryDecade,
@@ -36,6 +36,9 @@ import { buildIndex, refInfo, type HistoryIndex } from './historyIndex'
 import { ensureImages } from './historyImages'
 import * as views from './historyViews'
 import { library, libraryItem } from './library'
+
+/** The signed year of a stored date (`-0479` is 480 BCE). */
+const yearOf = (d: string): number => parseInt(d, 10)
 
 let entries: CatalogEntry[] | null = null
 let cached: HistoryIndex | null = null
@@ -103,7 +106,7 @@ export function overview(): HistoryOverview {
 
 export function decade(start: number): HistoryDecade {
   const d = views.decade(index(), start, context())
-  ensureImages(views.decadeImageUrls(index(), start), `Caching ${start}s images`)
+  ensureImages(views.decadeImageUrls(index(), start), `Caching ${d.label} images`)
   return d
 }
 
@@ -114,8 +117,12 @@ export async function article(requested: string): Promise<HistoryArticleView | n
   if (view?.entity.kind === 'polity' && view.entity.cshapes?.length) {
     // The borders file is large and lazy: only a state page that links to the
     // map loads it, and the map page shares the same parsed copy.
-    const { borders } = await import('./historyMap')
-    view.territory = territoryOf(await borders(), view.entity.cshapes)
+    const { borders, allBorders } = await import('./historyMap')
+    // A state that began before 1700 also has outlines in the separate ancient file.
+    const start = view.entity.start?.alts.map((a) => yearOf(a.value.d)).filter(Number.isFinite) ?? []
+    const early = view.entity.cshapes.some((c) => c.set === 'early') && (!start.length || Math.min(...start) < ANCIENT_TO)
+    const data = early ? await allBorders() : await borders()
+    view.territory = territoryOf(data, view.entity.cshapes)
   }
   if (view) {
     const urls = [view.hero?.url, ...Object.values(view.refs).map((r) => r.image?.url), ...view.media.map((m) => m.poster)]

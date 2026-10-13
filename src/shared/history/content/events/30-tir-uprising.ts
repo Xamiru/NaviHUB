@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: '30-tir-uprising',
   names: [
-    { text: '30 Tir uprising', lang: 'en', role: 'primary' },
-    { text: 'قیام سی تیر', lang: 'fa', role: 'native' }
+    { text: '30 Tir uprising', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'uprising',

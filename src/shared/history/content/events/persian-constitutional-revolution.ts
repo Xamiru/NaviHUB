@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'persian-constitutional-revolution',
   names: [
-    { text: 'Persian Constitutional Revolution', lang: 'en', role: 'primary' },
-    { text: 'انقلاب مشروطه', lang: 'fa', role: 'native' }
+    { text: 'Persian Constitutional Revolution', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'revolution',

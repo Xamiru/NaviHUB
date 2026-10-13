@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'anglo-persian-definitive-treaty',
   names: [
     { text: 'Anglo-Persian Definitive Treaty', lang: 'en', role: 'primary' },
-    { text: 'عهدنامه مفصل ایران و انگلیس', lang: 'fa', role: 'native' },
     {
       text: 'Definitive Treaty of Friendship and Alliance',
       lang: 'en',

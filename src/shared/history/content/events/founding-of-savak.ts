@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'founding-of-savak',
   names: [
     { text: 'Founding of SAVAK', lang: 'en', role: 'primary' },
-    { text: 'تأسیس ساواک', lang: 'fa', role: 'native' },
     {
       text: 'Sazman-e Ettelaat va Amniyat-e Keshvar',
       lang: 'fa-Latn',
@@ -139,7 +138,7 @@ export default defineEvent({
         },
         {
           id: 'q4',
-          text: 'The first of these farmāns was delivered to Moṣaddeq on the night of 24 Mordād 1332 Š./15 August 1953 by Colonel Neʿmat-­Allāh Naṣīrī, commander of the shah’s imperial guard and later director of the internal-security force SAVAK.',
+          text: 'The first of these farmāns was delivered to Moṣaddeq on the night of 24 Mordād 1332 Š./15 August 1953 by Colonel Neʿmat-Allāh Naṣīrī, commander of the shah’s imperial guard and later director of the internal-security force SAVAK.',
           lang: 'en',
           cite: {
             source: 'iranica-gasiorowski-coup-detat-1953',

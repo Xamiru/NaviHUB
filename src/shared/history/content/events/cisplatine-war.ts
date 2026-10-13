@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'cisplatine-war',
   names: [
-    { text: 'Cisplatine War', lang: 'en', role: 'primary' },
-    { text: 'Guerra da Cisplatina', lang: 'pt', role: 'native' }
+    { text: 'Cisplatine War', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'war',

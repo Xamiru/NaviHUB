@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'communist-manifesto',
   names: [
-    { text: 'Publication of the Communist Manifesto', lang: 'en', role: 'primary' },
-    { text: 'Manifest der Kommunistischen Partei', lang: 'de', role: 'native' }
+    { text: 'Publication of the Communist Manifesto', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-07',
   type: 'cultural',

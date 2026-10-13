@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'turkish-war-of-independence',
   names: [
     { text: 'Turkish War of Independence', lang: 'en', role: 'primary' },
-    { text: 'Kurtuluş Savaşı', lang: 'tr', role: 'native' },
     {
       text: 'Defence of National Rights movement',
       lang: 'en',

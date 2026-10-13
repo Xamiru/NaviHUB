@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'abbas-mirza-khorasan-campaign',
   names: [
-    { text: 'Khorasan campaign of Abbas Mirza', lang: 'en', role: 'primary' },
-    { text: 'لشکرکشی عباس میرزا به خراسان', lang: 'fa', role: 'native' }
+    { text: 'Khorasan campaign of Abbas Mirza', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'war',

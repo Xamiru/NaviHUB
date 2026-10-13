@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'ottoman-constitution-of-1876',
   names: [
-    { text: 'Ottoman constitution of 1876', lang: 'en', role: 'primary' },
-    { text: 'Kanûn-ı Esâsî', lang: 'tr', role: 'native' }
+    { text: 'Ottoman constitution of 1876', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'law',
@@ -104,7 +103,7 @@ export default defineEvent({
         },
         {
           id: 'q6',
-          text: 'Turkey now made a show of going even beyond the demands formulated by Europe, and the international conference which met at Constantinople during ​the last days of 1876 was startled by the salvo of artillery which heralded the promulgation of a liberal constitution, not for the European provinces only, but for the whole empire, and the institution of a Turkish parliament.',
+          text: 'Turkey now made a show of going even beyond the demands formulated by Europe, and the international conference which met at Constantinople during the last days of 1876 was startled by the salvo of artillery which heralded the promulgation of a liberal constitution, not for the European provinces only, but for the whole empire, and the institution of a Turkish parliament.',
           lang: 'en',
           cite: { source: 'britannica-1911-turkey', loc: { section: 'TURKEY', para: '1442' } },
           provenance: {

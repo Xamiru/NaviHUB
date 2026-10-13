@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'french-conquest-of-cochinchina',
   names: [
-    { text: 'French conquest of Cochinchina', lang: 'en', role: 'primary' },
-    { text: 'Pháp chiếm Nam Kỳ', lang: 'vi', role: 'native' }
+    { text: 'French conquest of Cochinchina', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'invasion',

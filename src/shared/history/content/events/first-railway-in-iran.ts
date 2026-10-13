@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'first-railway-in-iran',
   names: [
     { text: 'Tehran–Shah Abdol-Azim railway', lang: 'en', role: 'primary' },
-    { text: 'راه‌آهن تهران–شاه‌عبدالعظیم', lang: 'fa', role: 'native' },
     {
       text: 'Tehran-Šāh ʿAbd-al-ʿAẓim line',
       lang: 'en',

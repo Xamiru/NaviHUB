@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'vienna-stock-exchange-crash-of-1873',
   names: [
-    { text: 'Vienna stock exchange crash of 1873', lang: 'en', role: 'primary' },
-    { text: 'Wiener Börsenkrach', lang: 'de', role: 'native' }
+    { text: 'Vienna stock exchange crash of 1873', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'economic',

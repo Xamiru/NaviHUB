@@ -116,3 +116,46 @@ describe('History lint: apparatus inside quotes', () => {
     expect(keys).toContain('ocr|event:sample-revolution|q96')
   })
 })
+
+describe('History lint: titles in other languages', () => {
+  it('asks an event title in another language for a source', () => {
+    const keys = lint((all) => {
+      find<HistoryEvent>(all, 'event', 'sample-revolution').names.push({ text: 'Révolution', lang: 'fr', role: 'alternative' })
+    })
+    expect(keys.some((k) => k.startsWith('uncited-title|event:sample-revolution|names['))).toBe(true)
+  })
+
+  it('accepts a cited title and leaves personal names alone', () => {
+    const keys = lint((all) => {
+      find<HistoryEvent>(all, 'event', 'sample-revolution').names.push({ text: 'Révolution', lang: 'fr', role: 'alternative', cites: [{ source: 'book-a', loc: { page: '2' } }] })
+    })
+    expect(keys.filter((k) => k.startsWith('uncited-title|event:'))).toEqual(lint().filter((k) => k.startsWith('uncited-title|event:')))
+    expect(keys.filter((k) => k.startsWith('uncited-title|person:'))).toEqual([])
+  })
+})
+
+describe('History lint: dates and invisible characters', () => {
+  it('flags a day paired with a coarser form of itself as a false dispute', () => {
+    const keys = lint((all) => {
+      const e = find<HistoryEvent>(all, 'event', 'sample-revolution')
+      e.start = { alts: [{ value: { d: '1978-01-07' }, cites: [{ source: 'book-a', loc: { page: '1' } }] }, { value: { d: '1978' }, cites: [{ source: 'book-a', loc: { page: '2' } }] }] }
+    })
+    expect(keys).toContain('false-dispute|event:sample-revolution|start')
+  })
+
+  it('leaves two different days alone', () => {
+    const keys = lint((all) => {
+      const e = find<HistoryEvent>(all, 'event', 'sample-revolution')
+      e.start = { alts: [{ value: { d: '1978-01-07' }, cites: [{ source: 'book-a', loc: { page: '1' } }] }, { value: { d: '1978-01-09' }, cites: [{ source: 'book-a', loc: { page: '2' } }] }] }
+    })
+    expect(keys.filter((k) => k.startsWith('false-dispute'))).toEqual([])
+  })
+
+  it('flags invisible characters copied into a quote', () => {
+    const keys = lint((all) => {
+      const e = find<HistoryEvent>(all, 'event', 'sample-revolution')
+      e.sections[0].quotes.push({ ...q('q97'), text: 'The crowd ga­thered.' })
+    })
+    expect(keys).toContain('ocr|event:sample-revolution|q97')
+  })
+})

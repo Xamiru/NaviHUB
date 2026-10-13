@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'paris-peace-conference',
   names: [
-    { text: 'Paris Peace Conference', lang: 'en', role: 'primary' },
-    { text: 'Conférence de la paix de Paris', lang: 'fr', role: 'alternative' }
+    { text: 'Paris Peace Conference', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'conference',

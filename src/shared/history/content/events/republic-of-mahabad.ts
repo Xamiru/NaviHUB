@@ -4,8 +4,6 @@ export default defineEvent({
   id: 'republic-of-mahabad',
   names: [
     { text: 'Republic of Mahabad', lang: 'en', role: 'primary' },
-    { text: 'کۆماری کوردستان', lang: 'ckb', role: 'native' },
-    { text: 'جمهوری مهاباد', lang: 'fa', role: 'native' },
     {
       text: 'Kurdish Republic',
       lang: 'en',

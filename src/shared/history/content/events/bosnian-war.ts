@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'bosnian-war',
   names: [
     { text: 'Bosnian war', lang: 'en', role: 'primary' },
-    { text: 'Rat u Bosni i Hercegovini', lang: 'bs', role: 'native' },
     {
       text: 'War in Bosnia and Herzegovina',
       lang: 'en',

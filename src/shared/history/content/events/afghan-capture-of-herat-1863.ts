@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'afghan-capture-of-herat-1863',
   names: [
-    { text: 'Afghan capture of Herat (1863)', lang: 'en', role: 'primary' },
-    { text: 'تصرف هرات به دست دوست محمدخان', lang: 'fa', role: 'native' }
+    { text: 'Afghan capture of Herat (1863)', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'other',

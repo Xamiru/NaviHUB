@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'soviet-withdrawal-from-afghanistan',
   names: [
-    { text: 'Soviet withdrawal from Afghanistan', lang: 'en', role: 'primary' },
-    { text: 'Вывод советских войск из Афганистана', lang: 'ru', role: 'native' },
-    { text: 'خروج نیروهای شوروی از افغانستان', lang: 'fa', role: 'native' }
+    { text: 'Soviet withdrawal from Afghanistan', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'other',

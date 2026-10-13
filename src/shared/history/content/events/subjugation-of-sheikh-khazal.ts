@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'subjugation-of-sheikh-khazal',
   names: [
-    { text: 'Subjugation of Sheikh Khazal', lang: 'en', role: 'primary' },
-    { text: 'سرکوب شیخ خزعل', lang: 'fa', role: 'native' }
+    { text: 'Subjugation of Sheikh Khazal', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'other',

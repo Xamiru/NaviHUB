@@ -5,12 +5,6 @@ export default defineEvent({
   names: [
     { text: '1979 Islamic Republic referendum', lang: 'en', role: 'primary' },
     {
-      text: 'همه‌پرسی جمهوری اسلامی',
-      lang: 'fa',
-      role: 'native',
-      translit: 'Hamepors-i-ye Jomhuri-ye Eslāmi'
-    },
-    {
       text: 'Referendum of 30-31 March 1979',
       lang: 'en',
       role: 'alternative',

@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'declaration-of-bahaullah',
   names: [
-    { text: 'Declaration of Baháʼu\'lláh', lang: 'en', role: 'primary' },
-    { text: 'اظهار امر بهاءالله', lang: 'fa', role: 'native' }
+    { text: 'Declaration of Baháʼu\'lláh', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'religious',

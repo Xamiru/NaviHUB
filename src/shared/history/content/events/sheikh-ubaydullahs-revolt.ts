@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'sheikh-ubaydullahs-revolt',
   names: [
-    { text: 'Sheikh Ubaydullah’s revolt', lang: 'en', role: 'primary' },
-    { text: 'شورش شیخ عبیدالله', lang: 'fa', role: 'native' }
+    { text: 'Sheikh Ubaydullah’s revolt', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'uprising',

@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'war-of-the-pacific',
   names: [
     { text: 'War of the Pacific', lang: 'en', role: 'primary' },
-    { text: 'Guerra del Pacífico', lang: 'es', role: 'native' },
     {
       text: 'Salpeterkrieg',
       lang: 'de',

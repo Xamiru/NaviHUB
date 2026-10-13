@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'conscription-law-of-1925',
   names: [
-    { text: 'Conscription law of 1925', lang: 'en', role: 'primary' },
-    { text: 'قانون نظام وظیفه عمومی', lang: 'fa', role: 'native' }
+    { text: 'Conscription law of 1925', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'law',

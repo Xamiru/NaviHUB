@@ -907,6 +907,11 @@ html[data-theme='metal-gear'] .btn-primary {
   box-shadow: 0 0 8px rgb(var(--accent) / 0.5);
   cursor: pointer;
 }
+.range-thumb.timeline-range {
+  pointer-events: auto;
+  cursor: pointer;
+}
+.range-thumb.timeline-range:disabled { cursor: default; }
 .range-thumb:disabled::-webkit-slider-thumb {
   background: rgb(var(--base-500));
   box-shadow: none;
@@ -2935,3 +2940,30 @@ html[data-theme='seinfeld'] .home-resume.sf-episode { display: flex; overflow: h
 @media (prefers-reduced-motion: no-preference) {
   [data-setting] { transition: box-shadow 600ms ease-out; }
 }
+
+/* Video subtitles (components/video/SubtitleOverlay.tsx). These colour the
+   text the user reads over footage, not the app palette, so they stay fixed
+   across themes. Font stacks use installed Japanese system fonts only. */
+.sub-ink-white { color: #ffffff; }
+.sub-ink-yellow { color: #fde68a; }
+.sub-ink-cyan { color: #a5f3fc; }
+.sub-font-app { font-family: var(--font-body); }
+.sub-font-gothic {
+  font-family: 'Yu Gothic UI', 'Yu Gothic', Meiryo, 'Hiragino Sans', 'Noto Sans CJK JP',
+    'Noto Sans JP', sans-serif;
+}
+.sub-font-mincho {
+  font-family: 'Yu Mincho', 'Hiragino Mincho ProN', 'Noto Serif CJK JP', 'Noto Serif JP', serif;
+}
+.sub-font-rounded {
+  font-family: 'M PLUS Rounded 1c', 'Hiragino Maru Gothic ProN', 'Kosugi Maru',
+    'Arial Rounded MT Bold', sans-serif;
+}
+.sub-outline { text-shadow: 0 0 3px #000, 0 0 6px #000, 0 2px 2px rgb(0 0 0 / 0.9); }
+.sub-box {
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  background: rgb(0 0 0 / var(--sub-box-opacity, 0.55));
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.8);
+}
+.sub-sample { background: linear-gradient(135deg, #334155, #0f172a); }

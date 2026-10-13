@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'jangali-movement',
   names: [
     { text: 'Jangali movement', lang: 'en', role: 'primary' },
-    { text: 'نهضت جنگل', lang: 'fa', role: 'native' },
     {
       text: 'Jangali (forest) movement',
       lang: 'en',

@@ -4,7 +4,6 @@ export default definePolity({
   id: 'soviet-union',
   names: [
     { text: 'Soviet Union', lang: 'en', role: 'primary' },
-    { text: 'Союз Советских Социалистических Республик', lang: 'ru', role: 'native' },
     {
       text: 'Union der Sozialistischen Sowjetrepubliken',
       lang: 'de',

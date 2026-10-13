@@ -4,8 +4,6 @@ export default defineEvent({
   id: 'iran-iraq-war',
   names: [
     { text: 'Iran–Iraq War', lang: 'en', role: 'primary' },
-    { text: 'جنگ ایران و عراق', lang: 'fa', role: 'native' },
-    { text: 'الحرب العراقية الإيرانية', lang: 'ar', role: 'native' },
     {
       text: 'Imposed War',
       lang: 'en',

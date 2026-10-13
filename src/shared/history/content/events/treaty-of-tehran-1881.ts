@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'treaty-of-tehran-1881',
   names: [
     { text: 'Treaty of Tehran (1881)', lang: 'en', role: 'primary' },
-    { text: 'عهدنامه آخال', lang: 'fa', role: 'native' },
     {
       text: 'Convention of 1881',
       lang: 'en',

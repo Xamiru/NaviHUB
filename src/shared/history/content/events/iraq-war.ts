@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'iraq-war',
   names: [
     { text: 'Iraq War', lang: 'en', role: 'primary' },
-    { text: 'حرب العراق', lang: 'ar', role: 'native' },
     { text: '2003 invasion of Iraq', lang: 'en', role: 'alternative' },
     { text: 'Second Gulf War', lang: 'en', role: 'alternative' },
     { text: 'Occupation of Iraq', lang: 'en', role: 'alternative' }

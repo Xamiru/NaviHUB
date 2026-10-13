@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'munich-agreement',
   names: [
     { text: 'Munich Agreement', lang: 'en', role: 'primary' },
-    { text: 'Münchner Abkommen', lang: 'de', role: 'native' },
     {
       text: 'Munich Betrayal',
       lang: 'en',

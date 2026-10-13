@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'second-sino-japanese-war',
   names: [
     { text: 'Second Sino-Japanese War', lang: 'en', role: 'primary' },
-    { text: '抗日战争', lang: 'zh', role: 'native' },
     {
       text: 'Anti-Japanese War',
       lang: 'en',
@@ -12,8 +11,7 @@ export default defineEvent({
       cites: [
         { source: 'loc-china-country-study-1987', loc: { section: 'Anti-Japanese War' } }
       ]
-    },
-    { text: '日中戦争', lang: 'ja', role: 'alternative' }
+    }
   ],
   researched: '2026-10-08',
   type: 'war',

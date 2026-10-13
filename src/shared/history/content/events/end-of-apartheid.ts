@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'end-of-apartheid',
   names: [
-    { text: 'End of apartheid', lang: 'en', role: 'primary' },
-    { text: 'Einde van apartheid', lang: 'af', role: 'native' }
+    { text: 'End of apartheid', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-10',
   type: 'reform',

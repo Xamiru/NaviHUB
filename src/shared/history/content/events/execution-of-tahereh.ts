@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'execution-of-tahereh',
   names: [
-    { text: 'Execution of Ṭāhera (Qorrat-al-ʿAyn)', lang: 'en', role: 'primary' },
-    { text: 'قتل طاهره قرةالعین', lang: 'fa', role: 'native' }
+    { text: 'Execution of Ṭāhera (Qorrat-al-ʿAyn)', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'other',

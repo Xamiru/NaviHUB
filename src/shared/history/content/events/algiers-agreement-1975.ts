@@ -14,18 +14,6 @@ export default defineEvent({
           loc: { section: 'IRAQ vi. PAHLAVI PERIOD, 1921-79', para: '39' }
         }
       ]
-    },
-    {
-      text: 'قرارداد ۱۹۷۵ الجزایر',
-      lang: 'fa',
-      role: 'native',
-      translit: 'Qarārdād-e 1975-e Aljazāyer'
-    },
-    {
-      text: 'اتفاقیه الجزایر',
-      lang: 'fa',
-      role: 'alternative',
-      translit: 'Ettefāqiya-ye Aljazāyer'
     }
   ],
   researched: '2026-10-09',

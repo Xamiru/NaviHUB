@@ -4,8 +4,6 @@ export default defineEvent({
   id: 'first-intifada',
   names: [
     { text: 'First Intifada', lang: 'en', role: 'primary' },
-    { text: 'الانتفاضة الأولى', lang: 'ar', role: 'native' },
-    { text: 'האינתיפאדה הראשונה', lang: 'he', role: 'native' },
     {
       text: 'Palestinian uprising',
       lang: 'en',

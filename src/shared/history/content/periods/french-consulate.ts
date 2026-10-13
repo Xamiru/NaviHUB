@@ -3,8 +3,7 @@ import { definePeriod } from '../../schema'
 export default definePeriod({
   id: 'french-consulate',
   names: [
-    { text: 'French Consulate', lang: 'en', role: 'primary' },
-    { text: 'Consulat', lang: 'fr', role: 'native' }
+    { text: 'French Consulate', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-07',
   periodType: 'regime',

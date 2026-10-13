@@ -401,6 +401,7 @@ const api: NaviApi = {
   history: {
     overview: () => ipcRenderer.invoke('history:overview'),
     borders: () => ipcRenderer.invoke('history:borders'),
+    bordersAncient: () => ipcRenderer.invoke('history:bordersAncient'),
     mapPins: () => ipcRenderer.invoke('history:mapPins'),
     mapPolities: () => ipcRenderer.invoke('history:mapPolities'),
     themes: () => ipcRenderer.invoke('history:themes'),
@@ -609,6 +610,7 @@ const api: NaviApi = {
     markWatched: (ref, watched) => ipcRenderer.invoke('video:markWatched', ref, watched),
     source: (ref) => ipcRenderer.invoke('video:source', ref),
     subtitleTrack: (ref, trackId) => ipcRenderer.invoke('video:subtitleTrack', ref, trackId),
+    subtitleFonts: (ref) => ipcRenderer.invoke('video:subtitleFonts', ref),
     markProgress: (ref, seconds) => ipcRenderer.invoke('video:markProgress', ref, seconds),
     clipAudio: (input) => ipcRenderer.invoke('video:clipAudio', input)
   },

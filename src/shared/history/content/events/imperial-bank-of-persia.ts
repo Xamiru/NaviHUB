@@ -14,8 +14,7 @@ export default defineEvent({
           loc: { section: 'CONCESSIONS ii. In the Qajar period', para: '6' }
         }
       ]
-    },
-    { text: 'بانک شاهی', lang: 'fa', role: 'native' }
+    }
   ],
   researched: '2026-10-08',
   type: 'founding',

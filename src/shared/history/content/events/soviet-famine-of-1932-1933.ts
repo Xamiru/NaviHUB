@@ -23,7 +23,6 @@ export default defineEvent({
         }
       ]
     },
-    { text: 'Голодомор', lang: 'uk', role: 'native' },
     {
       text: 'Famine-Genocide of 1932–3',
       lang: 'en',

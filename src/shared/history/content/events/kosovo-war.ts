@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'kosovo-war',
   names: [
-    { text: 'Kosovo war', lang: 'en', role: 'primary' },
-    { text: 'Lufta e Kosovës', lang: 'sq', role: 'native' },
-    { text: 'Косовски рат', lang: 'sr', role: 'native', translit: 'Kosovski rat' }
+    { text: 'Kosovo war', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-10',
   type: 'war',

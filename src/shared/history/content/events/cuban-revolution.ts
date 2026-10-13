@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'cuban-revolution',
   names: [
-    { text: 'Cuban Revolution', lang: 'en', role: 'primary' },
-    { text: 'Revolución cubana', lang: 'es', role: 'native' }
+    { text: 'Cuban Revolution', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'revolution',

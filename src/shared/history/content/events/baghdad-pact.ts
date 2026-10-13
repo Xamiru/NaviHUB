@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'baghdad-pact',
   names: [
     { text: 'Baghdad Pact', lang: 'en', role: 'primary' },
-    { text: 'پیمان بغداد', lang: 'fa', role: 'native' },
     {
       text: 'Central Treaty Organization',
       lang: 'en',
@@ -227,7 +226,7 @@ export default defineEvent({
         },
         {
           id: 'q9',
-          text: 'Without the participa­tion of nationalist Arabs a defense pact associated with the West could not remain stable. After the Iraqi with­drawal in 1959, in spite of serious efforts, CENTO failed to secure the cooperation of any other Arab state (Hadley, pp. 3-4). This deprived the alliance of much of its significance, and one might say that its sword lacked a cutting edge.',
+          text: 'Without the participation of nationalist Arabs a defense pact associated with the West could not remain stable. After the Iraqi withdrawal in 1959, in spite of serious efforts, CENTO failed to secure the cooperation of any other Arab state (Hadley, pp. 3-4). This deprived the alliance of much of its significance, and one might say that its sword lacked a cutting edge.',
           lang: 'en',
           cite: {
             source: 'iranica-kechichian-central-treaty-organization',

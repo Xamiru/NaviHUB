@@ -5,12 +5,6 @@ export default defineEvent({
   names: [
     { text: 'Lebanese Civil War', lang: 'en', role: 'primary' },
     {
-      text: 'الحرب الأهلية اللبنانية',
-      lang: 'ar',
-      role: 'native',
-      translit: 'al-Ḥarb al-ahliyya al-Lubnāniyya'
-    },
-    {
       text: 'Civil War',
       lang: 'en',
       role: 'alternative',

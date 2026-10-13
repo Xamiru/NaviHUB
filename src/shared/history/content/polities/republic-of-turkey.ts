@@ -3,8 +3,7 @@ import { definePolity } from '../../schema'
 export default definePolity({
   id: 'republic-of-turkey',
   names: [
-    { text: 'Republic of Turkey', lang: 'en', role: 'primary' },
-    { text: 'Türkiye Cumhuriyeti', lang: 'tr', role: 'native' }
+    { text: 'Republic of Turkey', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   polityType: 'republic',

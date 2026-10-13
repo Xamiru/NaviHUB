@@ -22,8 +22,7 @@ export default defineEvent({
       cites: [
         { source: 'eo1418-atabaki-persia-iran', loc: { section: 'Persia/Iran' } }
       ]
-    },
-    { text: 'Erster Weltkrieg', lang: 'de', role: 'alternative' }
+    }
   ],
   researched: '2026-10-08',
   type: 'war',

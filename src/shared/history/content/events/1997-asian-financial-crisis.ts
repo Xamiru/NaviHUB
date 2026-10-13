@@ -14,8 +14,7 @@ export default defineEvent({
           loc: { section: 'The Onset of the East Asian Financial Crisis', para: '1' }
         }
       ]
-    },
-    { text: 'วิกฤตต้มยำกุ้ง', lang: 'th', role: 'native', translit: 'Wikrit Tom Yam Kung' }
+    }
   ],
   researched: '2026-10-10',
   type: 'economic',

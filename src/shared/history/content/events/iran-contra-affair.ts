@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'iran-contra-affair',
   names: [
     { text: 'Iran–Contra affair', lang: 'en', role: 'primary' },
-    { text: 'ماجرای ایران-کنترا', lang: 'fa', role: 'native' },
     {
       text: 'McFarlane affair',
       lang: 'en',

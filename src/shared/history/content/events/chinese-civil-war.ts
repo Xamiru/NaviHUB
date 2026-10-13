@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'chinese-civil-war',
   names: [
-    { text: 'Chinese Civil War', lang: 'en', role: 'primary' },
-    { text: '国共内战', lang: 'zh', role: 'native' }
+    { text: 'Chinese Civil War', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'war',

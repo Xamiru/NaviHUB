@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'aceh-war',
   names: [
-    { text: 'Aceh War', lang: 'en', role: 'primary' },
-    { text: 'Perang Aceh', lang: 'id', role: 'native' },
-    { text: 'Atjeh-oorlog', lang: 'nl', role: 'alternative' }
+    { text: 'Aceh War', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'war',

@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: '1991-uprisings-in-iraq',
   names: [
-    { text: '1991 uprisings in Iraq', lang: 'en', role: 'primary' },
-    { text: 'الانتفاضة الشعبانية', lang: 'ar', role: 'native' }
+    { text: '1991 uprisings in Iraq', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-10',
   type: 'uprising',

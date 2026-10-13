@@ -4,7 +4,6 @@ export default definePolity({
   id: 'india',
   names: [
     { text: 'India', lang: 'en', role: 'primary' },
-    { text: 'भारत', lang: 'hi', role: 'native', translit: 'Bhārat' },
     {
       text: 'Dominion of India',
       lang: 'en',

@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'first-sino-japanese-war',
   names: [
-    { text: 'First Sino-Japanese War', lang: 'en', role: 'primary' },
-    { text: '甲午戰爭', lang: 'zh', role: 'native' },
-    { text: '日清戦争', lang: 'ja', role: 'native' }
+    { text: 'First Sino-Japanese War', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'war',

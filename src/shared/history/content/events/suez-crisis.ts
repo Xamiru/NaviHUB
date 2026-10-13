@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'suez-crisis',
   names: [
     { text: 'Suez Crisis', lang: 'en', role: 'primary' },
-    { text: 'العدوان الثلاثي', lang: 'ar', role: 'native' },
     {
       text: 'Tripartite Invasion',
       lang: 'en',

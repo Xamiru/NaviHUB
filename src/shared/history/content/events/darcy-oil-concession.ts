@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'darcy-oil-concession',
   names: [
-    { text: 'D’Arcy Concession', lang: 'en', role: 'primary' },
-    { text: 'امتیاز دارسی', lang: 'fa', role: 'native' }
+    { text: 'D’Arcy Concession', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'economic',

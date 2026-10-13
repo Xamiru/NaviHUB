@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'assassination-of-yitzhak-rabin',
   names: [
-    { text: 'Assassination of Yitzhak Rabin', lang: 'en', role: 'primary' },
-    { text: 'רצח יצחק רבין', lang: 'he', role: 'native' },
-    { text: 'اغتيال إسحاق رابين', lang: 'ar', role: 'native' }
+    { text: 'Assassination of Yitzhak Rabin', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-10',
   type: 'assassination',

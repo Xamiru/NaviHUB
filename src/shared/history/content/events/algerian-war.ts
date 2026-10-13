@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'algerian-war',
   names: [
     { text: 'Algerian War', lang: 'en', role: 'primary' },
-    { text: 'حرب التحرير الجزائرية', lang: 'ar', role: 'native' },
     {
       text: 'War of Independence',
       lang: 'en',

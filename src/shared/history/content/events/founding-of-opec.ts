@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'founding-of-opec',
   names: [
     { text: 'Founding of OPEC', lang: 'en', role: 'primary' },
-    { text: 'تأسیس اوپک', lang: 'fa', role: 'native' },
     {
       text: 'Organization of the Petroleum Exporting Countries',
       lang: 'en',

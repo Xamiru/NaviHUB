@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'tehran-conference',
   names: [
-    { text: 'Tehran Conference', lang: 'en', role: 'primary' },
-    { text: 'کنفرانس تهران', lang: 'fa', role: 'native' }
+    { text: 'Tehran Conference', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'conference',

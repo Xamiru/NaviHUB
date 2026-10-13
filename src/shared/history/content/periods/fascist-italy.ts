@@ -3,8 +3,7 @@ import { definePeriod } from '../../schema'
 export default definePeriod({
   id: 'fascist-italy',
   names: [
-    { text: 'Fascist Italy', lang: 'en', role: 'primary' },
-    { text: 'Italia fascista', lang: 'it', role: 'native' }
+    { text: 'Fascist Italy', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   periodType: 'regime',

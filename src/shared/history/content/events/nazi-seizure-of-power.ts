@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'nazi-seizure-of-power',
   names: [
-    { text: 'Nazi seizure of power', lang: 'en', role: 'primary' },
-    { text: 'Machtergreifung', lang: 'de', role: 'native' }
+    { text: 'Nazi seizure of power', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'other',

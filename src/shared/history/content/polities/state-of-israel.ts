@@ -4,7 +4,6 @@ export default definePolity({
   id: 'state-of-israel',
   names: [
     { text: 'Israel', lang: 'en', role: 'primary' },
-    { text: 'מדינת ישראל', lang: 'he', role: 'native' },
     {
       text: 'State of Israel',
       lang: 'en',

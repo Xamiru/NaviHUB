@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'taiping-rebellion',
   names: [
     { text: 'Taiping Rebellion', lang: 'en', role: 'primary' },
-    { text: '太平天國運動', lang: 'zh', role: 'native' },
     {
       text: 'Heavenly Kingdom of Great Peace',
       lang: 'en',

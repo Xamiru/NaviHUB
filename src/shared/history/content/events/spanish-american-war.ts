@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'spanish-american-war',
   names: [
-    { text: 'Spanish–American War', lang: 'en', role: 'primary' },
-    { text: 'Guerra hispano-estadounidense', lang: 'es', role: 'native' }
+    { text: 'Spanish–American War', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'war',

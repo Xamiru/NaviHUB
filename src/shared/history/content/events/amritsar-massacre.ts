@@ -14,8 +14,7 @@ export default defineEvent({
           loc: { section: 'Contesting Memory', para: '2' }
         }
       ]
-    },
-    { text: 'ਜਲ੍ਹਿਆਂਵਾਲਾ ਬਾਗ ਹੱਤਿਆਕਾਂਡ', lang: 'pa', role: 'native' }
+    }
   ],
   researched: '2026-10-08',
   type: 'massacre',

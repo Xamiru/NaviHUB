@@ -4,7 +4,6 @@ export default definePeriod({
   id: 'presidency-of-akbar-hashemi-rafsanjani',
   names: [
     { text: 'Presidency of Akbar Hashemi Rafsanjani', lang: 'en', role: 'primary' },
-    { text: 'ریاست‌جمهوری اکبر هاشمی رفسنجانی', lang: 'fa', role: 'native' },
     { text: 'Rafsanjani era', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-10',

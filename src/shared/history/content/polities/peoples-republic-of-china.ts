@@ -3,8 +3,7 @@ import { definePolity } from '../../schema'
 export default definePolity({
   id: 'peoples-republic-of-china',
   names: [
-    { text: 'People\'s Republic of China', lang: 'en', role: 'primary' },
-    { text: '中华人民共和国', lang: 'zh', role: 'native', translit: 'Zhonghua Renmin Gongheguo' }
+    { text: 'People\'s Republic of China', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   polityType: 'republic',

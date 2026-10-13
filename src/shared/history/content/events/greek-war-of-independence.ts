@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'greek-war-of-independence',
   names: [
     { text: 'Greek War of Independence', lang: 'en', role: 'primary' },
-    { text: 'Ελληνική Επανάσταση', lang: 'el', role: 'native' },
     {
       text: 'Greek revolution',
       lang: 'en',

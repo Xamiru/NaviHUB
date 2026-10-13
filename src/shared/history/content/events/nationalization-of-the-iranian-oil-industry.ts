@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'nationalization-of-the-iranian-oil-industry',
   names: [
-    { text: 'Nationalization of the Iranian oil industry', lang: 'en', role: 'primary' },
-    { text: 'ملی شدن صنعت نفت ایران', lang: 'fa', role: 'native' }
+    { text: 'Nationalization of the Iranian oil industry', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'nationalization',

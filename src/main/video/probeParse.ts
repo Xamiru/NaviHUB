@@ -19,12 +19,21 @@ export interface ProbeStream {
   isAttachedPic: boolean
 }
 
+// A file attached to the container. Fansub MKVs attach the fonts their ASS
+// styles use; the styled subtitle layer needs them to render as authored.
+export interface ProbeAttachment {
+  index: number // absolute stream index — what `-dump_attachment:<i>` takes
+  filename: string
+  mimetype: string | null
+}
+
 export interface MediaProbe {
   durationSec: number | null
   startTimeSec: number
   formatName: string
   sizeBytes: number | null
   streams: ProbeStream[]
+  attachments?: ProbeAttachment[]
 }
 
 interface RawStream {
@@ -63,7 +72,15 @@ export function parseProbeJson(raw: string): MediaProbe | null {
   // index, and `-map 0:s:N` wants this one — getting it wrong silently extracts
   // the wrong subtitle track.
   const counters: Record<string, number> = {}
+  const attachments: ProbeAttachment[] = []
   for (const s of doc.streams ?? []) {
+    if (s.codec_type === 'attachment') {
+      const tags = s.tags ?? {}
+      const filename = tags.filename ?? tags.FILENAME
+      if (typeof s.index === 'number' && typeof filename === 'string' && filename) {
+        attachments.push({ index: s.index, filename, mimetype: tags.mimetype ?? tags.MIMETYPE ?? null })
+      }
+    }
     const type = streamType(s.codec_type)
     const key = s.codec_type ?? 'other'
     const typeIndex = counters[key] ?? 0
@@ -93,7 +110,8 @@ export function parseProbeJson(raw: string): MediaProbe | null {
     startTimeSec: num(fmt.start_time) ?? 0,
     formatName: typeof fmt.format_name === 'string' ? fmt.format_name : '',
     sizeBytes: num(fmt.size),
-    streams
+    streams,
+    attachments
   }
 }
 
@@ -127,6 +145,16 @@ export function pickAudioStream(
     return lang === want || (JA.has(want) && JA.has(lang))
   })
   return wanted ?? audio.find((s) => s.isDefault) ?? audio[0]
+}
+
+const FONT_EXTS = /\.(ttf|otf|ttc|woff2?)$/i
+const FONT_MIMES = /font|truetype|opentype|sfnt/i
+
+// The attachments a subtitle renderer can use as fonts.
+export function fontAttachments(probe: MediaProbe): ProbeAttachment[] {
+  return (probe.attachments ?? []).filter(
+    (a) => FONT_EXTS.test(a.filename) || (a.mimetype != null && FONT_MIMES.test(a.mimetype))
+  )
 }
 
 // Subtitle codecs that carry TEXT. Everything else (Blu-ray PGS, DVD VobSub) is

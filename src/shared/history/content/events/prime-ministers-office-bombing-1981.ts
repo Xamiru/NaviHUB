@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'prime-ministers-office-bombing-1981',
   names: [
     { text: 'Bombing of the prime minister’s office, 1981', lang: 'en', role: 'primary' },
-    { text: 'انفجار دفتر نخست‌وزیری', lang: 'fa', role: 'native' },
     { text: 'Assassination of Rajai and Bahonar', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-08',

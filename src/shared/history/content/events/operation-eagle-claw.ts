@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'operation-eagle-claw',
   names: [
     { text: 'Operation Eagle Claw', lang: 'en', role: 'primary' },
-    { text: 'ماجرای طبس', lang: 'fa', role: 'native' },
     { text: 'Desert One', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-10',

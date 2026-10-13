@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'iranian-oil-consortium-agreement-1954',
   names: [
-    { text: 'Consortium Agreement of 1954', lang: 'en', role: 'primary' },
-    { text: 'قرارداد کنسرسیوم نفت ۱۳۳۳', lang: 'fa', role: 'native' }
+    { text: 'Consortium Agreement of 1954', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'treaty',

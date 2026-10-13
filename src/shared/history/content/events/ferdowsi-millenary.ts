@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'ferdowsi-millenary',
   names: [
-    { text: 'Ferdowsi millenary celebration', lang: 'en', role: 'primary' },
-    { text: 'جشن هزاره فردوسی', lang: 'fa', role: 'native' },
-    { text: 'jašn-e hazāra', lang: 'fa-Latn', role: 'alternative' }
+    { text: 'Ferdowsi millenary celebration', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'cultural',

@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'kristallnacht',
   names: [
     { text: 'Kristallnacht', lang: 'en', role: 'primary' },
-    { text: 'Novemberpogrom', lang: 'de', role: 'native' },
     {
       text: 'Crystal Night',
       lang: 'en',

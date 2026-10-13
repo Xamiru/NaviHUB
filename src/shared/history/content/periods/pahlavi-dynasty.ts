@@ -3,8 +3,7 @@ import { definePeriod } from '../../schema'
 export default definePeriod({
   id: 'pahlavi-dynasty',
   names: [
-    { text: 'Pahlavi dynasty', lang: 'en', role: 'primary' },
-    { text: 'دودمان پهلوی', lang: 'fa', role: 'native' }
+    { text: 'Pahlavi dynasty', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-07',
   periodType: 'dynasty',

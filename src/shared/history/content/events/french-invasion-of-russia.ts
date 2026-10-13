@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'french-invasion-of-russia',
   names: [
     { text: 'French invasion of Russia', lang: 'en', role: 'primary' },
-    { text: 'Отечественная война 1812 года', lang: 'ru', role: 'native' },
     {
       text: 'Russian campaign',
       lang: 'en',

@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'uniform-dress-law-of-1928',
   names: [
-    { text: 'Uniform dress law of 1928', lang: 'en', role: 'primary' },
-    { text: 'قانون متحدالشکل شدن البسه', lang: 'fa', role: 'native' }
+    { text: 'Uniform dress law of 1928', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'law',
@@ -62,7 +61,7 @@ export default defineEvent({
         },
         {
           id: 'q2',
-          text: 'All government workers, as well as school­boys, were to wear cylindrical hats with bills (known as kolāh-e pahlavī, “Pahlavi cap”; plate cxxvi) in­stead of the customary fur hats, turbans, or ovoid hats.',
+          text: 'All government workers, as well as schoolboys, were to wear cylindrical hats with bills (known as kolāh-e pahlavī, “Pahlavi cap”; plate cxxvi) instead of the customary fur hats, turbans, or ovoid hats.',
           lang: 'en',
           cite: {
             source: 'iranica-saidi-sirjani-clothing-pahlavi',
@@ -100,7 +99,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'The imposition of the Pahlavi cap and the prohibition of traditional headgear aroused strong opposition, es­pecially among two groups. The first included tradi­tionalists, who considered turbans a sign of distinction, and tribesmen, who identified themselves by the styles and colors of their headgear. The second comprised the proprietors of textile factories, who were brought to the brink of bankruptcy by the new regulations.',
+          text: 'The imposition of the Pahlavi cap and the prohibition of traditional headgear aroused strong opposition, especially among two groups. The first included traditionalists, who considered turbans a sign of distinction, and tribesmen, who identified themselves by the styles and colors of their headgear. The second comprised the proprietors of textile factories, who were brought to the brink of bankruptcy by the new regulations.',
           lang: 'en',
           cite: {
             source: 'iranica-saidi-sirjani-clothing-pahlavi',

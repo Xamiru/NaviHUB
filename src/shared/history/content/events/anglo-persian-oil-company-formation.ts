@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'anglo-persian-oil-company-formation',
   names: [
-    { text: 'Formation of the Anglo-Persian Oil Company', lang: 'en', role: 'primary' },
-    { text: 'تأسیس شرکت نفت ایران و انگلیس', lang: 'fa', role: 'native' }
+    { text: 'Formation of the Anglo-Persian Oil Company', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'founding',

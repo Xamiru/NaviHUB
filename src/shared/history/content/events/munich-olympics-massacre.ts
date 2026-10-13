@@ -4,8 +4,6 @@ export default defineEvent({
   id: 'munich-olympics-massacre',
   names: [
     { text: 'Munich massacre', lang: 'en', role: 'primary' },
-    { text: 'Olympia-Attentat', lang: 'de', role: 'native' },
-    { text: 'טבח מינכן', lang: 'he', role: 'alternative', translit: 'Tevach Minkhen' },
     {
       text: 'Munich Olympic massacre',
       lang: 'en',

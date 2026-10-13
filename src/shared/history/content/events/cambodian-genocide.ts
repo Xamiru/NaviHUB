@@ -5,12 +5,6 @@ export default defineEvent({
   names: [
     { text: 'Cambodian genocide', lang: 'en', role: 'primary' },
     {
-      text: 'ការប្រល័យពូជសាសន៍នៅកម្ពុជា',
-      lang: 'km',
-      role: 'native',
-      translit: 'Kar Pralay Pich Sas nov Kampuchea'
-    },
-    {
       text: 'Democratic Kampuchea',
       lang: 'en',
       role: 'alternative',

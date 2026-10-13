@@ -42,7 +42,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q1',
-          text: 'BOŠRŪʾĪ (Bošrūyaʾī), MOLLĀ MOḤAMMAD­-ḤOSAYN (1229-65/1814-49), Shaikhi ʿālem who became the first convert to Babism, provincial Babi leader in Khorasan, and organizer of Babi resistance in Māzandarān.',
+          text: 'BOŠRŪʾĪ (Bošrūyaʾī), MOLLĀ MOḤAMMAD-ḤOSAYN (1229-65/1814-49), Shaikhi ʿālem who became the first convert to Babism, provincial Babi leader in Khorasan, and organizer of Babi resistance in Māzandarān.',
           lang: 'en',
           cite: {
             source: 'iranica-maceoin-boshrui',

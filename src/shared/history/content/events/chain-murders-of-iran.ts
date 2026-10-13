@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'chain-murders-of-iran',
   names: [
     { text: 'Chain murders of Iran', lang: 'en', role: 'primary' },
-    { text: 'قتل‌های زنجیره‌ای', lang: 'fa', role: 'native', translit: 'qatl-hā-ye zanjire-ī' },
     { text: 'Killings of dissidents in Iran in 1998', lang: 'en', role: 'alternative' }
   ],
   researched: '2026-10-10',

@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'java-war',
   names: [
-    { text: 'Java War', lang: 'en', role: 'primary' },
-    { text: 'Perang Jawa', lang: 'id', role: 'native' }
+    { text: 'Java War', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'war',

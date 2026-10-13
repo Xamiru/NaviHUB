@@ -3,8 +3,7 @@ import { definePeriod } from '../../schema'
 export default definePeriod({
   id: 'reign-of-ahmad-shah-qajar',
   names: [
-    { text: 'Reign of Ahmad Shah Qajar', lang: 'en', role: 'primary' },
-    { text: 'سلطنت احمدشاه قاجار', lang: 'fa', role: 'native' }
+    { text: 'Reign of Ahmad Shah Qajar', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-06',
   periodType: 'reign',

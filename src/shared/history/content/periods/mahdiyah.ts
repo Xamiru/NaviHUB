@@ -14,8 +14,7 @@ export default definePeriod({
           loc: { section: 'THE MAHDIYAH, 1884-98', para: '10' }
         }
       ]
-    },
-    { text: 'المهدية', lang: 'ar', role: 'native' }
+    }
   ],
   researched: '2026-10-07',
   periodType: 'regime',

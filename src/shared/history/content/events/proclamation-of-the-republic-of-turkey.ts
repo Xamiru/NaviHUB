@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'proclamation-of-the-republic-of-turkey',
   names: [
-    { text: 'Proclamation of the Republic of Turkey', lang: 'en', role: 'primary' },
-    { text: 'Cumhuriyetin ilanı', lang: 'tr', role: 'native' }
+    { text: 'Proclamation of the Republic of Turkey', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'founding',

@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'first-persian-newspaper-1837',
   names: [
     { text: 'Kaghaz-e Akhbar, the first Persian newspaper', lang: 'en', role: 'primary' },
-    { text: 'کاغذ اخبار', lang: 'fa', role: 'native' },
     {
       text: 'Aḵbār-e waqāyeʿ',
       lang: 'fa-Latn',
@@ -91,7 +90,7 @@ export default defineEvent({
         },
         {
           id: 'q2',
-          text: 'In 1244-­45/1829-30 he was a member of an embassy to St. Petersburg, from which he returned with several print­ing presses, which were set up in Tabrīz under the directorship of his friend Āqā ʿAlī.',
+          text: 'In 1244-45/1829-30 he was a member of an embassy to St. Petersburg, from which he returned with several printing presses, which were set up in Tabrīz under the directorship of his friend Āqā ʿAlī.',
           lang: 'en',
           cite: { source: 'iranica-floor-cap', loc: { section: 'ČĀP', para: '11' } },
           provenance: {

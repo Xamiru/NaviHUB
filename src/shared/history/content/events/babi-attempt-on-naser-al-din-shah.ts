@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'babi-attempt-on-naser-al-din-shah',
   names: [
-    { text: 'Babi attempt on the life of Naser al-Din Shah', lang: 'en', role: 'primary' },
-    { text: 'سوءقصد بابیان به ناصرالدین شاه', lang: 'fa', role: 'native' }
+    { text: 'Babi attempt on the life of Naser al-Din Shah', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'assassination',

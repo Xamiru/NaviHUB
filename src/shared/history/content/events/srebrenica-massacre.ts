@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'srebrenica-massacre',
   names: [
     { text: 'Srebrenica massacre', lang: 'en', role: 'primary' },
-    { text: 'Masakr u Srebrenici', lang: 'bs', role: 'native' },
     {
       text: 'Srebrenica genocide',
       lang: 'en',

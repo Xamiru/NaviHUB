@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'shuster-mission',
   names: [
     { text: 'Shuster mission', lang: 'en', role: 'primary' },
-    { text: 'مأموریت مورگان شوستر', lang: 'fa', role: 'native' },
     {
       text: 'American financial mission',
       lang: 'en',

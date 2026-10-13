@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'paris-commune',
   names: [
     { text: 'Paris Commune', lang: 'en', role: 'primary' },
-    { text: 'Commune de Paris', lang: 'fr', role: 'native' },
     {
       text: 'Pariser Kommune',
       lang: 'de',

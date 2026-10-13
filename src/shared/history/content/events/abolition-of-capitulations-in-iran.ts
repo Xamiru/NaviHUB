@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'abolition-of-capitulations-in-iran',
   names: [
-    { text: 'Abolition of capitulations in Iran', lang: 'en', role: 'primary' },
-    { text: 'لغو کاپیتولاسیون', lang: 'fa', role: 'native' }
+    { text: 'Abolition of capitulations in Iran', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'reform',

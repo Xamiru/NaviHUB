@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'nuremberg-laws',
   names: [
-    { text: 'Nuremberg Laws', lang: 'en', role: 'primary' },
-    { text: 'Nürnberger Gesetze', lang: 'de', role: 'native' }
+    { text: 'Nuremberg Laws', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'law',

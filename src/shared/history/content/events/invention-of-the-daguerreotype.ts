@@ -45,7 +45,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'DAGUERREOTYPE, the first practical photo­graphic process, introduced into Persia in the early 1840s, shortly after its official presentation to the French Académie de Science in Paris in 1839.',
+          text: 'DAGUERREOTYPE, the first practical photographic process, introduced into Persia in the early 1840s, shortly after its official presentation to the French Académie de Science in Paris in 1839.',
           lang: 'en',
           cite: {
             source: 'iranica-adle-daguerreotype',
@@ -64,7 +64,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q2',
-          text: 'In Persia the introduction of the daguerreo­type paved the way for a floruit of photography in the second half of the 19th century.',
+          text: 'In Persia the introduction of the daguerreotype paved the way for a floruit of photography in the second half of the 19th century.',
           lang: 'en',
           cite: {
             source: 'iranica-adle-daguerreotype',
@@ -78,7 +78,7 @@ export default defineEvent({
         },
         {
           id: 'q3',
-          text: 'Foreign diplomats were aware of the Persian passion for painting, espe­cially portraiture, and novelties, and in the early 1840s two daguerreotype cameras were presented to Moḥammad Shah (r. 1250-64/1834-48), one on behalf of Queen Victoria, the other on behalf of Tsar Nicolas I, reflecting the Anglo-Russian rivalry in Persia.',
+          text: 'Foreign diplomats were aware of the Persian passion for painting, especially portraiture, and novelties, and in the early 1840s two daguerreotype cameras were presented to Moḥammad Shah (r. 1250-64/1834-48), one on behalf of Queen Victoria, the other on behalf of Tsar Nicolas I, reflecting the Anglo-Russian rivalry in Persia.',
           lang: 'en',
           cite: {
             source: 'iranica-adle-daguerreotype',

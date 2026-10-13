@@ -37,6 +37,9 @@ export default defineConfig({
         '@shared': resolve(__dirname, 'src/shared')
       }
     },
+    // The styled-subtitle worker (jassub) is an ES module with its own
+    // imports, constructed with { type: 'module' }.
+    worker: { format: 'es' },
     plugins: [react()]
   }
 })

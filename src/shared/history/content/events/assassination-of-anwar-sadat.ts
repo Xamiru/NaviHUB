@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'assassination-of-anwar-sadat',
   names: [
-    { text: 'Assassination of Anwar Sadat', lang: 'en', role: 'primary' },
-    { text: 'اغتيال أنور السادات', lang: 'ar', role: 'native' }
+    { text: 'Assassination of Anwar Sadat', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-10',
   type: 'assassination',

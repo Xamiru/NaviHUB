@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'gardane-mission',
   names: [
-    { text: 'Gardane mission', lang: 'en', role: 'primary' },
-    { text: 'هیئت گاردان', lang: 'fa', role: 'native' }
+    { text: 'Gardane mission', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'other',

@@ -7,8 +7,7 @@ export default defineEvent({
       text: 'Attempted assassination of Mohammad Reza Shah (1949)',
       lang: 'en',
       role: 'primary'
-    },
-    { text: 'ترور نافرجام محمدرضا شاه در ۱۵ بهمن ۱۳۲۷', lang: 'fa', role: 'native' }
+    }
   ],
   researched: '2026-10-08',
   type: 'assassination',

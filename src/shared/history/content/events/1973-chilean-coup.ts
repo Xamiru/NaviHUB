@@ -4,7 +4,6 @@ export default defineEvent({
   id: '1973-chilean-coup',
   names: [
     { text: '1973 Chilean coup d’état', lang: 'en', role: 'primary' },
-    { text: 'Golpe de Estado en Chile de 1973', lang: 'es', role: 'native' },
     {
       text: 'Pinochet coup',
       lang: 'en',

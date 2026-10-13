@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'treaty-of-waitangi',
   names: [
-    { text: 'Treaty of Waitangi', lang: 'en', role: 'primary' },
-    { text: 'Te Tiriti o Waitangi', lang: 'mi', role: 'native' }
+    { text: 'Treaty of Waitangi', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'treaty',

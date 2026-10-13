@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'sandinista-revolution',
   names: [
     { text: 'Sandinista Revolution', lang: 'en', role: 'primary' },
-    { text: 'Revolución Sandinista', lang: 'es', role: 'native' },
     {
       text: 'Nicaraguan revolution',
       lang: 'en',

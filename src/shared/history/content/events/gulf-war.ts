@@ -29,14 +29,7 @@ export default defineEvent({
           loc: { section: 'George H. W. Bush: Foreign Affairs', para: '26' }
         }
       ]
-    },
-    {
-      text: 'جنگ خلیج فارس',
-      lang: 'fa',
-      role: 'alternative',
-      translit: 'jang-e khalij-e fars'
-    },
-    { text: 'حرب الخليج', lang: 'ar', role: 'native' }
+    }
   ],
   researched: '2026-10-10',
   type: 'war',

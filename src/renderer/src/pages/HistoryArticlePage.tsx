@@ -223,11 +223,11 @@ function InfoCard({ view }: { view: HistoryArticleView }) {
                 <>
                   <Fact label="Type">{EVENT_TYPES[e.type]}</Fact>
                   <Fact label={e.end ? 'Began' : 'Date'}>
-                    <DateClaim claim={e.start} solarHijri={sh} />
+                    <DateClaim claim={e.start} solarHijri={sh} lunarHijri={view.lunarHijri} />
                   </Fact>
                   {e.end && (
                     <Fact label="Ended">
-                      <DateClaim claim={e.end} solarHijri={sh} />
+                      <DateClaim claim={e.end} solarHijri={sh} lunarHijri={view.lunarHijri} />
                     </Fact>
                   )}
                   {e.places && e.places.length > 0 && (
@@ -268,7 +268,7 @@ function InfoCard({ view }: { view: HistoryArticleView }) {
               {e.kind === 'person' && (
                 <>
                   <Fact label="Born">
-                    {e.born ? <DateClaim claim={e.born} solarHijri={sh} /> : 'Unknown'}
+                    {e.born ? <DateClaim claim={e.born} solarHijri={sh} lunarHijri={view.lunarHijri} /> : 'Unknown'}
                     {e.bornIn && (
                       <span className="block">
                         <RefLink info={ref(e.bornIn.ref)} />
@@ -278,7 +278,7 @@ function InfoCard({ view }: { view: HistoryArticleView }) {
                   </Fact>
                   {(e.died || e.diedIn) && (
                     <Fact label="Died">
-                      {e.died && <DateClaim claim={e.died} solarHijri={sh} />}
+                      {e.died && <DateClaim claim={e.died} solarHijri={sh} lunarHijri={view.lunarHijri} />}
                       {e.diedIn && (
                         <span className="block">
                           <RefLink info={ref(e.diedIn.ref)} />
@@ -314,11 +314,11 @@ function InfoCard({ view }: { view: HistoryArticleView }) {
                 <>
                   <Fact label="Type">{PERIOD_TYPES[e.periodType]}</Fact>
                   <Fact label="Began">
-                    <DateClaim claim={e.start} solarHijri={sh} />
+                    <DateClaim claim={e.start} solarHijri={sh} lunarHijri={view.lunarHijri} />
                   </Fact>
                   {e.end && (
                     <Fact label="Ended">
-                      <DateClaim claim={e.end} solarHijri={sh} />
+                      <DateClaim claim={e.end} solarHijri={sh} lunarHijri={view.lunarHijri} />
                     </Fact>
                   )}
                   {e.parent && (
@@ -332,11 +332,11 @@ function InfoCard({ view }: { view: HistoryArticleView }) {
                 <>
                   <Fact label="Type">{POLITY_TYPES[e.polityType]}</Fact>
                   <Fact label="Founded">
-                    <DateClaim claim={e.start} solarHijri={sh} />
+                    <DateClaim claim={e.start} solarHijri={sh} lunarHijri={view.lunarHijri} />
                   </Fact>
                   {e.end && (
                     <Fact label="Ended">
-                      <DateClaim claim={e.end} solarHijri={sh} />
+                      <DateClaim claim={e.end} solarHijri={sh} lunarHijri={view.lunarHijri} />
                     </Fact>
                   )}
                   {e.capitals && e.capitals.length > 0 && (
@@ -482,11 +482,11 @@ function Hero({
           </div>
           {start?.alts[0] && (
             <p className="mt-2 text-base text-gray-200">
-              <HistDateText date={start.alts[0].value} solarHijri={view.solarHijri} inline />
+              <HistDateText date={start.alts[0].value} solarHijri={view.solarHijri} lunarHijri={view.lunarHijri} inline />
               {end?.alts[0] && (
                 <>
                   <span className="mx-2 text-gray-400">to</span>
-                  <HistDateText date={end.alts[0].value} solarHijri={view.solarHijri} inline />
+                  <HistDateText date={end.alts[0].value} solarHijri={view.solarHijri} lunarHijri={view.lunarHijri} inline />
                 </>
               )}
               {(start.alts.length > 1 || (end?.alts.length ?? 0) > 1) && (
@@ -728,7 +728,7 @@ export default function HistoryArticlePage({ kind }: { kind: Kind }) {
                     items={course.map((c, i) => ({
                       key: c.quote.id,
                       strong: i === course.length - 1,
-                      date: <DateClaim claim={c.date} solarHijri={view.solarHijri} />,
+                      date: <DateClaim claim={c.date} solarHijri={view.solarHijri} lunarHijri={view.lunarHijri} />,
                       body: <QuoteBlock quote={c.quote} size="sm" />
                     }))}
                   />
@@ -742,7 +742,7 @@ export default function HistoryArticlePage({ kind }: { kind: Kind }) {
                   <Timeline
                     items={e.thread.map((t) => ({
                       key: t.ref,
-                      date: t.date ? <DateClaim claim={t.date} solarHijri={view.solarHijri} /> : <span className="text-xs tabular-nums text-ink-muted">{view.refs[t.ref]?.years}</span>,
+                      date: t.date ? <DateClaim claim={t.date} solarHijri={view.solarHijri} lunarHijri={view.lunarHijri} /> : <span className="text-xs tabular-nums text-ink-muted">{view.refs[t.ref]?.years}</span>,
                       body: (
                         <div className="space-y-2">
                           <RefRow info={view.refs[t.ref]} />

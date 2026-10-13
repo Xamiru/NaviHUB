@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'saur-revolution',
   names: [
     { text: 'Saur Revolution', lang: 'en', role: 'primary' },
-    { text: 'انقلاب ثور', lang: 'fa', role: 'native', translit: 'Enqelāb-e Ṯawr' },
     {
       text: 'April Revolution',
       lang: 'en',

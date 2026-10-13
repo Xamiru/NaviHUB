@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'second-treaty-of-erzurum',
   names: [
     { text: 'Second Treaty of Erzurum', lang: 'en', role: 'primary' },
-    { text: 'عهدنامه دوم ارزروم', lang: 'fa', role: 'native' },
     {
       text: 'second treaty of Erzerum',
       lang: 'en',

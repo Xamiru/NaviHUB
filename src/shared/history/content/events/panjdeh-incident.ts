@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'panjdeh-incident',
   names: [
     { text: 'Panjdeh incident', lang: 'en', role: 'primary' },
-    { text: 'واقعه پنجده', lang: 'fa', role: 'native' },
     {
       text: 'Panǰdeh incident',
       lang: 'en',
@@ -191,7 +190,7 @@ export default defineEvent({
         },
         {
           id: 'q3',
-          text: 'The Russians thus found themselves in a strong position to dictate a frontier considerably farther south than any that had previously been sug­gested.',
+          text: 'The Russians thus found themselves in a strong position to dictate a frontier considerably farther south than any that had previously been suggested.',
           lang: 'en',
           cite: {
             source: 'iranica-balland-boundaries-afghanistan',

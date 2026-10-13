@@ -16,6 +16,7 @@ import { formatIssue, validateCatalog } from '../src/shared/history/validate'
 
 const CONTENT = fileURLToPath(new URL('../src/shared/history/content', import.meta.url))
 const BORDERS = fileURLToPath(new URL('../src/main/history/data/borders.json', import.meta.url))
+const ANCIENT_BORDERS = fileURLToPath(new URL('../src/main/history/data/borders-ancient.json', import.meta.url))
 
 describe('committed History content', () => {
   const entries = loadCatalogEntries()
@@ -73,8 +74,9 @@ describe('committed History content', () => {
   })
 
   it('links states only to border units that exist on the map', () => {
-    const borders = JSON.parse(readFileSync(BORDERS, 'utf8')) as { units: Array<{ set: string; code: number }> }
-    const units = new Set(borders.units.map((u) => `${u.set}:${u.code}`))
+    const read = (file: string): Array<{ set: string; code: number }> => (JSON.parse(readFileSync(file, 'utf8')) as { units: Array<{ set: string; code: number }> }).units
+    // A state before 1700 may be drawn only in the separate ancient file.
+    const units = new Set([...read(BORDERS), ...read(ANCIENT_BORDERS)].map((u) => `${u.set}:${u.code}`))
     const bad = entries.flatMap(({ entity: e }) =>
       e.kind === 'polity' ? (e.cshapes ?? []).filter((c) => !units.has(`${c.set}:${c.code}`)).map((c) => `${e.id} ${c.set}:${c.code}`) : []
     )

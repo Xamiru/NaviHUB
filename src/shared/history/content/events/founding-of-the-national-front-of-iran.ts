@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'founding-of-the-national-front-of-iran',
   names: [
     { text: 'Founding of the National Front of Iran', lang: 'en', role: 'primary' },
-    { text: 'جبهه ملی ایران', lang: 'fa', role: 'native' },
     {
       text: 'Jebha-ye Melli',
       lang: 'fa-Latn',

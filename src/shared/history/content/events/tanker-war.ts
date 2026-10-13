@@ -3,9 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'tanker-war',
   names: [
-    { text: 'Tanker War', lang: 'en', role: 'primary' },
-    { text: 'جنگ نفتکش‌ها', lang: 'fa', role: 'native' },
-    { text: 'حرب الناقلات', lang: 'ar', role: 'native' }
+    { text: 'Tanker War', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-10',
   type: 'war',

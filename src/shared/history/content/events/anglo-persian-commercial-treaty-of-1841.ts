@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'anglo-persian-commercial-treaty-of-1841',
   names: [
     { text: 'Anglo-Persian Commercial Treaty of 1841', lang: 'en', role: 'primary' },
-    { text: 'عهدنامه تجاری ایران و انگلیس ۱۸۴۱', lang: 'fa', role: 'native' },
     {
       text: '1841 Treaty of Commerce',
       lang: 'en',

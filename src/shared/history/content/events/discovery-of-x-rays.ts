@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'discovery-of-x-rays',
   names: [
     { text: 'Discovery of X-rays', lang: 'en', role: 'primary' },
-    { text: 'Entdeckung der Röntgenstrahlen', lang: 'de', role: 'native' },
     {
       text: 'X-Strahlen',
       lang: 'de',

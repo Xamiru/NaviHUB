@@ -3,8 +3,7 @@ import { defineEvent } from '../../schema'
 export default defineEvent({
   id: 'oil-strike-masjed-soleyman',
   names: [
-    { text: 'Oil strike at Masjed Soleyman', lang: 'en', role: 'primary' },
-    { text: 'کشف نفت در مسجد سلیمان', lang: 'fa', role: 'native' }
+    { text: 'Oil strike at Masjed Soleyman', lang: 'en', role: 'primary' }
   ],
   researched: '2026-10-08',
   type: 'discovery',

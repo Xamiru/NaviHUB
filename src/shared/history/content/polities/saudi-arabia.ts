@@ -4,7 +4,6 @@ export default definePolity({
   id: 'saudi-arabia',
   names: [
     { text: 'Saudi Arabia', lang: 'en', role: 'primary' },
-    { text: 'المملكة العربية السعودية', lang: 'ar', role: 'native' },
     {
       text: 'Kingdom of Saudi Arabia',
       lang: 'en',

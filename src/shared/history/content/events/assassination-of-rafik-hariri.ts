@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'assassination-of-rafik-hariri',
   names: [
     { text: 'Assassination of Rafik Hariri', lang: 'en', role: 'primary' },
-    { text: 'اغتيال رفيق الحريري', lang: 'ar', role: 'native' },
     { text: 'Hariri assassination', lang: 'en', role: 'alternative' },
     { text: 'Cedar Revolution', lang: 'en', role: 'alternative' }
   ],

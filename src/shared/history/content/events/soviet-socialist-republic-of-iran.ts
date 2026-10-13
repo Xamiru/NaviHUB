@@ -5,12 +5,6 @@ export default defineEvent({
   names: [
     { text: 'Soviet Socialist Republic of Iran', lang: 'en', role: 'primary' },
     {
-      text: 'حکومت جمهوری شوروی ایران',
-      lang: 'fa',
-      role: 'native',
-      translit: 'Ḥokūmat-e jomhūrī-e šūrawī-e Īrān'
-    },
-    {
       text: 'Soviet Republic of Gilān',
       lang: 'en',
       role: 'alternative',

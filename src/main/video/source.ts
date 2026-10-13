@@ -19,6 +19,7 @@ import { cleanRelative } from '../wrestling/clips'
 import { probeFile } from './ffmpeg'
 import { decideDecodable } from './playability'
 import { pickAudioStream, pickVideoStream, type MediaProbe } from './probeParse'
+import * as fonts from './fonts'
 import * as mine from './mine'
 import * as scan from './scan'
 import { VIDEO_SCOPES, type VideoScope } from './scope'
@@ -242,6 +243,12 @@ export async function subtitleTrack(
   const track = subs.listTracks(r.absPath, r.relPath, probe).find((t) => t.id === trackId)
   if (!track) return null
   return subs.ensureExtracted(r.absPath, track, 5 * 60_000)
+}
+
+// Font attachments for the styled subtitle layer, extracted on first use.
+export async function subtitleFonts(ref: VideoSourceRef): Promise<string[]> {
+  const r = resolve(ref)
+  return fonts.ensureFonts(r.absPath, await probeFile(r.absPath))
 }
 
 export async function clipAudio(input: {

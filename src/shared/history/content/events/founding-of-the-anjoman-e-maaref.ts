@@ -4,7 +4,6 @@ export default defineEvent({
   id: 'founding-of-the-anjoman-e-maaref',
   names: [
     { text: 'Founding of the Anjoman-e Maʿaref', lang: 'en', role: 'primary' },
-    { text: 'انجمن معارف', lang: 'fa', role: 'native' },
     {
       text: 'Council on Education',
       lang: 'en',
