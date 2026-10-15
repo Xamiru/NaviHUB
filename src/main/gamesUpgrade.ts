@@ -7,6 +7,7 @@ import { runWithActivitySignal } from './activityContext'
 import { claimLibraryJob } from './libraryJobLock'
 import * as catalog from './launchboxCatalog'
 import { enrichGame } from './gameCast'
+import { wikiLinkFor } from './wikiCast'
 import * as links from './repos/externalLinkRepo'
 import { LAUNCHBOX_SOURCE, jsonList, platformLabel, titleKey, yearOf } from './launchboxCatalogCore'
 import type {
@@ -149,7 +150,7 @@ async function computePlan(): Promise<Planned> {
     }
     if (d.kind === 'linked') plan.linked++
     else plan.autoLinks++
-    if (upgradedFor(row) === snapshot) continue
+    if (upgradedFor(row) === snapshot && !castPending(row.id)) continue
     plan.toUpgrade++
     work.push({ row, workId: d.workId, method: d.method, own: row.external_source === LAUNCHBOX_SOURCE })
   }
@@ -175,28 +176,53 @@ function stamp(mediaId: number, snapshot: string | null): void {
   db.prepare('UPDATE media_item SET metadata = ? WHERE id = ?').run(JSON.stringify(meta), mediaId)
 }
 
-function bangumiPending(mediaId: number): boolean {
-  if (!links.linkedId(mediaId, 'bangumi')) return false
+function metaOf(mediaId: number): Record<string, unknown> {
   const row = getSqlite().prepare('SELECT metadata FROM media_item WHERE id = ?').get(mediaId) as
     | { metadata: string | null }
     | undefined
   try {
-    return !JSON.parse(row?.metadata ?? '{}')?.bangumiChecked
+    return JSON.parse(row?.metadata ?? '{}') ?? {}
   } catch {
-    return true
+    return {}
   }
 }
 
+function bangumiPending(mediaId: number): boolean {
+  return !!links.linkedId(mediaId, 'bangumi') && !metaOf(mediaId).bangumiChecked
+}
+
+function wikiPending(mediaId: number): boolean {
+  return !metaOf(mediaId).wikiChecked && wikiLinkFor(mediaId) != null
+}
+
+// A cast source never read: a Bangumi link, or a franchise wiki that covers
+// the game (added after many games were upgraded, so those come back once).
+function castPending(mediaId: number): boolean {
+  return bangumiPending(mediaId) || wikiPending(mediaId)
+}
+
 // One game: catalog enrichment (cover, platforms, Japanese title, links),
-// then its cast when it has a Bangumi link that was never read.
+// then its cast when a cast source (Bangumi, a franchise wiki) was never read.
+// A game already upgraded for this snapshot that comes back only for an
+// unread wiki skips the catalog pass and the Bangumi re-read; a wiki that
+// still cannot be read is reported as a failure rather than passed silently.
 export async function upgradeOne(
   row: { id: number; external_source: string | null },
   workId: number,
   method: ExternalLinkMethod
 ): Promise<void> {
   const own = row.external_source === LAUNCHBOX_SOURCE
-  await catalog.importWork(workId, own ? { skipHltb: true } : { mediaId: row.id, linkMethod: method, skipHltb: true })
-  if (bangumiPending(row.id)) await enrichGame(row.id)
+  const snapshot = catalog.snapshot() ?? 'unknown'
+  if (metaOf(row.id).catalogUpgraded !== snapshot) {
+    await catalog.importWork(workId, own ? { skipHltb: true } : { mediaId: row.id, linkMethod: method, skipHltb: true })
+    stamp(row.id, snapshot)
+  }
+  if (!castPending(row.id)) return
+  const wikiBefore = wikiPending(row.id)
+  await enrichGame(row.id, { bangumi: bangumiPending(row.id) })
+  if (wikiBefore && wikiPending(row.id)) {
+    throw new Error('The franchise wiki could not be read; the cast is retried on the next upgrade.')
+  }
 }
 
 // ---------------------------------------------------------------- the run

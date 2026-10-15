@@ -68,8 +68,10 @@ export default function CastQuizPage() {
             <p className="mt-2 text-gray-400">Which movie or TV show features this actor?</p>
           </div>
         ),
+        recap: { title: question.actor.personName, imagePath: question.actor.photoPath },
         options: question.options.map((option) => ({
           key: `media-${option.mediaId}`,
+          label: option.mediaTitle,
           node: (
             <>
               <CoverImage
@@ -142,7 +144,7 @@ export default function CastQuizPage() {
         </label>
 
         <p className="text-sm text-gray-400">
-          Movie questions use only the first 10 billed cast members. TV cast is not capped.
+          Questions ask about the first five billed cast members of each movie or show.
         </p>
         {error && <p className="text-sm text-red-400">{error}</p>}
 

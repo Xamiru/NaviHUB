@@ -1,5 +1,5 @@
 import type { QuizVaItem } from './types'
-import { quizSeed, seededRng } from './quizCore'
+import { drawUntil, quizSeed, seededRng } from './quizCore'
 import { shuffle } from './shuffle'
 
 export interface VaQuizQuestionSeed {
@@ -42,27 +42,48 @@ function voiceMap(item: QuizVaItem): Map<number, string> {
   return new Map(item.personIds.map((id, index) => [id, item.personNames[index] ?? 'Unknown']))
 }
 
+function photoMap(item: QuizVaItem): Map<number, string | null> {
+  return new Map(item.personIds.map((id, index) => [id, item.personPhotos?.[index] ?? null]))
+}
+
+/** A show's top ten characters in AniList's order (main first, then by popularity). */
+export const VA_WELL_KNOWN_RANK = 10
+
+/**
+ * Only well-known characters are shown, answered or offered (2026-10-14):
+ * AniList's "supporting" covers every named side character and background
+ * extras. Rows imported before cast ranks fall back to main characters.
+ */
+export function isWellKnownVaRole(item: Pick<QuizVaItem, 'castRank' | 'importance'>): boolean {
+  return item.castRank != null ? item.castRank < VA_WELL_KNOWN_RANK : item.importance === 0
+}
+
 function normalizePool(pool: readonly QuizVaItem[]): QuizVaItem[] {
   const byAppearance = new Map<string, QuizVaItem>()
   for (const item of pool) {
     if (!item.characterImagePath || item.personIds.length === 0) continue
+    if (!isWellKnownVaRole(item)) continue
     const key = vaAppearanceKey(item)
     const found = byAppearance.get(key)
     if (!found) {
       const voices = voiceMap(item)
+      const photos = photoMap(item)
       const ids = [...voices.keys()].sort((a, b) => a - b)
       byAppearance.set(key, {
         ...item,
         gender: normalizedGender(item.gender),
         personIds: ids,
-        personNames: ids.map((id) => voices.get(id) ?? 'Unknown')
+        personNames: ids.map((id) => voices.get(id) ?? 'Unknown'),
+        personPhotos: ids.map((id) => photos.get(id) ?? null)
       })
       continue
     }
     const voices = new Map([...voiceMap(found), ...voiceMap(item)])
+    const photos = new Map([...photoMap(found), ...photoMap(item)])
     const ids = [...voices.keys()].sort((a, b) => a - b)
     found.personIds = ids
     found.personNames = ids.map((id) => voices.get(id) ?? 'Unknown')
+    found.personPhotos = ids.map((id) => photos.get(id) ?? null)
     if (found.importance == null || (item.importance != null && item.importance < found.importance)) {
       found.importance = item.importance
     }
@@ -298,6 +319,138 @@ export function buildVaQuizQuestions(
       validKeys: [vaAppearanceKey(best.answer)],
       options: shuffle([best.answer, ...distractors], rng)
     })
+  }
+  return out
+}
+
+// ---- Name the voice actor (2026-10-14) ----
+// A well-known character is shown and the player picks their Japanese voice
+// actor from four photos. Built to teach seiyuu: answers favour voice actors
+// with two or more well-known roles in the library, and the reveal lists the
+// voice actor's other characters.
+
+export interface VaNamePerson {
+  personId: number
+  name: string
+  photoPath: string
+}
+
+export interface VaNameQuestionSeed {
+  key: string
+  source: QuizVaItem
+  answer: VaNamePerson
+  // The answer's other well-known characters in the library, for the reveal.
+  otherRoles: Array<{ characterName: string; mediaTitle: string }>
+  options: VaNamePerson[]
+  validKeys: string[]
+}
+
+export function vaPersonKey(personId: number): string {
+  return `person-${personId}`
+}
+
+interface PersonProfile extends VaNamePerson {
+  roles: QuizVaItem[]
+  gender: string | null
+}
+
+function personProfiles(pool: readonly QuizVaItem[]): Map<number, PersonProfile> {
+  const profiles = new Map<number, PersonProfile & { genders: Map<string, number> }>()
+  for (const item of pool) {
+    item.personIds.forEach((personId, index) => {
+      const photoPath = item.personPhotos?.[index] ?? null
+      let profile = profiles.get(personId)
+      if (!profile) {
+        if (!photoPath) return
+        profile = {
+          personId,
+          name: item.personNames[index] ?? 'Unknown',
+          photoPath,
+          roles: [],
+          gender: null,
+          genders: new Map()
+        }
+        profiles.set(personId, profile)
+      }
+      profile.roles.push(item)
+      if (item.gender) profile.genders.set(item.gender, (profile.genders.get(item.gender) ?? 0) + 1)
+    })
+  }
+  // A voice actor's voice gender is the gender most of their characters share.
+  for (const profile of profiles.values()) {
+    profile.gender = [...profile.genders.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
+  }
+  return profiles
+}
+
+export function buildVaNameQuestions(
+  rawPool: readonly QuizVaItem[],
+  count: number,
+  seed: string | number
+): VaNameQuestionSeed[] {
+  const rng = seededRng(quizSeed(`${seed}:name`))
+  const pool = normalizePool(rawPool)
+  const profiles = personProfiles(pool)
+  const titles = (person: PersonProfile) => new Set(person.roles.map(titleOf)).size
+  // Prefer voice actors heard in two or more of the library's shows; fall back
+  // to anyone with a photo when the library is small.
+  const familiar = [...profiles.values()].filter((person) => titles(person) >= 2)
+  const people = familiar.length >= count + 3 ? familiar : [...profiles.values()]
+  const peopleIds = new Set(people.map((person) => person.personId))
+  // Reusable draw orders (drawUntil reorders them in place): the whole set and
+  // each voice gender, so a question costs a few draws, not a pool scan.
+  const everyone = [...people]
+  const byGender = new Map<string, PersonProfile[]>()
+  for (const person of people) {
+    if (person.gender == null) continue
+    const bucket = byGender.get(person.gender)
+    if (bucket) bucket.push(person)
+    else byGender.set(person.gender, [person])
+  }
+
+  // One question per voice actor first (round-robin by person), each asking
+  // about one of their well-known characters.
+  const candidates = shuffle(pool, rng).flatMap((source) => {
+    const answers = source.personIds
+      .map((id) => profiles.get(id))
+      .filter((person): person is PersonProfile => person != null && peopleIds.has(person.personId))
+    if (answers.length === 0) return []
+    const answer = answers.sort((a, b) => titles(b) - titles(a))[0]
+    return [{ source, answer }]
+  })
+  const out: VaNameQuestionSeed[] = []
+  const usedPeople = new Set<number>()
+  const usedTitles = new Set<string>()
+  for (const pass of [0, 1]) {
+    for (const { source, answer } of candidates) {
+      if (out.length >= count) break
+      if (pass === 0 && (usedPeople.has(answer.personId) || usedTitles.has(titleOf(source)))) continue
+      if (out.some((question) => question.source === source)) continue
+      const voices = new Set(source.personIds)
+      const gender = normalizedGender(source.gender)
+      const eligible = (person: PersonProfile) => !voices.has(person.personId) && person.personId !== answer.personId
+      const sameGender = drawUntil(gender == null ? everyone : (byGender.get(gender) ?? []), rng, eligible, 3)
+      const picked = new Set(sameGender)
+      const wrong = [
+        ...sameGender,
+        ...drawUntil(everyone, rng, (person) => eligible(person) && !picked.has(person), 3 - sameGender.length)
+      ]
+      if (wrong.length < 3) continue
+      usedPeople.add(answer.personId)
+      usedTitles.add(titleOf(source))
+      const strip = ({ personId, name, photoPath }: PersonProfile): VaNamePerson => ({ personId, name, photoPath })
+      out.push({
+        key: `va-name-${vaAppearanceKey(source)}-${answer.personId}-${out.length}`,
+        source,
+        answer: strip(answer),
+        otherRoles: answer.roles
+          .filter((role) => role.characterId !== source.characterId && titleOf(role) !== titleOf(source))
+          .slice(0, 4)
+          .map((role) => ({ characterName: role.characterName, mediaTitle: role.mediaTitle })),
+        options: shuffle([answer, ...wrong].map(strip), rng),
+        validKeys: source.personIds.filter((id) => profiles.has(id)).map(vaPersonKey)
+      })
+    }
   }
   return out
 }

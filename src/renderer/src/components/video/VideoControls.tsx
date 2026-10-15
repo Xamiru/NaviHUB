@@ -99,6 +99,7 @@ export interface VideoControlsProps {
   onTranscript: () => void
   onMine: () => void
   onCapture: () => void
+  onQuote: () => void
   onFullscreen: () => void
   onExternal: () => void
   onHelp: () => void
@@ -301,6 +302,7 @@ export default function VideoControls(props: VideoControlsProps): JSX.Element {
               <BarButton label="Capture" title="Capture this frame and line (C)" onClick={props.onCapture} />
             </>
           )}
+          <BarButton label="Quote" title="Save this line as a quote (Q)" onClick={props.onQuote} />
           <BarButton label="Full" title="Fullscreen (F)" onClick={props.onFullscreen} />
           <BarButton label="External" title="Open in the system player (O)" onClick={props.onExternal} />
           <BarButton label="Keys" title="Keyboard shortcuts (?)" onClick={props.onHelp} />

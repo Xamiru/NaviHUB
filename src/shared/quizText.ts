@@ -45,13 +45,28 @@ export function redactQuizNames(text: string, names: readonly (string | null | u
   return redactValues(text, names, '[name omitted]')
 }
 
+/**
+ * Removes the editor notes AniList-style descriptions carry, which are not part
+ * of the story: "(Source: Crunchyroll)", "[Written by MAL Rewrite]" and
+ * trailing "Note: Episode 1 has an airtime of 48 minutes." paragraphs.
+ */
+export function stripSynopsisNotes(text: string): string {
+  return text
+    .replace(/\[\s*written by[^\]]*\]/gi, ' ')
+    .replace(/\(\s*sources?\s*:[^)]*\)/gi, ' ')
+    .replace(/(?:^|\n)[ \t]*notes?\s*:[\s\S]*$/i, '')
+    .trim()
+}
+
 export function synopsisExcerpt(
   text: string,
   aliases: readonly (string | null | undefined)[] = [],
   max = EXCERPT_MAX,
   names: readonly (string | null | undefined)[] = []
 ): string {
-  const flat = redactQuizNames(redactQuizAliases(text, aliases), names).replace(/\s+/g, ' ').trim()
+  const flat = redactQuizNames(redactQuizAliases(stripSynopsisNotes(text), aliases), names)
+    .replace(/\s+/g, ' ')
+    .trim()
   if (flat.length <= max) return flat
   const candidate = flat.slice(0, max + 1)
   const sentence = Math.max(

@@ -2240,3 +2240,39 @@ CREATE INDEX IF NOT EXISTS idx_media_music_link_track    ON media_music_link(tra
 CREATE UNIQUE INDEX IF NOT EXISTS idx_media_music_link_identity ON media_music_link(
   COALESCE(media_id, 0), COALESCE(wrestler_id, 0), kind, COALESCE(album_id, 0), COALESCE(track_id, 0), label
 ) WHERE album_id IS NOT NULL OR track_id IS NOT NULL;
+
+-- ---- quotes ----
+-- Lines the user saved from books, visual novels, films, anime and wrestling.
+-- Personal state. The four link ids are FK-less on purpose: a re-import prunes
+-- characters and a title can be deleted, so each link keeps a name snapshot
+-- (speaker_name, source_title) and reads LEFT JOIN back to it.
+CREATE TABLE IF NOT EXISTS quote (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  text          TEXT NOT NULL CHECK(length(text) BETWEEN 1 AND 4000),
+  furigana      TEXT,               -- 漢字[かんじ] markup of text; NULL = none
+  translation   TEXT,
+  media_id      INTEGER,
+  character_id  INTEGER,
+  person_id     INTEGER,
+  wrestler_id   INTEGER,
+  speaker_name  TEXT,
+  source_title  TEXT,
+  locator       TEXT,               -- "Chapter 3", "S1 · Episode 5 · 12:34"
+  note          TEXT,
+  favorite      INTEGER NOT NULL DEFAULT 0,
+  origin        TEXT NOT NULL DEFAULT 'manual' CHECK(origin IN ('manual','book','video')),
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  CHECK((character_id IS NOT NULL) + (person_id IS NOT NULL) + (wrestler_id IS NOT NULL) <= 1)
+);
+CREATE INDEX IF NOT EXISTS idx_quote_media     ON quote(media_id);
+CREATE INDEX IF NOT EXISTS idx_quote_character ON quote(character_id);
+CREATE INDEX IF NOT EXISTS idx_quote_person    ON quote(person_id);
+CREATE INDEX IF NOT EXISTS idx_quote_wrestler  ON quote(wrestler_id);
+-- The user's themes ("On loss", "Motivation"): free names, one row per quote.
+CREATE TABLE IF NOT EXISTS quote_theme (
+  quote_id  INTEGER NOT NULL REFERENCES quote(id) ON DELETE CASCADE,
+  name      TEXT NOT NULL COLLATE NOCASE,
+  PRIMARY KEY (quote_id, name)
+) WITHOUT ROWID;
+CREATE INDEX IF NOT EXISTS idx_quote_theme_name ON quote_theme(name);

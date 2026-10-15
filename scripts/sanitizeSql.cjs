@@ -48,6 +48,8 @@ const FIXED_WIPES = [
   'DELETE FROM wrestling_journey_viewing',
   'DELETE FROM wrestling_journey_step',
   'DELETE FROM wrestling_journey',
+  'DELETE FROM quote_theme',
+  'DELETE FROM quote',
   'DELETE FROM vn_notebook',
   'DELETE FROM vn_reading_resume',
   'DELETE FROM vn_reading_node',

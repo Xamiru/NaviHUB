@@ -2621,3 +2621,39 @@ export const mediaMusicLink = sqliteTable('media_music_link', {
   byAlbum: index('idx_media_music_link_album').on(t.albumId),
   byTrack: index('idx_media_music_link_track').on(t.trackId)
 }))
+
+// ---- quotes ----
+export const quote = sqliteTable('quote', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  text: text('text').notNull(),
+  furigana: text('furigana'),
+  translation: text('translation'),
+  mediaId: integer('media_id'),
+  characterId: integer('character_id'),
+  personId: integer('person_id'),
+  wrestlerId: integer('wrestler_id'),
+  speakerName: text('speaker_name'),
+  sourceTitle: text('source_title'),
+  locator: text('locator'),
+  note: text('note'),
+  favorite: integer('favorite').notNull().default(0),
+  origin: text('origin').notNull().default('manual'),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`)
+}, (t) => ({
+  textLength: check('quote_text_length', sql`length(${t.text}) BETWEEN 1 AND 4000`),
+  origin: check('quote_origin', sql`${t.origin} IN ('manual','book','video')`),
+  oneSpeaker: check('quote_one_speaker', sql`(${t.characterId} IS NOT NULL) + (${t.personId} IS NOT NULL) + (${t.wrestlerId} IS NOT NULL) <= 1`),
+  byMedia: index('idx_quote_media').on(t.mediaId),
+  byCharacter: index('idx_quote_character').on(t.characterId),
+  byPerson: index('idx_quote_person').on(t.personId),
+  byWrestler: index('idx_quote_wrestler').on(t.wrestlerId)
+}))
+
+export const quoteTheme = sqliteTable('quote_theme', {
+  quoteId: integer('quote_id').notNull().references(() => quote.id, { onDelete: 'cascade' }),
+  name: text('name').notNull()
+}, (t) => ({
+  pk: primaryKey({ columns: [t.quoteId, t.name] }),
+  byName: index('idx_quote_theme_name').on(t.name)
+}))

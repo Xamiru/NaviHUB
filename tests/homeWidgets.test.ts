@@ -7,6 +7,7 @@ import {
   parseHomeLayout,
   serializeHomeLayout,
   toggleHomeWidget,
+  widgetDef,
   type HomeLayoutEntry
 } from '../src/renderer/src/lib/homeWidgets'
 
@@ -18,11 +19,11 @@ import {
 const keys = (entries: HomeLayoutEntry[]): string[] => entries.map((e) => e.key)
 
 describe('parseHomeLayout', () => {
-  it('falls back to every widget, visible, in catalogue order', () => {
+  it('falls back to every widget in catalogue order, visible unless off by default', () => {
     for (const raw of [null, undefined, '', 'not json', '{}', '42']) {
       const layout = parseHomeLayout(raw)
       expect(keys(layout)).toEqual(HOME_WIDGETS.map((w) => w.key))
-      expect(layout.every((e) => e.visible)).toBe(true)
+      for (const e of layout) expect(e.visible).toBe(!widgetDef(e.key)!.defaultHidden)
     }
   })
 
@@ -46,8 +47,9 @@ describe('parseHomeLayout', () => {
     expect(keys(layout).slice(0, 2)).toEqual(['today', 'recent'])
     expect(keys(layout).sort()).toEqual(HOME_WIDGETS.map((w) => w.key).sort())
     // The ones it did not know about arrive switched ON, or they would be
-    // invisible forever to anyone with a stored layout.
-    for (const e of layout.slice(2)) expect(e.visible).toBe(true)
+    // invisible forever to anyone with a stored layout — except an opt-in
+    // widget, which arrives off and waits in Customise.
+    for (const e of layout.slice(2)) expect(e.visible).toBe(!widgetDef(e.key)!.defaultHidden)
   })
 
   it('drops keys this build no longer has, and duplicates', () => {
@@ -100,14 +102,28 @@ describe('toggleHomeWidget', () => {
   it('flips one widget and leaves the others alone', () => {
     const after = toggleHomeWidget(defaultHomeLayout(), 'music')
     expect(after.find((e) => e.key === 'music')!.visible).toBe(false)
-    expect(after.filter((e) => !e.visible)).toHaveLength(1)
+    const offByDefault = HOME_WIDGETS.filter((w) => w.defaultHidden).length
+    expect(after.filter((e) => !e.visible)).toHaveLength(1 + offByDefault)
   })
 
   it('can hide everything without losing the order', () => {
     let layout = defaultHomeLayout()
-    for (const w of HOME_WIDGETS) layout = toggleHomeWidget(layout, w.key)
+    for (const w of HOME_WIDGETS) if (!w.defaultHidden) layout = toggleHomeWidget(layout, w.key)
     expect(layout.every((e) => !e.visible)).toBe(true)
     expect(keys(layout)).toEqual(HOME_WIDGETS.map((w) => w.key))
+  })
+})
+
+describe('off-by-default widgets', () => {
+  it('start hidden in a fresh layout and when appended to a stored one', () => {
+    expect(defaultHomeLayout().find((e) => e.key === 'quote')).toEqual({ key: 'quote', visible: false })
+    const stored = JSON.stringify([{ key: 'today', visible: true }])
+    expect(parseHomeLayout(stored).find((e) => e.key === 'quote')).toEqual({ key: 'quote', visible: false })
+  })
+
+  it('keep the visibility the user chose once it is stored', () => {
+    const stored = JSON.stringify([{ key: 'quote', visible: true }])
+    expect(parseHomeLayout(stored)[0]).toEqual({ key: 'quote', visible: true })
   })
 })
 

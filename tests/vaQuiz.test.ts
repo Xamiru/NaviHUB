@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import type { QuizVaItem } from '../src/shared/types'
 import {
+  buildVaNameQuestions,
   buildVaQuizQuestions,
   countBuildableVaSources,
-  vaAppearanceKey
+  isWellKnownVaRole,
+  vaAppearanceKey,
+  vaPersonKey
 } from '../src/shared/vaQuiz'
 
 function role(
@@ -13,6 +16,7 @@ function role(
   options: {
     gender?: string | null
     importance?: number | null
+    castRank?: number | null
     year?: number | null
     name?: string
     title?: string
@@ -27,6 +31,8 @@ function role(
     mediaTitle: options.title ?? `Anime ${mediaId}`,
     year: options.year ?? 2020,
     importance: options.importance ?? 1,
+    // Well known by default: a show's top-ten characters.
+    castRank: options.castRank === undefined ? 0 : options.castRank,
     personIds,
     personNames: personIds.map((id) => `VA ${id}`)
   }
@@ -132,5 +138,73 @@ describe('same-VA question builder', () => {
     expect(new Set(round.map((question) => vaAppearanceKey(question.source))).size).toBe(20)
     expect(buildVaQuizQuestions(pool, 20, 'large')).toEqual(round)
     expect(countBuildableVaSources(pool)).toBe(2000)
+  })
+})
+
+describe('well-known characters', () => {
+  it('keeps a show\'s top ten, and main characters when no rank was imported', () => {
+    expect(isWellKnownVaRole({ castRank: 9, importance: 1 })).toBe(true)
+    expect(isWellKnownVaRole({ castRank: 10, importance: 0 })).toBe(false)
+    expect(isWellKnownVaRole({ castRank: null, importance: 0 })).toBe(true)
+    expect(isWellKnownVaRole({ castRank: null, importance: 1 })).toBe(false)
+  })
+
+  it('never uses an obscure character as source, answer or option', () => {
+    const pool = [
+      role(1, 1, [10]),
+      role(2, 2, [10]),
+      role(3, 3, [20]),
+      role(4, 4, [30]),
+      role(5, 5, [40]),
+      role(6, 6, [10], { castRank: 25, name: 'Extra' })
+    ]
+    for (const question of buildVaQuizQuestions(pool, 2, 4)) {
+      const names = [question.source, ...question.options].map((item) => item.characterName)
+      expect(names).not.toContain('Extra')
+    }
+  })
+})
+
+describe('name the voice actor', () => {
+  const voiced = (characterId: number, mediaId: number, personId: number, gender = 'female') => ({
+    ...role(characterId, mediaId, [personId], { gender }),
+    personPhotos: [`people/${personId}.webp`]
+  })
+
+  it('asks for one valid voice actor among four photographed, same-voice-gender options', () => {
+    const pool = [
+      voiced(1, 1, 10), voiced(2, 2, 10),
+      voiced(3, 3, 20), voiced(4, 4, 20),
+      voiced(5, 5, 30), voiced(6, 6, 30),
+      voiced(7, 7, 40), voiced(8, 8, 40),
+      voiced(9, 9, 50, 'male'), voiced(10, 10, 50, 'male')
+    ]
+    const questions = buildVaNameQuestions(pool, 4, 11)
+    expect(questions).toHaveLength(4)
+    for (const question of questions) {
+      expect(question.options).toHaveLength(4)
+      expect(question.options.filter((option) => question.validKeys.includes(vaPersonKey(option.personId)))).toHaveLength(1)
+      expect(question.options.every((option) => option.photoPath.startsWith('people/'))).toBe(true)
+      // The male-voiced actor is never a wrong option for a female character.
+      if (question.source.gender === 'female') {
+        expect(question.options.map((option) => option.personId)).not.toContain(50)
+      }
+      // The reveal names the voice actor's other character.
+      expect(question.otherRoles).toHaveLength(1)
+    }
+    // Four questions, four different voice actors.
+    expect(new Set(questions.map((question) => question.answer.personId)).size).toBe(4)
+    expect(buildVaNameQuestions(pool, 4, 11)).toEqual(questions)
+  })
+
+  it('skips voice actors without a photo', () => {
+    const pool = [
+      voiced(1, 1, 10), voiced(2, 2, 20), voiced(3, 3, 30), voiced(4, 4, 40),
+      { ...role(5, 5, [99]), personPhotos: [null] }
+    ]
+    for (const question of buildVaNameQuestions(pool, 3, 2)) {
+      expect(question.options.map((option) => option.personId)).not.toContain(99)
+      expect(question.answer.personId).not.toBe(99)
+    }
   })
 })

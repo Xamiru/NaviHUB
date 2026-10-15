@@ -19,6 +19,14 @@
 
 **Odd One Out — REMOVED (2026-08-27).** The central-library format that asked which of four titles lacked a stated company, credited-person, or genre relation was deliberately scrapped during the quiz review. Do not restore its route, hub card, Party option, challenge kind, or availability field. Old `quiz_session` rows may retain the `oddOneOut` text value; they are inert historical data and require no migration.
 
+## Silhouette quiz
+
+**Silhouette — REMOVED (2026-10-14).** The character-portrait quiz (name the character or the anime from a darkened, blurred portrait) was scrapped during the quiz review: the user found it vague and not fun even with the proposed fixes (same-show distractors, main characters only, a staged reveal). Imported character images are opaque portraits, so no real silhouette was ever possible. Removed: the `/quiz/silhouette` route (it now redirects to `/quiz`), the hub card, the Party round, the `silhouette` challenge kind and its builder, the `silhouetteMode` option, the character pool query and the `silhouette` availability count. `silhouette` stays in the `QuizKind` union so old `quiz_session` rows still read; they need no migration. Do not rebuild it.
+
+## Manga Panels quiz
+
+**Manga Panels — REMOVED (2026-10-14).** The quiz that showed a safely chosen page from a locally linked manga and asked for the series was scrapped during the quiz review: the user judged it too ambitious, and their local manga lives only on the laptop, so it could not work on the main PC library. Removed: the `/quiz/panels` route (it now redirects to `/quiz`), its page, the hub card, the Party round, the shared question builder, `manga.panelPool`/`pickPanelSeeds`, the `quiz:mangaPanelPool` channel with its API, preload and query key, the `QuizMangaPanelFilter`/`QuizMangaPanelItem` types and the `mangaPanel` availability count. `mangaPanel` stays in the `QuizKind` union so old `quiz_session` rows still read. Do not rebuild it.
+
 ## Internal video player
 
 **Internal video player — REMOVED (2026-08-30).** The `/watch` routes, Chromium playback page, ffmpeg remux/transcode workflow, conversion task/cache UI, transcript overlay, and player-side subtitle mining were deliberately removed. Do not restore them as unfinished work. Linked episode and wrestling-video folders remain, but their Open actions use the operating system's default video application; the intended setup is VLC as that default. Watched marks stay manual. Legacy `resume_seconds`, `playability`, `video_cache`, and converted files may remain in existing data without driving any current behavior.

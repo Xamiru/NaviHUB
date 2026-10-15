@@ -120,3 +120,12 @@ describe('readings', () => {
     expect(parseReadingWiki('{{Infobox Person\n|简体中文名= 张杰\n}}')).toEqual({ kana: null, romaji: null })
   })
 })
+
+describe('westernOrder', () => {
+  it('flips family-first romaji and capitalises lower-case entries', async () => {
+    const { westernOrder } = await import('../src/main/bangumiCore')
+    expect(westernOrder('Fukuyama Jun')).toBe('Jun Fukuyama')
+    expect(westernOrder('kiryuu kazuma')).toBe('Kazuma Kiryuu')
+    expect(westernOrder('JOKER')).toBe('JOKER')
+  })
+})

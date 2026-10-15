@@ -3,7 +3,10 @@ import type {
   QuizChallengeQuestion,
   QuizChallengeRequest
 } from './types'
-import { balancedBuiltDeal, seededRng } from './quizCore'
+import { balancedBuiltDeal, balancedDeal, drawUntil, seededRng } from './quizCore'
+import { takeWithFranchiseCap, titleFranchiseKey } from './franchiseKey'
+import { imageRevealFocus } from './imageRevealQuiz'
+import { screenPeople } from './voiceRoles'
 import { higherLowerCopy, higherLowerValue } from './higherLowerQuiz'
 import type { MediaType } from './types'
 import { buildLibraryGridQuestion, type LibraryGridCandidate } from './libraryGrid'
@@ -22,6 +25,8 @@ export interface ChallengeMediaCandidate {
   releaseDate: string | null
   totalUnits: number | null
   score: number | null
+  // The 0-100 community score (communityScoreSql), when a source provides one.
+  communityScore?: number | null
   genres: string[]
   relations: string[]
   people: Array<{
@@ -30,16 +35,9 @@ export interface ChallengeMediaCandidate {
     role: string
     characterName?: string | null
     billingOrder?: number | null
+    photoPath?: string | null
   }>
   studios: Array<{ id: number; name: string; role: string }>
-}
-
-export interface ChallengeCharacterCandidate {
-  id: number
-  name: string
-  gender: string | null
-  imagePath: string
-  media: Array<{ id: number; title: string }>
 }
 
 function shuffled<T>(items: readonly T[], rng: () => number): T[] {
@@ -51,19 +49,6 @@ function shuffled<T>(items: readonly T[], rng: () => number): T[] {
   return out
 }
 
-// Partial Fisher-Yates over `order` (reordered in place, so callers reuse one
-// copy): visits items in seeded random order and returns the first `count`
-// that `accept` keeps, stopping as soon as it has them.
-function drawUntil<T>(order: T[], rng: () => number, accept: (item: T) => boolean, count: number): T[] {
-  const out: T[] = []
-  for (let i = order.length - 1; i >= 0 && out.length < count; i--) {
-    const j = Math.floor(rng() * (i + 1))
-    ;[order[i], order[j]] = [order[j], order[i]]
-    if (accept(order[i])) out.push(order[i])
-  }
-  return out
-}
-
 function choice(m: ChallengeMediaCandidate): QuizChallengeChoice {
   return { key: String(m.id), label: m.title, imagePath: m.coverPath }
 }
@@ -71,7 +56,8 @@ function choice(m: ChallengeMediaCandidate): QuizChallengeChoice {
 function imageOptionsFor(
   answer: ChallengeMediaCandidate,
   pool: ChallengeMediaCandidate[],
-  rng: () => number
+  rng: () => number,
+  franchiseOf: (item: ChallengeMediaCandidate) => string
 ): QuizChallengeChoice[] {
   const sameType = pool.filter((candidate) => candidate.mediaType === answer.mediaType)
   const answerYear = answer.releaseDate ? Number(answer.releaseDate.slice(0, 4)) : null
@@ -85,9 +71,10 @@ function imageOptionsFor(
       return { candidate, score: (sameDecade ? 2 : 0) + Math.min(sharedGenres, 3), tie: rng() }
     })
     .sort((a, b) => b.score - a.score || a.tie - b.tie)
-    .slice(0, 3)
     .map((entry) => entry.candidate)
-  return shuffled([answer, ...scored].map(choice), rng)
+  // A sequel can still be an option, but no franchise fills more than two.
+  const wrong = takeWithFranchiseCap(scored, 3, franchiseOf, franchiseOf(answer))
+  return shuffled([answer, ...wrong].map(choice), rng)
 }
 
 function rankedMediaDistractors(
@@ -110,10 +97,12 @@ function rankedMediaDistractors(
     .map((entry) => entry.candidate)
 }
 
+/** Chronology's company fallback uses only this many of the largest studios. */
+export const CHRONOLOGY_STUDIO_GROUPS = 12
+
 export function buildChallengeQuestions(
   request: QuizChallengeRequest,
-  media: ChallengeMediaCandidate[],
-  characters: ChallengeCharacterCandidate[] = []
+  media: ChallengeMediaCandidate[]
 ): QuizChallengeQuestion[] {
   const rng = seededRng(request.seed)
   const length = Math.max(1, Math.floor(request.length))
@@ -128,12 +117,13 @@ export function buildChallengeQuestions(
               imagePath: item.coverPath,
               releaseYear: item.releaseDate ? Number(item.releaseDate.slice(0, 4)) || null : null,
               mediaType: item.mediaType,
+              rating: item.communityScore ?? null,
               genres: item.genres.map((label) => ({ key: label.toLocaleLowerCase(), label })),
               companies: item.studios.map((company) => ({ key: String(company.id), label: company.name })),
-              directors: item.people
+              directors: screenPeople(item)
                 .filter((person) => person.role === 'director')
                 .map((person) => ({ key: String(person.id), label: person.name })),
-              cast: item.people
+              cast: screenPeople(item)
                 .filter(
                   (person) =>
                     person.role === 'actor' &&
@@ -162,7 +152,8 @@ export function buildChallengeQuestions(
               imagePath: item.coverPath,
               releaseYear: item.releaseDate ? Number(item.releaseDate.slice(0, 4)) || null : null,
               mediaType: item.mediaType,
-              people: item.people
+              rating: item.communityScore ?? null,
+              people: screenPeople(item)
             }]
           : []
       )
@@ -195,7 +186,7 @@ export function buildChallengeQuestions(
                 key,
                 label: relationLabels.get(key) ?? 'Related titles'
               })),
-              people: item.people
+              people: screenPeople(item)
             }]
           : []
       )
@@ -217,7 +208,7 @@ export function buildChallengeQuestions(
               releaseYear: item.releaseDate ? Number(item.releaseDate.slice(0, 4)) || null : null,
               mediaType: item.mediaType,
               genres: item.genres,
-              people: item.people,
+              people: screenPeople(item),
               companies: item.studios
             }]
           : []
@@ -239,7 +230,7 @@ export function buildChallengeQuestions(
               imagePath: item.coverPath,
               releaseYear: item.releaseDate ? Number(item.releaseDate.slice(0, 4)) || null : null,
               mediaType: item.mediaType,
-              people: item.people
+              people: screenPeople(item)
             }]
           : []
       )
@@ -253,127 +244,74 @@ export function buildChallengeQuestions(
     }
     case 'imageReveal': {
       const source = request.options?.imageSource ?? 'covers'
+      const onlyType = request.options?.imageMediaType ?? null
       const typeCounts = new Map<string, number>()
       for (const item of media) typeCounts.set(item.mediaType, (typeCounts.get(item.mediaType) ?? 0) + 1)
+      const franchises = new Map<number, string>()
+      const franchiseOf = (item: ChallengeMediaCandidate): string => {
+        let key = franchises.get(item.id)
+        if (key == null) {
+          key = `${item.mediaType}:${titleFranchiseKey(item.title)}`
+          franchises.set(item.id, key)
+        }
+        return key
+      }
       const candidates = media.filter((m) =>
+        (onlyType == null || m.mediaType === onlyType) &&
         (source === 'covers' ? Boolean(m.coverPath) : m.artPaths.length > 0) &&
         (typeCounts.get(m.mediaType) ?? 0) >= 4
       )
-      return shuffled(candidates, rng)
-        .slice(0, length)
-        .map((m, i) => ({
-          id: `image-${request.seed}-${i}`,
-          kind: 'imageReveal' as const,
-          prompt: 'Which title is this?',
-          imagePath:
-            source === 'covers'
-              ? m.coverPath!
-              : m.artPaths[Math.floor(rng() * m.artPaths.length)],
-          choices: imageOptionsFor(m, media, rng),
-          validKeys: [String(m.id)]
-        }))
-    }
-    case 'silhouette': {
-      const mode = request.options?.silhouetteMode ?? 'character'
-      const anime = media.filter((item) => item.mediaType === 'anime')
-      const animeIds = new Set(anime.map((item) => item.id))
-      const pool = characters
-        .map((character) => ({
-          ...character,
-          media: character.media.filter((appearance) => animeIds.has(appearance.id))
-        }))
-        .filter((character) => character.media.length > 0)
-      if (mode === 'title') {
-        const animeById = new Map(anime.map((item) => [item.id, item]))
-        const picks = pool.flatMap((character) => {
-          const answerAppearance = character.media[Math.floor(rng() * character.media.length)]
-          const answer = animeById.get(answerAppearance.id)
-          return answer ? [{ character, answer }] : []
-        })
-        // Distractors rank the whole anime pool, so they are built only for
-        // the picks the balanced deal reaches.
-        return balancedBuiltDeal(picks, length, (pick) => pick.answer.id, ({ character, answer }) => {
-          const validIds = new Set(character.media.map((appearance) => appearance.id))
-          const wrong = rankedMediaDistractors(answer, anime, validIds, rng).slice(0, 3)
-          return wrong.length < 3 ? null : { character, answer, wrong, validIds }
-        }, rng).map((seed, index) => ({
-          id: `silhouette-${request.seed}-${index}`,
-          kind: 'silhouette' as const,
-          prompt: 'Which anime features this character?',
-          imagePath: seed.character.imagePath,
-          choices: shuffled(
-            [seed.answer, ...seed.wrong].map((item) => ({ key: String(item.id), label: item.title })),
-            rng
-          ),
-          validKeys: [...seed.validIds].map(String),
-          reveal: `${seed.character.name} appears in ${seed.character.media.map((item) => item.title).join(' / ')}.`
-        }))
-      }
-
-      // Each seed shuffles the whole character pool for its options, so seeds
-      // are built only for the characters the balanced deal reaches.
-      const order = [...pool]
-      const characterSeed = (character: (typeof pool)[number]) => {
-        const sourceIds = new Set(character.media.map((appearance) => appearance.id))
-        const uniqueNames = new Set<string>([character.name.trim().toLowerCase()])
-        const differentAnime: typeof pool = []
-        const sameGender: typeof pool = []
-        // Draw in seeded random order until three options of the answer's
-        // gender (or any three, when unknown) instead of shuffling every character.
-        drawUntil(order, rng, (candidate) => {
-          if (candidate.id === character.id || candidate.media.some((item) => sourceIds.has(item.id))) return false
-          const name = candidate.name.trim().toLowerCase()
-          if (!name || uniqueNames.has(name)) return false
-          uniqueNames.add(name)
-          differentAnime.push(candidate)
-          if (character.gender && candidate.gender === character.gender) sameGender.push(candidate)
-          return character.gender ? candidate.gender === character.gender : true
-        }, 3)
-        const wrong = (sameGender.length >= 3 ? sameGender : differentAnime).slice(0, 3)
-        return wrong.length < 3 ? null : { character, wrong }
-      }
-      return balancedBuiltDeal(pool, length, (character) => character.media[0].id, characterSeed, rng).map(
-        (seed, index) => ({
-          id: `silhouette-${request.seed}-${index}`,
-          kind: 'silhouette' as const,
-          prompt: 'Who is this character?',
-          imagePath: seed.character.imagePath,
-          choices: shuffled(
-            [seed.character, ...seed.wrong].map((item) => ({ key: String(item.id), label: item.name })),
-            rng
-          ),
-          validKeys: [String(seed.character.id)],
-          reveal: `${seed.character.name} · ${seed.character.media.map((item) => item.title).join(' / ')}`
-        })
-      )
+      // Round-robin across franchises, so a round only repeats one once every
+      // other franchise has had a question.
+      return balancedDeal(candidates, length, franchiseOf, rng).map((m, i) => ({
+        id: `image-${request.seed}-${i}`,
+        kind: 'imageReveal' as const,
+        prompt: 'Which title is this?',
+        imagePath:
+          source === 'covers'
+            ? m.coverPath!
+            : m.artPaths[Math.floor(rng() * m.artPaths.length)],
+        mediaType: m.mediaType as MediaType,
+        focus: imageRevealFocus(rng),
+        choices: imageOptionsFor(m, media, rng, franchiseOf),
+        validKeys: [String(m.id)]
+      }))
     }
     case 'connections': {
       type Actor = { id: number; name: string }
-      type Appearance = { media: ChallengeMediaCandidate; roles: string[] }
+      // `billing` is the person's best TMDB position on that title; directors are -1.
+      type Appearance = { media: ChallengeMediaCandidate; roles: string[]; billing: number }
       type Connector = Actor & { appearances: Appearance[] }
+      type Link = Actor & { leftRoles: string[]; rightRoles: string[]; prominence: number }
       type Pair = {
         a: ChallengeMediaCandidate
         b: ChallengeMediaCandidate
-        valid: Array<Actor & { leftRoles: string[]; rightRoles: string[] }>
+        valid: Link[]
         forbiddenIds: Set<number>
-        answer: Actor
+        answer: Link
       }
 
       // Connections mixes actors and directors so the option type cannot reveal
       // the answer. TMDB supplies stable billing order for movies and aggregate
-      // TV credits; only actor appearances are limited to the first ten.
+      // TV credits; only actor appearances are limited to the first ten. Voice
+      // roles (actors on animated titles) never link two titles, but they stay
+      // in each title's full credit list, so a person who voiced one of the two
+      // is never offered as a wrong answer.
       const screenMedia = media.filter(
         (item) => item.mediaType === 'movie' || item.mediaType === 'tv'
       )
       const connectors = new Map<number, Connector>()
       const allPeopleByMedia = new Map<number, Set<number>>()
+      const eligibleByMedia = new Map<number, Actor[]>()
       for (const item of screenMedia) {
-        const perTitle = new Map<number, { actor: Actor; roles: Set<string> }>()
+        const allPeople = new Set<number>()
         for (const person of item.people) {
+          if (person.role === 'actor' || person.role === 'director') allPeople.add(person.id)
+        }
+        allPeopleByMedia.set(item.id, allPeople)
+        const perTitle = new Map<number, { actor: Actor; roles: Set<string>; billing: number }>()
+        for (const person of screenPeople(item)) {
           if (person.role !== 'actor' && person.role !== 'director') continue
-          const allPeople = allPeopleByMedia.get(item.id) ?? new Set<number>()
-          allPeople.add(person.id)
-          allPeopleByMedia.set(item.id, allPeople)
           const isTopBilledActor =
             person.role === 'actor' &&
             person.billingOrder != null &&
@@ -382,18 +320,36 @@ export function buildChallengeQuestions(
           if (person.role !== 'director' && !isTopBilledActor) continue
           const found = perTitle.get(person.id) ?? {
             actor: { id: person.id, name: person.name },
-            roles: new Set<string>()
+            roles: new Set<string>(),
+            billing: Number.POSITIVE_INFINITY
           }
-          if (person.role === 'director') found.roles.add('director')
-          else if (person.characterName?.trim()) found.roles.add(person.characterName.trim())
-          else found.roles.add('actor')
+          if (person.role === 'director') {
+            found.roles.add('director')
+            found.billing = -1
+          } else {
+            found.roles.add(person.characterName?.trim() || 'actor')
+            found.billing = Math.min(found.billing, person.billingOrder ?? 9)
+          }
           perTitle.set(person.id, found)
         }
-        for (const { actor, roles } of perTitle.values()) {
+        eligibleByMedia.set(item.id, [...perTitle.values()].map((entry) => entry.actor))
+        for (const { actor, roles, billing } of perTitle.values()) {
           const connector = connectors.get(actor.id) ?? { ...actor, appearances: [] }
-          connector.appearances.push({ media: item, roles: [...roles] })
+          connector.appearances.push({ media: item, roles: [...roles], billing })
           connectors.set(actor.id, connector)
         }
+      }
+
+      // Sequels and seasons share their whole cast, so a same-franchise pair
+      // is a free question; only cross-franchise pairs are dealt.
+      const franchise = new Map<number, string>()
+      const franchiseOf = (item: ChallengeMediaCandidate): string => {
+        let key = franchise.get(item.id)
+        if (key == null) {
+          key = titleFranchiseKey(item.title)
+          franchise.set(item.id, key)
+        }
+        return key
       }
 
       // Build through actor groups instead of comparing every title with every
@@ -404,6 +360,7 @@ export function buildChallengeQuestions(
           for (let j = i + 1; j < connector.appearances.length; j++) {
             const first = connector.appearances[i]
             const second = connector.appearances[j]
+            if (franchiseOf(first.media) === franchiseOf(second.media)) continue
             const [left, right] = first.media.id < second.media.id
               ? [first, second]
               : [second, first]
@@ -422,7 +379,10 @@ export function buildChallengeQuestions(
               id: connector.id,
               name: connector.name,
               leftRoles: left.roles,
-              rightRoles: right.roles
+              rightRoles: right.roles,
+              // Lower is more recognisable: a director, then the best-billed
+              // actor across both titles.
+              prominence: Math.max(left.billing, right.billing)
             })
             pairMap.set(key, pair)
           }
@@ -437,23 +397,25 @@ export function buildChallengeQuestions(
         for (const id of pair.forbiddenIds) if (connectors.has(id)) n++
         return n
       }
+      const PROMINENT = 4 // a director, or top-five billing in both titles
       const candidates: Pair[] = shuffled([...pairMap.values()], rng).flatMap((pair) => {
         if (actorPool.length - forbiddenInPool(pair) < 3) return []
-        return [{
-          ...pair,
-          answer: pair.valid[Math.floor(rng() * pair.valid.length)]
-        }]
+        // Show the most recognisable shared person; every shared person stays valid.
+        const best = Math.min(...pair.valid.map((link) => link.prominence))
+        const top = pair.valid.filter((link) => link.prominence === best)
+        return [{ ...pair, answer: top[Math.floor(rng() * top.length)] }]
       })
 
       // Balance all three visible identities so a prolific actor or one popular
       // title cannot take over a round merely by producing more possible pairs.
+      // Pairs linked by a prominent person are dealt before deep-cast ones.
       const remaining = [...candidates]
       const actorUses = new Map<number, number>()
       const titleUses = new Map<number, number>()
       const dealt: Pair[] = []
       while (dealt.length < length && remaining.length > 0) {
         let bestIndex = 0
-        let bestScore: [number, number] | null = null
+        let bestScore: [number, number, number] | null = null
         for (let i = 0; i < remaining.length; i++) {
           const candidate = remaining[i]
           const counts = [
@@ -461,11 +423,16 @@ export function buildChallengeQuestions(
             titleUses.get(candidate.a.id) ?? 0,
             titleUses.get(candidate.b.id) ?? 0
           ]
-          const score: [number, number] = [Math.max(...counts), counts.reduce((a, b) => a + b, 0)]
+          const score: [number, number, number] = [
+            Math.max(...counts),
+            candidate.answer.prominence <= PROMINENT ? 0 : 1,
+            counts.reduce((a, b) => a + b, 0)
+          ]
           if (
             bestScore == null ||
             score[0] < bestScore[0] ||
-            (score[0] === bestScore[0] && score[1] < bestScore[1])
+            (score[0] === bestScore[0] && score[1] < bestScore[1]) ||
+            (score[0] === bestScore[0] && score[1] === bestScore[1] && score[2] < bestScore[2])
           ) {
             bestIndex = i
             bestScore = score
@@ -478,28 +445,47 @@ export function buildChallengeQuestions(
         titleUses.set(picked.b.id, (titleUses.get(picked.b.id) ?? 0) + 1)
       }
 
-      const describeRoles = (roles: string[]) => roles.length > 0 ? roles.join(' / ') : 'cast member'
-      return dealt.map((pair, i) => {
-        const wrong = shuffled(
-          actorPool.filter((actor) => !pair.forbiddenIds.has(actor.id)),
-          rng
-        ).slice(0, 3)
-        return {
-          id: `connections-${request.seed}-${i}`,
-          kind: 'connections' as const,
-          prompt: `Which person connects ${pair.a.title} and ${pair.b.title}?`,
-          titleA: choice(pair.a),
-          titleB: choice(pair.b),
-          choices: shuffled(
-            [pair.answer, ...wrong].map((actor) => ({ key: String(actor.id), label: actor.name })),
-            rng
-          ),
-          validKeys: pair.valid.map((actor) => String(actor.id)),
-          reveal: pair.valid.map((actor) =>
-            `${actor.name} — ${pair.a.title}: ${describeRoles(actor.leftRoles)}; ${pair.b.title}: ${describeRoles(actor.rightRoles)}`
-          ).join(' / ')
+      // Wrong options: someone only in the first title, someone only in the
+      // second, then anyone else outside the shared cast. Knowing one cast is
+      // no longer enough.
+      const wrongOptions = (pair: Pair): Actor[] => {
+        const used = new Set<number>([pair.answer.id])
+        const out: Actor[] = []
+        const take = (pool: Actor[], count: number) => {
+          for (const actor of shuffled(pool, rng)) {
+            if (out.length >= 3 || count <= 0) break
+            if (used.has(actor.id) || pair.forbiddenIds.has(actor.id)) continue
+            used.add(actor.id)
+            out.push(actor)
+            count--
+          }
         }
-      })
+        take(eligibleByMedia.get(pair.a.id) ?? [], 1)
+        take(eligibleByMedia.get(pair.b.id) ?? [], 1)
+        take([...(eligibleByMedia.get(pair.a.id) ?? []), ...(eligibleByMedia.get(pair.b.id) ?? [])], 3)
+        if (out.length < 3) {
+          // Partial Fisher-Yates over the whole pool, stopping at three.
+          take(drawUntil([...actorPool], rng, (actor) => !used.has(actor.id) && !pair.forbiddenIds.has(actor.id), 3 - out.length), 3)
+        }
+        return out
+      }
+
+      const describeRoles = (roles: string[]) => roles.length > 0 ? roles.join(' / ') : 'cast member'
+      return dealt.map((pair, i) => ({
+        id: `connections-${request.seed}-${i}`,
+        kind: 'connections' as const,
+        prompt: `Which person connects ${pair.a.title} and ${pair.b.title}?`,
+        titleA: choice(pair.a),
+        titleB: choice(pair.b),
+        choices: shuffled(
+          [pair.answer, ...wrongOptions(pair)].map((actor) => ({ key: String(actor.id), label: actor.name })),
+          rng
+        ),
+        validKeys: pair.valid.map((actor) => String(actor.id)),
+        reveal: pair.valid.map((actor) =>
+          `${actor.name} — ${pair.a.title}: ${describeRoles(actor.leftRoles)}; ${pair.b.title}: ${describeRoles(actor.rightRoles)}`
+        ).join(' / ')
+      }))
     }
     case 'chronology': {
       type Group = {
@@ -531,16 +517,40 @@ export function buildChallengeQuestions(
         found.media.set(item.id, item)
         groups.set(key, found)
       }
+      // Fallback connections must be recognisable: only the biggest studios
+      // in the selection, and only directors and top-ten billed actors (voice
+      // roles excluded), never composers, producers or minor companies.
+      const studioCounts = new Map<number, number>()
+      for (const item of media) {
+        for (const id of new Set(item.studios.map((studio) => studio.id))) {
+          studioCounts.set(id, (studioCounts.get(id) ?? 0) + 1)
+        }
+      }
+      const bigStudios = new Set(
+        [...studioCounts.entries()]
+          .sort((a, b) => b[1] - a[1] || a[0] - b[0])
+          .slice(0, CHRONOLOGY_STUDIO_GROUPS)
+          .map(([id]) => id)
+      )
       for (const item of media) {
         if (releaseYear(item) == null || !item.coverPath) continue
         for (const relation of new Set(item.relations)) {
           add(`r:${relation}`, 0, 'Same franchise', item)
         }
         for (const studio of new Map(item.studios.map((value) => [value.id, value])).values()) {
+          if (!bigStudios.has(studio.id)) continue
           add(`s:${studio.id}`, 1, `Shared company: ${studio.name}`, item)
         }
-        for (const person of new Map(item.people.map((value) => [value.id, value])).values()) {
-          add(`p:${person.id}`, 2, `Shared person: ${person.name}`, item)
+        const known = screenPeople(item).filter(
+          (person) =>
+            person.role === 'director' ||
+            (person.role === 'actor' &&
+              person.billingOrder != null &&
+              person.billingOrder >= 0 &&
+              person.billingOrder < 10)
+        )
+        for (const person of new Map(known.map((value) => [value.id, value])).values()) {
+          add(`p:${person.id}`, 2, person.role === 'director' ? `Directed by ${person.name}` : `Shared cast: ${person.name}`, item)
         }
       }
 
@@ -669,7 +679,9 @@ export function buildChallengeQuestions(
         if (
           !challenger ||
           challenger.id === reference.id ||
-          higherLowerValue(challenger, metric) === higherLowerValue(reference, metric)
+          higherLowerValue(challenger, metric) === higherLowerValue(reference, metric) ||
+          // "Show Season 2 vs Show" is a free point on the release-year question.
+          (metric === 'releaseDate' && titleFranchiseKey(challenger.title) === titleFranchiseKey(reference.title))
         ) continue
         const av = higherLowerValue(reference, metric)!
         const bv = higherLowerValue(challenger, metric)!

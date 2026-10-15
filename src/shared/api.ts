@@ -2,6 +2,7 @@ import type { TestableKey } from './keyTests'
 import type { GameRun, GameRunInput, GameRunHistory, GameRunNoteInput, MusicTrackPersonal, MusicSmartInput, MusicSmartPlaylist, MusicSmartRules, MusicSmartPreview } from './types'
 import type { VnDiscoverFilter, VnDiscoverPage, VnTagResult, VnEditionDetail } from './types'
 import type { VnCaptureInput, VnCapture, VnCaptureSummary } from './types'
+import type { SavedQuote, QuoteFilter, QuoteInput } from './types'
 import type { WrestlingJourneySummary, WrestlingJourneyInput, WrestlingJourneyDetail, WrestlingJourneyStepInput, WrestlingJourneyTarget } from './types'
 import type { VnReadingOverview, VnReadingNodeInput, VnReadingResume, VnNoteInput, VnNotePage } from './types'
 import type { BangumiCandidate, ExternalLinkSource, GameCastResult, GameLinksState, GameUpgradePlan, GameUpgradeStatus, GameWorkSummary } from './types'
@@ -11,7 +12,7 @@ import type { MusicLink, MusicLinkCandidates, MusicLinkCreate, MusicLinkOwner, M
 // bridge) and the renderer (which consumes it) import this so they never drift.
 
 import type { RefreshAspect, RefreshRequest } from './refresh'
-import type { VaQuizQuestionSeed } from './vaQuiz'
+import type { VaNameQuestionSeed, VaQuizQuestionSeed } from './vaQuiz'
 import type {
   ChecklistCadence,
   ChecklistCustomInput,
@@ -122,8 +123,6 @@ import type {
   QuizKind,
   QuizPlayMode,
   QuizLibFilter,
-  QuizMangaPanelFilter,
-  QuizMangaPanelItem,
   QuizSessionInput,
   QuizSong,
   QuizSongFilter,
@@ -583,10 +582,9 @@ export interface NaviApi {
     // A dealt same-voice round: the VA pool is hundreds of thousands of
     // character appearances on a large library, so main builds the questions.
     vaQuestions(filter: QuizLibFilter, count: number, seed: number): Promise<VaQuizQuestionSeed[]>
+    // A dealt "name the voice actor" round, built in the quiz pool process.
+    vaNameQuestions(filter: QuizLibFilter, count: number, seed: number): Promise<VaNameQuestionSeed[]>
     synopsisPool(filter: QuizSynopsisFilter): Promise<QuizSynopsisItem[]>
-    // Manga-panel quiz seeds: length questions, each a reproducibly selected
-    // eligible page from one locally-linked series (one per series).
-    mangaPanelPool(filter: QuizMangaPanelFilter, length: number): Promise<QuizMangaPanelItem[]>
     // Normalized contender pool for tournament mode, resolved from one library
     // source. Returns the whole matching set; the renderer shuffles and caps.
     tournamentPool(source: TournamentSource): Promise<TournamentEntry[]>
@@ -687,6 +685,15 @@ export interface NaviApi {
       kind: ListKind,
       entityId: number
     ): Promise<{ id: number; title: string; contains: boolean }[]>
+  }
+  quotes: {
+    // The quote book. list() unions read-only VN notebook quotes unless a
+    // speaker filter is given; save() creates without an id, replaces with one.
+    list(filter?: QuoteFilter): Promise<SavedQuote[]>
+    get(id: number): Promise<SavedQuote | null>
+    save(input: QuoteInput, id?: number | null): Promise<number>
+    setFavorite(id: number, favorite: boolean): Promise<void>
+    remove(id: number): Promise<void>
   }
   tierLists: {
     // TierMaker-style boards over the same ListKinds as lists. The picker flow
@@ -832,6 +839,8 @@ export interface NaviApi {
     searchBangumi(query: string): Promise<BangumiCandidate[]>
     setBangumi(mediaId: number, subjectId: number): Promise<GameCastResult>
     unlinkBangumi(mediaId: number): Promise<void>
+    // Turns the franchise wiki off for this game and removes the cast it brought.
+    unlinkWiki(mediaId: number): Promise<void>
     reset(mediaId: number, source: ExternalLinkSource): Promise<void>
     refreshCast(mediaId: number): Promise<GameCastResult>
   }

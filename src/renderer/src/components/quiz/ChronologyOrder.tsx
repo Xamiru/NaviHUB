@@ -11,6 +11,8 @@ interface ChronologyOrderProps {
   order: string[]
   choices: ChronologyOrderChoice[]
   disabled?: boolean
+  // After locking: whether each position holds the right title.
+  placed?: boolean[]
   onChange: (order: string[]) => void
 }
 
@@ -18,6 +20,7 @@ export default function ChronologyOrder({
   order,
   choices,
   disabled = false,
+  placed,
   onChange
 }: ChronologyOrderProps) {
   return (
@@ -29,7 +32,13 @@ export default function ChronologyOrder({
         return (
           <div
             key={key}
-            className="grid min-w-0 grid-cols-[32px_48px_minmax(0,1fr)] items-center gap-3 rounded-md border border-base-700 bg-base-800 p-3 sm:grid-cols-[32px_56px_minmax(0,1fr)_auto]"
+            className={`grid min-w-0 grid-cols-[32px_48px_minmax(0,1fr)] items-center gap-3 rounded-md border p-3 sm:grid-cols-[32px_56px_minmax(0,1fr)_auto] ${
+              placed == null
+                ? 'border-base-700 bg-base-800'
+                : placed[index]
+                  ? 'border-green-500 bg-green-500/10'
+                  : 'border-red-500 bg-red-500/10'
+            }`}
             role="group"
             aria-label={`${item.label}, position ${index + 1} of ${order.length}`}
             tabIndex={disabled ? -1 : 0}
@@ -55,7 +64,13 @@ export default function ChronologyOrder({
             />
             <div className="min-w-0">
               <p className="font-medium text-gray-100">{item.label}</p>
-              <p className="mt-1 text-xs text-gray-400">Use arrow keys or choose a position.</p>
+              <p className="mt-1 text-xs text-gray-400">
+                {placed == null
+                  ? 'Use arrow keys or choose a position.'
+                  : placed[index]
+                    ? 'Right place'
+                    : 'Wrong place'}
+              </p>
             </div>
             <div
               className="col-span-3 flex items-center justify-end gap-1.5 sm:col-span-1"

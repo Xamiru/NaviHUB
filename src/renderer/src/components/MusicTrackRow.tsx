@@ -15,6 +15,7 @@ import { confirmDialog } from '../lib/confirm'
 import { usePopover } from '../lib/hooks'
 import ContextMenu, { type ContextMenuItem } from './ContextMenu'
 import { useLeaveEmptiedPage, useTrackSelection } from './music/TrackListScope'
+import ArtistCredit from './music/ArtistCredit'
 
 export function formatDuration(seconds: number | null): string {
   if (seconds == null || !Number.isFinite(seconds)) return '–:––'
@@ -72,9 +73,7 @@ export default function MusicTrackRow({
   const closeContext = useCallback(() => setContextAt(null), [])
   const deleteFromDisk = useDeleteFromDisk(track)
   const artist = track.tagArtist ?? track.artistName
-  const subtitle = [artist === hideArtist ? null : artist, showAlbum ? track.albumTitle : null]
-    .filter(Boolean)
-    .join(' · ')
+  const showArtist = artist !== hideArtist
 
   // Optimistic heart: flip locally, persist, then let the invalidation settle.
   const [liked, setLiked] = useState(!!track.likedAt)
@@ -163,21 +162,38 @@ export default function MusicTrackRow({
           fallback="music"
         />
       )}
-      <button
-        data-track-play
-        className="min-w-0 flex-1 select-none text-left"
-        onClick={onTitleClick}
-        title={selection?.selecting ? 'Select' : selection ? 'Play (Ctrl+click to select)' : 'Play'}
-      >
-        <p
-          className={`line-clamp-1 text-sm font-medium ${
-            isCurrent ? 'text-accent' : 'group-hover:text-white'
-          }`}
+      <div className="min-w-0 flex-1 select-none">
+        <button
+          data-track-play
+          className="block w-full text-left"
+          onClick={onTitleClick}
+          title={selection?.selecting ? 'Select' : selection ? 'Play (Ctrl+click to select)' : 'Play'}
         >
-          {track.title}
-        </p>
-        {subtitle && <p className="line-clamp-1 text-xs text-gray-500">{subtitle}</p>}
-      </button>
+          <span
+            className={`line-clamp-1 text-sm font-medium ${
+              isCurrent ? 'text-accent' : 'group-hover:text-white'
+            }`}
+          >
+            {track.title}
+          </span>
+        </button>
+        {(showArtist || showAlbum) && (
+          // Each artist in the credit links on its own; the rest of the line
+          // still plays (or selects) like the title for mouse users.
+          <p
+            className="line-clamp-1 cursor-default text-xs text-gray-500"
+            onClick={(e) => {
+              if (!(e.target as HTMLElement).closest('a')) onTitleClick(e)
+            }}
+          >
+            {showArtist && (
+              <ArtistCredit credit={artist} artistId={track.artistId} className="hover:text-accent hover:underline" />
+            )}
+            {showArtist && showAlbum && ' · '}
+            {showAlbum && track.albumTitle}
+          </p>
+        )}
+      </div>
       {trailing}
       <FavoriteButton
         active={liked}

@@ -207,7 +207,7 @@ export async function importGame(igdbId: number): Promise<ImportSummary> {
           metaObj = {}
         }
       }
-      if (rating > 0) metaObj.igdbRating = rating // 0-100, in COMMUNITY_SQL
+      if (rating > 0) metaObj.igdbRating = rating // 0-100, a COMMUNITY_SCORE_SOURCES key
       if (hltbTimes) metaObj.hltb = hltbTimes
       db.prepare('UPDATE media_item SET metadata=? WHERE id=?').run(JSON.stringify(metaObj), mediaId)
     }

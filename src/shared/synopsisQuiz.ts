@@ -1,5 +1,6 @@
 import type { QuizSynopsisItem } from './types'
-import { balancedDeal, seededRng } from './quizCore'
+import { balancedBuiltDeal, seededRng } from './quizCore'
+import { titleFranchiseKey } from './franchiseKey'
 import { pickDistractors } from './quizDistractors'
 import { synopsisExcerpt } from './quizText'
 import { shuffle } from './shuffle'
@@ -72,10 +73,21 @@ export function buildSynopsisQuizQuestions(
     else groups.set(item.mediaType, [item])
   }
   const usable = pool.filter((item) => (groups.get(item.mediaType)?.length ?? 0) >= 4)
-  const answers = balancedDeal(usable, length, (item) => item.mediaType, rng)
-  return answers.map((answer, index) => {
-    const sameType = groups.get(answer.mediaType) ?? []
-    const distractors = pickDistractors([...sameType], answer, 3, [], rng)
+  const franchises = new Map<number, string>()
+  const franchiseOf = (item: QuizSynopsisItem): string => {
+    let key = franchises.get(item.mediaId)
+    if (key == null) {
+      key = titleFranchiseKey(item.title)
+      franchises.set(item.mediaId, key)
+    }
+    return key
+  }
+  // Built only for the answers the deal reaches: ranking scans the type group.
+  const built = balancedBuiltDeal(usable, length, (item) => item.mediaType, (answer) => {
+    const distractors = synopsisDistractors(groups.get(answer.mediaType) ?? [], answer, franchiseOf, rng)
+    return distractors.length < 3 ? null : { answer, distractors }
+  }, rng)
+  return built.map(({ answer, distractors }, index) => {
     const aliases = titleAliasVariants([
       answer.title,
       answer.titleOriginal,
@@ -89,4 +101,31 @@ export function buildSynopsisQuizQuestions(
       validKeys: [`media-${answer.mediaId}`]
     }
   })
+}
+
+/**
+ * Wrong options for a synopsis: never another entry of the answer's franchise
+ * (sibling premises overlap, which turns the question into a coin flip) and
+ * never two from one franchise. A sibling is a shared title-derived franchise
+ * key or a related title the answer names.
+ */
+function synopsisDistractors(
+  sameType: readonly QuizSynopsisItem[],
+  answer: QuizSynopsisItem,
+  franchiseOf: (item: QuizSynopsisItem) => string,
+  rng: () => number
+): QuizSynopsisItem[] {
+  const related = new Set(answer.relationAliases.map((title) => title.trim().toLowerCase()))
+  const used = new Set<string>([franchiseOf(answer)])
+  const out: QuizSynopsisItem[] = []
+  for (const candidate of pickDistractors([...sameType], answer, sameType.length, [], rng)) {
+    if (out.length === 3) break
+    const key = franchiseOf(candidate)
+    if (used.has(key)) continue
+    if (related.has(candidate.title.trim().toLowerCase())) continue
+    if (candidate.relationAliases.some((title) => title.trim().toLowerCase() === answer.title.trim().toLowerCase())) continue
+    used.add(key)
+    out.push(candidate)
+  }
+  return out
 }

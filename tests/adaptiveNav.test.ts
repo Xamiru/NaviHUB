@@ -208,6 +208,18 @@ it('exposes hobby-depth destinations through shared navigation', () => {
   expect(drawerItemsForArea('archives').map((i) => i.to)).toContain('/franchises')
 })
 
+it('files Quotes with the curated collections', () => {
+  expect(archiveAreaForPath('/quotes')).toBe('library')
+  expect(drawerItemsForArea('library')).toContainEqual({
+    to: '/quotes',
+    label: 'Quotes',
+    visibilityKey: 'quotes',
+    group: 'Organise'
+  })
+  expect(archiveContextForPath('/quotes')).toMatchObject({ title: 'Collections' })
+  expect(archiveContextForPath('/lists/3').items.map((i) => i.to)).toEqual(['/lists', '/quotes', '/tags'])
+})
+
 it('groups drawers by kind and keeps no single-item drawer', () => {
   const groups = (area: Parameters<typeof drawerItemsForArea>[0]) => [
     ...new Set(drawerItemsForArea(area).map((i) => i.group))

@@ -42,7 +42,7 @@ vi.mock('../src/main/files', () => ({
 }))
 vi.mock('../src/main/progress', () => ({ updateActivity: () => {} }))
 
-import { enrichGame } from '../src/main/gameCast'
+import { clearGameCast, enrichGame } from '../src/main/gameCast'
 import * as links from '../src/main/repos/externalLinkRepo'
 import * as mediaRepo from '../src/main/repos/mediaRepo'
 
@@ -143,7 +143,8 @@ describe('enrichGame', () => {
     ])
     expect(net.liveCalls).toBe(1)
     expect(JSON.parse((db.prepare('SELECT metadata FROM media_item WHERE id = ?').get(game) as { metadata: string }).metadata)).toEqual({
-      bangumiChecked: true
+      bangumiChecked: true,
+      wikiChecked: true
     })
   })
 
@@ -206,5 +207,27 @@ describe('enrichGame', () => {
     expect(await enrichGame(game)).toEqual({ linked: false, cast: 0, staff: 0, relations: 0 })
     const anime = Number(db.prepare(`INSERT INTO media_item (media_type, title) VALUES ('anime', 'X')`).run().lastInsertRowid)
     await expect(enrichGame(anime)).rejects.toThrow(/games only/)
+  })
+
+  it('unlinking drops the wiki voices on Bangumi characters but keeps hand-made credits', async () => {
+    await enrichGame(game)
+    const igorId = (db.prepare(`SELECT id FROM character WHERE external_source='bangumi' AND external_id='3'`).get() as { id: number }).id
+    const wikiVa = Number(db.prepare(`INSERT INTO person (name) VALUES ('Wiki Voice')`).run().lastInsertRowid)
+    const handVa = Number(db.prepare(`INSERT INTO person (name) VALUES ('Hand Voice')`).run().lastInsertRowid)
+    db.prepare(`INSERT INTO credit (media_id, person_id, character_id, role, origin) VALUES (?, ?, ?, 'voice_actor', 'fandom')`).run(game, wikiVa, igorId)
+    db.prepare(`INSERT INTO credit (media_id, person_id, character_id, role) VALUES (?, ?, ?, 'voice_actor')`).run(game, handVa, igorId)
+    clearGameCast(game)
+    expect(db.prepare('SELECT COUNT(*) AS n FROM credit WHERE person_id = ?').get(wikiVa)).toEqual({ n: 0 })
+    expect(db.prepare('SELECT COUNT(*) AS n FROM credit WHERE person_id = ?').get(handVa)).toEqual({ n: 1 })
+  })
+
+  it('a re-read that drops a character drops the wiki voice on it', async () => {
+    await enrichGame(game)
+    const igorId = (db.prepare(`SELECT id FROM character WHERE external_source='bangumi' AND external_id='3'`).get() as { id: number }).id
+    const wikiVa = Number(db.prepare(`INSERT INTO person (name) VALUES ('Wiki Voice')`).run().lastInsertRowid)
+    db.prepare(`INSERT INTO credit (media_id, person_id, character_id, role, origin) VALUES (?, ?, ?, 'voice_actor', 'fandom')`).run(game, wikiVa, igorId)
+    net.characters = [ren, ryuji]
+    await enrichGame(game)
+    expect(db.prepare('SELECT COUNT(*) AS n FROM credit WHERE person_id = ?').get(wikiVa)).toEqual({ n: 0 })
   })
 })

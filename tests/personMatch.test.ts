@@ -113,6 +113,12 @@ describe('adoptForAniList', () => {
     expect(adoptForAniList(db, '96', 'Someone', '同名')).toBeNull()
   })
 
+  it('adopts a wiki person known only by romaji through the exact full name', () => {
+    const wiki = add('Satoshi Tokushige', null, 'fandom', 'yakuza:Satoshi Tokushige')
+    expect(adoptForAniList(db, '8', 'Satoshi Tokushige', '徳重 聡')).toBe(wiki)
+    expect(adoptForAniList(db, '9', 'Someone Else', null)).toBeNull()
+  })
+
   it('does not adopt a homonym with a different romaji name', () => {
     add('Fukuyama Kei', '福山潤', 'vndb', 's9')
     expect(adoptForAniList(db, '95', 'Jun Fukuyama', '福山潤')).toBeNull()
@@ -124,8 +130,9 @@ describe('the headless bulk importer', () => {
     const read = (rel: string): string => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8')
     const app = read('../src/main/repos/personMatch.ts')
     const script = read('../scripts/bulk-import.cjs')
-    expect(app).toContain("const ADOPTABLE_SOURCES = ['vndb', 'bangumi']")
-    expect(script).toContain("WHERE external_source IN ('vndb', 'bangumi')")
+    expect(app).toContain("const ADOPTABLE_SOURCES = ['vndb', 'bangumi', 'fandom']")
+    expect(script).toContain("WHERE external_source IN ('vndb', 'bangumi', 'fandom')")
+    expect(script).toContain("WHERE external_source = 'fandom' AND name = ?")
     for (const fold of [".replace(/oh(?=[^aeiou]|$)/g, 'o')", ".replace(/ou/g, 'o')", ".replace(/uu/g, 'u')"]) {
       expect(app).toContain(fold)
       expect(script).toContain(fold)

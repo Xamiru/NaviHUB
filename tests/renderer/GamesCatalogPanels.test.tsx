@@ -21,6 +21,7 @@ vi.mock('@/lib/api', () => ({
       searchBangumi: vi.fn(),
       setBangumi: vi.fn(),
       unlinkBangumi: vi.fn(),
+      unlinkWiki: vi.fn(),
       reset: vi.fn(),
       refreshCast: vi.fn()
     }
@@ -104,6 +105,7 @@ describe('Game sources panel', () => {
     ],
     work: { workId: 179069, title: 'Persona 5 Royal', titleJa: 'ペルソナ5 ザ・ロイヤル', year: 2020, platforms: ['PC'], coverUrl: null },
     unlinked: [],
+    wiki: null,
     covers: []
   }
 
@@ -118,11 +120,22 @@ describe('Game sources panel', () => {
     expect(screen.getByText(/Bangumi entry 278949/)).toHaveTextContent('matched by exact title')
     await expectNoAxeViolations(container)
 
-    const cast = screen.getByRole('heading', { name: 'Cast (Bangumi)' }).parentElement!
+    const cast = screen.getByRole('heading', { name: 'Cast' }).parentElement!
     await user.click(within(cast).getByRole('button', { name: 'Change…' }))
     const dialog = await screen.findByRole('dialog', { name: 'Find on Bangumi' })
     await user.click(await within(dialog).findByRole('button', { name: /ペルソナ5/ }))
     await waitFor(() => expect(mocked.gameLinks.setBangumi).toHaveBeenCalledWith(5, 88868))
+  })
+
+  it('shows the franchise wiki and turns it off for one game', async () => {
+    mocked.gameLinks.get.mockResolvedValue({ ...state, wiki: { label: 'Yakuza Wiki', category: 'Yakuza 2 Characters' } })
+    mocked.gameLinks.unlinkWiki.mockResolvedValue(undefined)
+    const user = userEvent.setup()
+    wrap(<GameLinksPanel mediaId={5} title="Yakuza 2" />)
+    const line = await screen.findByText(/Also from Yakuza Wiki/)
+    expect(line).toHaveTextContent('Yakuza 2 Characters')
+    await user.click(within(line.parentElement!).getByRole('button', { name: 'Not this game' }))
+    expect(mocked.gameLinks.unlinkWiki).toHaveBeenCalledWith(5)
   })
 
   it('removes a wrong Bangumi link together with its cast', async () => {
@@ -130,7 +143,7 @@ describe('Game sources panel', () => {
     mocked.gameLinks.unlinkBangumi.mockResolvedValue(undefined)
     const user = userEvent.setup()
     wrap(<GameLinksPanel mediaId={5} title="Persona 5 Royal" />)
-    const cast = (await screen.findByRole('heading', { name: 'Cast (Bangumi)' })).parentElement!
+    const cast = (await screen.findByRole('heading', { name: 'Cast' })).parentElement!
     await user.click(within(cast).getByRole('button', { name: 'Not this game' }))
     expect(mocked.gameLinks.unlinkBangumi).toHaveBeenCalledWith(5)
   })

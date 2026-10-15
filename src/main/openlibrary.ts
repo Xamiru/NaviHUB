@@ -174,7 +174,7 @@ export async function importBook(
       const r = await olGet(`/works/${olId}/ratings.json`)
       const avg = r?.summary?.average
       if (typeof avg === 'number' && avg > 0 && (r?.summary?.count ?? 0) > 0) {
-        // 1-5 stars → the shared 0-100 community scale (COMMUNITY_SQL reads it raw).
+        // 1-5 stars → the shared 0-100 community scale (COMMUNITY_SCORE_SOURCES reads it raw).
         olRating = Math.round(avg * 20)
       }
     } catch {

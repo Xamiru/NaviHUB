@@ -16,7 +16,10 @@
 // vocabulary ('xref' = an id the source states, 'wikidata', 'exact' = unique
 // exact title within a year). bgm_person / bgm_character hold only the
 // readings and Latin names of the people (cast and staff) and characters of
-// linked games.
+// linked games. wiki_category / wiki_character bake each franchise wiki's
+// voiced characters per game (wikiCastCore.ts), so the app never needs the
+// wiki itself — Fandom is filtered where the user lives; its image host is not.
+// voices is JSON [{ name, native }] with the actor's Japanese name from Wikidata.
 export const LAUNCHBOX_CATALOG_DDL = `
 CREATE TABLE IF NOT EXISTS lb_meta (key TEXT PRIMARY KEY, value TEXT);
 CREATE TABLE IF NOT EXISTS lb_work (
@@ -69,5 +72,22 @@ CREATE TABLE IF NOT EXISTS bgm_character (
   romaji   TEXT,
   english  TEXT
 );
+CREATE TABLE IF NOT EXISTS wiki_category (
+  work_id  INTEGER NOT NULL,
+  wiki     TEXT NOT NULL,
+  stem     TEXT NOT NULL,
+  PRIMARY KEY (work_id, wiki)
+) WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS wiki_character (
+  wiki        TEXT NOT NULL,
+  stem        TEXT NOT NULL,
+  page        TEXT NOT NULL,
+  name        TEXT NOT NULL,
+  native      TEXT,
+  importance  INTEGER NOT NULL,
+  image_url   TEXT,
+  voices      TEXT NOT NULL,
+  PRIMARY KEY (wiki, stem, page)
+) WITHOUT ROWID;
 CREATE VIRTUAL TABLE IF NOT EXISTS lb_fts USING fts5(name, alt, content='');
 `

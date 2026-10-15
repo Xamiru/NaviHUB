@@ -37,6 +37,7 @@ export const BOOK_READER_SHORTCUTS: ShortcutRow[] = [
   { keys: ['V'], label: 'Vertical ↔ horizontal text' },
   { keys: ['+', '−'], label: 'Text size' },
   { keys: ['M'], label: 'Mine words (then tap a paragraph)' },
+  { keys: ['Q'], label: 'Save the selected text as a quote' },
   { keys: ['Esc'], label: 'Close panels / back to series' }
 ]
 
@@ -52,6 +53,7 @@ export const VIDEO_PLAYER_SHORTCUTS: ShortcutRow[] = [
   { keys: ['S', 'B'], label: 'Subtitles on/off, second track' },
   { keys: ['-', '='], label: 'Subtitle timing earlier / later' },
   { keys: ['T', 'M', 'C'], label: 'Transcript, mining panel, capture' },
+  { keys: ['Q'], label: 'Save the line on screen as a quote' },
   { keys: ['N', 'P'], label: 'Next / previous file' },
   { keys: ['F', 'O'], label: 'Fullscreen, open externally' },
   { keys: ['Double-click'], label: 'Fullscreen (a single click does nothing)' },

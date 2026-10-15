@@ -16,6 +16,7 @@ import {
   hintMovieChain,
   initialMovieChainState,
   movieChainConnectors,
+  movieChainReferenceRoute,
   movieChainScore,
   submitMovieChainTitle,
   undoMovieChain,
@@ -55,6 +56,50 @@ const KIND: Record<QuizMovieChainDifficulty, QuizKind> = {
 
 function describeRoles(roles: string[]): string {
   return roles.join(' / ') || 'cast member'
+}
+
+// A chain of titles with the people linking each step (play screen and summary).
+function RouteList({
+  question,
+  keys,
+  label
+}: {
+  question: QuizMovieChainQuestion
+  keys: readonly string[]
+  label: string
+}) {
+  const titleByKey = new Map(question.titles.map((title) => [title.key, title]))
+  return (
+    <ol className="space-y-3" aria-label={label}>
+      {keys.map((key, index) => {
+        const title = titleByKey.get(key)
+        if (!title) return null
+        const previousKey = keys[index - 1]
+        const connectors = previousKey ? movieChainConnectors(question, previousKey, key) : []
+        return (
+          <li key={`${key}-${index}`}>
+            {connectors.length > 0 && (
+              <div className="mb-2 ml-8 border-l border-accent/40 pl-4 text-xs text-gray-400">
+                {connectors.map((connector) => (
+                  <p key={connector.personId}>
+                    <span className="font-medium text-gray-200">{connector.name}</span> · {describeRoles(connector.leftRoles)} / {describeRoles(connector.rightRoles)}
+                  </p>
+                ))}
+              </div>
+            )}
+            <div className={`flex items-center gap-4 rounded-lg border p-3 ${key === question.target.key ? 'border-accent bg-accent/5' : 'border-base-600 bg-base-900'}`}>
+              <CoverImage path={title.imagePath} alt={title.label} thumbWidth={96} className="h-20 w-[54px] shrink-0" />
+              <div>
+                <p className="text-xs text-gray-500">{index === 0 ? 'Start' : `Move ${index}`}</p>
+                <p className="font-semibold text-white">{title.label}</p>
+                <p className="mt-1 text-xs text-gray-500">{title.releaseYear ?? 'Year unknown'} · {title.mediaType === 'movie' ? 'Movie' : 'TV'}</p>
+              </div>
+            </div>
+          </li>
+        )
+      })}
+    </ol>
+  )
 }
 
 export default function MovieChainPage() {
@@ -193,7 +238,7 @@ export default function MovieChainPage() {
         ...values,
         {
           title: title.label,
-          reason: transition.outcome === 'repeated' ? 'Already used in this route' : 'No eligible actor or director connects these titles'
+          reason: transition.outcome === 'repeated' ? 'Already used in this route' : 'No shared actor or director'
         }
       ])
       setMessage('That title does not advance the route. The score has been reduced by 25 points.')
@@ -293,6 +338,7 @@ export default function MovieChainPage() {
   const movesUsed = state.pathKeys.length - 1
 
   if (phase === 'summary') {
+    const referenceRoute = movieChainReferenceRoute(question)
     return (
       <StudySessionFrame title="Movie Chain" subtitle={`${DIFFICULTY_LABEL[difficulty]} · ${MODE_LABEL[mediaMode]}`}>
         <div className="text-center">
@@ -306,6 +352,18 @@ export default function MovieChainPage() {
             <button className="btn-primary" onClick={() => void startGame()}>Play again</button>
             <button className="btn-ghost" onClick={() => setPhase('setup')}>Change setup</button>
           </div>
+        </div>
+        <div className="mt-8 grid gap-6 md:grid-cols-2">
+          <section>
+            <h3 className="label mb-3">Your route</h3>
+            <RouteList question={question} keys={state.pathKeys} label="Your route" />
+          </section>
+          {referenceRoute && (
+            <section>
+              <h3 className="label mb-3">A shortest route</h3>
+              <RouteList question={question} keys={referenceRoute} label="A shortest route" />
+            </section>
+          )}
         </div>
       </StudySessionFrame>
     )
@@ -327,7 +385,7 @@ export default function MovieChainPage() {
           <SessionEvidence title="Target">
             <CoverImage path={question.target.imagePath} alt={question.target.label} className="mb-3 aspect-[2/3] w-24" />
             <p className="font-semibold text-gray-200">{question.target.label}</p>
-            <p>{question.optimalDistance} links is the shortest possible route.</p>
+            <p>A route of {question.optimalDistance} links exists through well-known cast and directors.</p>
           </SessionEvidence>
           <SessionEvidence title="Scoring">
             <p>Starts at 1000. Extra accepted moves cost 100, invalid titles cost 25, and hints cost 150.</p>
@@ -362,35 +420,9 @@ export default function MovieChainPage() {
         </div>
       </div>
 
-      <ol className="mt-5 space-y-3" aria-label="Current title chain">
-        {state.pathKeys.map((key, index) => {
-          const title = titleByKey.get(key)
-          if (!title) return null
-          const previousKey = state.pathKeys[index - 1]
-          const connectors = previousKey ? movieChainConnectors(question, previousKey, key) : []
-          return (
-            <li key={`${key}-${index}`}>
-              {connectors.length > 0 && (
-                <div className="mb-2 ml-8 border-l border-accent/40 pl-4 text-xs text-gray-400">
-                  {connectors.map((connector) => (
-                    <p key={connector.personId}>
-                      <span className="font-medium text-gray-200">{connector.name}</span> · {describeRoles(connector.leftRoles)} / {describeRoles(connector.rightRoles)}
-                    </p>
-                  ))}
-                </div>
-              )}
-              <div className={`flex items-center gap-4 rounded-lg border p-3 ${key === question.target.key ? 'border-accent bg-accent/5' : 'border-base-600 bg-base-900'}`}>
-                <CoverImage path={title.imagePath} alt={title.label} className="h-20 w-[54px] shrink-0" />
-                <div>
-                  <p className="text-xs text-gray-500">{index === 0 ? 'Start' : `Move ${index}`}</p>
-                  <p className="font-semibold text-white">{title.label}</p>
-                  <p className="mt-1 text-xs text-gray-500">{title.releaseYear ?? 'Year unknown'} · {title.mediaType === 'movie' ? 'Movie' : 'TV'}</p>
-                </div>
-              </div>
-            </li>
-          )
-        })}
-      </ol>
+      <div className="mt-5">
+        <RouteList question={question} keys={state.pathKeys} label="Current title chain" />
+      </div>
 
       {state.status === 'playing' && (
         <div className="mt-6 border-t border-base-700 pt-5">

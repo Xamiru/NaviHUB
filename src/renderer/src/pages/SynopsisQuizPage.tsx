@@ -73,8 +73,10 @@ export default function SynopsisQuizPage() {
             </p>
           </div>
         ),
+        recap: { title: question.answer.title, imagePath: question.answer.coverPath },
         options: question.options.map((o) => ({
           key: `media-${o.mediaId}`,
+          label: o.title,
           node: (
             <>
               {!textOnly && (

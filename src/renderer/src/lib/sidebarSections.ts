@@ -40,6 +40,7 @@ export function sidebarSectionDefs(): SidebarSectionDef[] {
     { key: 'stats', label: 'Stats', group: 'core' },
     ...mediaDefs(),
     { key: 'lists', label: 'Lists', group: 'library' },
+    { key: 'quotes', label: 'Quotes', group: 'library' },
     { key: 'tags', label: 'Tags', group: 'library' },
     { key: 'music', label: 'Music', group: 'local' },
     { key: 'pictures', label: 'Gallery', group: 'local' },

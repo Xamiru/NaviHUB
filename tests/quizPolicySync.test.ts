@@ -17,9 +17,16 @@ describe('central quiz kinds and score policies stay synchronized', () => {
     ['character', 'accuracy'],
     ['cast', 'accuracy'],
     ['va', 'accuracy'],
+    ['vaName', 'accuracy'],
     ['synopsis', 'accuracy'],
     ['mangaPanel', 'accuracy'],
     ['imageReveal', 'points'],
+    ['imageRevealTyped', 'points'],
+    ['chronologyPoints', 'points'],
+    ['footballCareerGuess', 'points'],
+    ['footballWordle', 'points'],
+    ['footballLineup', 'points'],
+    ['footballTransfer', 'points'],
     ['silhouette', 'accuracy'],
     ['connections', 'accuracy'],
     ['chronology', 'accuracy'],
@@ -41,7 +48,7 @@ describe('central quiz kinds and score policies stay synchronized', () => {
 
   it('keeps every consolidated challenge route registered in App', () => {
     const app = read('../src/renderer/src/App.tsx')
-    for (const route of ['images', 'silhouette', 'connections', 'chronology', 'higher-lower']) {
+    for (const route of ['images', 'connections', 'chronology', 'higher-lower']) {
       expect(app).toContain(`path="/quiz/${route}"`)
     }
   })

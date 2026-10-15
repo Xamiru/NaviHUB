@@ -33,6 +33,7 @@ import { timeIpcHandlers } from './ipcTiming'
 import * as themeRepo from './repos/themeRepo'
 import * as tournamentRepo from './repos/tournamentRepo'
 import * as listRepo from './repos/listRepo'
+import * as quoteRepo from './repos/quoteRepo'
 import * as tierListRepo from './repos/tierListRepo'
 import * as checklistRepo from './repos/checklistRepo'
 import * as japaneseRepo from './repos/japaneseRepo'
@@ -373,10 +374,10 @@ export function registerIpc(): void {
   ipcMain.handle('quiz:vaQuestions', (_e, filter, count, seed) =>
     callQuizPools('vaQuestions', filter, count, seed)
   )
-  ipcMain.handle('quiz:synopsisPool', (_e, filter) => callQuizPools('synopsisPool', filter))
-  ipcMain.handle('quiz:mangaPanelPool', (_e, filter, length) =>
-    manga.panelPool(filter, length ?? 10)
+  ipcMain.handle('quiz:vaNameQuestions', (_e, filter, count, seed) =>
+    callQuizPools('vaNameQuestions', filter, count, seed)
   )
+  ipcMain.handle('quiz:synopsisPool', (_e, filter) => callQuizPools('synopsisPool', filter))
   ipcMain.handle('quiz:tournamentPool', (_e, source) => tournamentRepo.tournamentPool(source))
   ipcMain.handle('quiz:logSession', (_e, input) => quizRepo.logSession(input))
   ipcMain.handle('quiz:history', (_e, kind, limit, playMode) =>
@@ -471,6 +472,13 @@ export function registerIpc(): void {
     listRepo.reorder(listId, orderedItemIds)
   )
   ipcMain.handle('lists:forEntity', (_e, kind, entityId) => listRepo.forEntity(kind, entityId))
+
+  // ---- quotes ----
+  ipcMain.handle('quotes:list', (_e, filter) => quoteRepo.list(filter ?? {}))
+  ipcMain.handle('quotes:get', (_e, id) => quoteRepo.get(id))
+  ipcMain.handle('quotes:save', (_e, input, id) => quoteRepo.save(input, id))
+  ipcMain.handle('quotes:setFavorite', (_e, id, favorite) => quoteRepo.setFavorite(id, favorite))
+  ipcMain.handle('quotes:remove', (_e, id) => quoteRepo.remove(id))
 
   // ---- tierlists (TierMaker-style boards) ----
   ipcMain.handle('tierLists:list', (_e, kind) => tierListRepo.list(kind))
@@ -866,6 +874,7 @@ export function registerIpc(): void {
     withActivity('Reading the cast from Bangumi', () => gameLinks.setBangumi(mediaId, subjectId))
   )
   ipcMain.handle('gameLinks:unlinkBangumi', (_e, mediaId) => gameLinks.unlinkBangumi(mediaId))
+  ipcMain.handle('gameLinks:unlinkWiki', (_e, mediaId) => gameLinks.unlinkWiki(mediaId))
   ipcMain.handle('gameLinks:reset', (_e, mediaId, source) => gameLinks.reset(mediaId, source))
   ipcMain.handle('gameLinks:refreshCast', (_e, mediaId) =>
     withActivity('Reading the cast from Bangumi', () => gameLinks.refreshCast(mediaId))

@@ -65,10 +65,12 @@ import StandStats from '../components/theme/StandStats'
 import { standParameters } from '../lib/standStats'
 import { useAppTheme } from '../lib/useAppTheme'
 import BookFacts from '../components/BookFacts'
+import QuoteCollection from '../components/quotes/QuoteCollection'
+import QuoteDialog from '../components/quotes/QuoteDialog'
 import LinkedMusicSection, { useMusicLinks } from '../components/music/LinkedMusicSection'
 import { musicTrackToPlayerTrack } from '../lib/musicTracks'
 
-type DetailTab = 'overview' | 'cast' | 'video' | 'media' | 'achievements' | 'music' | 'art'
+type DetailTab = 'overview' | 'cast' | 'video' | 'media' | 'achievements' | 'music' | 'quotes' | 'art'
 
 export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const { id } = useParams()
@@ -80,6 +82,13 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const [torrentsOpen, setTorrentsOpen] = useState(false)
   const [refreshOpen, setRefreshOpen] = useState(false)
   const [coverOpen, setCoverOpen] = useState(false)
+  const [quoteOpen, setQuoteOpen] = useState(false)
+  // Saved quotes from this title; the Quotes tab exists only when there are some.
+  const quotesQuery = useQuery({
+    queryKey: qk.quotes.list({ mediaId }),
+    queryFn: () => api.quotes.list({ mediaId })
+  })
+  const titleQuotes = quotesQuery.data ?? []
   // Drives which action is the filled one (see the action row below).
   const hasLaunch = useHasLaunchTarget(mediaId, !!cfg.hasGameLaunch)
 
@@ -97,14 +106,17 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
     ...(cfg.mediaTabLabel ? [{ key: 'media' as DetailTab, label: cfg.mediaTabLabel }] : []),
     ...(cfg.hasAchievements ? [{ key: 'achievements' as DetailTab, label: 'Achievements' }] : []),
     { key: 'music', label: 'Music' },
+    ...(titleQuotes.length ? [{ key: 'quotes' as DetailTab, label: 'Quotes' }] : []),
     { key: 'art', label: 'Art' }
   ]
   const [params] = useSearchParams()
   const requested = params.get('tab') as DetailTab | null
-  const [tab, setTab] = usePersistedState<DetailTab>(
+  const [tabState, setTab] = usePersistedState<DetailTab>(
     'detailTab',
     requested && tabs.some((t) => t.key === requested) ? requested : 'overview'
   )
+  // A remembered tab that no longer exists (the last quote was deleted) shows Overview.
+  const tab = tabs.some((t) => t.key === tabState) ? tabState : 'overview'
 
   const { data: m, isLoading, isError, error, refetch } = useQuery({
     queryKey: qk.media.detail(mediaId),
@@ -175,6 +187,9 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   // Open Library rating stored pre-scaled to 0–100 (stars × 20) at import.
   const olRaw = metaNum('olRating')
   const olScore = olRaw != null ? ((olRaw / 100) * scoreMax).toFixed(1) : null
+  // TMDB vote average, stored at import on the 0–100 scale (20+ votes).
+  const tmdbRaw = metaNum('tmdbRating')
+  const tmdbScore = tmdbRaw != null ? ((tmdbRaw / 100) * scoreMax).toFixed(1) : null
   // Hardcover rating, pre-scaled to 0–100 (stars × 20) at import like Open Library's.
   const hcRaw = metaNum('hcRating')
   const hcScore = hcRaw != null ? ((hcRaw / 100) * scoreMax).toFixed(1) : null
@@ -198,6 +213,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           // tracking. The whole-library version lives on /bulk's Refresh tab.
           ...(m.externalSource ? [{ label: 'Refresh…', onSelect: () => setRefreshOpen(true) }] : []),
           { label: 'Change cover…', onSelect: () => setCoverOpen(true) },
+          { label: 'Add quote…', onSelect: () => setQuoteOpen(true) },
           { label: 'Delete…', danger: true, onSelect: del }
         ]}
       />
@@ -210,13 +226,14 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
       {anilistAvg != null && <StatInline label="AniList Avg" value={`${anilistAvg} / ${scoreMax}`} />}
       {vndbScore != null && <StatInline label="VNDB" value={`${vndbScore} / ${scoreMax}`} />}
       {imdb != null && <StatInline label="IMDb" value={`${imdb} / ${scoreMax}`} />}
+      {tmdbScore != null && <StatInline label="TMDB" value={`${tmdbScore} / ${scoreMax}`} />}
       {rottenTomatoes != null && <StatInline label="Rotten Tomatoes" value={`${rottenTomatoes}%`} />}
       {metacritic != null && <StatInline label="Metacritic" value={`${metacritic} / 100`} />}
       {olScore != null && <StatInline label="Open Library" value={`${olScore} / ${scoreMax}`} />}
       {hcScore != null && <StatInline label="Hardcover" value={`${hcScore} / ${scoreMax}`} />}
     </>
   )
-  const hasCommunityScore = [anilistAvg, vndbScore, imdb, rottenTomatoes, metacritic, olScore, hcScore].some(
+  const hasCommunityScore = [anilistAvg, vndbScore, imdb, tmdbScore, rottenTomatoes, metacritic, olScore, hcScore].some(
     (v) => v != null
   )
   const season = cfg.key === 'anime' ? seasonForItem(m) : null
@@ -371,6 +388,16 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           <LinkedMusicSection owner={{ mediaId: m.id }} ownerTitle={m.title} themes={m.themes} />
         )}
 
+        {tab === 'quotes' && (
+          <>
+            <div className="mb-4 flex justify-end">
+              <button type="button" className="btn-ghost" onClick={() => setQuoteOpen(true)}>
+                Add quote
+              </button>
+            </div>
+            <QuoteCollection quotes={titleQuotes} hideSource />
+          </>
+        )}
         {tab === 'art' && (
           <>
             <MediaImagesSection m={m} kind="wallpaper" />
@@ -380,6 +407,12 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
       </TabPanel>
 
       {refreshOpen && <RefreshMediaDialog m={m} onClose={() => setRefreshOpen(false)} />}
+      {quoteOpen && (
+        <QuoteDialog
+          seed={{ media: { id: m.id, name: m.title, imagePath: m.coverPath } }}
+          onClose={() => setQuoteOpen(false)}
+        />
+      )}
 
       {coverOpen && (
         <ImagePickerDialog

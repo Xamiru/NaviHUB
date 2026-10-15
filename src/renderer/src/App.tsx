@@ -58,6 +58,7 @@ const StudioDetailPage = lazy(() => import('./pages/StudioDetailPage'))
 const CharacterDetailPage = lazy(() => import('./pages/CharacterDetailPage'))
 const ChecklistPage = lazy(() => import('./pages/ChecklistPage'))
 const ListsIndexPage = lazy(() => import('./pages/ListsIndexPage'))
+const QuotesPage = lazy(() => import('./pages/QuotesPage'))
 const TorrentsPage = lazy(() => import('./pages/TorrentsPage'))
 const BulkImportPage = lazy(() => import('./pages/BulkImportPage'))
 const TasksPage = lazy(() => import('./pages/TasksPage'))
@@ -105,7 +106,6 @@ const LinkWallPage = lazy(() => import('./pages/LinkWallPage'))
 const CastQuizPage = lazy(() => import('./pages/CastQuizPage'))
 const VaQuizPage = lazy(() => import('./pages/VaQuizPage'))
 const SynopsisQuizPage = lazy(() => import('./pages/SynopsisQuizPage'))
-const MangaPanelQuizPage = lazy(() => import('./pages/MangaPanelQuizPage'))
 const ChallengeQuizPage = lazy(() => import('./pages/ChallengeQuizPage'))
 const PartyQuizPage = lazy(() => import('./pages/PartyQuizPage'))
 const TournamentPage = lazy(() => import('./pages/TournamentPage'))
@@ -157,6 +157,9 @@ const FootballMediaPage = lazy(() => import('./pages/FootballMediaPage'))
 const FootballSyncPage = lazy(() => import('./pages/FootballSyncPage'))
 const FootballQuizPage = lazy(() => import('./pages/FootballQuizPage'))
 const FootballQuizGamePage = lazy(() => import('./pages/FootballQuizGamePage'))
+const FootballWordlePage = lazy(() => import('./pages/FootballWordlePage'))
+const FootballLineupPage = lazy(() => import('./pages/FootballLineupPage'))
+const FootballTransferPage = lazy(() => import('./pages/FootballTransferPage'))
 const FootballSearchPage = lazy(() => import('./pages/FootballSearchPage'))
 
 // Japanese is the app's largest standalone learning vertical. Keep it out of
@@ -451,9 +454,9 @@ export default function App() {
             <Route path="/quiz/character" element={<Navigate to="/quiz/cast" replace />} />
             <Route path="/quiz/va" element={<VaQuizPage />} />
             <Route path="/quiz/synopsis" element={<SynopsisQuizPage />} />
-            <Route path="/quiz/panels" element={<MangaPanelQuizPage />} />
+            <Route path="/quiz/panels" element={<Navigate to="/quiz" replace />} />
             <Route path="/quiz/images" element={<ChallengeQuizPage kind="imageReveal" />} />
-            <Route path="/quiz/silhouette" element={<ChallengeQuizPage kind="silhouette" />} />
+            <Route path="/quiz/silhouette" element={<Navigate to="/quiz" replace />} />
             <Route path="/quiz/connections" element={<ChallengeQuizPage kind="connections" />} />
             <Route path="/quiz/library-grid" element={<LibraryGridPage />} />
             <Route path="/quiz/movie-chain" element={<MovieChainPage />} />
@@ -476,6 +479,7 @@ export default function App() {
             <Route path="/tasks/logs" element={<LogsPage />} />
 
             <Route path="/lists" element={<ListsIndexPage />} />
+            <Route path="/quotes" element={<QuotesPage />} />
             <Route path="/lists/new" element={<ListFormPage />} />
             <Route path="/lists/:id" element={<ListDetailPage />} />
             <Route path="/lists/:id/edit" element={<ListFormPage />} />
@@ -635,6 +639,9 @@ export default function App() {
             <Route path="/football/quiz/career-path" element={<FootballQuizGamePage kind="footballCareerPath" />} />
             <Route path="/football/quiz/chronology" element={<FootballQuizGamePage kind="footballChronology" />} />
             <Route path="/football/quiz/player-grid" element={<FootballQuizGamePage kind="footballPlayerGrid" />} />
+            <Route path="/football/quiz/wordle" element={<FootballWordlePage />} />
+            <Route path="/football/quiz/lineup" element={<FootballLineupPage />} />
+            <Route path="/football/quiz/transfers" element={<FootballTransferPage />} />
 
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -22,6 +22,19 @@ export function seededRng(seed: string | number): () => number {
   }
 }
 
+// Partial Fisher-Yates over `order` (reordered in place, so callers reuse one
+// copy): visits items in seeded random order and returns the first `count`
+// that `accept` keeps, stopping as soon as it has them.
+export function drawUntil<T>(order: T[], rng: () => number, accept: (item: T) => boolean, count: number): T[] {
+  const out: T[] = []
+  for (let i = order.length - 1; i >= 0 && out.length < count; i--) {
+    const j = Math.floor(rng() * (i + 1))
+    ;[order[i], order[j]] = [order[j], order[i]]
+    if (accept(order[i])) out.push(order[i])
+  }
+  return out
+}
+
 export function balancedDeal<T>(
   values: readonly T[],
   count: number,
@@ -119,6 +132,12 @@ export const QUIZ_SCORE_POLICIES: Readonly<Partial<Record<QuizKind, QuizScorePol
   conjRace: 'points',
   shiritori: 'points',
   imageReveal: 'points',
+  imageRevealTyped: 'points',
+  footballCareerGuess: 'points',
+  footballWordle: 'points',
+  footballLineup: 'points',
+  footballTransfer: 'points',
+  chronologyPoints: 'points',
   higherLower: 'points',
   libraryGrid: 'points',
   movieChainEasy: 'points',
@@ -143,7 +162,9 @@ export function quizMinimumRecordSize(kind: QuizKind): number {
     kind === 'libraryle' ||
     kind === 'mysteryCareer' ||
     kind === 'linkWall' ||
-    kind === 'footballPlayerGrid'
+    kind === 'footballPlayerGrid' ||
+    kind === 'footballWordle' ||
+    kind === 'footballLineup'
     ? 1
     : 5
 }

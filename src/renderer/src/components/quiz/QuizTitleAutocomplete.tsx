@@ -67,11 +67,14 @@ export default function QuizTitleAutocomplete({
             disabled={disabled}
             placeholder={placeholder}
             value={query}
-            onFocus={() => setOpen(true)}
+            // The list appears only for typed text and closes on blur, so it
+            // never covers the buttons below an empty box.
+            onFocus={() => setOpen(query.trim() !== '' && !selected)}
+            onBlur={() => setOpen(false)}
             onChange={(event) => {
               setQuery(event.target.value)
               setSelected(null)
-              setOpen(true)
+              setOpen(event.target.value.trim() !== '')
               setActive(0)
             }}
             onKeyDown={(event) => {
@@ -92,7 +95,7 @@ export default function QuizTitleAutocomplete({
               }
             }}
           />
-          {open && suggestions.length > 0 && (
+          {open && query.trim() !== '' && suggestions.length > 0 && (
             <div
               id={listId}
               role="listbox"

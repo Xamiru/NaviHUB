@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   buildLibraryGridQuestion,
   availableLibraryGridHint,
+  libraryGridKnownClueKeys,
   libraryGridMatching,
+  libraryGridMissReason,
   libraryGridScore,
   searchScreenTitles,
   type LibraryGridCandidate
@@ -66,6 +68,58 @@ describe('Library Grid', () => {
     const titles = gridCandidates()
     expect(searchScreenTitles(titles, 'first alias')[0].key).toBe('1')
     expect(searchScreenTitles(titles, 'Title 1', ['1']).some((title) => title.key === '1')).toBe(false)
+  })
+
+  it('accepts any acting credit as an answer although the board is built from top billing', () => {
+    const candidates = gridCandidates()
+    // Billed 13th: never builds the board, but truly matches "Cast: Row Actor".
+    candidates.push({
+      ...candidates[0],
+      key: 'deep',
+      label: 'Deep Cut',
+      aliases: [],
+      people: [{ id: 10, name: 'Row Actor', role: 'actor', billingOrder: 12 }]
+    })
+    const question = buildLibraryGridQuestion(candidates, 44, 'both')!
+    const actorClue = [...question.rows, ...question.columns].find((clue) => clue.key === 'actor:10')
+    expect(actorClue?.label).toBe('Cast: Row Actor')
+    expect(actorClue?.matchKeys).toContain('deep')
+    const rowIndex = question.rows.findIndex((clue) => clue.key === 'actor:10')
+    const columnIndex = question.columns.findIndex((clue) => clue.key === 'actor:10')
+    const cells = question.cells.filter((cell) => cell.row === rowIndex || cell.column === columnIndex)
+    const genreCell = cells.find((cell) => {
+      const other = cell.row === rowIndex ? question.columns[cell.column] : question.rows[cell.row]
+      return other.matchKeys.includes('deep')
+    })
+    expect(genreCell?.validKeys).toContain('deep')
+  })
+
+  it('draws company clues only from the largest studios', () => {
+    const candidates: LibraryGridCandidate[] = []
+    let id = 0
+    // Fourteen companies of 6..19 titles: only the twelve largest qualify.
+    for (let company = 0; company < 14; company++) {
+      for (let n = 0; n < 6 + company; n++) {
+        id++
+        candidates.push({
+          key: String(id), label: `Studio Film ${id}`, aliases: [], imagePath: `media/${id}.jpg`,
+          releaseYear: 2000, mediaType: 'movie', genres: [], people: [],
+          companies: [{ id: 100 + company, name: `Company ${company}` }]
+        })
+      }
+    }
+    const keys = libraryGridKnownClueKeys(candidates).filter((key) => key.startsWith('company:'))
+    expect(keys).toHaveLength(12)
+    expect(keys).not.toContain('company:100')
+    expect(keys).not.toContain('company:101')
+  })
+
+  it('names the fact a rejected title fails', () => {
+    const row = { label: 'Cast: A', matchKeys: ['1', '2'] }
+    const column = { label: 'Genre: Drama', matchKeys: ['2', '3'] }
+    expect(libraryGridMissReason(row, column, '1')).toBe('Matches Cast: A, but not Genre: Drama')
+    expect(libraryGridMissReason(row, column, '3')).toBe('Matches Genre: Drama, but not Cast: A')
+    expect(libraryGridMissReason(row, column, '9')).toBe('Matches neither Cast: A nor Genre: Drama')
   })
 
   it('scores unaided, hinted, and invalid submissions with a zero floor', () => {

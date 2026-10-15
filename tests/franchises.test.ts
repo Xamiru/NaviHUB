@@ -170,10 +170,13 @@ describe('communityScoreFor', () => {
     expect(communityScoreFor(entry, item({ igdbRating: 77.4 }))).toBe(77)
   })
 
-  it('reads every importer’s rating in mediaRepo.COMMUNITY_SQL order', () => {
+  it('reads every importer’s rating in the shared community-score order', () => {
     expect(communityScoreFor(entry, item({ averageScore: 83, metacritic: 70 }))).toBe(83)
     expect(communityScoreFor(entry, item({ vndbRating: 90.2 }))).toBe(90)
     expect(communityScoreFor(entry, item({ imdbRating: 8.6 }))).toBe(86)
+    // TMDB's rescaled vote average is the last resort, behind IMDb.
+    expect(communityScoreFor(entry, item({ tmdbRating: 74 }))).toBe(74)
+    expect(communityScoreFor(entry, item({ imdbRating: 8.1, tmdbRating: 74 }))).toBe(81)
   })
 
   it('falls back to the curated mc when unowned or unscored', () => {

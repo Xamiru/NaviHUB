@@ -2967,3 +2967,36 @@ html[data-theme='seinfeld'] .home-resume.sf-episode { display: flex; overflow: h
   text-shadow: 0 1px 2px rgb(0 0 0 / 0.8);
 }
 .sub-sample { background: linear-gradient(135deg, #334155, #0f172a); }
+
+/* ---- Quotes ----
+   The quote is set in a display serif; Japanese falls through to the system
+   CJK serif (the bundled Shippori Mincho is a subset and cannot render
+   arbitrary text). Readings use a sans so small kana stay legible. A theme can
+   override .quote-serif's family under its own html[data-theme] selector. */
+.quote-serif {
+  font-family: 'Bodoni Moda', 'Noto Serif CJK JP', 'Noto Serif JP', 'Source Han Serif JP', Georgia, serif;
+  font-optical-sizing: auto;
+  font-weight: 450;
+  letter-spacing: 0.005em;
+}
+.quote-serif rt {
+  font-family: 'Noto Sans CJK JP', 'Noto Sans JP', sans-serif;
+  font-size: 0.42em;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+.quote-art {
+  filter: blur(28px) saturate(1.2);
+  transform: scale(1.25);
+}
+@keyframes quote-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.quote-enter { animation: quote-in 420ms ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .quote-enter { animation: none; }
+}
+/* The translation sits inside the card's open button, and themes give buttons
+   their UI face (Lain's is monospace); keep it in the reading face. */
+.quote-translation { font-family: var(--font-body); }

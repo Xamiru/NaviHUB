@@ -1,7 +1,7 @@
 import * as quizRepo from './repos/quizRepo'
 import * as creditTimeRepo from './repos/creditTimeRepo'
 import { getSqlite } from './db/sqliteHandle'
-import { buildVaQuizQuestions } from '@shared/vaQuiz'
+import { buildVaNameQuestions, buildVaQuizQuestions } from '@shared/vaQuiz'
 import type { TimeStatsConfig } from '@shared/timeStats'
 import type {
   QuizAvailabilityRequest,
@@ -64,6 +64,8 @@ export const QUIZ_POOL_METHODS = {
   synopsisPool: (filter: QuizSynopsisFilter) => quizRepo.synopsisPool(filter),
   vaQuestions: (filter: QuizLibFilter, count: number, seed: number) =>
     buildVaQuizQuestions(vaPoolFor(filter), count, seed),
+  vaNameQuestions: (filter: QuizLibFilter, count: number, seed: number) =>
+    buildVaNameQuestions(vaPoolFor(filter), count, seed),
   // Settings → Maintenance "Check database". Not a quiz read, but the same
   // shape: it reads every page of the library database, so it runs on this
   // process's read-only connection instead of blocking main.

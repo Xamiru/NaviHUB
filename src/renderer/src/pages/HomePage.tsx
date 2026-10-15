@@ -34,6 +34,8 @@ import EmptyState from '../components/EmptyState'
 import ThemedFailure from '../components/theme/ThemedFailure'
 import ChecklistQuickCard from '../components/checklist/ChecklistQuickCard'
 import PageStatus from '../components/PageStatus'
+import QuoteOfTheDay from '../components/quotes/QuoteOfTheDay'
+import QuoteFocus from '../components/quotes/QuoteFocus'
 import { useScoreMax, useSettings } from '../lib/hooks'
 import { TypedText } from '../components/theme/ThemeText'
 import { StandRadar } from '../components/theme/StandStats'
@@ -45,7 +47,7 @@ import { APP_THEME_SETTING, type AppTheme, type AppThemeVariant } from '@shared/
 import { resolveAppTheme, resolveAppThemeVariant } from '../lib/theme'
 import { readerPath } from '../lib/readerPath'
 import { mediaUrl } from '@shared/mediaUrl'
-import type { HomeLibraryOverview, MediaSummary, ResumePoint } from '@shared/types'
+import type { HomeLibraryOverview, MediaSummary, ResumePoint, SavedQuote } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
 import { toastError } from '../lib/toast'
 import { usePersistedState } from '../lib/navState'
@@ -153,7 +155,8 @@ export default function HomePage() {
     favorites:
       favorites.length > 0 ? <Strip title="Favorites" items={favorites.slice(0, 12)} /> : null,
     pictures: <PictureCard />,
-    historyToday: <OnThisDayCard />
+    historyToday: <OnThisDayCard />,
+    quote: <QuoteOfTheDayCard />
   }
 
   return (
@@ -1130,6 +1133,31 @@ function PictureCard() {
           onClose={() => setViewing(false)}
         />
       )}
+    </div>
+  )
+}
+
+// One saved quote a day, opened full screen in place. Off by default (the
+// widget is switched on from Customise) and renders nothing with no quotes.
+function QuoteOfTheDayCard() {
+  const [open, setOpen] = useState<SavedQuote | null>(null)
+  const { data, isPending, isError, refetch } = useQuery({
+    queryKey: qk.quotes.list({}),
+    queryFn: () => api.quotes.list({})
+  })
+  if (isPending || isError) {
+    return <HomeReadState title="your quotes" pending={isPending} retry={() => void refetch()} />
+  }
+  if (!data.length) return null
+  return (
+    <div>
+      <QuoteOfTheDay quotes={data} onOpen={setOpen} />
+      <div className="mt-2 flex justify-end">
+        <Link to="/quotes" className="text-xs text-gray-500 hover:text-accent">
+          Quotes →
+        </Link>
+      </div>
+      {open && <QuoteFocus quotes={[open]} index={0} onIndex={() => undefined} onClose={() => setOpen(null)} />}
     </div>
   )
 }

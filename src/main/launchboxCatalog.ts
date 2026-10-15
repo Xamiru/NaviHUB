@@ -178,6 +178,70 @@ export function bakedCharacterNames(characterId: number): { romaji: string | nul
   return bakedRow('SELECT romaji, english FROM bgm_character WHERE id = ?', characterId)
 }
 
+// The franchise wikis this pack bakes (lb_meta 'wikiCast'): for those the
+// pack is the whole answer and the wiki itself is never asked. [] for a pack
+// built before wiki casts existed.
+export function bakedWikis(): string[] {
+  const db = getLaunchboxDb()
+  if (!db) return []
+  try {
+    const row = db.prepare(`SELECT value FROM lb_meta WHERE key = 'wikiCast'`).get() as { value: string } | undefined
+    const list = JSON.parse(row?.value ?? '[]')
+    return Array.isArray(list) ? list.filter((k): k is string => typeof k === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+export interface BakedWikiCharacter {
+  page: string
+  name: string
+  native: string | null
+  importance: number
+  imageUrl: string | null
+  voices: { name: string; native: string | null }[]
+}
+
+// A work's baked wiki cast: its category stem and voiced characters, or null.
+export function bakedWikiCast(workId: number, wikiKey: string): { stem: string; characters: BakedWikiCharacter[] } | null {
+  const db = getLaunchboxDb()
+  if (!db) return null
+  try {
+    const cat = db.prepare('SELECT stem FROM wiki_category WHERE work_id = ? AND wiki = ?').get(workId, wikiKey) as
+      | { stem: string }
+      | undefined
+    if (!cat) return null
+    const rows = db
+      .prepare(
+        `SELECT page, name, native, importance, image_url, voices FROM wiki_character
+         WHERE wiki = ? AND stem = ? ORDER BY importance, name`
+      )
+      .all(wikiKey, cat.stem) as {
+      page: string
+      name: string
+      native: string | null
+      importance: number
+      image_url: string | null
+      voices: string
+    }[]
+    return {
+      stem: cat.stem,
+      characters: rows.map((r) => {
+        let voices: { name: string; native: string | null }[] = []
+        try {
+          const parsed = JSON.parse(r.voices)
+          if (Array.isArray(parsed)) voices = parsed.filter((v) => typeof v?.name === 'string')
+        } catch {
+          voices = []
+        }
+        return { page: r.page, name: r.name, native: r.native, importance: r.importance, imageUrl: r.image_url, voices }
+      })
+    }
+  } catch {
+    return null
+  }
+}
+
 // Works for a Bangumi subject, or [] when the pack is not installed.
 export function worksForBangumi(subjectId: number): WorkRow[] {
   const db = getLaunchboxDb()

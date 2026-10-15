@@ -584,20 +584,30 @@ function pmRomajiKey(name) {
 }
 function pmAdoptForAniList(anilistId, name, nameNative) {
   const kanji = String(nameNative ?? '').replace(/[\s\u3000]/g, '')
-  if (!kanji) return null
-  const rows = db
-    .prepare(
-      `SELECT id, name FROM person
-       WHERE external_source IN ('vndb', 'bangumi')
-         AND REPLACE(REPLACE(name_native, ' ', ''), char(12288), '') = ?
-       ORDER BY id ASC`
-    )
-    .all(kanji)
-  const mine = pmRomajiKey(name)
-  const hit = rows.find((r) => {
-    const theirs = pmRomajiKey(r.name)
-    return !mine || !theirs || mine === theirs
-  })
+  let hit = null
+  if (kanji) {
+    const rows = db
+      .prepare(
+        `SELECT id, name FROM person
+         WHERE external_source IN ('vndb', 'bangumi', 'fandom')
+           AND REPLACE(REPLACE(name_native, ' ', ''), char(12288), '') = ?
+         ORDER BY id ASC`
+      )
+      .all(kanji)
+    const mine = pmRomajiKey(name)
+    hit = rows.find((r) => {
+      const theirs = pmRomajiKey(r.name)
+      return !mine || !theirs || mine === theirs
+    }) ?? null
+  }
+  if (!hit && name) {
+    hit = db
+      .prepare(
+        `SELECT id FROM person WHERE external_source = 'fandom' AND name = ?
+           AND COALESCE(name_native, '') = '' ORDER BY id ASC LIMIT 1`
+      )
+      .get(name) ?? null
+  }
   if (!hit) return null
   db.prepare("UPDATE person SET external_source='anilist', external_id=? WHERE id=?").run(anilistId, hit.id)
   return hit.id
@@ -1126,6 +1136,16 @@ async function fetchOmdb(imdbId) {
   }
 }
 
+// Mirrors tmdbRatingMeta in src/main/tmdb.ts: TMDB's vote average on the
+// 0-100 community scale, only above 20 votes.
+function withTmdbRating(m, patch) {
+  const average = typeof m.vote_average === 'number' ? m.vote_average : null
+  const votes = typeof m.vote_count === 'number' ? m.vote_count : 0
+  const rating = average != null && average > 0 && votes >= 20 ? { tmdbRating: Math.round(average * 10) } : null
+  const merged = { ...(rating ?? {}), ...(patch ?? {}) }
+  return Object.keys(merged).length ? merged : null
+}
+
 function tmdbApiKey() {
   const key = maintenanceSecret('tmdb.api_key', 'NAVIHUB_TMDB_API_KEY', true)
   if (!key) throw new Error('No TMDB API key. Set NAVIHUB_TMDB_API_KEY for this run.')
@@ -1281,7 +1301,7 @@ async function tmdbImportMovie(id) {
     totalUnits: m.runtime ?? null, releaseDate: m.release_date || null,
     companies: m.production_companies ?? [], genres: m.genres ?? [],
     cast: m.credits?.cast ?? [], crew: m.credits?.crew ?? [],
-    extraMeta: await fetchOmdb(m.imdb_id)
+    extraMeta: withTmdbRating(m, await fetchOmdb(m.imdb_id))
   })
 }
 async function tmdbImportTv(id) {
@@ -1299,7 +1319,7 @@ async function tmdbImportTv(id) {
       return { id: c.id, name: c.name, profile_path: c.profile_path, order: c.order, character: primary.character ?? '', credit_id: primary.credit_id ?? `agg_${c.id}` }
     }),
     crew: [],
-    extraMeta: await fetchOmdb(m.external_ids?.imdb_id)
+    extraMeta: withTmdbRating(m, await fetchOmdb(m.external_ids?.imdb_id))
   })
 }
 

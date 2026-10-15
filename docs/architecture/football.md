@@ -3,7 +3,7 @@
 > Reference detail. The rules an agent must not break live in
 > [CLAUDE.md](../../CLAUDE.md#hard-invariants). This file explains the subsystem's shape and source decisions.
 
-**Covers** - the nine-competition history almanac, Transfermarkt match detail and transfers, reference crests/portraits/facts, manually refreshed API-Football current desk, team/person/match reference pages, private match journal, manual media shelves, FotMob deep links, and five offline quizzes.
+**Covers** - the nine-competition history almanac, Transfermarkt match detail and transfers, reference crests/portraits/facts, manually refreshed API-Football current desk, team/person/match reference pages, private match journal, manual media shelves, FotMob deep links, and eight offline quizzes.
 
 **Key files** - `src/shared/football.ts`, `src/shared/footballQuiz.ts`, `src/main/football/`, `src/main/repos/footballRepo.ts`, `src/renderer/src/pages/Football*.tsx`, `src/renderer/src/components/football/FootballCommon.tsx`
 
@@ -81,7 +81,7 @@ Ordinary and ranked Lists accept `footballCompetition`, `footballTeam`, `footbal
 
 ## Quiz pack
 
-All five games use the shared `quiz:challengePool` contract and record solo metadata, seed, filters, score policy, and dataset revision:
+All eight games use the shared `quiz:challengePool` contract and record solo metadata, seed, filters, score policy, and dataset revision:
 
 - `footballChampion`: verified, non-shared, completed edition winners with era-near distractors;
 - `footballScoreline`: finished, semantically complete matches; awarded, abandoned, aggregate-only, and conflicted rows are excluded;
@@ -89,7 +89,15 @@ All five games use the shared `quiz:challengePool` contract and record solo meta
 - `footballChronology`: five four-edition boards, scored as twenty direct positions;
 - `footballPlayerGrid`: a 3x3 player board with at least two answers per cell, three clue families, and a proven nine-player matching. It scores 100 unaided, 40 after a hint, and subtracts 10 only for a known invalid player.
 
-Player Grid is points-ranked. The other four use the shared accuracy comparison and its five-answer minimum. Every builder is seeded and pure; partial, ambiguous, conflicted, or unsupported facts are filtered in the repository before a deal.
+Player Grid is points-ranked. Champion, Scoreline and Chronology use the shared accuracy comparison and its five-answer minimum.
+
+**2026-10-14 review.** Scoreline distractors keep the answer's own format (`plausibleScoreShapes`: a match decided after extra time or on penalties gets options that were too, level after 90 minutes when the answer was), and the default `footballMatchScope: 'big'` deals finals, knockout stages (`football_stage.kind` knockout or final, or a final/semi/quarter stage name) and World Cup or Euros matches first, falling back to any match when too few. Chronology boards hold four different champions. Career Path is typed: two clubs show, each wrong guess reveals the next in career order (max guesses `spells - 1`), a player is worth 100 down to 20, and rounds log the points kind `footballCareerGuess`; the question carries `answer` and every quiz-pack player for the search. Player Grid has a two-player same-screen duel (claim a cell by naming a valid player, a miss or Pass hands over the turn, three in a row or the most cells wins, never logged) and its summary shows the whole board with every other valid answer. Every round ends with a per-question recap. Three new games live in `@shared/footballGames.ts` with their own pages:
+
+- `footballWordle` (`/football/quiz/wordle`): eight guesses at a mystery player drawn from the 300 most-capped of up to 4,000 players with at least ten lineups and a known nationality, position and birth date; feedback on nation, position (exact, or same line), latest club, latest league-format competition, birth year (within 2), height (within 3 cm) and latest shirt (within 2), with directions read toward the target. Club, shirt and league come from one window pass over `football_lineup` in the quiz pool process.
+- `footballLineup` (`/football/quiz/lineup`): one side's starting XI from a complete-lineup match, big matches first, laid out on pitch lines from `footballLineupLine`; typed full names, aliases or a surname unique among the unnamed starters fill slots (no suggestions), 100 points each.
+- `footballTransfer` (`/football/quiz/transfers`): a 60-step chain of transfers priced at least €5m (`FOOTBALL_TRANSFER_MIN_FEE`), more or less than the previous move, three lives.
+
+`quiz:availability` reports cheap counts for these three (`wordle`, `lineup`, `transfer`); the full pools are built only when a round starts. Every builder is seeded and pure; partial, ambiguous, conflicted, or unsupported facts are filtered in the repository before a deal.
 
 ## Export posture
 

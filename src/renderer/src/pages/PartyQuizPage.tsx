@@ -17,9 +17,7 @@ import { pickDistractors } from '@shared/quizDistractors'
 import { buildCastQuizQuestions } from '@shared/castQuiz'
 import { vaAppearanceKey } from '@shared/vaQuiz'
 import { buildSynopsisQuizQuestions } from '@shared/synopsisQuiz'
-import { buildMangaPanelQuestions } from '@shared/mangaPanelQuiz'
 import { IMAGE_REVEAL_STAGE_SECONDS, imageRevealStageStyle } from '@shared/imageRevealQuiz'
-import { SILHOUETTE_STYLE } from '@shared/silhouetteQuiz'
 import { HIGHER_LOWER_MEDIA_TYPES, higherLowerCopy } from '@shared/higherLowerQuiz'
 import type {
   MediaType,
@@ -54,7 +52,6 @@ type PartyGame =
   | 'cast'
   | 'va'
   | 'synopsis'
-  | 'mangaPanel'
   | Exclude<
       QuizChallengeKind,
       'libraryGrid' | 'movieChain' | 'libraryle' | 'mysteryCareer' | 'linkWall'
@@ -64,9 +61,7 @@ const GAMES: Array<{ kind: PartyGame; label: string }> = [
   { kind: 'cast', label: 'Cast' },
   { kind: 'va', label: 'Voice Actor' },
   { kind: 'synopsis', label: 'Synopsis' },
-  { kind: 'mangaPanel', label: 'Manga Panels' },
   { kind: 'imageReveal', label: 'Image Reveal' },
-  { kind: 'silhouette', label: 'Silhouette' },
   { kind: 'connections', label: 'Connections' },
   { kind: 'chronology', label: 'Chronology' },
   { kind: 'higherLower', label: 'Higher / Lower' }
@@ -220,34 +215,14 @@ export default function PartyQuizPage() {
         reveal: item.answer.title
       }))
     }
-    if (kind === 'mangaPanel') {
-      const requested = count + 10
-      const filter = { scope, seed: nextSeed }
-      const pool = await qc.fetchQuery({
-        queryKey: qk.quiz.mangaPanelPool(filter, requested),
-        queryFn: () => api.quiz.mangaPanelPool(filter, requested)
-      })
-      return buildMangaPanelQuestions(pool, nextSeed).map((item) => ({
-        id: item.key,
-        prompt: 'Which manga is this page from?',
-        imagePath: item.answer.pageRelPath,
-        validKeys: item.validKeys,
-        choices: item.options.map((option) => ({
-          key: `media-${option.mediaId}`,
-          label: option.title,
-          imagePath: option.coverPath
-        }))
-      }))
-    }
     const request = {
       kind,
       seed: nextSeed,
       scope,
       statuses,
-      length: kind === 'imageReveal' || kind === 'silhouette' ? count + 10 : count,
+      length: kind === 'imageReveal' ? count + 10 : count,
       options: {
         imageSource: 'covers',
-        silhouetteMode: 'character',
         higherLowerMetric,
         higherLowerMediaType,
         higherLowerIndependent: kind === 'higherLower'
@@ -261,7 +236,7 @@ export default function PartyQuizPage() {
       id: item.id,
       prompt: item.prompt,
       imagePath: 'imagePath' in item ? item.imagePath : undefined,
-      choices: item.kind === 'imageReveal' || item.kind === 'silhouette'
+      choices: item.kind === 'imageReveal'
         ? item.choices.map((choice) => ({ key: choice.key, label: choice.label }))
         : item.choices,
       validKeys: item.validKeys,
@@ -270,7 +245,7 @@ export default function PartyQuizPage() {
       chronologyEntries: item.kind === 'chronology' ? item.entries : undefined,
       connectionLabel: item.kind === 'chronology' ? item.connectionLabel : undefined,
       higherLower: item.kind === 'higherLower' ? item : undefined,
-      reveal: item.kind === 'connections' || item.kind === 'silhouette'
+      reveal: item.kind === 'connections'
         ? item.reveal
         : undefined
     }))
@@ -293,7 +268,7 @@ export default function PartyQuizPage() {
       setPicked(null)
       setOrder(loaded[0].ordered ? loaded[0].choices.map((c) => c.key) : [])
       setRemaining(kind === 'chronology' ? 30 : 20)
-      setImageReady(kind !== 'mangaPanel' && kind !== 'imageReveal' && kind !== 'silhouette')
+      setImageReady(kind !== 'imageReveal')
       setRevealStage(0)
       spareIndexRef.current = initial.questionCount
       lockRef.current = false
@@ -309,7 +284,7 @@ export default function PartyQuizPage() {
       !state ||
       !question ||
       lockRef.current ||
-      ((kind === 'mangaPanel' || kind === 'imageReveal' || kind === 'silhouette') && !imageReady) ||
+      (kind === 'imageReveal' && !imageReady) ||
       (state.phase !== 'owner' && state.phase !== 'steal')
     ) return
     lockRef.current = true
@@ -331,13 +306,13 @@ export default function PartyQuizPage() {
     setPicked(null)
     setOrder(nextQuestion.ordered ? nextQuestion.choices.map((c) => c.key) : [])
     setRemaining(kind === 'chronology' ? 30 : 20)
-    setImageReady(kind !== 'mangaPanel' && kind !== 'imageReveal' && kind !== 'silhouette')
+    setImageReady(kind !== 'imageReveal')
     setRevealStage(0)
     lockRef.current = false
   }
 
   function replaceBrokenQuizImage() {
-    if (!state || (kind !== 'mangaPanel' && kind !== 'imageReveal' && kind !== 'silhouette')) return
+    if (!state || kind !== 'imageReveal') return
     const replacement = questions[spareIndexRef.current]
     spareIndexRef.current += 1
     if (!replacement) {
@@ -387,7 +362,7 @@ export default function PartyQuizPage() {
       !state ||
       state.phase === 'reveal' ||
       state.phase === 'done' ||
-      ((kind === 'mangaPanel' || kind === 'imageReveal' || kind === 'silhouette') && !imageReady)
+      (kind === 'imageReveal' && !imageReady)
     ) return
     lockRef.current = false
     setRemaining(state.phase === 'steal' ? 5 : kind === 'chronology' ? 30 : 20)
@@ -399,7 +374,7 @@ export default function PartyQuizPage() {
     if (
       remaining === 0 &&
       state &&
-      (kind !== 'mangaPanel' && kind !== 'imageReveal' && kind !== 'silhouette' || imageReady) &&
+      (kind !== 'imageReveal' || imageReady) &&
       (state.phase === 'owner' || state.phase === 'steal')
     ) {
       lockRef.current = false
@@ -434,7 +409,7 @@ export default function PartyQuizPage() {
       </Group>
       <Group label="Game">{GAMES.map((game) => <Pill key={game.kind} active={kind === game.kind} onClick={() => setKind(game.kind)} label={game.label} />)}</Group>
       {kind === 'higherLower' && <Group label="Category">{HIGHER_LOWER_MEDIA_TYPES.map((option) => <Pill key={option.key} active={higherLowerMediaType === option.key} onClick={() => setHigherLowerMediaType(option.key)} label={option.label} />)}</Group>}
-      {kind === 'higherLower' && <Group label="Question"><Pill active={higherLowerMetric === 'releaseDate'} onClick={() => setHigherLowerMetric('releaseDate')} label={higherLowerCopy(higherLowerMediaType, 'releaseDate').setupLabel} /><Pill active={higherLowerMetric === 'totalUnits'} onClick={() => setHigherLowerMetric('totalUnits')} label={higherLowerCopy(higherLowerMediaType, 'totalUnits').setupLabel} /><Pill active={higherLowerMetric === 'personalScore'} onClick={() => setHigherLowerMetric('personalScore')} label={higherLowerCopy(higherLowerMediaType, 'personalScore').setupLabel} /></Group>}
+      {kind === 'higherLower' && <Group label="Question"><Pill active={higherLowerMetric === 'releaseDate'} onClick={() => setHigherLowerMetric('releaseDate')} label={higherLowerCopy(higherLowerMediaType, 'releaseDate').setupLabel} /><Pill active={higherLowerMetric === 'totalUnits'} onClick={() => setHigherLowerMetric('totalUnits')} label={higherLowerCopy(higherLowerMediaType, 'totalUnits').setupLabel} /><Pill active={higherLowerMetric === 'communityScore'} onClick={() => setHigherLowerMetric('communityScore')} label={higherLowerCopy(higherLowerMediaType, 'communityScore').setupLabel} /><Pill active={higherLowerMetric === 'personalScore'} onClick={() => setHigherLowerMetric('personalScore')} label={higherLowerCopy(higherLowerMediaType, 'personalScore').setupLabel} /></Group>}
       <Group label="Library scope"><Pill active={scope === 'consumed'} onClick={() => setScope('consumed')} label="Completed only" /><Pill active={scope === 'all'} onClick={() => setScope('all')} label="All library" /></Group>
       {scope === 'all' && <p className="text-sm text-amber-300">Includes in-progress or unseen content and may contain spoilers.</p>}
       <p className="text-sm text-gray-400">Each side owns five questions. Owner answers are worth 2; the next side can steal a miss for 1.</p>
@@ -458,10 +433,10 @@ export default function PartyQuizPage() {
       {!question.higherLower && <p className="mb-5 text-center text-xl font-semibold">{question.prompt}</p>}
       {question.titlePair && <div className="mx-auto mb-6 grid max-w-xl grid-cols-2 gap-4">{question.titlePair.map((title) => <div key={title.key} className="text-center"><CoverImage path={title.imagePath} alt={title.label} className="mx-auto aspect-[2/3] max-h-52" /><p className="mt-2 text-sm font-medium text-gray-300">{title.label}</p></div>)}</div>}
       {question.audio && <button className="btn-ghost mx-auto mb-5 block" onClick={() => void playSong(question.audio!)}>Replay clip</button>}
-      {question.imagePath && <div className="mx-auto mb-6 max-h-[52vh] max-w-full overflow-hidden rounded-md"><img key={question.id} src={mediaUrl(question.imagePath) ?? undefined} alt="Quiz prompt" className={`mx-auto max-h-[52vh] max-w-full object-contain ${imageReady ? 'transition-all duration-700' : ''}`} style={state.phase !== 'reveal' ? kind === 'imageReveal' ? imageRevealStageStyle(revealStage) : kind === 'silhouette' ? SILHOUETTE_STYLE : undefined : undefined} onLoad={() => setImageReady(true)} onError={replaceBrokenQuizImage} /></div>}
-      {(kind === 'mangaPanel' || kind === 'imageReveal' || kind === 'silhouette') && !imageReady && <p className="mb-5 text-center text-sm text-gray-400">Loading {kind === 'mangaPanel' ? 'panel' : kind === 'silhouette' ? 'portrait' : 'image'}…</p>}
+      {question.imagePath && <div className="mx-auto mb-6 max-h-[52vh] max-w-full overflow-hidden rounded-md"><img key={question.id} src={mediaUrl(question.imagePath) ?? undefined} alt="Quiz prompt" className={`mx-auto max-h-[52vh] max-w-full object-contain ${imageReady ? 'transition-all duration-700' : ''}`} style={state.phase !== 'reveal' ? kind === 'imageReveal' ? imageRevealStageStyle(revealStage) : undefined : undefined} onLoad={() => setImageReady(true)} onError={replaceBrokenQuizImage} /></div>}
+      {kind === 'imageReveal' && !imageReady && <p className="mb-5 text-center text-sm text-gray-400">Loading image…</p>}
       {kind === 'imageReveal' && imageReady && state.phase !== 'reveal' && <p className="mb-5 text-center text-sm text-gray-400">Stage {revealStage + 1}/4</p>}
-      {question.higherLower ? <HigherLowerRound question={question.higherLower} answered={state.phase === 'reveal'} selected={picked} disabled={state.phase === 'reveal'} onAnswer={answer} /> : question.ordered ? <div><ChronologyOrder order={order} choices={question.choices} disabled={state.phase === 'reveal'} onChange={setOrder} />{state.phase !== 'reveal' && <button className="btn-primary mt-4 w-full" onClick={() => answer(order[0], order.join('|') === question.validKeys.join('|'))}>Lock order</button>}</div> : <div className="grid gap-3 sm:grid-cols-2">{question.choices.map((choice) => <button key={choice.key} disabled={state.phase === 'reveal' || ((kind === 'mangaPanel' || kind === 'imageReveal' || kind === 'silhouette') && !imageReady)} className={`flex items-center gap-3 rounded-md border p-4 text-left ${state.phase === 'reveal' && question.validKeys.includes(choice.key) ? 'border-green-500 bg-green-500/10' : picked === choice.key ? 'border-red-500' : 'border-base-600 bg-base-800 hover:border-accent'}`} onClick={() => answer(choice.key)}>{choice.imagePath && <CoverImage path={choice.imagePath} alt={choice.label} className="h-20 w-14 shrink-0" />}<span>{choice.label}</span></button>)}</div>}
+      {question.higherLower ? <HigherLowerRound question={question.higherLower} answered={state.phase === 'reveal'} selected={picked} disabled={state.phase === 'reveal'} onAnswer={answer} /> : question.ordered ? <div><ChronologyOrder order={order} choices={question.choices} disabled={state.phase === 'reveal'} onChange={setOrder} />{state.phase !== 'reveal' && <button className="btn-primary mt-4 w-full" onClick={() => answer(order[0], order.join('|') === question.validKeys.join('|'))}>Lock order</button>}</div> : <div className="grid gap-3 sm:grid-cols-2">{question.choices.map((choice) => <button key={choice.key} disabled={state.phase === 'reveal' || (kind === 'imageReveal' && !imageReady)} className={`flex items-center gap-3 rounded-md border p-4 text-left ${state.phase === 'reveal' && question.validKeys.includes(choice.key) ? 'border-green-500 bg-green-500/10' : picked === choice.key ? 'border-red-500' : 'border-base-600 bg-base-800 hover:border-accent'}`} onClick={() => answer(choice.key)}>{choice.imagePath && <CoverImage path={choice.imagePath} alt={choice.label} className="h-20 w-14 shrink-0" />}<span>{choice.label}</span></button>)}</div>}
       {state.phase === 'reveal' && <div className="mt-5 text-center">{question.chronologyEntries ? <div className="rounded-md border border-base-700 bg-base-900/40 p-4 text-left"><p className="text-sm font-medium text-accent">{question.connectionLabel}</p><p className="mt-1 text-xs text-gray-400">Correct order</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{question.validKeys.map((key, position) => { const entry = question.chronologyEntries!.find((item) => item.key === key)!; return <div key={key} className="flex items-center gap-3 rounded-md bg-base-800 p-2"><span className="w-5 text-center text-sm font-semibold text-accent">{position + 1}</span><CoverImage path={entry.imagePath} alt="" className="h-16 w-11 shrink-0" /><div className="min-w-0"><p className="text-sm font-medium text-gray-200">{entry.label}</p><p className="mt-0.5 text-xs tabular-nums text-gray-400">{entry.releaseDate.slice(0, 4)}</p></div></div> })}</div></div> : !question.higherLower ? <p className="text-sm text-gray-400">{question.reveal ?? `Answer: ${question.choices.find((x) => question.validKeys.includes(x.key))?.label}`}</p> : null}<button className="btn-primary mt-4 px-8" onClick={next}>Continue</button></div>}
     </div>
   </StudySessionFrame>

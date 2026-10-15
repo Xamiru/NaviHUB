@@ -209,8 +209,10 @@ export function parseReadingWiki(wiki: string | null | undefined): BgmReading {
 export function westernOrder(romaji: string | null | undefined): string | null {
   const s = (romaji ?? '').trim()
   if (!s) return null
-  const parts = s.split(/\s+/)
-  return parts.length === 2 ? `${parts[1]} ${parts[0]}` : s
+  // Some entries are all lower case ("kiryuu kazuma"); names read capitalised.
+  const cased = s === s.toLowerCase() ? s.replace(/(^|[\s-])([a-z])/g, (_m, p: string, c: string) => p + c.toUpperCase()) : s
+  const parts = cased.split(/\s+/)
+  return parts.length === 2 ? `${parts[1]} ${parts[0]}` : cased
 }
 
 // What a game character is called in the app: the romanized name, else the

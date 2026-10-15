@@ -7,11 +7,14 @@ import { qk } from '../../lib/queryKeys'
 import type { QuizKind } from '@shared/types'
 import { answerIsCorrect, isNewQuizBest, quizScorePolicy, quizSeed } from '@shared/quizCore'
 import StudySessionFrame, { SessionFeedback } from '../StudySessionFrame'
+import CoverImage from '../CoverImage'
 
 // One answer slot in a library-MCQ question: a stable string key plus its visual.
 export interface McOption {
   key: string
   node: ReactNode
+  // Plain text for the summary recap ("You picked …").
+  label?: string
 }
 
 // One question of a library quiz. The prompt and option visuals are built by
@@ -23,6 +26,14 @@ export interface McQuestion {
   options: McOption[]
   reveal?: ReactNode
   waitForPrompt?: boolean
+  // One summary row: what was asked (an actor, a character, a title) and its image.
+  recap?: { title: string; imagePath?: string | null }
+}
+
+interface McResult {
+  question: McQuestion
+  pickedKey: string | null
+  correct: boolean
 }
 
 interface Stats {
@@ -41,8 +52,8 @@ const QUIZ_TITLE: Partial<Record<QuizKind, string>> = {
   cast: 'Cast challenge',
   character: 'Character challenge',
   va: 'Voice actor challenge',
-  synopsis: 'Synopsis challenge',
-  mangaPanel: 'Manga panel challenge'
+  vaName: 'Name the voice actor',
+  synopsis: 'Synopsis challenge'
 }
 
 interface Props {
@@ -73,6 +84,7 @@ export default function LibMcRound({ kind, questions, settings, timed, targetLen
   const [newBest, setNewBest] = useState(false)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
   const [done, setDone] = useState(false)
+  const [results, setResults] = useState<McResult[]>([])
 
   const { data: history } = useQuery({
     queryKey: qk.quiz.history(kind),
@@ -148,6 +160,7 @@ export default function LibMcRound({ kind, questions, settings, timed, targetLen
     }
     statsRef.current = next
     setStats(next)
+    setResults((items) => [...items, { question: q, pickedKey: key, correct }])
     setPicked(key)
     setAnswered(true)
     autoRef.current = window.setTimeout(() => advance(), AUTONEXT_MS)
@@ -249,6 +262,41 @@ export default function LibMcRound({ kind, questions, settings, timed, targetLen
             </Link>
           </div>
         </div>
+        {results.some((result) => result.question.recap) && (
+          <ol className="mt-6 divide-y divide-base-700 border-y border-base-700 text-left">
+            {results.map((result, index) => {
+              const { question } = result
+              if (!question.recap) return null
+              const answer = question.options.find((option) => question.validKeys.includes(option.key))
+              const pickedLabel = question.options.find((option) => option.key === result.pickedKey)?.label
+              return (
+                <li key={`${question.key}-${index}`} className="flex items-center gap-4 py-3 text-sm">
+                  <span className="w-6 text-gray-500 tabular-nums">{index + 1}</span>
+                  {question.recap.imagePath !== undefined && (
+                    <CoverImage
+                      path={question.recap.imagePath}
+                      alt=""
+                      thumbWidth={96}
+                      className="aspect-[2/3] w-10 shrink-0 rounded"
+                    />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-white">{question.recap.title}</p>
+                    {answer?.label && <p className="truncate text-gray-400">{answer.label}</p>}
+                    {!result.correct && (
+                      <p className="truncate text-gray-500">
+                        {pickedLabel ? `You picked ${pickedLabel}` : 'No answer'}
+                      </p>
+                    )}
+                  </div>
+                  <span className={result.correct ? 'text-green-400' : 'text-red-400'}>
+                    {result.correct ? 'Correct' : 'Missed'}
+                  </span>
+                </li>
+              )
+            })}
+          </ol>
+        )}
       </StudySessionFrame>
     )
   }

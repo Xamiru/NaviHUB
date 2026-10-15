@@ -22,11 +22,15 @@ export interface LinkWallCandidate extends QuizScreenTitle {
   }>
 }
 
+// `seedMembers` builds groups (actors through their top-ten billing);
+// `members` proves the wall has one solution, so a title where a group's actor
+// is billed 14th counts as matching and such a wall is rejected.
 interface Fact {
   key: string
   family: QuizLinkWallFamily
   label: string
   members: Set<string>
+  seedMembers: Set<string>
 }
 
 interface Membership {
@@ -40,11 +44,21 @@ export interface LinkWallState {
   selectedKeys: string[]
   solvedGroupKeys: string[]
   mistakes: number
+  // Wrong selections already guessed, so repeating one costs nothing.
+  triedKeys?: string[]
 }
 
-export type LinkWallSubmitOutcome = 'incomplete' | 'correct' | 'wrong' | 'complete' | 'failed'
+export type LinkWallSubmitOutcome =
+  | 'incomplete'
+  | 'correct'
+  | 'wrong'
+  | 'complete'
+  | 'failed'
+  | 'repeated'
 
 export const LINK_WALL_MAX_MISTAKES = 4
+/** Company groups come only from the largest studios in the selection. */
+export const LINK_WALL_COMPANY_FACTS = 12
 
 function factIndex(candidates: readonly LinkWallCandidate[]): Fact[] {
   const facts = new Map<string, Fact>()
@@ -52,10 +66,18 @@ function factIndex(candidates: readonly LinkWallCandidate[]): Fact[] {
     key: string,
     family: QuizLinkWallFamily,
     label: string,
-    titleKey: string
+    titleKey: string,
+    seeds = true
   ) => {
-    const fact = facts.get(key) ?? { key, family, label, members: new Set<string>() }
+    const fact = facts.get(key) ?? {
+      key,
+      family,
+      label,
+      members: new Set<string>(),
+      seedMembers: new Set<string>()
+    }
     fact.members.add(titleKey)
+    if (seeds) fact.seedMembers.add(titleKey)
     facts.set(key, fact)
   }
   for (const title of candidates) {
@@ -65,7 +87,9 @@ function factIndex(candidates: readonly LinkWallCandidate[]): Fact[] {
         person.billingOrder != null &&
         person.billingOrder >= 0 &&
         person.billingOrder < 10
-      if (topActor) add(`actor:${person.id}`, 'actor', `Main cast: ${person.name}`, title.key)
+      if (person.role === 'actor') {
+        add(`actor:${person.id}`, 'actor', `Main cast: ${person.name}`, title.key, topActor)
+      }
       if (person.role === 'director') {
         add(`director:${person.id}`, 'director', `Directed by ${person.name}`, title.key)
       }
@@ -76,18 +100,27 @@ function factIndex(candidates: readonly LinkWallCandidate[]): Fact[] {
     for (const relation of title.relations) {
       add(`franchise:${relation.key}`, 'franchise', `Franchise: ${relation.label}`, title.key)
     }
-    for (const genre of title.genres) {
-      add(`genre:${genre.key}`, 'genre', `Genre: ${genre.label}`, title.key)
-    }
+    // Genre groups were dropped (2026-10-14): source genre tags are too
+    // subjective for an exact four-title group.
     if (title.releaseYear != null) {
       const decade = Math.floor(title.releaseYear / 10) * 10
       add(`decade:${decade}`, 'decade', `Released in the ${decade}s`, title.key)
     }
   }
+  // Companies: only the biggest studios are recognisable, and they are
+  // sampled four titles at a time, so they take no size cap.
+  const bigStudios = new Set(
+    [...facts.values()]
+      .filter((fact) => fact.family === 'company' && fact.seedMembers.size >= 4)
+      .sort((a, b) => b.seedMembers.size - a.seedMembers.size || a.key.localeCompare(b.key))
+      .slice(0, LINK_WALL_COMPANY_FACTS)
+      .map((fact) => fact.key)
+  )
   return [...facts.values()].filter((fact) => {
-    if (fact.members.size < 4) return false
-    if (fact.family === 'genre' || fact.family === 'decade') return fact.members.size <= 10
-    return fact.members.size <= 20
+    if (fact.seedMembers.size < 4) return false
+    if (fact.family === 'company') return bigStudios.has(fact.key)
+    if (fact.family === 'decade') return fact.seedMembers.size <= 10
+    return fact.seedMembers.size <= 20
   })
 }
 
@@ -98,8 +131,8 @@ function membershipKey(keys: readonly string[]): string {
 function variants(facts: readonly Fact[], rng: () => number): Membership[] {
   const out = new Map<string, Membership>()
   for (const fact of facts) {
-    const members = shuffle([...fact.members], rng)
-    const attempts = fact.members.size === 4 ? 1 : Math.min(12, fact.members.size * 2)
+    const members = shuffle([...fact.seedMembers], rng)
+    const attempts = fact.seedMembers.size === 4 ? 1 : Math.min(12, fact.seedMembers.size * 2)
     for (let attempt = 0; attempt < attempts; attempt++) {
       const rotated = members.map((_, index) => members[(index + attempt) % members.length])
       const titleKeys = rotated.slice(0, 4).sort()
@@ -215,7 +248,7 @@ export function buildLinkWallQuestion(
 }
 
 export function initialLinkWallState(): LinkWallState {
-  return { status: 'playing', selectedKeys: [], solvedGroupKeys: [], mistakes: 0 }
+  return { status: 'playing', selectedKeys: [], solvedGroupKeys: [], mistakes: 0, triedKeys: [] }
 }
 
 export function toggleLinkWallTitle(state: LinkWallState, key: string): LinkWallState {
@@ -230,11 +263,19 @@ export function toggleLinkWallTitle(state: LinkWallState, key: string): LinkWall
 export function submitLinkWallGroup(
   question: Pick<QuizLinkWallQuestion, 'groups' | 'maxMistakes'>,
   state: LinkWallState
-): { state: LinkWallState; outcome: LinkWallSubmitOutcome; group: QuizLinkWallGroup | null } {
+): {
+  state: LinkWallState
+  outcome: LinkWallSubmitOutcome
+  group: QuizLinkWallGroup | null
+  oneAway: boolean
+} {
   if (state.status !== 'playing' || state.selectedKeys.length !== 4) {
-    return { state, outcome: 'incomplete', group: null }
+    return { state, outcome: 'incomplete', group: null, oneAway: false }
   }
   const selected = membershipKey(state.selectedKeys)
+  if (state.triedKeys?.includes(selected)) {
+    return { state, outcome: 'repeated', group: null, oneAway: false }
+  }
   const group = question.groups.find(
     (candidate) =>
       !state.solvedGroupKeys.includes(candidate.key) && membershipKey(candidate.titleKeys) === selected
@@ -250,20 +291,31 @@ export function submitLinkWallGroup(
         solvedGroupKeys
       },
       outcome: complete ? 'complete' : 'correct',
-      group
+      group,
+      oneAway: false
     }
   }
   const mistakes = state.mistakes + 1
   const failed = mistakes >= question.maxMistakes
+  // "One away": three of the four belong to the same unsolved group.
+  const picked = new Set(state.selectedKeys)
+  const oneAway = question.groups.some(
+    (candidate) =>
+      !state.solvedGroupKeys.includes(candidate.key) &&
+      candidate.titleKeys.filter((key) => picked.has(key)).length === 3
+  )
   return {
     state: {
       ...state,
       status: failed ? 'failed' : 'playing',
-      selectedKeys: [],
-      mistakes
+      // A one-away guess keeps the selection so one title can be swapped.
+      selectedKeys: oneAway && !failed ? state.selectedKeys : [],
+      mistakes,
+      triedKeys: [...(state.triedKeys ?? []), selected]
     },
     outcome: failed ? 'failed' : 'wrong',
-    group: null
+    group: null,
+    oneAway
   }
 }
 

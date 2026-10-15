@@ -32,6 +32,7 @@ describe('sidebarSectionDefs', () => {
       'wrestling',
       'football',
       'lists',
+      'quotes',
       'tags',
       'quiz',
       'japanese',

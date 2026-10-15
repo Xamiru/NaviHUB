@@ -122,7 +122,7 @@ Forms never write the image column on save: the Edit form omits `coverPath` in e
 
 ## Game cast, platforms and sources
 
-A game's Characters tab is filled from Bangumi through the game's `bangumi` link (Japanese voice actors only, shared with the same people's anime and VN credits), and its box art, platforms (`platform` tags) and Japanese title come from the games catalog v2 through its `launchbox` link. The tab opens with a Sources panel for correcting either link. The narrative, matching rules and the games upgrade live in [importers.md](importers.md) "Games catalog v2".
+A game's Characters tab is filled from Bangumi through the game's `bangumi` link (Japanese voice actors only, shared with the same people's anime and VN credits), supplemented by a franchise wiki where Bangumi is thin (Yakuza), and its box art, platforms (`platform` tags) and Japanese title come from the games catalog v2 through its `launchbox` link. The tab opens with a Sources panel for correcting either link. The narrative, matching rules and the games upgrade live in [importers.md](importers.md) "Games catalog v2".
 
 ## Game playthrough journal
 

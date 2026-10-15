@@ -4,6 +4,7 @@
 import type { QuizSong } from './types'
 import { guessTrackRecordingKey } from './guessTrack'
 import { pickDistractors } from './quizDistractors'
+import { FRANCHISE_OPTION_CAP, takeWithFranchiseCap, titleFranchiseKey } from './franchiseKey'
 
 type SongIdentity = Pick<QuizSong, 'mediaId' | 'title' | 'artists'>
 
@@ -34,33 +35,9 @@ export function songRecordingIndex(pool: readonly SongIdentity[]): (song: SongId
   }
 }
 
-const SEQUEL_TAIL = [
-  /\b(?:season|part|cour)\s*\d+\b.*$/,
-  /\b\d+(?:st|nd|rd|th)\s+(?:season|part|cour)\b.*$/,
-  /\b(?:final season|the final|the movie|movie|ova|ona|specials?)\b.*$/,
-  /\s(?:ii|iii|iv|v|vi|\d+)$/
-]
-
-/**
- * A title-based franchise key: the subtitle, season, part and sequel numbering
- * removed ("Show Season 2", "Show II", "Show: The Movie" all become "show").
- * A heuristic only; a miss just means a sibling is treated as unrelated.
- */
-export function animeFranchiseKey(title: string): string {
-  let base = title.normalize('NFKC').toLowerCase().trim()
-  // A subtitle split needs a real prefix, or "Re:Zero" and "Re:Creators" would merge.
-  const subtitle = base.match(/^(.{4,}?)\s*(?:[:：]|\s[-–—]\s)/)
-  if (subtitle) base = subtitle[1]
-  let previous = ''
-  while (previous !== base) {
-    previous = base
-    for (const pattern of SEQUEL_TAIL) base = base.replace(pattern, '').trim()
-  }
-  const key = base.replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
-  return key || title.normalize('NFKC').toLowerCase().trim()
-}
-
-export const SONG_FRANCHISE_OPTION_CAP = 2
+// Kept under the Song Quiz name for its callers; the rule lives in franchiseKey.ts.
+export const animeFranchiseKey = titleFranchiseKey
+export const SONG_FRANCHISE_OPTION_CAP = FRANCHISE_OPTION_CAP
 
 /**
  * Distractors by era/genre affinity (`pickDistractors`), with no franchise
@@ -77,19 +54,5 @@ export function pickSongDistractors<T extends QuizSong>(
   rng: () => number
 ): T[] {
   const ranked = pickDistractors(pool, answer, pool.length, forbiddenMediaIds, rng)
-  const used = new Map<string, number>([[franchiseOf(answer), 1]])
-  const out: T[] = []
-  for (const candidate of ranked) {
-    if (out.length >= count) break
-    const key = franchiseOf(candidate)
-    const n = used.get(key) ?? 0
-    if (n >= SONG_FRANCHISE_OPTION_CAP) continue
-    used.set(key, n + 1)
-    out.push(candidate)
-  }
-  for (const candidate of ranked) {
-    if (out.length >= count) break
-    if (!out.includes(candidate)) out.push(candidate)
-  }
-  return out
+  return takeWithFranchiseCap(ranked, count, franchiseOf, franchiseOf(answer))
 }

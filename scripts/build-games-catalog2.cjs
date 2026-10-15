@@ -8,7 +8,10 @@
  *   ELECTRON_RUN_AS_NODE=1 npx electron scripts/build-games-catalog2.cjs \
  *     --launchbox <Metadata.zip | Metadata.xml> \
  *     --bangumi <bangumi Archive dump-*.zip> \
- *     [--rawg <rawg-catalog.db>] [--wikidata-cache <wikidata.json>] <out-dir>
+ *     [--rawg <rawg-catalog.db>] [--wikidata-cache <wikidata.json>] [--doh] [--skip-wikis] <out-dir>
+ *
+ *   … scripts/build-games-catalog2.cjs --augment <games-catalog.db> [--doh] <out-dir>
+ *     re-bakes only the franchise wiki casts into an existing pack.
  *
  * Inputs, all keyless:
  *  - LaunchBox Games Database: gamesdb.launchbox-app.com/Metadata.zip (daily).
@@ -23,6 +26,11 @@
  *    LaunchBox entry to its Bangumi subject.
  *  - The previous RAWG pack (optional): Metacritic, popularity and the RAWG id
  *    cross-reference that lets RAWG-era library rows find their work.
+ *  - Franchise wikis (src/main/wikiCastCore.ts FRANCHISE_WIKIS, Fandom's API):
+ *    the voiced cast of each franchise game, with the actors' Japanese names
+ *    from Wikidata. Fandom is DNS-filtered in some countries: --doh resolves
+ *    its hosts over DNS-over-HTTPS (needs a network route to it, e.g. a VPN);
+ *    --skip-wikis builds without them.
  *
  * Nothing Chinese from Bangumi is stored: only ids, Japanese titles (kana or
  * kanji names) and person readings.
@@ -87,6 +95,23 @@ CREATE TABLE IF NOT EXISTS bgm_character (
   romaji   TEXT,
   english  TEXT
 );
+CREATE TABLE IF NOT EXISTS wiki_category (
+  work_id  INTEGER NOT NULL,
+  wiki     TEXT NOT NULL,
+  stem     TEXT NOT NULL,
+  PRIMARY KEY (work_id, wiki)
+) WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS wiki_character (
+  wiki        TEXT NOT NULL,
+  stem        TEXT NOT NULL,
+  page        TEXT NOT NULL,
+  name        TEXT NOT NULL,
+  native      TEXT,
+  importance  INTEGER NOT NULL,
+  image_url   TEXT,
+  voices      TEXT NOT NULL,
+  PRIMARY KEY (wiki, stem, page)
+) WITHOUT ROWID;
 CREATE VIRTUAL TABLE IF NOT EXISTS lb_fts USING fts5(name, alt, content='');
 `
 // DDL-END
@@ -481,6 +506,194 @@ async function wikidataBangumi(cachePath) {
 }
 
 // ---------------------------------------------------------------------------
+// Franchise wikis (Fandom). The parsers are the app's own wikiCastCore.ts,
+// bundled here with esbuild so the two can never drift.
+// ---------------------------------------------------------------------------
+
+function loadWikiCore() {
+  const { buildSync } = require('esbuild')
+  const out = buildSync({
+    entryPoints: [join(__dirname, '..', 'src', 'main', 'wikiCastCore.ts')],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    write: false
+  })
+  const mod = { exports: {} }
+  new Function('module', 'exports', 'require', out.outputFiles[0].text)(mod, mod.exports, require)
+  return mod.exports
+}
+
+// Fandom is filtered by DNS in some countries; --doh resolves its hosts over
+// DNS-over-HTTPS so a build from such a network (with a VPN route) still works.
+const dohCache = new Map()
+async function dohLookup(host) {
+  if (dohCache.has(host)) return dohCache.get(host)
+  const res = await fetch(`https://1.1.1.1/dns-query?name=${encodeURIComponent(host)}&type=A`, {
+    headers: { accept: 'application/dns-json' }
+  })
+  const json = await res.json()
+  const ip = (json.Answer ?? []).find((a) => a.type === 1)?.data
+  if (!ip) throw new Error(`DNS-over-HTTPS found no address for ${host}`)
+  dohCache.set(host, ip)
+  return ip
+}
+
+let lastWikiRequest = 0
+async function getJson(url, { doh = false, spacingMs = 300 } = {}) {
+  const wait = lastWikiRequest + spacingMs - Date.now()
+  if (wait > 0) await new Promise((r) => setTimeout(r, wait))
+  lastWikiRequest = Date.now()
+  const u = new URL(url)
+  const ip = doh ? await dohLookup(u.hostname) : null
+  const https = require('node:https')
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await new Promise((resolve, reject) => {
+        const req = https.get(
+          url,
+          {
+            headers: { 'User-Agent': UA, Accept: 'application/json' },
+            ...(ip ? { lookup: (_h, opts, cb) => (opts && opts.all ? cb(null, [{ address: ip, family: 4 }]) : cb(null, ip, 4)) } : {})
+          },
+          (res) => {
+            let body = ''
+            res.setEncoding('utf8')
+            res.on('data', (d) => (body += d))
+            res.on('end', () => {
+              if (res.statusCode !== 200) return reject(new Error(`${res.statusCode} for ${url}`))
+              try {
+                resolve(JSON.parse(body))
+              } catch (e) {
+                reject(e)
+              }
+            })
+          }
+        )
+        req.setTimeout(30000, () => req.destroy(new Error('timeout')))
+        req.on('error', reject)
+      })
+    } catch (e) {
+      if (attempt >= 3) throw e
+      await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)))
+    }
+  }
+}
+
+function wikiApi(wiki, params, doh) {
+  const qs = new URLSearchParams({ ...params, format: 'json', formatversion: '2' })
+  return getJson(`https://${wiki.host}/api.php?${qs}`, { doh })
+}
+
+// Every franchise game's voiced characters, keyed by category stem, and which
+// stem each work reads.
+async function bakeWikiCasts(works, { doh }) {
+  const core = loadWikiCore()
+  const categories = [] // [workId, wikiKey, stem]
+  const characters = [] // rows for wiki_character
+  for (const wiki of core.FRANCHISE_WIKIS) {
+    const candidates = works.filter((w) => [w.name, w.nameJa, ...w.alts].some((t) => t && wiki.matches.test(t)))
+    const stemsOf = new Map(candidates.map((w) => [w.id, core.categoryStems([w.name, ...w.alts])]))
+    const titles = [...new Set([...stemsOf.values()].flat())].map((s) => `Category:${s}${wiki.categorySuffix}`)
+    const filled = new Set()
+    for (let i = 0; i < titles.length; i += 50) {
+      const json = await wikiApi(wiki, { action: 'query', prop: 'categoryinfo', titles: titles.slice(i, i + 50).join('|') }, doh)
+      for (const p of json?.query?.pages ?? []) if ((p?.categoryinfo?.pages ?? 0) > 0) filled.add(p.title)
+    }
+    const stems = new Set()
+    for (const w of candidates) {
+      const stem = stemsOf.get(w.id).find((s) => filled.has(`Category:${s}${wiki.categorySuffix}`))
+      if (!stem) continue
+      categories.push([w.id, wiki.key, stem])
+      stems.add(stem)
+    }
+    console.log(`  ${wiki.label}: ${categories.filter((c) => c[1] === wiki.key).length} works, ${stems.size} categories`)
+    for (const stem of stems) {
+      const members = []
+      let cont = {}
+      for (let guard = 0; guard < 10; guard++) {
+        const json = await wikiApi(
+          wiki,
+          { action: 'query', list: 'categorymembers', cmtitle: `Category:${stem}${wiki.categorySuffix}`, cmnamespace: '0', cmlimit: '500', ...cont },
+          doh
+        )
+        for (const m of json?.query?.categorymembers ?? []) members.push(m.title)
+        if (!json?.continue?.cmcontinue) break
+        cont = { cmcontinue: json.continue.cmcontinue }
+      }
+      const pages = new Map()
+      for (let i = 0; i < members.length; i += 10) {
+        let pc = {}
+        for (let guard = 0; guard < 10; guard++) {
+          const json = await wikiApi(
+            wiki,
+            {
+              action: 'query',
+              prop: 'revisions|categories|pageimages',
+              rvprop: 'content',
+              rvslots: 'main',
+              cllimit: 'max',
+              piprop: 'original',
+              redirects: '1',
+              titles: members.slice(i, i + 10).join('|'),
+              ...pc
+            },
+            doh
+          )
+          for (const p of json?.query?.pages ?? []) {
+            if (typeof p?.title !== 'string' || p.missing) continue
+            const e = pages.get(p.title) ?? { title: p.title, wikitext: '', categories: [], imageUrl: null }
+            const text = p.revisions?.[0]?.slots?.main?.content
+            if (typeof text === 'string') e.wikitext = text
+            for (const c of p.categories ?? []) e.categories.push(c.title)
+            if (typeof p.original?.source === 'string') e.imageUrl = p.original.source
+            pages.set(p.title, e)
+          }
+          if (!json?.continue) break
+          const { continue: _c, ...next } = json.continue
+          pc = next
+        }
+      }
+      let voiced = 0
+      for (const page of pages.values()) {
+        const c = core.parseCharacter(page, stem, wiki)
+        if (!c || !c.voices.length) continue
+        characters.push({ wiki: wiki.key, stem, ...c })
+        voiced++
+      }
+      console.log(`    ${stem}: ${voiced} voiced of ${members.length}`)
+    }
+  }
+  // Voice actors' Japanese names through Wikidata (English Wikipedia sitelink).
+  const articles = [...new Set(characters.flatMap((c) => c.voices.map((v) => v.enwiki).filter(Boolean)))]
+  const kanji = new Map()
+  for (let i = 0; i < articles.length; i += 50) {
+    const qs = new URLSearchParams({
+      action: 'wbgetentities',
+      sites: 'enwiki',
+      titles: articles.slice(i, i + 50).join('|'),
+      props: 'labels|sitelinks',
+      languages: 'ja',
+      sitefilter: 'enwiki',
+      format: 'json'
+    })
+    const json = await getJson(`https://www.wikidata.org/w/api.php?${qs}`, { spacingMs: 1000 })
+    for (const e of Object.values(json?.entities ?? {})) {
+      const article = e?.sitelinks?.enwiki?.title
+      const ja = e?.labels?.ja?.value
+      if (article && ja && /[\u3040-\u30ff\u3400-\u9fff]/.test(ja)) kanji.set(article.replace(/_/g, ' ').toLowerCase(), ja)
+    }
+  }
+  for (const c of characters) {
+    c.voicesJson = JSON.stringify(
+      c.voices.map((v) => ({ name: v.name, native: v.enwiki ? (kanji.get(v.enwiki.toLowerCase()) ?? null) : null }))
+    )
+  }
+  console.log(`  ${characters.length} voiced characters, ${kanji.size} actors with a Japanese name`)
+  return { categories, characters }
+}
+
+// ---------------------------------------------------------------------------
 // Build
 // ---------------------------------------------------------------------------
 
@@ -488,18 +701,55 @@ function parseArgs(argv) {
   const args = { _: [] }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
-    if (a.startsWith('--')) args[a.slice(2)] = argv[++i]
+    if (a === '--doh' || a === '--skip-wikis') args[a.slice(2)] = true
+    else if (a.startsWith('--')) args[a.slice(2)] = argv[++i]
     else args._.push(a)
   }
   return args
 }
 
+// --augment <games-catalog.db>: (re)bake only the franchise wiki casts into an
+// existing pack and gzip it — a cheap monthly wiki refresh, no 500 MB inputs.
+async function augment(args, outDir) {
+  const Database = require('better-sqlite3')
+  const src = args.augment
+  const dbPath = join(outDir, 'games-catalog.db')
+  if (src !== dbPath) writeFileSync(dbPath, readFileSync(src))
+  const db = new Database(dbPath)
+  db.exec(LAUNCHBOX_CATALOG_DDL)
+  const works = db
+    .prepare('SELECT id, name, name_ja FROM lb_work')
+    .all()
+    .map((w) => ({ id: w.id, name: w.name, nameJa: w.name_ja, alts: [] }))
+  console.log(`Augmenting ${works.length} works with franchise wiki casts…`)
+  const wikiCasts = await bakeWikiCasts(works, { doh: !!args.doh })
+  db.transaction(() => {
+    db.exec('DELETE FROM wiki_category; DELETE FROM wiki_character;')
+    const insCat = db.prepare('INSERT OR IGNORE INTO wiki_category (work_id, wiki, stem) VALUES (?, ?, ?)')
+    const insChar = db.prepare(
+      `INSERT OR REPLACE INTO wiki_character (wiki, stem, page, name, native, importance, image_url, voices)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    for (const [workId, wiki, stem] of wikiCasts.categories) insCat.run(workId, wiki, stem)
+    for (const c of wikiCasts.characters) insChar.run(c.wiki, c.stem, c.page, c.name, c.native, c.importance, c.imageUrl, c.voicesJson)
+    db.prepare('INSERT OR REPLACE INTO lb_meta (key, value) VALUES (?, ?)').run(
+      'wikiCast',
+      JSON.stringify([...new Set(wikiCasts.categories.map((c) => c[1]))])
+    )
+  })()
+  db.exec('VACUUM')
+  db.close()
+  writeFileSync(`${dbPath}.gz`, gzipSync(readFileSync(dbPath), { level: 9 }))
+  console.log(`done: ${dbPath}.gz`)
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2))
   const outDir = args._[0]
+  if (args.augment && outDir) return augment(args, outDir)
   if (!args.launchbox || !args.bangumi || !outDir) {
     console.error(
-      'usage: build-games-catalog2.cjs --launchbox <Metadata.zip> --bangumi <dump.zip> [--rawg <rawg-catalog.db>] [--wikidata-cache <file>] <out-dir>'
+      'usage: build-games-catalog2.cjs --launchbox <Metadata.zip> --bangumi <dump.zip> [--rawg <rawg-catalog.db>] [--wikidata-cache <file>] [--doh] [--skip-wikis] <out-dir>'
     )
     process.exit(2)
   }
@@ -674,7 +924,14 @@ async function main() {
     console.log(`  ${joined} RAWG games joined`)
   }
 
-  // 5. Write.
+  // 5. Franchise wikis: the voiced cast Bangumi lacks for some series.
+  let wikiCasts = { categories: [], characters: [] }
+  if (!args['skip-wikis']) {
+    console.log('Reading franchise wikis…')
+    wikiCasts = await bakeWikiCasts(works, { doh: !!args.doh })
+  }
+
+  // 6. Write.
   const dbPath = join(outDir, 'games-catalog.db')
   rmSync(dbPath, { force: true })
   const db = new Database(dbPath)
@@ -743,11 +1000,23 @@ async function main() {
     }
     for (const p of persons) insPerson.run(p.id, p.name, p.kana, p.romaji)
     for (const c of characters) insCharacter.run(c.id, c.romaji, c.english)
+    const insWikiCategory = db.prepare('INSERT OR IGNORE INTO wiki_category (work_id, wiki, stem) VALUES (?, ?, ?)')
+    const insWikiCharacter = db.prepare(
+      `INSERT OR REPLACE INTO wiki_character (wiki, stem, page, name, native, importance, image_url, voices)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    for (const [workId, wiki, stem] of wikiCasts.categories) insWikiCategory.run(workId, wiki, stem)
+    for (const c of wikiCasts.characters) {
+      insWikiCharacter.run(c.wiki, c.stem, c.page, c.name, c.native, c.importance, c.imageUrl, c.voicesJson)
+    }
   })()
   const meta = db.prepare('INSERT OR REPLACE INTO lb_meta (key, value) VALUES (?, ?)')
   meta.run('snapshot', new Date(statSync(args.launchbox).mtimeMs).toISOString().slice(0, 10))
   meta.run('works', String(works.length))
   meta.run('bangumiLinked', String(linkedSubjects.size))
+  // Which franchise wikis this pack bakes: for those the app trusts the pack
+  // and never asks the wiki itself.
+  if (!args['skip-wikis']) meta.run('wikiCast', JSON.stringify([...new Set(wikiCasts.categories.map((c) => c[1]))]))
   db.exec('VACUUM')
   db.close()
   console.log(`${works.length} works, ${boxes} with box art (${japanBoxes} Japanese) — gzipping…`)
@@ -777,5 +1046,7 @@ module.exports = {
   titleMatches,
   pickBangumi,
   bareTitle,
-  readLaunchBox
+  readLaunchBox,
+  bakeWikiCasts,
+  loadWikiCore
 }

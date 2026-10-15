@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { QuizCareerPerson } from '@shared/types'
 import { searchCareerPeople } from '@shared/mysteryCareer'
+import CoverImage from '../CoverImage'
 
 interface Props {
   people: QuizCareerPerson[]
@@ -62,11 +63,13 @@ export default function QuizPersonAutocomplete({
             disabled={disabled}
             placeholder="Search actors and directors"
             value={query}
-            onFocus={() => setOpen(true)}
+            // The list appears only for typed text and closes on blur.
+            onFocus={() => setOpen(query.trim() !== '' && !selected)}
+            onBlur={() => setOpen(false)}
             onChange={(event) => {
               setQuery(event.target.value)
               setSelected(null)
-              setOpen(true)
+              setOpen(event.target.value.trim() !== '')
               setActive(0)
             }}
             onKeyDown={(event) => {
@@ -106,7 +109,16 @@ export default function QuizPersonAutocomplete({
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => choose(person)}
                 >
-                  <span className="truncate">{person.label}</span>
+                  <span className="flex min-w-0 items-center gap-2">
+                    <CoverImage
+                      path={person.photoPath ?? null}
+                      alt=""
+                      thumbWidth={96}
+                      rounded="rounded-full"
+                      className="h-7 w-7 shrink-0"
+                    />
+                    <span className="truncate">{person.label}</span>
+                  </span>
                   <span className="shrink-0 text-xs capitalize text-gray-500">
                     {person.roles.join(' / ')}
                   </span>

@@ -1,5 +1,6 @@
 import type {
   QuizMovieChainConnector,
+  QuizMovieChainCredit,
   QuizMovieChainDifficulty,
   QuizMovieChainEdge,
   QuizMovieChainQuestion,
@@ -9,6 +10,7 @@ import type {
 import { seededRng } from './quizCore'
 import { screenMediaMatches } from './libraryGrid'
 import { shuffle } from './shuffle'
+import { titleFranchiseKey } from './franchiseKey'
 
 export interface MovieChainCandidate extends QuizScreenTitle {
   people: Array<{
@@ -42,33 +44,51 @@ export const MOVIE_CHAIN_DISTANCE: Record<QuizMovieChainDifficulty, number> = {
   hard: 4
 }
 
-function eligibleRoles(item: MovieChainCandidate) {
-  const people = new Map<number, { id: number; name: string; roles: Set<string> }>()
+// Directors and top-ten billed actors are prominent; with `deepCast` every
+// other acting credit joins as a non-prominent role.
+function eligibleRoles(item: MovieChainCandidate, deepCast: boolean) {
+  const people = new Map<
+    number,
+    { id: number; name: string; roles: Set<string>; prominent: boolean }
+  >()
   for (const person of item.people) {
     const topActor =
       person.role === 'actor' &&
       person.billingOrder != null &&
       person.billingOrder >= 0 &&
       person.billingOrder < 10
-    if (!topActor && person.role !== 'director') continue
-    const found = people.get(person.id) ?? { id: person.id, name: person.name, roles: new Set() }
+    const prominent = topActor || person.role === 'director'
+    if (!prominent && !(deepCast && person.role === 'actor')) continue
+    const found = people.get(person.id) ?? {
+      id: person.id,
+      name: person.name,
+      roles: new Set(),
+      prominent: false
+    }
     if (person.role === 'director') found.roles.add('director')
     else if (person.characterName?.trim()) found.roles.add(person.characterName.trim())
     else found.roles.add('actor')
+    found.prominent ||= prominent
     people.set(person.id, found)
   }
   return people
 }
 
+/**
+ * Title-pair edges through prominent people (directors, top-ten billed
+ * actors). They build routes, hints and availability counts; deep-cast moves
+ * are validated from `movieChainCredits` instead, because materialising every
+ * supporting-cast pair does not scale with the library.
+ */
 export function buildMovieChainEdges(media: readonly MovieChainCandidate[]): QuizMovieChainEdge[] {
   const appearances = new Map<
     number,
-    { name: string; titles: Array<{ key: string; roles: string[] }> }
+    { name: string; titles: Array<{ key: string; roles: string[]; prominent: boolean }> }
   >()
   for (const item of media) {
-    for (const person of eligibleRoles(item).values()) {
+    for (const person of eligibleRoles(item, false).values()) {
       const found = appearances.get(person.id) ?? { name: person.name, titles: [] }
-      found.titles.push({ key: item.key, roles: [...person.roles] })
+      found.titles.push({ key: item.key, roles: [...person.roles], prominent: person.prominent })
       appearances.set(person.id, found)
     }
   }
@@ -85,7 +105,8 @@ export function buildMovieChainEdges(media: readonly MovieChainCandidate[]): Qui
           personId,
           name: appearance.name,
           leftRoles: left.roles,
-          rightRoles: right.roles
+          rightRoles: right.roles,
+          prominent: left.prominent && right.prominent
         })
         edges.set(key, edge)
       }
@@ -94,6 +115,34 @@ export function buildMovieChainEdges(media: readonly MovieChainCandidate[]): Qui
   return [...edges.values()].sort((a, b) =>
     a.leftKey.localeCompare(b.leftKey) || a.rightKey.localeCompare(b.rightKey)
   )
+}
+
+/**
+ * Every actor/director credit per title, kept only for people in two or more
+ * titles (nobody else can connect anything), so a move through a supporting
+ * actor is checked against the people the two titles truly share.
+ */
+export function movieChainCredits(
+  media: readonly MovieChainCandidate[]
+): Record<string, QuizMovieChainCredit[]> {
+  const perTitle = media.map((item) => ({ key: item.key, people: eligibleRoles(item, true) }))
+  const titlesPerPerson = new Map<number, number>()
+  for (const { people } of perTitle) {
+    for (const id of people.keys()) titlesPerPerson.set(id, (titlesPerPerson.get(id) ?? 0) + 1)
+  }
+  const out: Record<string, QuizMovieChainCredit[]> = {}
+  for (const { key, people } of perTitle) {
+    const shared = [...people.values()]
+      .filter((person) => (titlesPerPerson.get(person.id) ?? 0) >= 2)
+      .map((person) => ({
+        personId: person.id,
+        name: person.name,
+        roles: [...person.roles],
+        prominent: person.prominent
+      }))
+    if (shared.length > 0) out[key] = shared
+  }
+  return out
 }
 
 function adjacency(edges: readonly QuizMovieChainEdge[]): Map<string, string[]> {
@@ -205,13 +254,14 @@ function bitCount(value: number): number {
 // A seeded random start, then a random endpoint at exactly the target distance
 // from it. Listing every qualifying pair first meant a search from every title,
 // which grew quadratically with the library.
-function pickEndpoints<T extends { key: string }>(
+function pickEndpoints<T extends { key: string; label: string }>(
   media: readonly T[],
   graph: ReadonlyMap<string, string[]>,
   targetDistance: number,
   rng: () => number
 ): [T, T] | null {
   const byKey = new Map(media.map((item) => [item.key, item]))
+  const franchiseByKey = new Map(media.map((item) => [item.key, titleFranchiseKey(item.label)]))
   for (const start of shuffle(media, rng)) {
     const distances = new Map<string, number>([[start.key, 0]])
     const queue = [start.key]
@@ -227,7 +277,11 @@ function pickEndpoints<T extends { key: string }>(
         queue.push(next)
       }
     }
-    const target = endpoints.length ? byKey.get(endpoints[Math.floor(rng() * endpoints.length)]) : null
+    // "Toy Story to Toy Story 3" is a free route: the two ends always come
+    // from different franchises (a sequel may still be a step on the way).
+    const franchise = franchiseByKey.get(start.key)
+    const eligible = endpoints.filter((key) => franchiseByKey.get(key) !== franchise)
+    const target = eligible.length ? byKey.get(eligible[Math.floor(rng() * eligible.length)]) : null
     if (target) return [start, target]
   }
   return null
@@ -243,25 +297,16 @@ export function buildMovieChainQuestion(
   const media = candidates.filter(
     (item) => item.imagePath.trim() && screenMediaMatches(mediaMode, item.mediaType)
   )
+  // The route is built and measured through prominent links only; `credits`
+  // lets a true deep-cast move count, so every title in the selection can be
+  // typed, not only those prominently reachable.
   const edges = buildMovieChainEdges(media)
   const graph = adjacency(edges)
   const distance = MOVIE_CHAIN_DISTANCE[difficulty]
   const endpoints = pickEndpoints(media, graph, distance, rng)
   if (!endpoints) return null
   const [start, target] = endpoints
-  const component = new Set<string>([start.key])
-  const queue = [start.key]
-  for (let head = 0; head < queue.length; head++) {
-    for (const next of graph.get(queue[head]) ?? []) {
-      if (component.has(next)) continue
-      component.add(next)
-      queue.push(next)
-    }
-  }
-  const titles = media.filter((item) => component.has(item.key))
-  const componentEdges = edges.filter(
-    (edge) => component.has(edge.leftKey) && component.has(edge.rightKey)
-  )
+  const titles = media.map(({ people: _people, ...title }) => title)
   return {
     id: `movie-chain-${difficulty}-${seed}`,
     kind: 'movieChain',
@@ -271,7 +316,8 @@ export function buildMovieChainQuestion(
     start,
     target,
     titles,
-    edges: componentEdges,
+    edges,
+    credits: movieChainCredits(media),
     difficulty,
     optimalDistance: distance,
     maxMoves: distance + 2
@@ -279,10 +325,30 @@ export function buildMovieChainQuestion(
 }
 
 export function movieChainConnectors(
-  question: Pick<QuizMovieChainQuestion, 'edges'>,
+  question: Pick<QuizMovieChainQuestion, 'edges' | 'credits'>,
   leftKey: string,
   rightKey: string
 ): QuizMovieChainConnector[] {
+  // Any shared credit counts; prominent links sort first in the display.
+  const left = question.credits?.[leftKey]
+  const right = question.credits?.[rightKey]
+  if (left && right) {
+    const rightById = new Map(right.map((credit) => [credit.personId, credit]))
+    return left
+      .flatMap((credit) => {
+        const other = rightById.get(credit.personId)
+        return other
+          ? [{
+              personId: credit.personId,
+              name: credit.name,
+              leftRoles: credit.roles,
+              rightRoles: other.roles,
+              prominent: credit.prominent && other.prominent
+            }]
+          : []
+      })
+      .sort((a, b) => Number(b.prominent) - Number(a.prominent))
+  }
   const edge = question.edges.find(
     (candidate) =>
       (candidate.leftKey === leftKey && candidate.rightKey === rightKey) ||
@@ -295,6 +361,11 @@ export function movieChainConnectors(
     leftRoles: connector.rightRoles,
     rightRoles: connector.leftRoles
   }))
+}
+
+/** One shortest start-to-target route through well-known people, for the summary. */
+export function movieChainReferenceRoute(question: QuizMovieChainQuestion): string[] | null {
+  return shortestMovieChainPath(question.edges, question.start.key, question.target.key)
 }
 
 export function initialMovieChainState(question: QuizMovieChainQuestion): MovieChainState {
@@ -368,13 +439,10 @@ export function hintMovieChain(
 ): { state: MovieChainState; key: string | null; outcome: 'hint' | 'undoRequired' } {
   if (state.hintedKey) return { state, key: state.hintedKey, outcome: 'hint' }
   const current = state.pathKeys[state.pathKeys.length - 1]
-  const path = shortestMovieChainPath(
-    question.edges,
-    current,
-    question.target.key,
-    state.pathKeys.slice(0, -1)
-  )
   const remaining = question.maxMoves - (state.pathKeys.length - 1)
+  const excluded = state.pathKeys.slice(0, -1)
+  // Hints walk prominent links only, so the suggested title is a fair one.
+  const path = shortestMovieChainPath(question.edges, current, question.target.key, excluded)
   if (!path || path.length - 1 > remaining) return { state, key: null, outcome: 'undoRequired' }
   const key = path[1] ?? question.target.key
   return {

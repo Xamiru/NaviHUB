@@ -11,6 +11,7 @@ import MiningPanel from '../components/reader/MiningPanel'
 import BarButton from '../components/reader/BarButton'
 import ShortcutHelp from '../components/reader/ShortcutHelp'
 import Dialog from '../components/Dialog'
+import QuoteDialog, { type QuoteSeed } from '../components/quotes/QuoteDialog'
 import BookSettingsGroups, { BOOK_SERIF_STACK } from '../components/reader/BookSettingsPopover'
 import { loadBookReaderPrefs, saveBookReaderPrefs, type BookPrefs } from '../lib/readerPrefs'
 import ReaderSettingsDrawer from '../components/reader/ReaderSettingsDrawer'
@@ -236,6 +237,11 @@ export default function BookReaderPage() {
 
   // ---- mining + popovers ----
   const [panelOpen, setPanelOpen] = useState(false)
+  const [quoteSeed, setQuoteSeed] = useState<QuoteSeed | null>(null)
+  // A "Save quote" pill floats over a text selection inside the page.
+  const [selectionPill, setSelectionPill] = useState<{ x: number; y: number; text: string } | null>(
+    null
+  )
   const [blockText, setBlockText] = useState<string | null>(null)
   const [tocOpen, setTocOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -248,6 +254,57 @@ export default function BookReaderPage() {
 
   // Current TOC entry = the last one starting at or before this section.
   const tocLabel = [...toc].reverse().find((t) => t.page <= section)?.label ?? null
+
+  // ---- quotes ----
+  const selectedText = useCallback((): string => {
+    const sel = window.getSelection()
+    if (!sel || sel.isCollapsed || !viewportRef.current?.contains(sel.anchorNode)) return ''
+    return sel.toString().trim()
+  }, [])
+
+  useEffect(() => {
+    function onSelection() {
+      const sel = window.getSelection()
+      const text = selectedText()
+      if (!sel || !text) {
+        setSelectionPill(null)
+        return
+      }
+      const rect = sel.getRangeAt(0).getBoundingClientRect()
+      setSelectionPill({ x: rect.left + rect.width / 2, y: rect.top, text })
+    }
+    const viewport = viewportRef.current
+    const hide = () => setSelectionPill(null)
+    document.addEventListener('selectionchange', onSelection)
+    viewport?.addEventListener('scroll', hide, { passive: true })
+    return () => {
+      document.removeEventListener('selectionchange', onSelection)
+      viewport?.removeEventListener('scroll', hide)
+    }
+  }, [selectedText, doc])
+
+  const openQuote = useCallback(
+    async (text: string) => {
+      setSelectionPill(null)
+      // A library book links its title; a file opened from the OS has only
+      // its name, which becomes the free-text source.
+      const media = adhoc
+        ? null
+        : await qc.fetchQuery({
+            queryKey: qk.media.detail(mediaId),
+            queryFn: () => api.media.get(mediaId)
+          })
+      const volume = chapters.length > 1 ? chapters[chIndex]?.title : null
+      setQuoteSeed({
+        text,
+        media: media ? { id: media.id, name: media.title, imagePath: media.coverPath } : null,
+        sourceTitle: media ? null : (doc?.title.replace(/\.epub$/i, '') ?? null),
+        locator: [volume, tocLabel].filter(Boolean).join(' · ') || null,
+        origin: 'book'
+      })
+    },
+    [adhoc, qc, mediaId, chapters, chIndex, doc, tocLabel]
+  )
 
   // ---- keyboard ----
   useEffect(() => {
@@ -303,6 +360,9 @@ export default function BookReaderPage() {
         case 'm':
           setPanelOpen((v) => !v)
           break
+        case 'q':
+          void openQuote(selectedText())
+          break
         case '?':
           setHelpOpen((v) => !v)
           break
@@ -319,7 +379,7 @@ export default function BookReaderPage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [vertical, fontSize, nextSection, prevSection, scrollForward, gotoSection, sectionCount, tocOpen, settingsOpen, helpOpen, showEnd, panelOpen, setPref, exitToDetail])
+  }, [vertical, fontSize, nextSection, prevSection, scrollForward, gotoSection, sectionCount, tocOpen, settingsOpen, helpOpen, showEnd, panelOpen, setPref, exitToDetail, openQuote, selectedText])
 
   if (!doc || !library) return <div className="h-screen bg-base-900 p-6 text-gray-500">Loading…</div>
 
@@ -507,9 +567,28 @@ export default function BookReaderPage() {
               title="Mine words (M) — then tap a paragraph"
               onClick={() => setPanelOpen((v) => !v)}
             />
+            <BarButton
+              label="Quote"
+              title="Save a quote (Q) — select text first to keep it"
+              onClick={() => void openQuote(selectedText())}
+            />
             <BarButton label="?" title="Keyboard shortcuts (?)" onClick={() => setHelpOpen(true)} />
           </div>
         </div>
+
+        {selectionPill && !quoteSeed && (
+          <button
+            type="button"
+            className="btn-primary fixed z-30 -translate-x-1/2 -translate-y-full px-3 py-1 text-xs shadow-lg"
+            style={{ left: selectionPill.x, top: Math.max(48, selectionPill.y - 8) }}
+            // Keep the selection alive through the press.
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => void openQuote(selectionPill.text)}
+          >
+            Save quote
+          </button>
+        )}
+        {quoteSeed && <QuoteDialog seed={quoteSeed} onClose={() => setQuoteSeed(null)} />}
 
         {helpOpen && (
           <ShortcutHelp title="Reader shortcuts" rows={SHORTCUTS} onClose={() => setHelpOpen(false)} />

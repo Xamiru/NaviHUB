@@ -139,6 +139,19 @@ describe('tmdb movie import', () => {
     expect(row.rewatch_count).toBe(3)
   })
 
+  it('stores the TMDB vote average as a 0-100 rating only above twenty votes', async () => {
+    routes['/movie/550'] = movieFixture({ vote_average: 7.64, vote_count: 500 })
+    await importMovie(550, { skipOmdb: true })
+    const meta = (db.prepare('SELECT metadata FROM media_item').get() as { metadata: string | null }).metadata
+    expect(JSON.parse(meta!)).toMatchObject({ tmdbRating: 76 })
+
+    routes['/movie/550'] = movieFixture({ vote_average: 9.5, vote_count: 4 })
+    db.prepare('UPDATE media_item SET metadata=NULL').run()
+    await importMovie(550, { skipOmdb: true })
+    const thin = (db.prepare('SELECT metadata FROM media_item').get() as { metadata: string | null }).metadata
+    expect(thin == null || !('tmdbRating' in JSON.parse(thin))).toBe(true)
+  })
+
   // The detail-page hero was retired for the Art-tab background; its wide art
   // was an extra multi-hundred-KB download per title.
   it('never downloads the backdrop', async () => {

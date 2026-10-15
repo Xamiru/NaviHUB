@@ -1,4 +1,5 @@
 import { getSqlite } from '../db/connection'
+import { communityScoreSql } from './communityScore'
 import { mapMedia, mapMediaSummary, mapTag, mapPerson, mapCompany, mapCharacter } from './mappers'
 import * as listRepo from './listRepo'
 import * as tierListRepo from './tierListRepo'
@@ -72,15 +73,8 @@ function normalize(key: string, value: unknown): unknown {
 // Every external source stores its rating under its own metadata key on its own
 // scale; COALESCE folds them into ONE 0-100 "community score" so a single
 // slider/sort works across anime, games, VNs and film. IMDb is 0-10 → ×10.
-const COMMUNITY_SQL = `COALESCE(
-  json_extract(m.metadata, '$.averageScore'),
-  json_extract(m.metadata, '$.metacritic'),
-  json_extract(m.metadata, '$.igdbRating'),
-  json_extract(m.metadata, '$.vndbRating'),
-  json_extract(m.metadata, '$.olRating'),
-  json_extract(m.metadata, '$.hcRating'),
-  json_extract(m.metadata, '$.imdbRating') * 10
-)`
+// The shared 0-100 community score (repos/communityScore.ts owns the rule).
+const COMMUNITY_SQL = communityScoreSql('m')
 
 // Release year: the date's year, falling back to AniList's canonical seasonYear
 // for titles imported without a date.

@@ -64,6 +64,8 @@ const NAV_ITEMS: PaletteItem[] = [
   { key: 'nav-music-liked', label: 'Liked songs', hint: 'Go to', to: '/music/liked' },
   { key: 'nav-music-stats', label: 'Listening stats', hint: 'Go to', to: '/music/stats' },
   { key: 'nav-lists', label: 'Lists', hint: 'Go to', to: '/lists' },
+  { key: 'nav-quotes', label: 'Quotes', hint: 'Go to', to: '/quotes' },
+  { key: 'nav-quotes-add', label: 'Add quote', hint: 'Quotes', to: '/quotes?add=1' },
   { key: 'nav-franchises', label: 'Franchises', hint: 'Go to', to: '/franchises' },
   { key: 'nav-tags', label: 'Tags', hint: 'Go to', to: '/tags' },
   { key: 'nav-torrents', label: 'Torrents', hint: 'Go to', to: '/torrents' },

@@ -7,7 +7,7 @@ import CoverImage from '../components/CoverImage'
 import QuizRecord from '../components/QuizRecord'
 import LibMcRound, { type McQuestion } from '../components/libraryQuiz/LibMcRound'
 import { Group, Pill } from '../components/PillGroup'
-import { vaAppearanceKey } from '@shared/vaQuiz'
+import { vaAppearanceKey, vaPersonKey } from '@shared/vaQuiz'
 import { quizSeed } from '@shared/quizCore'
 import type { QuizLibFilter } from '@shared/types'
 import { loadQuizDefaults } from '../lib/quizPrefs'
@@ -19,6 +19,9 @@ export default function VaQuizPage() {
   // Seeds a fresh visit only (Settings → Readers & quizzes).
   const [quizDefaults] = useState(loadQuizDefaults)
   const [timerEnabled, setTimerEnabled] = usePersistedState('quizVaTimer', quizDefaults.timer)
+  // 'shared': which other character shares the voice; 'name': who voices this character.
+  const [mode, setMode] = usePersistedState<'shared' | 'name'>('quizVaMode', 'shared')
+  const kind = mode === 'name' ? 'vaName' : 'va'
   const [round, setRound] = useState(0)
   const [questions, setQuestions] = useState<McQuestion[] | null>(null)
   const [settingsSnapshot, setSettingsSnapshot] = useState<Record<string, unknown>>({})
@@ -31,6 +34,61 @@ export default function VaQuizPage() {
     try {
       const seed = quizSeed(`${Date.now()}-${Math.random()}`)
       const filter: QuizLibFilter = { statuses: scope === 'all' ? null : completedStatuses }
+      if (mode === 'name') {
+        const named = await api.quiz.vaNameQuestions(filter, length, seed)
+        if (named.length < length) {
+          setError(
+            `Only ${named.length} name-the-voice-actor questions are available (voice actors need photos); choose a shorter round, widen the scope, or re-import anime cast.`
+          )
+          return
+        }
+        setQuestions(
+          named.map((question) => ({
+            key: question.key,
+            validKeys: question.validKeys,
+            prompt: (
+              <div className="text-center">
+                <CoverImage
+                  path={question.source.characterImagePath}
+                  alt={question.source.characterName}
+                  rounded="rounded-xl"
+                  className="mx-auto h-72 w-auto"
+                />
+                <p className="mt-4 text-2xl font-semibold">{question.source.characterName}</p>
+                <p className="text-base text-gray-500">{question.source.mediaTitle}</p>
+                <p className="mt-2 text-gray-400">Who is this character's Japanese voice actor?</p>
+              </div>
+            ),
+            reveal: (
+              <span>
+                <span className="font-semibold text-white">{question.answer.name}</span>
+                {question.otherRoles.length > 0
+                  ? ` also voices ${question.otherRoles
+                      .map((role) => `${role.characterName} (${role.mediaTitle})`)
+                      .join(', ')} in your library.`
+                  : ' voices this character.'}
+              </span>
+            ),
+            recap: {
+              title: `${question.source.characterName} (${question.source.mediaTitle})`,
+              imagePath: question.source.characterImagePath
+            },
+            options: question.options.map((option) => ({
+              key: vaPersonKey(option.personId),
+              label: option.name,
+              node: (
+                <>
+                  <CoverImage path={option.photoPath} alt={option.name} className="h-24 w-16 shrink-0" />
+                  <span className="line-clamp-2 text-base font-medium">{option.name}</span>
+                </>
+              )
+            }))
+          }))
+        )
+        setSettingsSnapshot({ scope, length, timerEnabled, mode, seed })
+        setRound((value) => value + 1)
+        return
+      }
       const built = await api.quiz.vaQuestions(filter, length, seed)
       if (built.length < length) {
         setError(
@@ -66,8 +124,13 @@ export default function VaQuizPage() {
             .
           </span>
         ),
+        recap: {
+          title: `${question.source.characterName} (${question.source.mediaTitle})`,
+          imagePath: question.source.characterImagePath
+        },
         options: question.options.map((option) => ({
           key: vaAppearanceKey(option),
+          label: `${option.characterName} (${option.mediaTitle})`,
           node: (
             <>
               <CoverImage
@@ -85,7 +148,7 @@ export default function VaQuizPage() {
           )
         }))
       }))
-      setSettingsSnapshot({ scope, length, timerEnabled, seed })
+      setSettingsSnapshot({ scope, length, timerEnabled, mode, seed })
       setQuestions(qs)
       setRound((value) => value + 1)
     } catch (e) {
@@ -99,7 +162,7 @@ export default function VaQuizPage() {
     return (
       <LibMcRound
         key={round}
-        kind="va"
+        kind={kind}
         questions={questions}
         settings={settingsSnapshot}
         timed={timerEnabled}
@@ -119,6 +182,15 @@ export default function VaQuizPage() {
       />
 
       <div className="card p-6 space-y-6">
+        <Group label="Mode">
+          <Pill active={mode === 'shared'} onClick={() => setMode('shared')} label="Shared voice" />
+          <Pill active={mode === 'name'} onClick={() => setMode('name')} label="Name the voice actor" />
+        </Group>
+        <p className="-mt-4 text-sm text-gray-400">
+          {mode === 'shared'
+            ? 'Find the character from another anime who has the same Japanese voice actor.'
+            : 'Pick the Japanese voice actor from four photos. Favours voice actors heard across several of your shows.'}
+        </p>
         <Group label="From">
           <Pill
             active={scope === 'consumed'}
@@ -149,8 +221,8 @@ export default function VaQuizPage() {
         </label>
 
         <p className="text-sm text-gray-400">
-          Options match the answer character's gender, then prefer similar role prominence and
-          release era. Re-import anime cast to populate gender for existing characters.
+          Only each show's ten best-known characters appear. Options match the answer's gender.
+          Re-import anime cast to populate gender for existing characters.
         </p>
         {error && <p className="text-sm text-red-400">{error}</p>}
 
@@ -163,7 +235,7 @@ export default function VaQuizPage() {
         </button>
       </div>
 
-      <QuizRecord kind="va" />
+      <QuizRecord kind={kind} />
     </div>
   )
 }

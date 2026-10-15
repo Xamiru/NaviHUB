@@ -160,8 +160,9 @@ const api: NaviApi = {
     songPool: (filter) => ipcRenderer.invoke('quiz:songPool', filter),
     castPool: (filter) => ipcRenderer.invoke('quiz:castPool', filter),
     vaQuestions: (filter, count, seed) => ipcRenderer.invoke('quiz:vaQuestions', filter, count, seed),
+    vaNameQuestions: (filter, count, seed) =>
+      ipcRenderer.invoke('quiz:vaNameQuestions', filter, count, seed),
     synopsisPool: (filter) => ipcRenderer.invoke('quiz:synopsisPool', filter),
-    mangaPanelPool: (filter, length) => ipcRenderer.invoke('quiz:mangaPanelPool', filter, length),
     tournamentPool: (source) => ipcRenderer.invoke('quiz:tournamentPool', source),
     logSession: (input) => ipcRenderer.invoke('quiz:logSession', input),
     history: (kind, limit, playMode) => ipcRenderer.invoke('quiz:history', kind, limit, playMode)
@@ -219,6 +220,13 @@ const api: NaviApi = {
     reorder: (listId, orderedItemIds) =>
       ipcRenderer.invoke('lists:reorder', listId, orderedItemIds),
     forEntity: (kind, entityId) => ipcRenderer.invoke('lists:forEntity', kind, entityId)
+  },
+  quotes: {
+    list: (filter) => ipcRenderer.invoke('quotes:list', filter),
+    get: (id) => ipcRenderer.invoke('quotes:get', id),
+    save: (input, id) => ipcRenderer.invoke('quotes:save', input, id),
+    setFavorite: (id, favorite) => ipcRenderer.invoke('quotes:setFavorite', id, favorite),
+    remove: (id) => ipcRenderer.invoke('quotes:remove', id)
   },
   tierLists: {
     list: (kind) => ipcRenderer.invoke('tierLists:list', kind),
@@ -310,6 +318,7 @@ const api: NaviApi = {
     searchBangumi: (query) => ipcRenderer.invoke('gameLinks:searchBangumi', query),
     setBangumi: (mediaId, subjectId) => ipcRenderer.invoke('gameLinks:setBangumi', mediaId, subjectId),
     unlinkBangumi: (mediaId) => ipcRenderer.invoke('gameLinks:unlinkBangumi', mediaId),
+    unlinkWiki: (mediaId) => ipcRenderer.invoke('gameLinks:unlinkWiki', mediaId),
     reset: (mediaId, source) => ipcRenderer.invoke('gameLinks:reset', mediaId, source),
     refreshCast: (mediaId) => ipcRenderer.invoke('gameLinks:refreshCast', mediaId)
   },

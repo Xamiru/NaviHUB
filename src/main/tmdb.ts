@@ -81,6 +81,24 @@ function yearOf(date: string | null | undefined): number | null {
   return Number.isFinite(y) ? y : null
 }
 
+// TMDB's own vote average on the shared 0-100 community scale (read by
+// `communityScoreSql`), kept only above a minimum vote count so a handful of
+// votes cannot pose as a rating. IMDb, when OMDb supplies it, wins over it.
+export const TMDB_RATING_MIN_VOTES = 20
+export function tmdbRatingMeta(m: { vote_average?: unknown; vote_count?: unknown }): { tmdbRating: number } | null {
+  const average = typeof m.vote_average === 'number' ? m.vote_average : null
+  const votes = typeof m.vote_count === 'number' ? m.vote_count : 0
+  if (average == null || average <= 0 || votes < TMDB_RATING_MIN_VOTES) return null
+  return { tmdbRating: Math.round(average * 10) }
+}
+
+function mergeMetaPatches(
+  ...patches: Array<Record<string, number> | null | undefined>
+): Record<string, number> | null {
+  const merged = Object.assign({}, ...patches.filter(Boolean)) as Record<string, number>
+  return Object.keys(merged).length ? merged : null
+}
+
 // ---------------- OMDb (IMDb rating + Rotten Tomatoes) ----------------
 // Optional enrichment: if an OMDb key is set, we look a title up by its IMDb id
 // (TMDB gives us that) and stash IMDb / Rotten Tomatoes / Metascore into the
@@ -654,7 +672,10 @@ export async function importMovie(
     cast: m.credits?.cast ?? [],
     crew: m.credits?.crew ?? [],
     only: opts.only,
-    extraMeta: skipOmdb ? null : await fetchOmdb(m.imdb_id), // TMDB movies carry imdb_id directly
+    extraMeta: mergeMetaPatches(
+      tmdbRatingMeta(m),
+      skipOmdb ? null : await fetchOmdb(m.imdb_id) // TMDB movies carry imdb_id directly
+    ),
     // Child rows are skipped whole on a partial refresh, so it skips the request too.
     collection: opts.only?.length ? undefined : await fetchCollection(m.belongs_to_collection)
   })
@@ -736,8 +757,11 @@ export async function importTv(
     : (m.last_episode_to_air?.runtime ?? null)
   const episodes = wantEpisodes ? await fetchEpisodes(tmdbId, m.seasons) : undefined
   const omdb = skipOmdb ? null : await fetchOmdb(m.external_ids?.imdb_id)
-  const extraMeta =
-    epDuration && epDuration > 0 ? { ...(omdb ?? {}), epDuration } : omdb
+  const extraMeta = mergeMetaPatches(
+    tmdbRatingMeta(m),
+    omdb,
+    epDuration && epDuration > 0 ? { epDuration } : null
+  )
   return persistTitle({
     externalId: String(m.id),
     mediaType: 'tv',

@@ -590,7 +590,7 @@ export interface ImageOverrideState {
 
 // Identities a title has besides its own (external_source, external_id) —
 // media_external_link. Frozen strings: they are stored.
-export type ExternalLinkSource = 'launchbox' | 'bangumi' | 'wikidata' | 'steam' | 'rawg'
+export type ExternalLinkSource = 'launchbox' | 'bangumi' | 'wikidata' | 'steam' | 'rawg' | 'fandom'
 // xref = an id chain baked into the games catalog; exact = a unique exact
 // title + date match; manual = the user's choice, never overwritten.
 export type ExternalLinkMethod = 'xref' | 'wikidata' | 'exact' | 'manual'
@@ -785,11 +785,6 @@ export interface QuizSynopsisFilter extends QuizLibFilter {
   requireCover?: boolean
 }
 
-export interface QuizMangaPanelFilter {
-  scope?: QuizConsumptionScope
-  seed?: number
-}
-
 // One cast-quiz seed: a photographed actor paired with one eligible movie/TV
 // credit. Movie seeds are top-ten billed; TV seeds are uncapped. validMediaIds
 // retains every in-scope screen credit so a real appearance is never a wrong
@@ -820,8 +815,12 @@ export interface QuizVaItem {
   mediaTitle: string
   year: number | null
   importance: number | null
+  // AniList's cast order for this show (main first, then by popularity).
+  castRank?: number | null
   personIds: number[]
   personNames: string[]
+  // Aligned with personIds.
+  personPhotos?: Array<string | null>
 }
 
 // One synopsis-quiz seed: any library title with enough description text to
@@ -841,18 +840,6 @@ export interface QuizSynopsisItem {
   hasEarlierRelation: boolean
 }
 
-// One manga-panel question seed: a servable page (the same virtual path shape
-// the reader uses — folders and CBZ entries alike) plus the series it belongs
-// to. year/genres drive distractor affinity like every other library pool.
-export interface QuizMangaPanelItem {
-  mediaId: number
-  title: string
-  coverPath: string | null
-  year: number | null
-  genres: string[]
-  pageRelPath: string // "manga/<dir>/<file>" or "manga/<dir>/<Vol 1.cbz>/<entry>"
-}
-
 // ---- quiz history (finished rounds of any quiz mode) ----
 export type QuizKind =
   | 'song'
@@ -863,10 +850,13 @@ export type QuizKind =
   | 'character' // legacy character-portrait sessions; new rounds use cast
   | 'cast' // actor photo -> credited movie/TV title
   | 'va' // anime character -> different-title character sharing a Japanese VA
+  | 'vaName' // anime character -> their Japanese voice actor, picked from four photos
   | 'synopsis' // description excerpt -> which title
-  | 'mangaPanel' // a page from a locally-linked manga -> which series
+  | 'mangaPanel' // retired 2026-10-14; kept so its past sessions still read
   | 'imageReveal' // progressively reveal a cover/art image (best = points)
-  | 'silhouette' // character silhouette -> character/title
+  | 'imageRevealTyped' // image reveal answered by typing the title (best = points)
+  | 'chronologyPoints' // chronology with partial credit: 100 perfect, 50 one swap (best = points)
+  | 'silhouette' // retired 2026-10-14; kept so its past sessions still read
   | 'connections' // shared person/studio between two titles
   | 'chronology' // order four related titles by release date
   | 'higherLower' // endless metric comparison (best = most correct)
@@ -917,6 +907,10 @@ export type QuizKind =
   | 'footballChampion' // verified edition champion, era-near distractors
   | 'footballScoreline' // verified complete match -> exact final score
   | 'footballCareerPath' // structured senior career trail -> player
+  | 'footballCareerGuess' // typed career path, clubs revealed per wrong guess (best = points)
+  | 'footballWordle' // mystery player from attribute feedback, eight guesses (best = points)
+  | 'footballLineup' // name a famous match's starting XI (best = points)
+  | 'footballTransfer' // transfer fee higher or lower, three lives (best = points)
   | 'footballChronology' // order four verified champion editions
   | 'footballPlayerGrid' // 3x3 verified player intersections (best = points)
   | 'particles' // sentence-bank particle fill (MC over は/が/を/に/で…)
@@ -946,9 +940,7 @@ export interface QuizAvailability {
   cast: number
   va: number
   synopsis: number
-  mangaPanel: number
   imageReveal: number
-  silhouette: number
   connections: number
   chronology: number
   higherLower: number
@@ -969,6 +961,10 @@ export interface QuizFootballAvailability {
   chronology: number
   playerGrid: number
   playerGridPlayers: number
+  // Cheap readiness counts; the full pools are built when a round starts.
+  wordle: number
+  lineup: number
+  transfer: number
   datasetRevision: string | null
 }
 
@@ -989,18 +985,18 @@ export interface QuizGuessTrackAvailability {
   music: number
 }
 
-export type QuizHigherLowerMetric = 'releaseDate' | 'totalUnits' | 'personalScore'
+export type QuizHigherLowerMetric = 'releaseDate' | 'totalUnits' | 'personalScore' | 'communityScore'
 
 export interface QuizHigherLowerAvailability {
   mediaType: MediaType
   releaseDate: number
   totalUnits: number
   personalScore: number
+  communityScore: number
 }
 
 export type QuizChallengeKind =
   | 'imageReveal'
-  | 'silhouette'
   | 'connections'
   | 'chronology'
   | 'higherLower'
@@ -1014,6 +1010,9 @@ export type QuizChallengeKind =
   | 'footballCareerPath'
   | 'footballChronology'
   | 'footballPlayerGrid'
+  | 'footballWordle'
+  | 'footballLineup'
+  | 'footballTransfer'
 
 export interface QuizChallengeRequest {
   kind: QuizChallengeKind
@@ -1023,7 +1022,7 @@ export interface QuizChallengeRequest {
   length: number
   options?: {
     imageSource?: 'covers' | 'art'
-    silhouetteMode?: 'character' | 'title'
+    imageMediaType?: MediaType | null
     higherLowerMetric?: QuizHigherLowerMetric
     higherLowerMediaType?: MediaType
     higherLowerReferenceId?: number
@@ -1032,6 +1031,8 @@ export interface QuizChallengeRequest {
     screenMediaMode?: QuizScreenMediaMode
     movieChainDifficulty?: QuizMovieChainDifficulty
     footballCompetitionKeys?: FootballCompetitionKey[]
+    // Scoreline: finals, knockouts and international tournaments first ('big'), or any match.
+    footballMatchScope?: 'big' | 'any'
   }
 }
 
@@ -1052,12 +1053,10 @@ interface QuizChallengeBase {
 export interface QuizImageRevealQuestion extends QuizChallengeBase {
   kind: 'imageReveal'
   imagePath: string
-}
-
-export interface QuizSilhouetteQuestion extends QuizChallengeBase {
-  kind: 'silhouette'
-  imagePath: string
-  reveal: string
+  // The answer's type: typed answers search the library titles of this type.
+  mediaType: MediaType
+  // Percent focal point the zoomed stages close in on.
+  focus: { x: number; y: number }
 }
 
 export interface QuizConnectionsQuestion extends QuizChallengeBase {
@@ -1104,6 +1103,9 @@ export interface QuizLibraryGridClue {
   key: string
   kind: QuizLibraryGridClueKind
   label: string
+  // Every title key in the selection that satisfies this fact, so a rejected
+  // answer can say which fact it fails.
+  matchKeys: string[]
 }
 
 export interface QuizLibraryGridCell {
@@ -1128,6 +1130,9 @@ export interface QuizMovieChainConnector {
   name: string
   leftRoles: string[]
   rightRoles: string[]
+  // A director, or an actor billed in the top ten of both titles. Puzzles and
+  // hints use only prominent links; any shared credit is a valid move.
+  prominent: boolean
 }
 
 export interface QuizMovieChainEdge {
@@ -1141,10 +1146,21 @@ export interface QuizMovieChainQuestion extends QuizChallengeBase {
   start: QuizScreenTitle
   target: QuizScreenTitle
   titles: QuizScreenTitle[]
+  // Prominent links only: they build the route, hints and the summary route.
   edges: QuizMovieChainEdge[]
+  // Per title key, every actor/director credit of a person who appears in two
+  // or more titles. A move is valid when the two titles share any of them.
+  credits: Record<string, QuizMovieChainCredit[]>
   difficulty: QuizMovieChainDifficulty
   optimalDistance: number
   maxMoves: number
+}
+
+export interface QuizMovieChainCredit {
+  personId: number
+  name: string
+  roles: string[]
+  prominent: boolean
 }
 
 export interface QuizIdentityLabel {
@@ -1153,6 +1169,8 @@ export interface QuizIdentityLabel {
 }
 
 export interface QuizLibraryleTitle extends QuizScreenTitle {
+  // The 0-100 community score; null when no source rated the title.
+  rating?: number | null
   genres: QuizIdentityLabel[]
   companies: QuizIdentityLabel[]
   directors: QuizIdentityLabel[]
@@ -1168,6 +1186,7 @@ export interface QuizLibraryleQuestion extends QuizChallengeBase {
 
 export interface QuizCareerPerson extends QuizIdentityLabel {
   roles: Array<'actor' | 'director'>
+  photoPath?: string | null
 }
 
 export interface QuizCareerCredit {
@@ -1240,6 +1259,9 @@ export interface QuizFootballCareerSpell {
 export interface QuizFootballCareerPathQuestion extends QuizChallengeBase {
   kind: 'footballCareerPath'
   spells: QuizFootballCareerSpell[]
+  // Typed answers: the player, and every quiz-pack player the search offers.
+  answer: { key: string; label: string }
+  players: Array<{ key: string; label: string }>
   datasetRevision: string
 }
 
@@ -1282,9 +1304,78 @@ export interface QuizFootballPlayerGridQuestion extends QuizChallengeBase {
   datasetRevision: string
 }
 
+export interface FootballWordlePlayer {
+  key: string
+  label: string
+  photoPath: string | null
+  nationality: string | null
+  position: string | null
+  clubKey: string | null
+  club: string | null
+  clubImagePath: string | null
+  league: string | null
+  birthYear: number | null
+  heightCm: number | null
+  shirt: number | null
+}
+
+export interface QuizFootballWordleQuestion extends QuizChallengeBase {
+  kind: 'footballWordle'
+  targetKey: string
+  players: FootballWordlePlayer[]
+  maxGuesses: number
+  datasetRevision: string
+}
+
+export interface QuizFootballLineupSlot {
+  key: string
+  name: string
+  aliases: string[]
+  photoPath: string | null
+  shirt: number | null
+  position: string | null
+  // 0 keeper, 1 defence, 2 holding midfield, 3 midfield, 4 attacking midfield, 5 attack.
+  line: number
+}
+
+export interface QuizFootballLineupQuestion extends QuizChallengeBase {
+  kind: 'footballLineup'
+  matchId: number
+  competitionName: string
+  stage: string | null
+  matchDate: string
+  homeTeam: string
+  awayTeam: string
+  homeImagePath: string | null
+  awayImagePath: string | null
+  scoreLabel: string
+  side: 'home' | 'away'
+  formation: string | null
+  slots: QuizFootballLineupSlot[]
+  datasetRevision: string
+}
+
+export interface QuizFootballTransferFact {
+  key: string
+  personName: string
+  photoPath: string | null
+  fromTeam: string
+  toTeam: string
+  fromImagePath: string | null
+  toImagePath: string | null
+  season: string | null
+  fee: number
+}
+
+export interface QuizFootballTransferQuestion extends QuizChallengeBase {
+  kind: 'footballTransfer'
+  reference: QuizFootballTransferFact
+  challenger: QuizFootballTransferFact
+  datasetRevision: string
+}
+
 export type QuizChallengeQuestion =
   | QuizImageRevealQuestion
-  | QuizSilhouetteQuestion
   | QuizConnectionsQuestion
   | QuizChronologyQuestion
   | QuizHigherLowerQuestion
@@ -1296,6 +1387,9 @@ export type QuizChallengeQuestion =
   | QuizFootballChampionQuestion
   | QuizFootballScorelineQuestion
   | QuizFootballCareerPathQuestion
+  | QuizFootballWordleQuestion
+  | QuizFootballLineupQuestion
+  | QuizFootballTransferQuestion
   | QuizFootballChronologyQuestion
   | QuizFootballPlayerGridQuestion
 
@@ -1947,6 +2041,10 @@ export interface GameLinksState {
   work: GameWorkSummary | null
   // The user said this game has no such entry (manual unlink).
   unlinked: ExternalLinkSource[]
+  // The franchise wiki that supplements the cast (wikiCast.ts): its name and
+  // the character category it reads, null until a read finds one. Absent when
+  // no wiki covers the game or the user turned it off.
+  wiki: { label: string; category: string | null } | null
   covers: { url: string; region: string | null; platform: string | null }[]
 }
 
@@ -6229,3 +6327,59 @@ export interface HistorySaveResult {
 }
 
 export type HistoryUserEntity = Exclude<HistoryEntity, { kind: 'media' }>
+
+// ---- quotes (/quotes) ----
+// Lines the user saved. Rows from the quote table are editable; a VN notebook
+// entry filed under 'quote' surfaces here read-only (origin 'vnNotebook', id
+// null) and is edited from its VN's reading page.
+export type QuoteOrigin = 'manual' | 'book' | 'video'
+export type QuoteSpeakerKind = 'character' | 'person' | 'wrestler'
+
+export interface SavedQuote {
+  key: string // 'q-<id>' or 'vn-<notebook id>' — unique across both origins
+  id: number | null
+  origin: QuoteOrigin | 'vnNotebook'
+  text: string
+  furigana: string | null
+  translation: string | null
+  locator: string | null
+  note: string | null
+  favorite: boolean
+  themes: string[]
+  // The live title when the link still resolves, otherwise the snapshot.
+  mediaId: number | null
+  mediaType: MediaType | null
+  sourceTitle: string | null
+  coverPath: string | null
+  backgroundPath: string | null
+  speakerKind: QuoteSpeakerKind | null
+  speakerId: number | null
+  speakerName: string | null
+  speakerImagePath: string | null
+  createdAt: string
+}
+
+export interface QuoteFilter {
+  mediaId?: number
+  characterId?: number
+  personId?: number
+  wrestlerId?: number
+}
+
+export interface QuoteInput {
+  text: string
+  furigana?: string | null
+  translation?: string | null
+  mediaId?: number | null
+  speakerKind?: QuoteSpeakerKind | null
+  speakerId?: number | null
+  // Free text when nothing in the library fits; ignored when the matching id
+  // resolves, whose current name becomes the snapshot.
+  speakerName?: string | null
+  sourceTitle?: string | null
+  locator?: string | null
+  note?: string | null
+  favorite?: boolean
+  origin?: QuoteOrigin
+  themes?: string[]
+}

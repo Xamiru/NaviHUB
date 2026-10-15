@@ -35,17 +35,68 @@ const MODE_LABEL: Record<QuizScreenMediaMode, string> = {
   both: 'Both'
 }
 
-function tone(match: 'exact' | 'near' | 'partial' | 'none'): string {
+type FactMatch = 'exact' | 'near' | 'partial' | 'none' | 'unknown'
+
+function tone(match: FactMatch): string {
   if (match === 'exact') return 'border-emerald-500/50 bg-emerald-500/10 text-emerald-200'
   if (match === 'near' || match === 'partial') return 'border-amber-500/50 bg-amber-500/10 text-amber-200'
   return 'border-base-600 bg-base-900 text-gray-400'
 }
 
-function Fact({ label, value, match }: { label: string; value: string; match: 'exact' | 'near' | 'partial' | 'none' }) {
+function Fact({ label, value, match }: { label: string; value: string; match: FactMatch }) {
   return (
     <div className={`rounded-lg border px-3 py-2 ${tone(match)}`}>
-      <p className="text-[10px] font-semibold uppercase tracking-wider opacity-70">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-wider">{label}</p>
       <p className="mt-1 text-xs font-medium">{value}</p>
+    </div>
+  )
+}
+
+function yearText(year: number | null, feedback: LibraryleFeedback['year']): string {
+  return feedback.direction ? `${year} · hidden title is ${feedback.direction}` : `${year} · exact`
+}
+
+function ratingText(rating: number | null | undefined, feedback: LibraryleFeedback['rating']): string {
+  if (rating == null) return 'No rating for this guess'
+  if (feedback.match === 'unknown') return `${rating} · hidden title has no rating`
+  return feedback.direction ? `${rating} · hidden title rates ${feedback.direction}` : `${rating} · within 3 points`
+}
+
+// Every guess with its colour-coded feedback; the play screen and the summary share it.
+function GuessBoard({
+  guesses,
+  titleByKey
+}: {
+  guesses: Guess[]
+  titleByKey: Map<string, QuizLibraryleTitle>
+}) {
+  const shared = (values: string[], fallback: string) => (values.length ? values.join(', ') : fallback)
+  return (
+    <div className="space-y-3">
+      {guesses.map((guess, index) => {
+        const title = titleByKey.get(guess.titleKey)
+        if (!title) return null
+        return (
+          <div key={title.key} className="rounded-xl border border-base-600 bg-base-800 p-3 text-left">
+            <div className="flex items-center gap-3">
+              <CoverImage path={title.imagePath} alt={title.label} thumbWidth={96} className="h-20 w-[54px] shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs text-gray-500">Guess {index + 1}</p>
+                <p className="truncate font-semibold text-white">{title.label}</p>
+              </div>
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <Fact label="Year" match={guess.feedback.year.match} value={yearText(title.releaseYear, guess.feedback.year)} />
+              <Fact label="Rating" match={guess.feedback.rating.match} value={ratingText(title.rating, guess.feedback.rating)} />
+              <Fact label="Type" match={guess.feedback.mediaType} value={title.mediaType === 'movie' ? 'Movie' : 'TV'} />
+              <Fact label="Genres" match={guess.feedback.genres.match} value={shared(guess.feedback.genres.shared, 'No shared genres')} />
+              <Fact label="Company" match={guess.feedback.companies.match} value={shared(guess.feedback.companies.shared, 'No shared companies')} />
+              <Fact label="Director" match={guess.feedback.directors.match} value={shared(guess.feedback.directors.shared, 'No shared directors')} />
+              <Fact label="Main cast" match={guess.feedback.cast.match} value={shared(guess.feedback.cast.shared, 'No shared main cast')} />
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -264,6 +315,12 @@ export default function LibrarylePage() {
             <button className="btn-ghost" onClick={() => setPhase('setup')}>Change setup</button>
           </div>
         </div>
+        {guesses.length > 0 && (
+          <div className="mt-8">
+            <h3 className="label mb-3">Your guesses</h3>
+            <GuessBoard guesses={guesses} titleByKey={titleByKey} />
+          </div>
+        )}
       </StudySessionFrame>
     )
   }
@@ -282,7 +339,7 @@ export default function LibrarylePage() {
       }
       rail={
         <SessionEvidence title="Feedback">
-          <p>Green is an exact match. Amber means a near year or at least one shared fact. Earlier and later point toward the target year.</p>
+          <p>Green is an exact match. Amber means a near year (within 5), a near rating (within 10) or at least one shared fact. Earlier/later and higher/lower point toward the hidden title.</p>
         </SessionEvidence>
       }
       feedback={saveError ? (
@@ -293,30 +350,7 @@ export default function LibrarylePage() {
       ) : undefined}
     >
       <div className="space-y-3">
-        {guesses.map((guess, index) => {
-          const title = titleByKey.get(guess.titleKey) as QuizLibraryleTitle | undefined
-          if (!title) return null
-          const shared = (values: string[], fallback: string) => values.length ? values.join(', ') : fallback
-          return (
-            <div key={title.key} className="rounded-xl border border-base-600 bg-base-800 p-3">
-              <div className="flex items-center gap-3">
-                <CoverImage path={title.imagePath} alt={title.label} className="h-20 w-[54px] shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-xs text-gray-500">Guess {index + 1}</p>
-                  <p className="truncate font-semibold text-white">{title.label}</p>
-                </div>
-              </div>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                <Fact label="Year" match={guess.feedback.year.match} value={`${title.releaseYear} ${guess.feedback.year.direction ?? 'exact'}`} />
-                <Fact label="Type" match={guess.feedback.mediaType} value={title.mediaType === 'movie' ? 'Movie' : 'TV'} />
-                <Fact label="Genres" match={guess.feedback.genres.match} value={shared(guess.feedback.genres.shared, 'No shared genres')} />
-                <Fact label="Company" match={guess.feedback.companies.match} value={shared(guess.feedback.companies.shared, 'No shared companies')} />
-                <Fact label="Director" match={guess.feedback.directors.match} value={shared(guess.feedback.directors.shared, 'No shared directors')} />
-                <Fact label="Main cast" match={guess.feedback.cast.match} value={shared(guess.feedback.cast.shared, 'No shared main cast')} />
-              </div>
-            </div>
-          )
-        })}
+        <GuessBoard guesses={guesses} titleByKey={titleByKey} />
         {guesses.length === 0 && <div className="rounded-xl border border-dashed border-base-600 py-16 text-center text-sm text-gray-500">The hidden title is ready. Start with any eligible movie or show.</div>}
       </div>
       <div className="mt-6 border-t border-base-700 pt-5">

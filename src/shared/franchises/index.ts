@@ -4,6 +4,7 @@
 // stays on media_item / media_image.
 
 import type { MediaItem, MediaType } from '../types'
+import { communityScoreFromMeta } from '../communityScore'
 import type { FranchiseCfg, FranchiseEntry } from './types'
 import { entryMediaType, matchLibrary } from './match'
 import { METAL_GEAR } from './metalGear'
@@ -76,6 +77,26 @@ import { WITCHER } from './witcher'
 import { SONG_OF_ICE_AND_FIRE } from './songOfIceAndFire'
 import { DIGIMON } from './digimon'
 import { WARCRAFT } from './warcraft'
+import { ONE_PIECE } from './onePiece'
+import { GINTAMA } from './gintama'
+import { FULLMETAL_ALCHEMIST } from './fullmetalAlchemist'
+import { CODE_GEASS } from './codeGeass'
+import { DEMON_SLAYER } from './demonSlayer'
+import { PSYCHO_PASS } from './psychoPass'
+import { BLADE_RUNNER } from './bladeRunner'
+import { AKIRA } from './akira'
+import { DEVILMAN } from './devilman'
+import { CYBERPUNK } from './cyberpunk'
+import { FALLOUT } from './fallout'
+import { HUNGER_GAMES } from './hungerGames'
+import { COWBOY_BEBOP } from './cowboyBebop'
+import { ALIEN } from './alien'
+import { GODFATHER } from './godfather'
+import { BACK_TO_THE_FUTURE } from './backToTheFuture'
+import { INDIANA_JONES } from './indianaJones'
+import { TERMINATOR } from './terminator'
+import { TOY_STORY } from './toyStory'
+import { MAD_MAX } from './madMax'
 
 export * from './types'
 export { entryMediaType, matchLibrary, normalizeGameTitle } from './match'
@@ -150,7 +171,27 @@ export const FRANCHISES: FranchiseCfg[] = [
   WITCHER,
   SONG_OF_ICE_AND_FIRE,
   DIGIMON,
-  WARCRAFT
+  WARCRAFT,
+  ONE_PIECE,
+  GINTAMA,
+  FULLMETAL_ALCHEMIST,
+  CODE_GEASS,
+  DEMON_SLAYER,
+  PSYCHO_PASS,
+  BLADE_RUNNER,
+  AKIRA,
+  DEVILMAN,
+  CYBERPUNK,
+  FALLOUT,
+  HUNGER_GAMES,
+  COWBOY_BEBOP,
+  ALIEN,
+  GODFATHER,
+  BACK_TO_THE_FUTURE,
+  INDIANA_JONES,
+  TERMINATOR,
+  TOY_STORY,
+  MAD_MAX
 ]
 
 export function franchiseCfg(id: string): FranchiseCfg | null {
@@ -158,20 +199,10 @@ export function franchiseCfg(id: string): FranchiseCfg | null {
 }
 
 // Community rating (0-100) with library precedence: a matched row's own
-// metadata beats the hardcoded fallback. Mirrors the key order of
-// mediaRepo.COMMUNITY_SQL — the renderer has no shared community-score helper,
-// so this is the franchise-scoped equivalent.
+// metadata beats the hardcoded fallback. The sources and their order are the
+// shared list the SQL reader also uses (@shared/communityScore).
 export function communityScoreFor(entry: FranchiseEntry, item: MediaItem | null): number | null {
-  const meta = item?.metadata
-  if (meta) {
-    for (const key of ['averageScore', 'metacritic', 'igdbRating', 'vndbRating', 'olRating', 'hcRating']) {
-      const v = meta[key]
-      if (typeof v === 'number' && v > 0) return Math.round(v)
-    }
-    const imdb = meta['imdbRating']
-    if (typeof imdb === 'number' && imdb > 0) return Math.round(imdb * 10)
-  }
-  return entry.mc ?? null
+  return communityScoreFromMeta(item?.metadata as Record<string, unknown> | null | undefined) ?? entry.mc ?? null
 }
 
 // The media types a franchise spans, in first-appearance (release) order.

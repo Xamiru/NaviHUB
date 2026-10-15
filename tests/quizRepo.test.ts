@@ -196,7 +196,7 @@ describe('quizRepo availability', () => {
         .lastInsertRowid
     )
     db.prepare(`INSERT INTO credit (media_id, person_id, role, importance) VALUES (?, ?, 'actor', 0)`).run(completedMovie, actor)
-    db.prepare(`INSERT INTO credit (media_id, person_id, role, importance) VALUES (?, ?, 'actor', 25)`).run(watchingTv, actor)
+    db.prepare(`INSERT INTO credit (media_id, person_id, role, importance) VALUES (?, ?, 'actor', 2)`).run(watchingTv, actor)
 
     const readingManga = Number(
       db
@@ -236,7 +236,7 @@ describe('quizRepo availability', () => {
       db.prepare(
         `INSERT INTO credit
            (media_id, person_id, character_id, role, language, importance)
-         VALUES (?, ?, ?, 'voice_actor', 'Japanese', 1)`
+         VALUES (?, ?, ?, 'voice_actor', 'Japanese', 0)`
       ).run(mediaId, personId, characterId)
     }
 
@@ -248,7 +248,6 @@ describe('quizRepo availability', () => {
     expect(all.cast).toBe(2)
     expect(safe.va).toBe(2)
     expect(all.va).toBe(3)
-    expect(safe.mangaPanel).toBe(1)
     expect(safe.imageReveal).toBe(1)
     expect(all.higherLower).toBe(2)
   })
@@ -324,15 +323,30 @@ describe('quizRepo higher/lower availability', () => {
       mediaType: 'anime',
       releaseDate: 3,
       totalUnits: 3,
-      personalScore: 3
+      personalScore: 3,
+      communityScore: 0
     })
     expect(movie).toEqual({
       mediaType: 'movie',
       releaseDate: 0,
       totalUnits: 0,
-      personalScore: 0
+      personalScore: 0,
+      communityScore: 0
     })
     expect(result.higherLower).toBe(3)
+  })
+
+  it('counts community ratings from any source the shared rule knows', () => {
+    const insert = db.prepare(
+      `INSERT INTO media_item (media_type, title, status, cover_path, release_date, metadata)
+       VALUES ('movie', ?, 'Completed', 'media/x.jpg', '2000-01-01', ?)`
+    )
+    insert.run('Rated by TMDB', JSON.stringify({ tmdbRating: 74 }))
+    insert.run('Rated by IMDb', JSON.stringify({ imdbRating: 8.1 }))
+    insert.run('Unrated', null)
+    const movie = quizRepo.availability({ statuses: ['Completed'] }).higherLowerOptions
+      .find((option) => option.mediaType === 'movie')!
+    expect(movie.communityScore).toBe(2)
   })
 
   it('filters the dealt pool to the requested category', () => {
@@ -524,7 +538,8 @@ describe('quizRepo deduction and grouping pools', () => {
         index % 2 ? 'tv' : 'movie',
         `Wall ${index + 1}`,
         `media/wall-${index + 1}.jpg`,
-        `${1800 + index * 10}-01-01`
+        // Group 3 shares the 1990s (genre groups no longer exist).
+        `${group === 3 ? 1990 + index - 12 : 1800 + index * 10}-01-01`
       ).lastInsertRowid)
       if (group === 0) {
         db.prepare(`INSERT INTO credit (media_id, person_id, role, importance) VALUES (?, ?, 'actor', 0)`).run(mediaId, actor)
@@ -550,47 +565,6 @@ describe('quizRepo deduction and grouping pools', () => {
     if (wall.kind !== 'linkWall') return
     expect(wall.titles).toHaveLength(16)
     expect(wall.groups).toHaveLength(4)
-  })
-})
-
-describe('quizRepo silhouette challenge pool', () => {
-  it('uses imported anime character portraits and excludes movie roles', () => {
-    for (let index = 0; index < 4; index++) {
-      const mediaId = addAnime(`Anime ${index + 1}`, 'Completed')
-      const characterId = Number(
-        db
-          .prepare(`INSERT INTO character (name, gender, image_path) VALUES (?, 'female', ?) `)
-          .run(`Heroine ${index + 1}`, `media/heroine-${index + 1}.jpg`).lastInsertRowid
-      )
-      db.prepare(`INSERT INTO media_character (media_id, character_id) VALUES (?, ?)`).run(
-        mediaId,
-        characterId
-      )
-    }
-    const movieId = Number(
-      db
-        .prepare(`INSERT INTO media_item (media_type, title, status) VALUES ('movie', 'Film', 'Completed')`)
-        .run().lastInsertRowid
-    )
-    const movieCharacter = Number(
-      db
-        .prepare(`INSERT INTO character (name, gender, image_path) VALUES ('Movie Role', 'female', 'media/movie.jpg')`)
-        .run().lastInsertRowid
-    )
-    db.prepare(`INSERT INTO media_character (media_id, character_id) VALUES (?, ?)`).run(
-      movieId,
-      movieCharacter
-    )
-
-    const questions = quizRepo.challengePool({
-      kind: 'silhouette',
-      seed: 4,
-      statuses: ['Completed'],
-      length: 10,
-      options: { silhouetteMode: 'character' }
-    })
-    expect(questions).toHaveLength(4)
-    expect(questions.every((question) => !question.reveal.includes('Movie Role'))).toBe(true)
   })
 })
 
@@ -668,6 +642,18 @@ describe('quizRepo Connections challenge pool', () => {
     expect(question.reveal).toContain('Shared Director — Film: director; Show: director')
     expect(question.reveal).not.toContain('Anime Role')
     expect(quizRepo.availability({ statuses: ['Completed'] }).connections).toBe(1)
+
+    // A sequel sharing the show's lead adds only same-franchise pairs, which
+    // the builder skips, so availability does not grow.
+    const sequel = addScreenTitle('tv', 'Show Season 2')
+    addRole(sequel, shared, 'Show Lead', 0)
+    // Film-Show and Film-Show Season 2 remain; Show-Show Season 2 does not.
+    expect(quizRepo.availability({ statuses: ['Completed'] }).connections).toBe(2)
+    const pairs = quizRepo.challengePool({ kind: 'connections', seed: 1, statuses: ['Completed'], length: 20 })
+    for (const question of pairs) {
+      if (question.kind !== 'connections') continue
+      expect([question.titleA.label, question.titleB.label].sort()).not.toEqual(['Show', 'Show Season 2'])
+    }
   })
 })
 
@@ -837,8 +823,14 @@ describe('quizRepo session history', () => {
       [
         'conjRace',
         'footballPlayerGrid',
+        'footballCareerGuess',
+        'footballWordle',
+        'footballLineup',
+        'footballTransfer',
         'higherLower',
         'imageReveal',
+        'imageRevealTyped',
+        'chronologyPoints',
         'libraryGrid',
         'libraryle',
         'linkWall',

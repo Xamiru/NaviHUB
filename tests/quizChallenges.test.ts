@@ -4,7 +4,8 @@ import type { QuizChallengeKind } from '../src/shared/types'
 
 const media: ChallengeMediaCandidate[] = Array.from({ length: 8 }, (_, i) => ({
   id: i + 1,
-  title: `Title ${i + 1}`,
+  // '#' keeps the number from reading as a sequel number (one franchise each).
+  title: `Title #${i + 1}`,
   mediaType: 'anime',
   coverPath: `media/${i + 1}.jpg`,
   artPaths: [`pictures/${i + 1}.jpg`],
@@ -17,21 +18,13 @@ const media: ChallengeMediaCandidate[] = Array.from({ length: 8 }, (_, i) => ({
   studios: [{ id: 1, name: 'Shared Studio', role: 'animation_studio' }]
 }))
 
-const characters = Array.from({ length: 6 }, (_, i) => ({
-  id: i + 1,
-  name: `Character ${i + 1}`,
-  gender: 'female',
-  imagePath: `media/c${i + 1}.jpg`,
-  media: [{ id: i + 1, title: `Title ${i + 1}` }]
-}))
-
 describe('central quiz challenge builders', () => {
   it('is reproducible and every displayed MCQ has one displayed valid answer', () => {
-    const kinds: QuizChallengeKind[] = ['imageReveal', 'silhouette', 'connections', 'higherLower']
+    const kinds: QuizChallengeKind[] = ['imageReveal', 'connections', 'higherLower']
     for (const kind of kinds) {
       const request = { kind, seed: 44, scope: 'consumed' as const, length: 3 }
-      const first = buildChallengeQuestions(request, media, characters)
-      expect(buildChallengeQuestions(request, media, characters)).toEqual(first)
+      const first = buildChallengeQuestions(request, media)
+      expect(buildChallengeQuestions(request, media)).toEqual(first)
       for (const question of first) {
         expect(question.choices.filter((choice) => question.validKeys.includes(choice.key))).toHaveLength(1)
         expect(new Set(question.choices.map((choice) => choice.key)).size).toBe(question.choices.length)
@@ -187,7 +180,8 @@ describe('central quiz challenge builders', () => {
     ): ChallengeMediaCandidate => ({
       ...media[0],
       id,
-      title: `Screen ${id}`,
+      // '#' keeps the trailing number from reading as a sequel number.
+      title: `Screen #${id}`,
       mediaType,
       coverPath: `media/screen-${id}.jpg`,
       people
@@ -220,8 +214,8 @@ describe('central quiz challenge builders', () => {
     expect(question.choices).toHaveLength(4)
     expect(question.validKeys).toEqual(['1'])
     expect(question.choices.map((choice) => choice.key)).not.toContain('2')
-    expect(question.reveal).toContain('Screen 101: Movie Lead')
-    expect(question.reveal).toContain('Screen 102: TV Lead')
+    expect(question.reveal).toContain('Screen #101: Movie Lead')
+    expect(question.reveal).toContain('Screen #102: TV Lead')
     expect(question.reveal).not.toContain('Anime Role')
   })
 
@@ -229,7 +223,7 @@ describe('central quiz challenge builders', () => {
     const make = (id: number, actorIds: number[]): ChallengeMediaCandidate => ({
       ...media[0],
       id,
-      title: `Film ${id}`,
+      title: `Film #${id}`,
       mediaType: id % 2 ? 'movie' : 'tv',
       people: actorIds.map((actorId) => ({
         id: actorId,

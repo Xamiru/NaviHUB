@@ -11,13 +11,18 @@ import {
 } from './bangumiCore'
 import { bakedCharacterNames, bakedReading, worksForBangumi } from './launchboxCatalog'
 import { LAUNCHBOX_SOURCE } from './launchboxCatalogCore'
+import { WIKI_SOURCE } from './wikiCastCore'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
 import { upsertSharedPerson } from './repos/personMatch'
 import * as links from './repos/externalLinkRepo'
+import { wikiCast, wikiLinkFor } from './wikiCast'
+import { currentActivitySignal } from './activityContext'
+import { logWarn } from './logBus'
 
 // A game's cast, staff and game-to-game relations from Bangumi — the source
-// that has voice actors for games. Reached through the game's Bangumi link
+// that has voice actors for games — supplemented by a franchise wiki where one
+// covers the game (wikiCast.ts). Reached through the game's Bangumi link
 // (media_external_link), whatever the row's own key is.
 //
 // What reaches the database: character names (romanized where the games
@@ -98,6 +103,11 @@ export function clearGameCast(mediaId: number): void {
   const db = getSqlite()
   db.transaction(() => {
     db.prepare('DELETE FROM credit WHERE media_id = ? AND origin = ?').run(mediaId, BANGUMI_SOURCE)
+    // Wiki voice credits hung on Bangumi's characters go with them; hand-made ones stay.
+    db.prepare(
+      `DELETE FROM credit WHERE media_id = ? AND origin = ?
+         AND character_id IN (SELECT id FROM character WHERE external_source = ?)`
+    ).run(mediaId, WIKI_SOURCE, BANGUMI_SOURCE)
     db.prepare(
       `DELETE FROM media_character WHERE media_id = ?
          AND character_id IN (SELECT id FROM character WHERE external_source = ?)`
@@ -108,6 +118,10 @@ export function clearGameCast(mediaId: number): void {
 }
 
 function markChecked(mediaId: number): void {
+  stampMeta(mediaId, 'bangumiChecked')
+}
+
+function stampMeta(mediaId: number, key: string): void {
   const db = getSqlite()
   const row = db.prepare('SELECT metadata FROM media_item WHERE id = ?').get(mediaId) as
     | { metadata: string | null }
@@ -118,19 +132,45 @@ function markChecked(mediaId: number): void {
   } catch {
     meta = {}
   }
-  meta.bangumiChecked = true
+  meta[key] = true
   db.prepare('UPDATE media_item SET metadata = ? WHERE id = ?').run(JSON.stringify(meta), mediaId)
 }
 
-export async function enrichGame(mediaId: number): Promise<GameCastSummary> {
-  const none: GameCastSummary = { linked: false, cast: 0, staff: 0, relations: 0 }
+// Whether a game has anywhere to read a cast from: a Bangumi link, or a
+// franchise wiki that covers it (wikiCast.ts).
+export function hasCastSource(mediaId: number): boolean {
+  return !!links.linkedId(mediaId, 'bangumi') || wikiLinkFor(mediaId) != null
+}
+
+// The game's cast: Bangumi first, then the franchise wiki fills in what
+// Bangumi lacks. A wiki outage is logged and left for the next read
+// (metadata.wikiChecked stays unset); Bangumi's part is already saved.
+// `bangumi: false` reads only the wiki, for a game whose Bangumi cast is current.
+export async function enrichGame(mediaId: number, opts: { bangumi?: boolean } = {}): Promise<GameCastSummary> {
   const media = getSqlite()
     .prepare('SELECT media_type FROM media_item WHERE id = ?')
     .get(mediaId) as { media_type: string } | undefined
-  if (media?.media_type !== 'game') throw new Error('Cast from Bangumi is for games only.')
+  if (media?.media_type !== 'game') throw new Error('Game cast is for games only.')
   const subject = links.linkedId(mediaId, 'bangumi')
-  if (!subject) return none
-  const subjectId = Number(subject)
+  const fromBangumi = subject && opts.bangumi !== false ? await bangumiCast(mediaId, Number(subject)) : { linked: false, cast: 0, staff: 0, relations: 0 }
+  let fromWiki = { linked: false, cast: 0 }
+  try {
+    fromWiki = await wikiCast(mediaId)
+    stampMeta(mediaId, 'wikiChecked')
+  } catch (err) {
+    if (currentActivitySignal()?.aborted) throw err
+    logWarn('app', `The franchise wiki could not be read for game ${mediaId}: ${err instanceof Error ? err.message : String(err)}`)
+  }
+  return {
+    linked: fromBangumi.linked || fromWiki.linked,
+    cast: fromBangumi.cast + fromWiki.cast,
+    staff: fromBangumi.staff,
+    relations: fromBangumi.relations
+  }
+}
+
+async function bangumiCast(mediaId: number, subjectId: number): Promise<GameCastSummary> {
+  const none: GameCastSummary = { linked: false, cast: 0, staff: 0, relations: 0 }
 
   // ---- network ----
   updateActivity({ phase: 'fetching' })
@@ -214,6 +254,8 @@ export async function enrichGame(mediaId: number): Promise<GameCastSummary> {
     for (const { cid } of linked) {
       if (kept.has(cid)) continue
       db.prepare('DELETE FROM media_character WHERE media_id = ? AND character_id = ?').run(mediaId, cid)
+      // The wiki's voice on a character that left the cast leaves with it.
+      db.prepare('DELETE FROM credit WHERE media_id = ? AND character_id = ? AND origin = ?').run(mediaId, cid, WIKI_SOURCE)
     }
     sweepOrphans(db)
 

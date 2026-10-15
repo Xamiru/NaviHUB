@@ -10,6 +10,7 @@ import { usePersistedState } from '../lib/navState'
 import { musicIdOf } from '../lib/playerTrackIds'
 import Tabs, { TabPanel } from '../components/Tabs'
 import LyricsPanel from '../components/music/LyricsPanel'
+import ArtistCredit from '../components/music/ArtistCredit'
 import CoverImage from '../components/CoverImage'
 import BackButton from '../components/BackButton'
 import Section from '../components/Section'
@@ -112,7 +113,6 @@ export default function NowPlayingPage() {
   // <audio> metadata is unknown.
   const animeLink = track.mediaId != null ? `/anime/${track.mediaId}` : null
   const albumLink = track.albumId != null ? `/music/albums/${track.albumId}` : null
-  const artistLink = track.artistId != null ? `/music/artists/${track.artistId}` : null
   const dur = (Number.isFinite(duration) && duration > 0 ? duration : track.duration) || 0
   const titleLink = albumLink ?? animeLink
   // Lyrics only for library tracks: quiz audio must never reveal its song.
@@ -210,10 +210,8 @@ export default function NowPlayingPage() {
               <p className="text-2xl font-bold">{track.title}</p>
             )}
             <p className="mt-1 text-sm text-gray-400">
-              {artistLink && track.subtitle ? (
-                <Link to={artistLink} className="hover:text-accent">
-                  {track.subtitle}
-                </Link>
+              {track.artistId != null && track.subtitle ? (
+                <ArtistCredit credit={track.subtitle} artistId={track.artistId} />
               ) : (
                 track.subtitle
               )}

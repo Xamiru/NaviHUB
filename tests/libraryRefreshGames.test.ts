@@ -23,7 +23,7 @@ vi.mock('../src/main/gamesCatalogDb', () => ({ getCatalogDb: () => null }))
 vi.mock('../src/main/launchboxCatalog', () => ({ importWork: calls.importWork, xrefs: calls.xrefs }))
 vi.mock('../src/main/steam', () => ({ importGame: calls.steamImport }))
 vi.mock('../src/main/gamesCatalog', () => ({ importGame: calls.rawgImport }))
-vi.mock('../src/main/gameCast', () => ({ enrichGame: calls.enrich, clearGameCast: calls.clearCast }))
+vi.mock('../src/main/gameCast', () => ({ enrichGame: calls.enrich, clearGameCast: calls.clearCast, hasCastSource: () => true }))
 
 import { refreshOne, selectRows } from '../src/main/libraryRefresh'
 import { unlinkWork } from '../src/main/gameLinks'

@@ -214,7 +214,7 @@ export async function importGame(
           metaObj = {}
         }
       }
-      if (metacritic > 0) metaObj.metacritic = metacritic // already in COMMUNITY_SQL
+      if (metacritic > 0) metaObj.metacritic = metacritic // a COMMUNITY_SCORE_SOURCES key
       if (hltbTimes) metaObj.hltb = hltbTimes
       db.prepare('UPDATE media_item SET metadata=? WHERE id=?').run(JSON.stringify(metaObj), mediaId)
     }

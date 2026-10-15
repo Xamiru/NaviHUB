@@ -1,10 +1,13 @@
+import { seededRng } from '../src/shared/quizCore'
 import { describe, expect, it } from 'vitest'
 import {
   buildMysteryCareerQuestion,
   mysteryCareerScore,
   mysteryCareerTargetCount,
   searchCareerPeople,
-  type MysteryCareerCandidate
+  type MysteryCareerCandidate,
+  careerClues,
+  careerCreditProminence
 } from '../src/shared/mysteryCareer'
 
 function candidates(): MysteryCareerCandidate[] {
@@ -46,5 +49,30 @@ describe('Mystery Career', () => {
     expect(mysteryCareerScore(true, 1, 6)).toBe(600)
     expect(mysteryCareerScore(true, 6, 6)).toBe(100)
     expect(mysteryCareerScore(false, 1, 6)).toBe(0)
+  })
+})
+
+describe('Mystery Career clue order', () => {
+  it('scores leads above deep roles, directing in between, and rated titles a little higher', () => {
+    expect(careerCreditProminence('actor', 0, null)).toBeGreaterThan(careerCreditProminence('director', null, null))
+    expect(careerCreditProminence('director', null, null)).toBeGreaterThan(careerCreditProminence('actor', 6, null))
+    expect(careerCreditProminence('actor', 3, 90)).toBeGreaterThan(careerCreditProminence('actor', 3, 40))
+  })
+
+  it('reveals the least known credits first and always ends on the two best known', () => {
+    const credit = (key: string, prominence: number) => ({
+      title: { key, label: key, aliases: [], imagePath: `media/${key}.jpg`, releaseYear: 2000, mediaType: 'movie' as const },
+      roles: ['Main cast'],
+      prominence
+    })
+    const pool = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => credit(`t${n}`, n))
+    for (let seed = 0; seed < 10; seed++) {
+      const clues = careerClues(pool, seededRng(seed))
+      expect(clues).toHaveLength(6)
+      expect(clues.slice(-2).map((clue) => clue.title.key)).toEqual(['t9', 't10'])
+      const order = clues.map((clue) => Number(clue.title.key.slice(1)))
+      expect(order).toEqual([...order].sort((a, b) => a - b))
+      expect(clues[0]).not.toHaveProperty('prominence')
+    }
   })
 })

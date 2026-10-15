@@ -22,6 +22,7 @@ things that were tried and rejected, and the gotchas that were paid for once alr
 | The History section — sourcing rules, content model, timeline and articles, personal layer, archive, research sessions | [history.md](history.md) |
 | Torrent search (Jackett/qBittorrent) or the bulk importer | [torrents-bulk.md](torrents-bulk.md) |
 | Theme songs, the music library, the tournament bracket | [music-quiz.md](music-quiz.md) |
+| The quote book — saving lines from readers and the player, furigana, Quote of the day | [quotes.md](quotes.md) |
 | The checklist, streaks, or anything that advances progress on a title | [checklist-progress.md](checklist-progress.md) |
 | The task registry, pause/cancel, the structured log, the Tools menu | [tasks-logs.md](tasks-logs.md) |
 | Shared UI components, the Lain theme, dialogs, the menu bar, zoom | [ui-conventions.md](ui-conventions.md) |

@@ -68,7 +68,7 @@ function addActorCredit(mediaId: number, personId: number, billingOrder: number 
 function linkCharacter(mediaId: number, characterId: number): number {
   return Number(
     db
-      .prepare(`INSERT INTO media_character (media_id, character_id) VALUES (?, ?)`)
+      .prepare(`INSERT INTO media_character (media_id, character_id, sort_order) VALUES (?, ?, 0)`)
       .run(mediaId, characterId).lastInsertRowid
   )
 }
@@ -91,35 +91,62 @@ function addCredit(
   )
 }
 
-function addTag(mediaId: number, name: string): void {
-  const tagId = Number(db.prepare(`INSERT INTO tag (name) VALUES (?)`).run(name).lastInsertRowid)
+function addTag(mediaId: number, name: string, category: string | null = null): void {
+  const tagId = Number(db.prepare(`INSERT INTO tag (name, category) VALUES (?, ?)`).run(name, category).lastInsertRowid)
   db.prepare(`INSERT INTO media_tag (media_id, tag_id) VALUES (?, ?)`).run(mediaId, tagId)
 }
 
 describe('quizRepo.castPool', () => {
-  it('uses top-ten movie billing, uncapped TV cast, and retains all appearances', () => {
+  it('asks only about the first five billed, movies and TV alike, and retains all appearances', () => {
     const movieLead = addMedia('Movie Lead', { type: 'movie' })
-    const movieExtra = addMedia('Movie Extra', { type: 'movie' })
-    const show = addMedia('Long-running Show', { type: 'tv' })
+    const movieSixth = addMedia('Movie Sixth', { type: 'movie' })
+    const showRegular = addMedia('Show Regular', { type: 'tv' })
+    const showGuest = addMedia('Show Guest', { type: 'tv' })
     const anime = addMedia('Anime', { type: 'anime' })
     const actor = addPerson('Working Actor', 'people/actor.webp')
     const noPhoto = addPerson('No Photo', null)
 
-    addActorCredit(movieLead, actor, 9)
-    addActorCredit(movieExtra, actor, 10)
-    addActorCredit(show, actor, 45)
+    addActorCredit(movieLead, actor, 4)
+    addActorCredit(movieSixth, actor, 5)
+    addActorCredit(showRegular, actor, 1)
+    // TV credits run 30 deep into one-off guests; those never seed a question.
+    addActorCredit(showGuest, actor, 22)
     addActorCredit(anime, actor, 0)
     addActorCredit(movieLead, noPhoto, 0)
 
     const pool = quizRepo.castPool()
-    expect(pool.map((item) => item.mediaTitle)).toEqual(['Movie Lead', 'Long-running Show'])
+    expect(pool.map((item) => item.mediaTitle)).toEqual(['Movie Lead', 'Show Regular'])
     expect(pool[0]).toMatchObject({
       personName: 'Working Actor',
       photoPath: 'people/actor.webp',
       mediaType: 'movie',
-      billingOrder: 9
+      billingOrder: 4
     })
-    expect(pool[0].validMediaIds).toEqual([movieLead, movieExtra, show])
+    // Every screen credit still guards the wrong options.
+    expect(pool[0].validMediaIds).toEqual([movieLead, movieSixth, showRegular, showGuest])
+  })
+
+  it('never asks about a voice role but keeps the voiced title as a valid answer', () => {
+    const film = addMedia('Live Film', { type: 'movie' })
+    const cartoon = addMedia('Cartoon', { type: 'movie' })
+    addTag(cartoon, 'Animation', 'genre')
+    const actor = addPerson('Star', 'people/star.webp')
+    addActorCredit(film, actor, 0)
+    addActorCredit(cartoon, actor, 0)
+
+    const pool = quizRepo.castPool()
+    expect(pool.map((item) => item.mediaTitle)).toEqual(['Live Film'])
+    // The cartoon can never be offered as a wrong answer for this actor.
+    expect(pool[0].validMediaIds).toEqual([film, cartoon])
+  })
+
+  it('treats only the Animation genre as animated, not a stray tag of that name', () => {
+    const film = addMedia('Behind the Scenes', { type: 'movie' })
+    addTag(film, 'Animation')
+    const actor = addPerson('Host', 'people/host.webp')
+    addActorCredit(film, actor, 0)
+
+    expect(quizRepo.castPool().map((item) => item.mediaTitle)).toEqual(['Behind the Scenes'])
   })
 
   it('filters by completed status and carries title affinity fields', () => {
@@ -304,7 +331,10 @@ describe('quizRepo.synopsisPool', () => {
 describe('quiz pool process requests', () => {
   function addVoicedRole(index: number, personId: number): void {
     const mediaId = addMedia(`Anime ${index}`)
-    addCredit(mediaId, personId, addCharacter(`Character ${index}`, `characters/${index}.webp`, 'female'))
+    const characterId = addCharacter(`Character ${index}`, `characters/${index}.webp`, 'female')
+    // Linked with a cast rank, so the character counts as well known.
+    linkCharacter(mediaId, characterId)
+    addCredit(mediaId, personId, characterId)
   }
 
   it('deals VA rounds from a pool kept until the library changes', () => {

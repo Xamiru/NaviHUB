@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { buildVaQuizQuestions } from '../src/shared/vaQuiz'
+import { buildVaNameQuestions, buildVaQuizQuestions } from '../src/shared/vaQuiz'
 import { buildCastQuizQuestions } from '../src/shared/castQuiz'
 import {
   buildChallengeQuestions,
-  type ChallengeCharacterCandidate,
   type ChallengeMediaCandidate
 } from '../src/shared/quizChallenges'
 import { movieChainEndpointCounts, type MovieChainCandidate } from '../src/shared/movieChain'
@@ -43,23 +42,6 @@ function screenLibrary(titles: number, people: number): ChallengeMediaCandidate[
   }))
 }
 
-function animeCharacters(media: ChallengeMediaCandidate[], perTitle: number): ChallengeCharacterCandidate[] {
-  return media
-    .filter((item) => item.mediaType === 'anime')
-    .flatMap((item, a) =>
-      Array.from({ length: perTitle }, (_, k) => {
-        const id = a * perTitle + k + 1
-        return {
-          id,
-          name: `Character ${id}`,
-          gender: k % 2 ? 'male' : 'female',
-          imagePath: `characters/${id}.jpg`,
-          media: [{ id: item.id, title: item.title }]
-        }
-      })
-    )
-}
-
 function vaPool(roles: number, people: number): QuizVaItem[] {
   const rng = seededRng(2)
   return Array.from({ length: roles }, (_, i) => {
@@ -74,8 +56,11 @@ function vaPool(roles: number, people: number): QuizVaItem[] {
       mediaTitle: `Anime ${mediaId}`,
       year: 1980 + (i % 40),
       importance: i % 3,
+      // Fifteen roles per title; the top ten count as well known, as in real casts.
+      castRank: i % 15,
       personIds: [person],
-      personNames: [`VA ${person}`]
+      personNames: [`VA ${person}`],
+      personPhotos: [`people/${person}.jpg`]
     }
   })
 }
@@ -115,20 +100,11 @@ const challenge = (kind: QuizChallengeRequest['kind'], options?: QuizChallengeRe
 describe('quiz deal builders at library scale', () => {
   it('deals a Voice Actor round from 50k character appearances', () => {
     expect(within(3000, () => buildVaQuizQuestions(vaPool(50000, 3000), 20, 1))).toHaveLength(20)
+    expect(within(3000, () => buildVaNameQuestions(vaPool(50000, 3000), 20, 1))).toHaveLength(20)
   })
 
   it('deals a Cast round from 20k actor-title pairs', () => {
     expect(within(2000, () => buildCastQuizQuestions(castPool(20000, 5000, 4000), 20, 1))).toHaveLength(20)
-  })
-
-  it('deals both Silhouette modes from 18k characters', () => {
-    const characters = animeCharacters(media, 12)
-    expect(within(1000, () => buildChallengeQuestions(challenge('silhouette'), media, characters))).toHaveLength(20)
-    expect(
-      within(1000, () =>
-        buildChallengeQuestions(challenge('silhouette', { silhouetteMode: 'title' }), media, characters)
-      )
-    ).toHaveLength(20)
   })
 
   it('deals a Movie Chain and counts its endpoints over 3k screen titles', () => {

@@ -1,7 +1,8 @@
 import { getSqlite } from './db/connection'
 import * as catalog from './launchboxCatalog'
 import * as bangumi from './bangumi'
-import { clearGameCast, enrichGame } from './gameCast'
+import { clearGameCast, enrichGame, hasCastSource } from './gameCast'
+import { clearWikiCast, wikiLinkFor } from './wikiCast'
 import { workSummary } from './gamesUpgrade'
 import { LAUNCHBOX_SOURCE } from './launchboxCatalogCore'
 import * as links from './repos/externalLinkRepo'
@@ -38,7 +39,7 @@ function workIdOf(mediaId: number): number | null {
 export function get(mediaId: number): GameLinksState {
   const installed = catalog.status().installed
   const workId = workIdOf(mediaId)
-  const unlinked = (['launchbox', 'bangumi'] as ExternalLinkSource[]).filter((s) => {
+  const unlinked = (['launchbox', 'bangumi', 'fandom'] as ExternalLinkSource[]).filter((s) => {
     const l = links.get(mediaId, s)
     return l?.method === 'manual' && l.externalId === ''
   })
@@ -47,8 +48,15 @@ export function get(mediaId: number): GameLinksState {
     links: links.list(mediaId),
     work: installed && workId != null ? workSummary(workId) : null,
     unlinked,
+    wiki: wikiState(mediaId),
     covers: installed && workId != null ? catalog.coverCandidates(workId) : []
   }
+}
+
+function wikiState(mediaId: number): GameLinksState['wiki'] {
+  const found = wikiLinkFor(mediaId)
+  if (!found) return null
+  return { label: found.wiki.label, category: found.stem ? `${found.stem}${found.wiki.categorySuffix}` : null }
 }
 
 export function searchWorks(query: string): GameWorkSummary[] {
@@ -66,7 +74,7 @@ export async function importWithCast(workId: number, opts: { skipHltb?: boolean 
 }
 
 export async function castOrWarn(mediaId: number, title: string): Promise<{ cast?: number; staff?: number }> {
-  if (!links.linkedId(mediaId, 'bangumi')) return {}
+  if (!hasCastSource(mediaId)) return {}
   try {
     const r = await enrichGame(mediaId)
     return { cast: r.cast, staff: r.staff }
@@ -131,6 +139,14 @@ export function unlinkBangumi(mediaId: number): void {
   gameRow(mediaId)
   links.unlinkManually(mediaId, 'bangumi')
   clearGameCast(mediaId)
+}
+
+// "This game is not covered by that wiki": the link goes, and so does the
+// cast the wiki brought. Bangumi's and hand-made rows stay.
+export function unlinkWiki(mediaId: number): void {
+  gameRow(mediaId)
+  links.unlinkManually(mediaId, 'fandom')
+  clearWikiCast(mediaId)
 }
 
 // Hands a source back to the automatic passes.

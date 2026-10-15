@@ -17,6 +17,12 @@ export interface LibraryleFeedback {
     direction: 'earlier' | 'later' | null
   }
   mediaType: LibraryleMatch
+  // Community score: exact within 3 points, near within 10; 'unknown' when
+  // either title has no rating, so a missing score never reads as a miss.
+  rating: {
+    match: 'exact' | 'near' | 'none' | 'unknown'
+    direction: 'higher' | 'lower' | null
+  }
   genres: { match: LibraryleMatch; shared: string[] }
   companies: { match: LibraryleMatch; shared: string[] }
   directors: { match: LibraryleMatch; shared: string[] }
@@ -24,6 +30,18 @@ export interface LibraryleFeedback {
 }
 
 export const LIBRARYLE_MAX_GUESSES = 8
+export const LIBRARYLE_RATING_EXACT = 3
+export const LIBRARYLE_RATING_NEAR = 10
+
+function ratingFeedback(target: number | null | undefined, guess: number | null | undefined): LibraryleFeedback['rating'] {
+  if (target == null || guess == null) return { match: 'unknown', direction: null }
+  const difference = target - guess
+  const gap = Math.abs(difference)
+  return {
+    match: gap <= LIBRARYLE_RATING_EXACT ? 'exact' : gap <= LIBRARYLE_RATING_NEAR ? 'near' : 'none',
+    direction: gap <= LIBRARYLE_RATING_EXACT ? null : difference > 0 ? 'higher' : 'lower'
+  }
+}
 
 function unique(values: readonly QuizIdentityLabel[]): QuizIdentityLabel[] {
   return [...new Map(values.map((value) => [value.key, value])).values()]
@@ -101,6 +119,7 @@ export function libraryleFeedback(
       direction: difference === 0 ? null : difference < 0 ? 'earlier' : 'later'
     },
     mediaType: target.mediaType === guess.mediaType ? 'exact' : 'none',
+    rating: ratingFeedback(target.rating, guess.rating),
     genres: compareSets(target.genres, guess.genres),
     companies: compareSets(target.companies, guess.companies),
     directors: compareSets(target.directors, guess.directors),

@@ -184,7 +184,14 @@ export default function LinkWallPage() {
       setMessage(`Group found: ${transition.group?.labels.join(' / ')}`)
       interactionLockedRef.current = false
     } else if (transition.outcome === 'wrong') {
-      setMessage('Those four titles do not form one of the exact groups.')
+      setMessage(
+        transition.oneAway
+          ? 'One away. Three of those four belong together; swap one title.'
+          : 'Those four titles do not form one of the exact groups.'
+      )
+      interactionLockedRef.current = false
+    } else if (transition.outcome === 'repeated') {
+      setMessage('You already tried those four. No mistake counted.')
       interactionLockedRef.current = false
     } else if (transition.outcome === 'complete' || transition.outcome === 'failed') {
       setMessage(null)
@@ -303,7 +310,7 @@ export default function LinkWallPage() {
       rail={
         <>
           <SessionEvidence title="Possible connections">
-            <p>Main-cast actor, director, company, franchise, genre, or release decade. Every wall uses at least three different families.</p>
+            <p>Main-cast actor, director, major studio, franchise, or release decade. Every wall uses at least three different families.</p>
           </SessionEvidence>
           <SessionEvidence title="Scoring">
             <p>Each solved group is worth 250 points. Every wrong group costs 25 points. Four mistakes end the wall.</p>

@@ -72,15 +72,22 @@ function firstAgreeing(rows: Candidate[], romaji: string | null): number | null 
 // A reused row keeps its own external_source and simply gains credits. People
 // are never pruned, so this stays safe across re-imports.
 export function upsertSharedPerson(db: Db, p: SharedPersonInput): number {
+  const found = findSharedPerson(db, p)
+  if (found != null) return fill(db, found, p.photoPath)
+  const info = db
+    .prepare(
+      'INSERT INTO person (name, name_native, photo_path, external_source, external_id) VALUES (?, ?, ?, ?, ?)'
+    )
+    .run(p.name || p.nameNative || 'Unknown', p.nameNative ?? null, p.photoPath ?? null, p.source, p.externalId)
+  return Number(info.lastInsertRowid)
+}
+
+// Steps 1-3 of upsertSharedPerson without creating anyone.
+export function findSharedPerson(db: Db, p: SharedPersonInput): number | null {
   const byId = db
     .prepare('SELECT id FROM person WHERE external_source=? AND external_id=?')
     .get(p.source, p.externalId) as { id: number } | undefined
-  if (byId) {
-    if (p.photoPath) {
-      db.prepare('UPDATE person SET photo_path=COALESCE(photo_path, ?) WHERE id=?').run(p.photoPath, byId.id)
-    }
-    return byId.id
-  }
+  if (byId) return byId.id
 
   const kanji = stripSpaces(p.nameNative)
   if (kanji) {
@@ -92,7 +99,7 @@ export function upsertSharedPerson(db: Db, p: SharedPersonInput): number {
       )
       .all(kanji) as Candidate[]
     const hit = firstAgreeing(rows, p.name)
-    if (hit != null) return fill(db, hit, p.photoPath)
+    if (hit != null) return hit
   }
 
   if (p.name) {
@@ -105,15 +112,9 @@ export function upsertSharedPerson(db: Db, p: SharedPersonInput): number {
          ORDER BY (external_source = 'anilist') DESC, id ASC LIMIT 1`
       )
       .get(p.name, kanji || null) as { id: number } | undefined
-    if (byName) return fill(db, byName.id, p.photoPath)
+    if (byName) return byName.id
   }
-
-  const info = db
-    .prepare(
-      'INSERT INTO person (name, name_native, photo_path, external_source, external_id) VALUES (?, ?, ?, ?, ?)'
-    )
-    .run(p.name || p.nameNative || 'Unknown', p.nameNative ?? null, p.photoPath ?? null, p.source, p.externalId)
-  return Number(info.lastInsertRowid)
+  return null
 }
 
 function fill(db: Db, id: number, photo: string | null | undefined): number {
@@ -122,7 +123,7 @@ function fill(db: Db, id: number, photo: string | null | undefined): number {
 }
 
 // Sources whose people AniList may take over (see adoptForAniList).
-const ADOPTABLE_SOURCES = ['vndb', 'bangumi']
+const ADOPTABLE_SOURCES = ['vndb', 'bangumi', 'fandom']
 
 // When AniList meets a seiyuu that a VN or game import created first, it takes
 // over that row instead of inserting a second person: the row becomes the
@@ -135,16 +136,29 @@ export function adoptForAniList(
   nameNative: string | null
 ): number | null {
   const kanji = stripSpaces(nameNative)
-  if (!kanji) return null
-  const rows = db
-    .prepare(
-      `SELECT id, name FROM person
-       WHERE external_source IN (${ADOPTABLE_SOURCES.map(() => '?').join(', ')})
-         AND REPLACE(REPLACE(name_native, ' ', ''), char(12288), '') = ?
-       ORDER BY id ASC`
-    )
-    .all(...ADOPTABLE_SOURCES, kanji) as Candidate[]
-  const id = firstAgreeing(rows, name)
+  let id: number | null = null
+  if (kanji) {
+    const rows = db
+      .prepare(
+        `SELECT id, name FROM person
+         WHERE external_source IN (${ADOPTABLE_SOURCES.map(() => '?').join(', ')})
+           AND REPLACE(REPLACE(name_native, ' ', ''), char(12288), '') = ?
+         ORDER BY id ASC`
+      )
+      .all(...ADOPTABLE_SOURCES, kanji) as Candidate[]
+    id = firstAgreeing(rows, name)
+  }
+  // A franchise-wiki credit without a Wikipedia link knows only the romaji
+  // name; the exact full name is its one key.
+  if (id == null && name) {
+    const row = db
+      .prepare(
+        `SELECT id FROM person WHERE external_source = 'fandom' AND name = ?
+           AND COALESCE(name_native, '') = '' ORDER BY id ASC LIMIT 1`
+      )
+      .get(name) as { id: number } | undefined
+    id = row?.id ?? null
+  }
   if (id == null) return null
   db.prepare("UPDATE person SET external_source='anilist', external_id=? WHERE id=?").run(anilistId, id)
   return id

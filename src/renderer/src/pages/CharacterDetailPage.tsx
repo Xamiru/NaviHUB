@@ -5,6 +5,7 @@ import { qk } from '../lib/queryKeys'
 import EntityHeader from '../components/EntityHeader'
 import BackButton from '../components/BackButton'
 import AddToListMenu from '../components/AddToListMenu'
+import { AddQuoteButton, EntityQuotesSection } from '../components/quotes/EntityQuotes'
 import CoverImage from '../components/CoverImage'
 import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
@@ -92,7 +93,17 @@ export default function CharacterDetailPage() {
           // No /characters index exists — return to wherever the user came from.
           leaveDeleted((path) => path === `/characters/${characterId}`, '/')
         }}
-        actions={<AddToListMenu kind="character" entityId={characterId} />}
+        actions={
+          <>
+            <AddToListMenu kind="character" entityId={characterId} />
+            <AddQuoteButton
+              seed={{
+                speakerKind: 'character',
+                speaker: { id: characterId, name: character.name, imagePath: character.imagePath }
+              }}
+            />
+          </>
+        }
       >
         {cast.size > 0 && (
           <Section title={liveAction ? 'Played by' : 'Voiced by'}>
@@ -115,6 +126,8 @@ export default function CharacterDetailPage() {
             </div>
           </Section>
         )}
+
+        <EntityQuotesSection filter={{ characterId }} />
 
         <Section title={`Appears in · ${roles.length}`} subtitle="Oldest first">
           {roles.length === 0 ? (

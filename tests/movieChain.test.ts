@@ -5,7 +5,9 @@ import {
   hintMovieChain,
   initialMovieChainState,
   movieChainConnectors,
+  movieChainCredits,
   movieChainEndpointCounts,
+  movieChainReferenceRoute,
   movieChainScore,
   shortestMovieChainPath,
   submitMovieChainTitle,
@@ -96,5 +98,41 @@ describe('Movie Chain', () => {
     for (const key of shortest.slice(1)) state = submitMovieChainTitle(question, state, key).state
     expect(state.status).toBe('complete')
     expect(movieChainScore(state, question.optimalDistance)).toBe(700)
+  })
+
+  it('accepts a true connection through a supporting actor without building routes from it', () => {
+    const question = buildMovieChainQuestion(chainCandidates(), 3, 'both', 'hard')!
+    // The route is four prominent links; A and E also share an actor billed 11th.
+    expect([question.start.label, question.target.label].sort()).toEqual(['A', 'E'])
+    const connectors = movieChainConnectors(question, question.start.key, question.target.key)
+    expect(connectors).toEqual([expect.objectContaining({ name: 'Background Extra', prominent: false })])
+    const result = submitMovieChainTitle(question, initialMovieChainState(question), question.target.key)
+    expect(result.outcome).toBe('complete')
+    expect(movieChainReferenceRoute(question)).toHaveLength(5)
+  })
+
+  it('keeps credits only for people who appear in two or more titles', () => {
+    const candidates = chainCandidates()
+    candidates[2].people.push({ id: 5000, name: 'One-off', role: 'actor', billingOrder: 3 })
+    const credits = movieChainCredits(candidates)
+    expect(Object.values(credits).flat().some((credit) => credit.name === 'One-off')).toBe(false)
+    expect(credits['1'].some((credit) => credit.name === 'Background Extra')).toBe(true)
+  })
+
+  it('never picks a start and target from the same franchise', () => {
+    const title = (key: string, label: string, ids: number[]): MovieChainCandidate => ({
+      key,
+      label,
+      aliases: [],
+      imagePath: `media/${key}.jpg`,
+      releaseYear: 2000,
+      mediaType: 'movie',
+      people: ids.map((id) => ({ id, name: `P${id}`, role: 'actor', billingOrder: 0 }))
+    })
+    // Saga and Saga 2 are the only titles two links apart.
+    const pool = [title('1', 'Saga', [1]), title('2', 'Bridge', [1, 2]), title('3', 'Saga 2', [2])]
+    for (let seed = 0; seed < 10; seed++) {
+      expect(buildMovieChainQuestion(pool, seed, 'both', 'easy')).toBeNull()
+    }
   })
 })

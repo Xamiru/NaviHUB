@@ -13,6 +13,7 @@ import type {
   MusicTrackBrowseFilter,
   MusicTrackBrowseSort,
   QuizKind,
+  QuoteFilter,
   QuizAvailabilityRequest,
   QuizSongFilter,
   ThemeSongFilter,
@@ -102,6 +103,13 @@ export const qk = {
     detail: (listId: number) => ['lists', 'detail', listId] as const,
     forEntity: (kind: ListKind, entityId: number) => ['lists', 'forEntity', kind, entityId] as const
   },
+  quotes: {
+    all: ['quotes'] as const,
+    list: (filter: QuoteFilter) => ['quotes', 'list', filter] as const
+  },
+  // Outside the quotes group on purpose: readings depend only on the text, so
+  // saving or favoriting a quote must not re-tokenize every Japanese line.
+  quoteFurigana: (text: string) => ['quoteFurigana', text] as const,
   tierLists: {
     all: ['tierLists'] as const,
     index: (kind: ListKind | null) => ['tierLists', kind] as const,
@@ -174,8 +182,6 @@ export const qk = {
       ['quiz', 'castPool', filter] as const,
     synopsisPool: (filter: import('@shared/types').QuizSynopsisFilter) =>
       ['quiz', 'synopsisPool', filter] as const,
-    mangaPanelPool: (filter: import('@shared/types').QuizMangaPanelFilter, length: number) =>
-      ['quiz', 'mangaPanelPool', filter, length] as const,
     history: (kind: QuizKind, playMode: 'solo' | 'party' = 'solo') =>
       ['quiz', 'history', kind, playMode] as const,
     // A longer window of the same history (under the history(kind) prefix so

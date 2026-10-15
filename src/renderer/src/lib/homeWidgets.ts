@@ -20,6 +20,7 @@ export type HomeWidgetKey =
   | 'favorites'
   | 'pictures'
   | 'historyToday'
+  | 'quote'
 
 export interface HomeWidgetDef {
   key: HomeWidgetKey
@@ -28,6 +29,9 @@ export interface HomeWidgetDef {
   // Column span in Home's 2-column grid. 'full' is a strip or a band that wants
   // the width; 'half' pairs with whatever half sits next to it.
   span: 'full' | 'half'
+  // Off until the user switches it on in Customise — in a fresh layout and
+  // when a later release appends it to a stored one.
+  defaultHidden?: boolean
 }
 
 // FROZEN KEY STRINGS: these ride in the `home.widgets` settings row, so
@@ -46,7 +50,8 @@ export const HOME_WIDGETS: HomeWidgetDef[] = [
   // Renders nothing until a picture is starred, so its automatic appearance in
   // existing layouts stays invisible for anyone who never uses the gallery.
   { key: 'pictures', label: 'Gallery', hint: 'A random favorite picture', span: 'full' },
-  { key: 'historyToday', label: 'On this day', hint: 'History', span: 'half' }
+  { key: 'historyToday', label: 'On this day', hint: 'History', span: 'half' },
+  { key: 'quote', label: 'Quote of the day', hint: 'One of your saved quotes, daily', span: 'full', defaultHidden: true }
 ]
 
 // Retired keys still sit in stored layouts, where parseHomeLayout drops them.
@@ -69,7 +74,7 @@ export function widgetDef(key: HomeWidgetKey): HomeWidgetDef | undefined {
 }
 
 export function defaultHomeLayout(): HomeLayoutEntry[] {
-  return HOME_WIDGETS.map((w) => ({ key: w.key, visible: true }))
+  return HOME_WIDGETS.map((w) => ({ key: w.key, visible: !w.defaultHidden }))
 }
 
 // Stored layout → the list Home renders.
@@ -78,7 +83,8 @@ export function defaultHomeLayout(): HomeLayoutEntry[] {
 // unparseable or absent input falls back to the defaults; a key this build no
 // longer knows is dropped; a key the build knows but the row lacks is APPENDED,
 // visible — a widget added in a later release has to show up on its own, or it
-// would be invisible to everyone who ever opened the Customise dialog.
+// would be invisible to everyone who ever opened the Customise dialog. A
+// defaultHidden widget is appended hidden instead, ready in Customise.
 export function parseHomeLayout(raw: string | null | undefined): HomeLayoutEntry[] {
   let stored: unknown
   try {
@@ -99,7 +105,7 @@ export function parseHomeLayout(raw: string | null | undefined): HomeLayoutEntry
     out.push({ key: k, visible: (entry as { visible?: unknown }).visible !== false })
   }
   for (const w of HOME_WIDGETS) {
-    if (!seen.has(w.key)) out.push({ key: w.key, visible: true })
+    if (!seen.has(w.key)) out.push({ key: w.key, visible: !w.defaultHidden })
   }
   return out
 }

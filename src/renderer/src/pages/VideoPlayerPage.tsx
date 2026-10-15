@@ -6,6 +6,7 @@ import {
   buildTrack,
   cuesAt,
   filterDialogue,
+  formatTime,
   nextCue,
   prevCue,
   pickDefaultTracks,
@@ -37,6 +38,7 @@ import { useSubtitleTrack } from '../lib/useSubtitleTrack'
 import { readDecodeStats, silentDecodeFailure } from '../lib/videoDecodeStats'
 import MiningPanel from '../components/reader/MiningPanel'
 import ShortcutHelp from '../components/reader/ShortcutHelp'
+import QuoteDialog, { type QuoteSeed } from '../components/quotes/QuoteDialog'
 import DecodePanel from '../components/video/DecodePanel'
 import StyledSubtitleLayer from '../components/video/StyledSubtitleLayer'
 import SubtitleOverlay, { type SubtitleWordPick } from '../components/video/SubtitleOverlay'
@@ -498,6 +500,28 @@ function Player({
   const [panelOpen, setPanelOpen] = useState(false)
   const [transcriptOpen, setTranscriptOpen] = useState(prefs.transcriptOpen)
   const [helpOpen, setHelpOpen] = useState(false)
+
+  // ---- quotes ----
+  // Pauses and opens Add quote with the line on screen (and the second track
+  // as its translation). A library episode links its title; a wrestling event,
+  // clip or football video is named as free text.
+  const [quoteSeed, setQuoteSeed] = useState<QuoteSeed | null>(null)
+  const openQuote = useCallback(() => {
+    videoRef.current?.pause()
+    const at = formatTime(timeRef.current)
+    const linked = source.mediaId != null && source.mediaType != null
+    const eventTitle = sourceRef.kind === 'wrestling' ? source.seriesTitle : null
+    setQuoteSeed({
+      text: activeCues[0]?.text.trim() ?? '',
+      translation: activeSecondary[0]?.text.trim() || null,
+      media: linked
+        ? { id: source.mediaId!, name: source.seriesTitle ?? source.title, imagePath: null }
+        : null,
+      sourceTitle: linked ? null : (eventTitle ?? source.title),
+      locator: linked || eventTitle ? `${source.title} · ${at}` : at,
+      origin: 'video'
+    })
+  }, [activeCues, activeSecondary, source, sourceRef.kind])
   const [blockText, setBlockText] = useState<string | null>(null)
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null)
   const [mineLang, setMineLang] = useState<'ja' | 'en' | 'other'>('ja')
@@ -657,7 +681,7 @@ function Player({
   // ---- keyboard ----
   useEffect(() => {
     function onKey(e: KeyboardEvent): void {
-      if (helpOpen || e.defaultPrevented) return
+      if (helpOpen || quoteSeed || e.defaultPrevented) return
       const t = e.target as HTMLElement
       if (
         t instanceof HTMLInputElement ||
@@ -769,6 +793,9 @@ function Player({
         case 'c':
           if (hasSubs) void capture()
           return
+        case 'q':
+          openQuote()
+          return
         case 'f':
           toggleFullscreen()
           return
@@ -813,6 +840,8 @@ function Player({
     goToFile,
     hasSubs,
     helpOpen,
+    openQuote,
+    quoteSeed,
     menuOpen,
     onExit,
     onExternal,
@@ -1081,6 +1110,7 @@ function Player({
           }}
           onMine={() => setPanelOpen(!panelOpen)}
           onCapture={() => void capture()}
+          onQuote={openQuote}
           onFullscreen={toggleFullscreen}
           onExternal={() => {
             videoRef.current?.pause()
@@ -1136,6 +1166,9 @@ function Player({
           onClose={() => setHelpOpen(false)}
         />
       )}
+
+      {/* Inside the player root so it shows in fullscreen too. */}
+      {quoteSeed && <QuoteDialog seed={quoteSeed} onClose={() => setQuoteSeed(null)} />}
     </div>
   )
 }

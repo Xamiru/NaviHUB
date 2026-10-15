@@ -10,6 +10,7 @@ import type {
   QuizCastItem,
   QuizHistory,
   QuizHigherLowerAvailability,
+  QuizHigherLowerMetric,
   QuizKind,
   QuizLibFilter,
   QuizPlayMode,
@@ -35,9 +36,10 @@ import {
 } from '@shared/guessTrack'
 import {
   buildChallengeQuestions,
-  type ChallengeCharacterCandidate,
   type ChallengeMediaCandidate
 } from '@shared/quizChallenges'
+import { isVoiceRole, screenPeople } from '@shared/voiceRoles'
+import { communityScoreSql } from './communityScore'
 import {
   buildFootballCareerQuestions,
   buildFootballChampionQuestions,
@@ -49,7 +51,23 @@ import {
   type FootballGridPool,
   type FootballScorelineCandidate
 } from '@shared/footballQuiz'
-import type { FootballCompetitionKey, QuizFootballGridClue } from '@shared/types'
+import type {
+  FootballCompetitionKey,
+  FootballWordlePlayer,
+  QuizFootballGridClue,
+  QuizFootballTransferFact
+} from '@shared/types'
+import {
+  FOOTBALL_TRANSFER_CHAIN,
+  FOOTBALL_TRANSFER_MIN_FEE,
+  buildFootballLineupQuestion,
+  buildFootballTransferChain,
+  buildFootballWordleQuestion,
+  orderFootballLineupMatches,
+  type FootballLineupMatchCandidate,
+  type FootballLineupRow
+} from '@shared/footballGames'
+import { formatFootballScore } from '@shared/football'
 
 function footballChampionCandidates(): FootballChampionCandidate[] {
   return getSqlite().prepare(`
@@ -78,7 +96,7 @@ function footballScorelineCandidates(): FootballScorelineCandidate[] {
     SELECT m.id AS matchId,c.key AS competitionKey,c.name AS competitionName,
       ht.name AS homeTeam,at.name AS awayTeam,ht.image_path AS homeImagePath,
       at.image_path AS awayImagePath,m.match_date AS matchDate,
-      st.name AS stage,m.home_score AS homeScore,m.away_score AS awayScore,
+      st.name AS stage,st.kind AS stageKind,m.home_score AS homeScore,m.away_score AS awayScore,
       m.home_extra_time AS homeExtraTime,m.away_extra_time AS awayExtraTime,
       m.home_penalties AS homePenalties,m.away_penalties AS awayPenalties,
       COALESCE(s.data_revision,'unknown') AS datasetRevision
@@ -228,6 +246,193 @@ function footballGridPool(): FootballGridPool {
   }
 }
 
+// Who and what the Football Wordle and Name the XI rounds can use. The pools
+// and their readiness counts share these, so the setup card never offers a
+// round that Start cannot build.
+const FOOTBALL_WORDLE_APPS_SQL = `SELECT fl.person_id, COUNT(*) AS n FROM football_lineup fl
+      WHERE fl.role='player' GROUP BY fl.person_id HAVING COUNT(*) >= 10`
+const FOOTBALL_WORDLE_PERSON_SQL = `p.nationality IS NOT NULL AND p.position IS NOT NULL AND p.birth_date IS NOT NULL
+      AND NOT EXISTS(SELECT 1 FROM football_conflict fc
+        WHERE fc.status<>'resolved' AND fc.entity_kind='person' AND fc.entity_id=p.id)`
+// A side the builder can lay out: eleven starters, exactly one of them a
+// keeper (LIKE '%goal%' is footballLineupLine's line-0 test). Sides split as
+// the builder splits them, home team or not.
+const FOOTBALL_LINEUP_READY_SQL = `SELECT match_id FROM (
+      SELECT fl.match_id, COUNT(*) AS starters,
+        SUM(COALESCE(fl.position, p.position, '') LIKE '%goal%') AS keepers
+      FROM football_lineup fl
+      JOIN football_match m ON m.id=fl.match_id
+      JOIN football_person p ON p.id=fl.person_id
+      WHERE fl.role='player' AND fl.starter<>0
+        AND m.lineup_coverage='complete' AND m.conflicted=0 AND m.status='finished'
+        AND NOT EXISTS(SELECT 1 FROM football_conflict fc
+          WHERE fc.status<>'resolved' AND fc.entity_kind='match' AND fc.entity_id=m.id)
+      GROUP BY fl.match_id, fl.team_id=m.home_team_id
+    ) WHERE starters=11 AND keepers=1`
+
+// Football Wordle: players with at least ten archive appearances and a known
+// nationality, position and birth date, most-capped first. Club and shirt come
+// from the latest club lineup, league from the latest league-format match.
+// Runs in the quiz pool process; one window pass over the lineups.
+function footballWordlePlayers(): FootballWordlePlayer[] {
+  const rows = getSqlite().prepare(`
+    WITH apps AS (${FOOTBALL_WORDLE_APPS_SQL}),
+    club_rows AS (
+      SELECT fl.person_id, fl.shirt, t.id AS team_id, t.name AS team, t.image_path AS team_image,
+        ROW_NUMBER() OVER (PARTITION BY fl.person_id ORDER BY m.match_date DESC, m.id DESC) AS rn
+      FROM football_lineup fl
+      JOIN apps ON apps.person_id=fl.person_id
+      JOIN football_match m ON m.id=fl.match_id AND m.conflicted=0
+      JOIN football_team t ON t.id=fl.team_id AND t.is_national=0
+      WHERE fl.role='player'
+    ),
+    league_rows AS (
+      SELECT fl.person_id, c.name AS league,
+        ROW_NUMBER() OVER (PARTITION BY fl.person_id ORDER BY m.match_date DESC, m.id DESC) AS rn
+      FROM football_lineup fl
+      JOIN apps ON apps.person_id=fl.person_id
+      JOIN football_match m ON m.id=fl.match_id AND m.conflicted=0
+      JOIN football_season s ON s.id=m.season_id
+      JOIN football_competition c ON c.id=s.competition_id AND c.format='league'
+      WHERE fl.role='player'
+    )
+    SELECT p.id, p.name, p.image_path AS photoPath, p.nationality, p.position,
+      CAST(substr(p.birth_date,1,4) AS INTEGER) AS birthYear, p.height_cm AS heightCm,
+      cr.team_id AS clubId, cr.team AS club, cr.team_image AS clubImagePath, cr.shirt,
+      lr.league, apps.n AS appearances
+    FROM apps
+    JOIN football_person p ON p.id=apps.person_id
+    LEFT JOIN club_rows cr ON cr.person_id=p.id AND cr.rn=1
+    LEFT JOIN league_rows lr ON lr.person_id=p.id AND lr.rn=1
+    WHERE ${FOOTBALL_WORDLE_PERSON_SQL}
+    ORDER BY apps.n DESC, p.id
+    LIMIT 4000
+  `).all() as Array<{
+    id: number
+    name: string
+    photoPath: string | null
+    nationality: string | null
+    position: string | null
+    birthYear: number | null
+    heightCm: number | null
+    clubId: number | null
+    club: string | null
+    clubImagePath: string | null
+    shirt: number | null
+    league: string | null
+  }>
+  return rows.map((row) => ({
+    key: String(row.id),
+    label: row.name,
+    photoPath: row.photoPath,
+    nationality: row.nationality,
+    position: row.position,
+    clubKey: row.clubId == null ? null : String(row.clubId),
+    club: row.club,
+    clubImagePath: row.clubImagePath,
+    league: row.league,
+    birthYear: row.birthYear || null,
+    heightCm: row.heightCm,
+    shirt: row.shirt
+  }))
+}
+
+// Name the XI: matches with complete lineups, no conflict and a side the
+// builder can lay out.
+function footballLineupMatches(): FootballLineupMatchCandidate[] {
+  const rows = getSqlite().prepare(`
+    SELECT m.id AS matchId, c.key AS competitionKey, c.name AS competitionName, st.name AS stage,
+      st.kind AS stageKind,
+      m.match_date AS matchDate, ht.name AS homeTeam, at.name AS awayTeam,
+      ht.image_path AS homeImagePath, at.image_path AS awayImagePath,
+      m.home_formation AS homeFormation, m.away_formation AS awayFormation,
+      m.home_score AS homeScore, m.away_score AS awayScore,
+      m.home_extra_time AS homeExtraTime, m.away_extra_time AS awayExtraTime,
+      m.home_penalties AS homePenalties, m.away_penalties AS awayPenalties,
+      COALESCE(s.data_revision,'unknown') AS datasetRevision
+    FROM football_match m
+    JOIN football_season s ON s.id=m.season_id
+    JOIN football_competition c ON c.id=s.competition_id
+    JOIN football_team ht ON ht.id=m.home_team_id
+    JOIN football_team at ON at.id=m.away_team_id
+    LEFT JOIN football_stage st ON st.id=m.stage_id
+    WHERE m.id IN (${FOOTBALL_LINEUP_READY_SQL})
+  `).all() as Array<Omit<FootballLineupMatchCandidate, 'scoreLabel'> & {
+    homeScore: number | null
+    awayScore: number | null
+    homeExtraTime: number | null
+    awayExtraTime: number | null
+    homePenalties: number | null
+    awayPenalties: number | null
+  }>
+  return rows.map(({ homeScore, awayScore, homeExtraTime, awayExtraTime, homePenalties, awayPenalties, ...match }) => ({
+    ...match,
+    scoreLabel: formatFootballScore({ homeScore, awayScore, homeExtraTime, awayExtraTime, homePenalties, awayPenalties })
+  }))
+}
+
+function footballLineupRows(match: FootballLineupMatchCandidate): FootballLineupRow[] {
+  const db = getSqlite()
+  const home = db.prepare(`SELECT home_team_id AS home FROM football_match WHERE id=?`).get(match.matchId) as { home: number }
+  const rows = db.prepare(`
+    SELECT fl.team_id AS teamId, p.id AS personId, p.name, p.image_path AS photoPath,
+      fl.shirt, COALESCE(fl.position, p.position) AS position, fl.starter
+    FROM football_lineup fl JOIN football_person p ON p.id=fl.person_id
+    WHERE fl.match_id=? AND fl.role='player'
+    ORDER BY fl.team_id, fl.sort_order, fl.id
+  `).all(match.matchId) as Array<{
+    teamId: number
+    personId: number
+    name: string
+    photoPath: string | null
+    shirt: number | null
+    position: string | null
+    starter: number
+  }>
+  const aliasRows = db.prepare(`
+    SELECT a.entity_id AS personId, a.alias FROM football_alias a
+    JOIN football_lineup fl ON fl.person_id=a.entity_id AND fl.match_id=?
+    WHERE a.entity_kind='person'
+  `).all(match.matchId) as Array<{ personId: number; alias: string }>
+  return rows.map((row) => ({
+    side: row.teamId === home.home ? 'home' : 'away',
+    personId: row.personId,
+    name: row.name,
+    aliases: aliasRows.filter((alias) => alias.personId === row.personId && alias.alias !== row.name).map((alias) => alias.alias),
+    photoPath: row.photoPath,
+    shirt: row.shirt,
+    position: row.position,
+    starter: !!row.starter
+  }))
+}
+
+// Transfer Higher or Lower: priced moves of at least the minimum fee.
+// A transfer counts only for a person with no open conflict; the readiness
+// count and the pool share it so the setup card never offers an empty round.
+const FOOTBALL_TRANSFER_PERSON_SQL = `NOT EXISTS(SELECT 1 FROM football_conflict fc
+  WHERE fc.status<>'resolved' AND fc.entity_kind='person' AND fc.entity_id=p.id)`
+
+function footballTransferFacts(): QuizFootballTransferFact[] {
+  return getSqlite().prepare(`
+    SELECT CAST(tr.id AS TEXT) AS key, p.name AS personName, p.image_path AS photoPath,
+      tr.from_team AS fromTeam, tr.to_team AS toTeam,
+      ft.image_path AS fromImagePath, tt.image_path AS toImagePath,
+      COALESCE(tr.season, substr(tr.transfer_date,1,4)) AS season, tr.fee
+    FROM football_transfer tr
+    JOIN football_person p ON p.id=tr.person_id
+    LEFT JOIN football_team ft ON ft.id=tr.from_team_id
+    LEFT JOIN football_team tt ON tt.id=tr.to_team_id
+    WHERE tr.fee >= ? AND ${FOOTBALL_TRANSFER_PERSON_SQL}
+    ORDER BY tr.id
+  `).all(FOOTBALL_TRANSFER_MIN_FEE) as QuizFootballTransferFact[]
+}
+
+function footballRevisionNow(): string {
+  return (getSqlite().prepare(`
+    SELECT MAX(COALESCE(revision,fetched_at)) AS revision FROM football_source_ref
+  `).get() as { revision: string | null }).revision ?? 'unknown'
+}
+
 // An anime's year for era filtering: canonical AniList seasonYear from the
 // metadata JSON when present (json_valid guards malformed blobs from throwing),
 // else the release-date year — the same precedence as @shared/season.ts.
@@ -238,9 +443,15 @@ export const YEAR_EXPR = `CAST(COALESCE(
   substr(mi.release_date, 1, 4)
 ) AS INTEGER)`
 
+// Only the Animation *genre* makes a title animated (@shared/voiceRoles). A
+// hand-made or imported tag that happens to be named Animation is left out of
+// the tag lists the voice-role rule reads, so every screen quiz and every
+// availability count agrees with ANIMATED_MEDIA_SQL.
+const NOT_STRAY_ANIMATION_TAG = `NOT (LOWER(t.name)='animation' AND COALESCE(t.category,'')<>'genre')`
+
 // Comma-joined tag names for the media aliased `mi` — distractor affinity.
 export const GENRE_CSV_EXPR = `(SELECT GROUP_CONCAT(DISTINCT t.name) FROM media_tag mt
-   JOIN tag t ON t.id = mt.tag_id WHERE mt.media_id = mi.id)`
+   JOIN tag t ON t.id = mt.tag_id WHERE mt.media_id = mi.id AND ${NOT_STRAY_ANIMATION_TAG})`
 
 // Tags every candidate whose resolved relations reach another candidate with
 // its component's smallest id. The relation table is small, so it is read
@@ -283,7 +494,8 @@ function screenChallengeCandidates(statuses: readonly string[]): ChallengeMediaC
     : ''
   const rows = db.prepare(
     `SELECT mi.id, mi.title, mi.title_original, mi.media_type, mi.cover_path,
-            mi.release_date, mi.total_units, mi.score
+            mi.release_date, mi.total_units, mi.score,
+            ${communityScoreSql('mi')} AS community_score
      FROM media_item mi
      WHERE mi.media_type IN ('movie','tv') AND mi.cover_path IS NOT NULL ${statusSql}
      ORDER BY mi.id`
@@ -302,6 +514,7 @@ function screenChallengeCandidates(statuses: readonly string[]): ChallengeMediaC
       releaseDate: (row.release_date as string | null) ?? null,
       totalUnits: (row.total_units as number | null) ?? null,
       score: (row.score as number | null) ?? null,
+      communityScore: (row.community_score as number | null) ?? null,
       genres: [],
       relations: [],
       people: [],
@@ -318,7 +531,7 @@ function screenChallengeCandidates(statuses: readonly string[]): ChallengeMediaC
     media.get(row.media_id)?.genres.push(row.name)
   }
   for (const row of db.prepare(
-    `SELECT c.media_id, p.id, p.name, c.role, ch.name AS character_name,
+    `SELECT c.media_id, p.id, p.name, p.photo_path, c.role, ch.name AS character_name,
             COALESCE(c.importance, mch.sort_order) AS billing_order
      FROM credit c JOIN person p ON p.id=c.person_id
      LEFT JOIN character ch ON ch.id=c.character_id
@@ -333,13 +546,15 @@ function screenChallengeCandidates(statuses: readonly string[]): ChallengeMediaC
     role: string
     character_name: string | null
     billing_order: number | null
+    photo_path: string | null
   }>) {
     media.get(row.media_id)?.people.push({
       id: row.id,
       name: row.name,
       role: row.role,
       characterName: row.character_name,
-      billingOrder: row.billing_order
+      billingOrder: row.billing_order,
+      photoPath: row.photo_path
     })
   }
   for (const row of db.prepare(
@@ -428,18 +643,13 @@ function computeAvailability(request: QuizAvailabilityRequest): QuizAvailability
       )
       .filter((entry) => entry != null)
   )
-  const character = scalar(
-    `SELECT COUNT(DISTINCT ch.id) AS n FROM media_character mc
-     JOIN character ch ON ch.id=mc.character_id JOIN media_item mi ON mi.id=mc.media_id
-     WHERE ch.image_path IS NOT NULL AND mi.media_type='anime' ${statusSql}`
-  )
   const cast = scalar(
     `SELECT COUNT(DISTINCT mi.id) AS n FROM credit c
      JOIN person p ON p.id=c.person_id JOIN media_item mi ON mi.id=c.media_id
      LEFT JOIN media_character mc ON mc.media_id=c.media_id AND mc.character_id=c.character_id
      WHERE c.role='actor' AND p.photo_path IS NOT NULL AND mi.cover_path IS NOT NULL
-       AND mi.media_type IN ('movie','tv')
-       AND (mi.media_type='tv' OR COALESCE(c.importance, mc.sort_order) BETWEEN 0 AND 9) ${statusSql}`
+       AND mi.media_type IN ('movie','tv') AND mi.id NOT IN (${ANIMATED_MEDIA_SQL})
+       AND COALESCE(c.importance, mc.sort_order) BETWEEN 0 AND ${CAST_QUESTION_BILLING - 1} ${statusSql}`
   )
   const va = countBuildableVaSources(vaPool({ statuses: statuses.length ? statuses : null }))
   const synopsis = countBuildableSynopsisSources(
@@ -449,12 +659,6 @@ function computeAvailability(request: QuizAvailabilityRequest): QuizAvailability
       includeSafeUnseen: true,
       requireCover: true
     })
-  )
-  const mangaPanel = scalar(
-    `SELECT COUNT(DISTINCT mi.id) AS n FROM manga_chapter mc JOIN media_item mi ON mi.id=mc.media_id
-     WHERE mi.media_type='manga' AND LOWER(mc.dir_path) NOT LIKE '%.epub'
-       AND (?='all' OR mc.read_at IS NOT NULL OR mc.last_read_page IS NOT NULL)`,
-    [request.scope ?? 'consumed']
   )
   const imageReveal = scalar(
     `WITH type_counts AS (
@@ -475,47 +679,9 @@ function computeAvailability(request: QuizAvailabilityRequest): QuizAvailability
     statuses: statuses.length ? statuses : null,
     length: 20
   }).length
-  // A pair needs three eligible people outside its shared cast. Shared cast
-  // never exceeds the smaller title's eligible cast, so most pairs pass on the
-  // two sizes and only the rest pay for the exact shared count.
-  const connections = scalar(
-    `WITH scoped_people AS (
-       SELECT DISTINCT c.person_id, c.media_id, c.role,
-              COALESCE(c.importance, mch.sort_order) AS billing_order
-       FROM credit c JOIN media_item mi ON mi.id=c.media_id
-       LEFT JOIN media_character mch
-         ON mch.media_id=c.media_id AND mch.character_id=c.character_id
-       WHERE c.role IN ('actor','director') AND mi.media_type IN ('movie','tv')
-         AND mi.cover_path IS NOT NULL ${statusSql}
-     ), eligible AS (
-       SELECT person_id, media_id FROM scoped_people
-       WHERE role='director' OR billing_order BETWEEN 0 AND 9
-     ), person_count AS (
-       SELECT COUNT(DISTINCT person_id) AS n FROM eligible
-     ), pairs AS (
-       SELECT left_credit.media_id AS left_id, right_credit.media_id AS right_id
-       FROM eligible left_credit
-       JOIN eligible right_credit ON right_credit.person_id=left_credit.person_id
-         AND right_credit.media_id>left_credit.media_id
-       GROUP BY left_credit.media_id, right_credit.media_id
-     ), cast_size AS (
-       SELECT media_id, COUNT(DISTINCT person_id) AS n FROM scoped_people
-       WHERE person_id IN (SELECT person_id FROM eligible) GROUP BY media_id
-     )
-     SELECT COUNT(*) AS n FROM pairs
-     JOIN cast_size left_size ON left_size.media_id=pairs.left_id
-     JOIN cast_size right_size ON right_size.media_id=pairs.right_id
-     WHERE (SELECT n FROM person_count) - MIN(left_size.n, right_size.n) >= 3
-        OR (SELECT n FROM person_count) - (
-       SELECT COUNT(DISTINCT left_cast.person_id)
-       FROM scoped_people left_cast
-       JOIN scoped_people right_cast ON right_cast.person_id=left_cast.person_id
-       WHERE left_cast.media_id=pairs.left_id AND right_cast.media_id=pairs.right_id
-         AND left_cast.person_id IN (SELECT person_id FROM eligible)
-     ) >= 3`
-  )
   const higherLowerRows = db.prepare(
-    `SELECT mi.media_type, mi.release_date, mi.total_units, mi.score
+    `SELECT mi.media_type, mi.release_date, mi.total_units, mi.score,
+            ${communityScoreSql('mi')} AS community_score
      FROM media_item mi
      WHERE mi.cover_path IS NOT NULL ${statusSql}`
   ).all(...statuses) as Array<{
@@ -523,15 +689,17 @@ function computeAvailability(request: QuizAvailabilityRequest): QuizAvailability
     release_date: string | null
     total_units: number | null
     score: number | null
+    community_score: number | null
   }>
   const higherLowerOptions = HIGHER_LOWER_MEDIA_TYPES.map(({ key }) => {
     const rows = higherLowerRows.filter((row) => row.media_type === key)
-    const count = (metric: 'releaseDate' | 'totalUnits' | 'personalScore') => {
+    const count = (metric: QuizHigherLowerMetric) => {
       const values = rows
         .map((row) => higherLowerValue({
           releaseDate: row.release_date,
           totalUnits: row.total_units,
-          score: row.score
+          score: row.score,
+          communityScore: row.community_score
         }, metric))
         .filter((value): value is number => value != null)
       return new Set(values).size >= 2 ? values.length : 0
@@ -540,7 +708,8 @@ function computeAvailability(request: QuizAvailabilityRequest): QuizAvailability
       mediaType: key,
       releaseDate: count('releaseDate'),
       totalUnits: count('totalUnits'),
-      personalScore: count('personalScore')
+      personalScore: count('personalScore'),
+      communityScore: count('communityScore')
     }
   })
   const higherLower = Math.max(
@@ -552,6 +721,16 @@ function computeAvailability(request: QuizAvailabilityRequest): QuizAvailability
     ])
   )
   const screenCandidates = screenChallengeCandidates(statuses)
+  // Connections deals from these same candidates (challengePool routes it
+  // here), so the real builder counts it: it skips same-franchise pairs (a
+  // sequel shares its whole cast), which no SQL count can see.
+  const connections = buildChallengeQuestions({
+    kind: 'connections',
+    seed: 1,
+    scope: request.scope ?? 'consumed',
+    statuses: statuses.length ? statuses : null,
+    length: 20
+  }, screenCandidates).length
   const chainCandidates: MovieChainCandidate[] = screenCandidates.map((item) => ({
     key: String(item.id),
     label: item.title,
@@ -559,7 +738,7 @@ function computeAvailability(request: QuizAvailabilityRequest): QuizAvailability
     imagePath: item.coverPath!,
     releaseYear: item.releaseDate ? Number(item.releaseDate.slice(0, 4)) || null : null,
     mediaType: item.mediaType as 'movie' | 'tv',
-    people: item.people
+    people: screenPeople(item)
   }))
   const libraryleCandidates: LibraryleCandidate[] = screenCandidates.map((item) => ({
     key: String(item.id),
@@ -570,10 +749,10 @@ function computeAvailability(request: QuizAvailabilityRequest): QuizAvailability
     mediaType: item.mediaType as 'movie' | 'tv',
     genres: item.genres.map((label) => ({ key: label.toLocaleLowerCase(), label })),
     companies: item.studios.map((company) => ({ key: String(company.id), label: company.name })),
-    directors: item.people
+    directors: screenPeople(item)
       .filter((person) => person.role === 'director')
       .map((person) => ({ key: String(person.id), label: person.name })),
-    cast: item.people
+    cast: screenPeople(item)
       .filter(
         (person) =>
           person.role === 'actor' &&
@@ -590,7 +769,8 @@ function computeAvailability(request: QuizAvailabilityRequest): QuizAvailability
     imagePath: item.coverPath!,
     releaseYear: item.releaseDate ? Number(item.releaseDate.slice(0, 4)) || null : null,
     mediaType: item.mediaType as 'movie' | 'tv',
-    people: item.people
+    rating: item.communityScore ?? null,
+    people: screenPeople(item)
   }))
   const screenGameOptions = (['movie', 'tv', 'both'] as const).map((mediaMode) => {
     const libraryGrid = buildChallengeQuestions({
@@ -643,9 +823,7 @@ function computeAvailability(request: QuizAvailabilityRequest): QuizAvailability
     cast,
     va,
     synopsis,
-    mangaPanel,
     imageReveal,
-    silhouette: character,
     connections,
     chronology,
     higherLower,
@@ -662,9 +840,26 @@ function computeAvailability(request: QuizAvailabilityRequest): QuizAvailability
       chronology: footballChampions.length,
       playerGrid: footballGridReady ? 1 : 0,
       playerGridPlayers: footballGrid.players.length,
+      ...footballGameCounts(),
       datasetRevision: footballRevision
     },
     screenGameOptions
+  }
+}
+
+// Readiness counts for the newer football games, under the same rules as
+// their pools; the full pools are only built when a round starts.
+function footballGameCounts(): { wordle: number; lineup: number; transfer: number } {
+  const db = getSqlite()
+  const count = (sql: string, ...params: unknown[]) => (db.prepare(sql).get(...params) as { n: number }).n
+  return {
+    wordle: count(`WITH apps AS (${FOOTBALL_WORDLE_APPS_SQL})
+      SELECT COUNT(*) AS n FROM apps JOIN football_person p ON p.id=apps.person_id
+      WHERE ${FOOTBALL_WORDLE_PERSON_SQL}`),
+    lineup: count(`SELECT COUNT(DISTINCT match_id) AS n FROM (${FOOTBALL_LINEUP_READY_SQL})`),
+    transfer: count(`SELECT COUNT(*) AS n FROM football_transfer tr
+      JOIN football_person p ON p.id=tr.person_id
+      WHERE tr.fee >= ? AND ${FOOTBALL_TRANSFER_PERSON_SQL}`, FOOTBALL_TRANSFER_MIN_FEE)
   }
 }
 
@@ -685,7 +880,8 @@ export function challengePool(request: QuizChallengeRequest): QuizChallengeQuest
     return buildFootballScorelineQuestions(
       footballScorelineCandidates().filter((item) => acceptsFootballKey(item.competitionKey)),
       request.length,
-      request.seed
+      request.seed,
+      request.options?.footballMatchScope ?? 'big'
     )
   }
   if (request.kind === 'footballCareerPath') {
@@ -701,7 +897,28 @@ export function challengePool(request: QuizChallengeRequest): QuizChallengeQuest
   if (request.kind === 'footballPlayerGrid') {
     return buildFootballPlayerGrid(footballGridPool(), request.seed)
   }
+  if (request.kind === 'footballWordle') {
+    const question = buildFootballWordleQuestion(footballWordlePlayers(), request.seed, footballRevisionNow())
+    return question ? [question] : []
+  }
+  if (request.kind === 'footballLineup') {
+    // Try matches in order (big ones first) until one has two full XIs.
+    for (const match of orderFootballLineupMatches(footballLineupMatches(), request.seed).slice(0, 40)) {
+      const question = buildFootballLineupQuestion(match, footballLineupRows(match), request.seed)
+      if (question) return [question]
+    }
+    return []
+  }
+  if (request.kind === 'footballTransfer') {
+    return buildFootballTransferChain(
+      footballTransferFacts(),
+      Math.max(request.length, FOOTBALL_TRANSFER_CHAIN),
+      request.seed,
+      footballRevisionNow()
+    )
+  }
   if (
+    request.kind === 'connections' ||
     request.kind === 'libraryGrid' ||
     request.kind === 'movieChain' ||
     request.kind === 'libraryle' ||
@@ -712,10 +929,6 @@ export function challengePool(request: QuizChallengeRequest): QuizChallengeQuest
   }
   const mediaWhere: string[] = []
   if (statuses.length) mediaWhere.push(`mi.status IN (${statuses.map(() => '?').join(',')})`)
-  if (request.kind === 'connections') {
-    mediaWhere.push(`mi.media_type IN ('movie','tv')`)
-    mediaWhere.push('mi.cover_path IS NOT NULL')
-  }
   if (request.kind === 'higherLower') {
     mediaWhere.push('mi.cover_path IS NOT NULL')
     if (request.options?.higherLowerMediaType) {
@@ -731,7 +944,8 @@ export function challengePool(request: QuizChallengeRequest): QuizChallengeQuest
   ]
   const mediaRows = db.prepare(
     `SELECT mi.id, mi.title, mi.title_original, mi.media_type, mi.cover_path,
-            mi.release_date, mi.total_units, mi.score
+            mi.release_date, mi.total_units, mi.score,
+            ${communityScoreSql('mi')} AS community_score
      FROM media_item mi ${whereSql} ORDER BY mi.id`
   ).all(...mediaParams) as Array<Record<string, unknown>>
   const mediaById = new Map<number, ChallengeMediaCandidate>()
@@ -748,6 +962,7 @@ export function challengePool(request: QuizChallengeRequest): QuizChallengeQuest
       releaseDate: (row.release_date as string | null) ?? null,
       totalUnits: (row.total_units as number | null) ?? null,
       score: (row.score as number | null) ?? null,
+      communityScore: (row.community_score as number | null) ?? null,
       genres: [],
       relations: [],
       people: [],
@@ -762,7 +977,7 @@ export function challengePool(request: QuizChallengeRequest): QuizChallengeQuest
   const slots = ids.map(() => '?').join(',')
   // Each kind loads only the children its builder reads: credits and the
   // character table are each ~100k rows on a large library.
-  const usesPeople = request.kind === 'connections' || request.kind === 'chronology'
+  const usesPeople = request.kind === 'chronology'
   if (request.kind === 'imageReveal') {
     for (const row of db.prepare(
       `SELECT media_id, file_path FROM media_image WHERE media_id IN (${slots}) ORDER BY id`
@@ -772,22 +987,19 @@ export function challengePool(request: QuizChallengeRequest): QuizChallengeQuest
   }
   for (const row of db.prepare(
     `SELECT mt.media_id, t.name FROM media_tag mt JOIN tag t ON t.id=mt.tag_id
-     WHERE mt.media_id IN (${slots}) ORDER BY mt.media_id, t.name`
+     WHERE mt.media_id IN (${slots}) AND ${NOT_STRAY_ANIMATION_TAG} ORDER BY mt.media_id, t.name`
   ).all(...ids) as Array<{ media_id: number; name: string }>) {
     mediaById.get(row.media_id)?.genres.push(row.name)
   }
   if (request.kind === 'chronology') assignRelationComponents(mediaById)
-  const connectionCreditSql = request.kind === 'connections'
-    ? `AND c.role IN ('actor','director')`
-    : ''
   if (usesPeople) for (const row of db.prepare(
-    `SELECT c.media_id, p.id, p.name, c.role, ch.name AS character_name,
+    `SELECT c.media_id, p.id, p.name, p.photo_path, c.role, ch.name AS character_name,
             COALESCE(c.importance, mch.sort_order) AS billing_order
      FROM credit c JOIN person p ON p.id=c.person_id
      LEFT JOIN character ch ON ch.id=c.character_id
      LEFT JOIN media_character mch
        ON mch.media_id=c.media_id AND mch.character_id=c.character_id
-     WHERE c.media_id IN (${slots}) ${connectionCreditSql}
+     WHERE c.media_id IN (${slots})
      ORDER BY c.media_id, COALESCE(c.importance, mch.sort_order, 999999), c.id`
   ).all(...ids) as Array<{
     media_id: number
@@ -796,13 +1008,15 @@ export function challengePool(request: QuizChallengeRequest): QuizChallengeQuest
     role: string
     character_name: string | null
     billing_order: number | null
+    photo_path: string | null
   }>) {
     mediaById.get(row.media_id)?.people.push({
       id: row.id,
       name: row.name,
       role: row.role,
       characterName: row.character_name,
-      billingOrder: row.billing_order
+      billingOrder: row.billing_order,
+      photoPath: row.photo_path
     })
   }
   if (request.kind === 'chronology') for (const row of db.prepare(
@@ -812,25 +1026,7 @@ export function challengePool(request: QuizChallengeRequest): QuizChallengeQuest
   ).all(...ids) as Array<{ media_id: number; id: number; name: string; role: string }>) {
     mediaById.get(row.media_id)?.studios.push({ id: row.id, name: row.name, role: row.role })
   }
-  const charactersById = new Map<number, ChallengeCharacterCandidate>()
-  if (request.kind === 'silhouette') for (const row of db.prepare(
-    `SELECT ch.id, ch.name, ch.gender, ch.image_path, mc.media_id, mi.title
-     FROM media_character mc JOIN character ch ON ch.id=mc.character_id
-     JOIN media_item mi ON mi.id=mc.media_id
-     WHERE ch.image_path IS NOT NULL AND mi.media_type='anime' AND mc.media_id IN (${slots})
-     ORDER BY ch.id, mc.id`
-  ).all(...ids) as Array<{ id: number; name: string; gender: string | null; image_path: string; media_id: number; title: string }>) {
-    const found = charactersById.get(row.id)
-    if (found) found.media.push({ id: row.media_id, title: row.title })
-    else charactersById.set(row.id, {
-      id: row.id,
-      name: row.name,
-      gender: row.gender,
-      imagePath: row.image_path,
-      media: [{ id: row.media_id, title: row.title }]
-    })
-  }
-  return buildChallengeQuestions(request, [...mediaById.values()], [...charactersById.values()])
+  return buildChallengeQuestions(request, [...mediaById.values()])
 }
 
 function statusClause(filter: QuizLibFilter, where: string[], params: unknown[]): void {
@@ -994,7 +1190,16 @@ export function castPool(filter: QuizLibFilter = {}): QuizCastItem[] {
     appearances.set(personId, personAppearances)
 
     const billingOrder = typeof r.billing_order === 'number' ? r.billing_order : null
-    const canSeed = mediaType === 'tv' || (billingOrder != null && billingOrder >= 0 && billingOrder < 10)
+    const genres = r.genre_csv ? String(r.genre_csv).split(',') : []
+    // A voice role never seeds a question, but its title stays in validMediaIds
+    // so it is never offered as a wrong answer for this actor.
+    // Questions ask about the first five billed of a movie or show (TV credits
+    // reach 30 deep, into one-off guests); every credit still guards answers.
+    const canSeed =
+      !isVoiceRole(genres, 'actor') &&
+      billingOrder != null &&
+      billingOrder >= 0 &&
+      billingOrder < CAST_QUESTION_BILLING
     const pairKey = `${personId}:${mediaId}`
     if (!canSeed || eligible.has(pairKey)) continue
     eligible.set(pairKey, {
@@ -1006,7 +1211,7 @@ export function castPool(filter: QuizLibFilter = {}): QuizCastItem[] {
       mediaType,
       coverPath: (r.cover_path as string) ?? null,
       year: (r.year as number | null) ?? null,
-      genres: r.genre_csv ? String(r.genre_csv).split(',') : [],
+      genres,
       billingOrder,
       validMediaIds: []
     })
@@ -1034,21 +1239,27 @@ export function vaPool(filter: QuizLibFilter = {}): QuizVaItem[] {
   const rows = db
     .prepare(
       `SELECT c.id AS credit_id, c.importance,
-              p.id AS person_id, p.name AS person_name,
+              p.id AS person_id, p.name AS person_name, p.photo_path AS person_photo,
               ch.id AS character_id, ch.name AS character_name,
               ch.gender, ch.image_path AS char_image,
               mi.id AS media_id, mi.title AS media_title,
+              mch.sort_order AS cast_rank,
               ${YEAR_EXPR} AS year
        FROM credit c
        JOIN person p ON p.id = c.person_id
        JOIN character ch ON ch.id = c.character_id
        JOIN media_item mi ON mi.id = c.media_id
+       LEFT JOIN media_character mch
+         ON mch.media_id = c.media_id AND mch.character_id = c.character_id
        WHERE ${where.join(' AND ')}
        ORDER BY mi.id ASC, ch.id ASC, c.id ASC`
     )
     .all(...params) as Record<string, unknown>[]
 
-  const grouped = new Map<string, { item: QuizVaItem; voices: Map<number, string> }>()
+  const grouped = new Map<
+    string,
+    { item: QuizVaItem; voices: Map<number, { name: string; photo: string | null }> }
+  >()
   for (const row of rows) {
     const mediaId = row.media_id as number
     const characterId = row.character_id as number
@@ -1065,8 +1276,10 @@ export function vaPool(filter: QuizLibFilter = {}): QuizVaItem[] {
           mediaTitle: row.media_title as string,
           year: (row.year as number | null) ?? null,
           importance: (row.importance as number | null) ?? null,
+          castRank: (row.cast_rank as number | null) ?? null,
           personIds: [],
-          personNames: []
+          personNames: [],
+          personPhotos: []
         },
         voices: new Map()
       }
@@ -1079,12 +1292,16 @@ export function vaPool(filter: QuizLibFilter = {}): QuizVaItem[] {
     ) {
       found.item.importance = importance
     }
-    found.voices.set(row.person_id as number, row.person_name as string)
+    found.voices.set(row.person_id as number, {
+      name: row.person_name as string,
+      photo: (row.person_photo as string | null) ?? null
+    })
   }
   return [...grouped.values()].map(({ item, voices }) => ({
     ...item,
     personIds: [...voices.keys()],
-    personNames: [...voices.values()]
+    personNames: [...voices.values()].map((voice) => voice.name),
+    personPhotos: [...voices.values()].map((voice) => voice.photo)
   }))
 }
 
@@ -1200,6 +1417,15 @@ function mapSession(r: Record<string, unknown>): QuizSession {
   }
 }
 
+// Cast Quiz asks only about the first five billed cast of a movie or show.
+export const CAST_QUESTION_BILLING = 5
+
+// Titles with the Animation genre: their actor credits are voice roles, which
+// the screen quizzes do not count (@shared/voiceRoles). Non-correlated, so
+// SQLite evaluates it once per statement.
+const ANIMATED_MEDIA_SQL = `SELECT mt.media_id FROM media_tag mt JOIN tag t ON t.id=mt.tag_id
+  WHERE LOWER(t.name)='animation' AND t.category='genre'`
+
 // Time-attack / points kinds: the record is the best SCORE, not the best
 // accuracy — ranking those by ratio would reward slow, careful play (arcade
 // speed points) or be meaningless (shiritori's score IS its chain length,
@@ -1213,6 +1439,8 @@ export const SCORE_RANKED_KINDS: ReadonlySet<QuizKind> = new Set<QuizKind>([
   'guessTrackMusic',
   'shiritori',
   'imageReveal',
+  'imageRevealTyped',
+  'chronologyPoints',
   'higherLower',
   'libraryGrid',
   'movieChainEasy',
@@ -1221,7 +1449,11 @@ export const SCORE_RANKED_KINDS: ReadonlySet<QuizKind> = new Set<QuizKind>([
   'libraryle',
   'mysteryCareer',
   'linkWall',
-  'footballPlayerGrid'
+  'footballPlayerGrid',
+  'footballCareerGuess',
+  'footballWordle',
+  'footballLineup',
+  'footballTransfer'
 ])
 
 // Recent rounds + the personal best. "Best" is the highest accuracy among

@@ -35,6 +35,8 @@ export default function GameLinksPanel({ mediaId, title }: { mediaId: number; ti
   const workLink = state.links.find((l) => l.source === 'launchbox') ?? null
   const noWork = state.unlinked.includes('launchbox')
   const noBangumi = state.unlinked.includes('bangumi')
+  const noWiki = state.unlinked.includes('fandom')
+  const canRead = !!bangumi || !!state.wiki
 
   async function run(action: () => Promise<unknown>, done?: string): Promise<void> {
     setBusy(true)
@@ -94,7 +96,7 @@ export default function GameLinksPanel({ mediaId, title }: { mediaId: number; ti
         </div>
 
         <div className="card p-4">
-          <h3 className="text-sm font-semibold">Cast (Bangumi)</h3>
+          <h3 className="text-sm font-semibold">Cast</h3>
           {bangumi ? (
             <p className="mt-1 text-sm text-gray-300">
               Bangumi entry {bangumi.externalId}{' '}
@@ -102,37 +104,35 @@ export default function GameLinksPanel({ mediaId, title }: { mediaId: number; ti
             </p>
           ) : (
             <p className="mt-1 text-sm text-gray-400">
-              {noBangumi
-                ? 'You marked this game as having no Bangumi entry.'
-                : 'No Bangumi entry linked, so there is no cast to read.'}
+              {noBangumi ? 'You marked this game as having no Bangumi entry.' : 'No Bangumi entry linked.'}
             </p>
           )}
           <div className="mt-3 flex flex-wrap gap-2">
             <button className="btn-ghost text-xs" disabled={busy} onClick={() => setPicking('bangumi')}>
               {bangumi ? 'Change…' : 'Find on Bangumi…'}
             </button>
+            {canRead && (
+              <button
+                className="btn-ghost text-xs"
+                disabled={busy}
+                onClick={() =>
+                  run(async () => {
+                    const r = await api.gameLinks.refreshCast(mediaId)
+                    toast(`Cast read: ${r.cast} voice credits, ${r.staff} staff.`, 'success')
+                  })
+                }
+              >
+                {bangumi ? 'Read cast again' : 'Read cast'}
+              </button>
+            )}
             {bangumi && (
-              <>
-                <button
-                  className="btn-ghost text-xs"
-                  disabled={busy}
-                  onClick={() =>
-                    run(async () => {
-                      const r = await api.gameLinks.refreshCast(mediaId)
-                      toast(`Cast read: ${r.cast} voice credits, ${r.staff} staff.`, 'success')
-                    })
-                  }
-                >
-                  Read cast again
-                </button>
-                <button
-                  className="btn-ghost text-xs"
-                  disabled={busy}
-                  onClick={() => run(() => api.gameLinks.unlinkBangumi(mediaId), 'Bangumi link and its cast removed.')}
-                >
-                  Not this game
-                </button>
-              </>
+              <button
+                className="btn-ghost text-xs"
+                disabled={busy}
+                onClick={() => run(() => api.gameLinks.unlinkBangumi(mediaId), 'Bangumi link and its cast removed.')}
+              >
+                Not this game
+              </button>
             )}
             {(noBangumi || bangumi?.method === 'manual') && (
               <button
@@ -144,6 +144,40 @@ export default function GameLinksPanel({ mediaId, title }: { mediaId: number; ti
               </button>
             )}
           </div>
+          {(state.wiki || noWiki) && (
+            <div className="mt-4 border-t border-base-700 pt-3">
+              {state.wiki ? (
+                <p className="text-sm text-gray-300">
+                  Also from {state.wiki.label}
+                  <span className="text-gray-400">
+                    {' '}
+                    · {state.wiki.category ?? 'not read yet'}
+                  </span>
+                </p>
+              ) : (
+                <p className="text-sm text-gray-400">You turned the franchise wiki off for this game.</p>
+              )}
+              <div className="mt-2 flex flex-wrap gap-2">
+                {state.wiki ? (
+                  <button
+                    className="btn-ghost text-xs"
+                    disabled={busy}
+                    onClick={() => run(() => api.gameLinks.unlinkWiki(mediaId), 'Wiki cast removed for this game.')}
+                  >
+                    Not this game
+                  </button>
+                ) : (
+                  <button
+                    className="btn-ghost text-xs"
+                    disabled={busy}
+                    onClick={() => run(() => api.gameLinks.reset(mediaId, 'fandom'))}
+                  >
+                    Let matching decide
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

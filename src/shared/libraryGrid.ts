@@ -20,9 +20,20 @@ export interface LibraryGridCandidate extends QuizScreenTitle {
   companies: Array<{ id: number; name: string }>
 }
 
-interface IndexedClue extends QuizLibraryGridClue {
+// `mediaIds` builds the board (actors only through their top-ten billing);
+// `validIds` judges answers, so any acting credit counts once the clue is set.
+interface IndexedClue extends Omit<QuizLibraryGridClue, 'matchKeys'> {
   mediaIds: Set<string>
+  validIds: Set<string>
 }
+
+/** Company clues come only from the largest studios in the selection; smaller
+ * production companies ("Winkler Films") are not recognisable facts. */
+export const LIBRARY_GRID_COMPANY_CLUES = 12
+/** Per clue family, the best-known (largest) clues considered for a board. */
+export const LIBRARY_GRID_FAMILY_CLUES = 40
+/** Per clue family, how many of those enter one board's search. */
+const SEARCH_CLUES_PER_FAMILY = 24
 
 export interface LibraryGridScoreInput {
   unaidedCells: number
@@ -82,9 +93,22 @@ export function screenMediaMatches(mode: QuizScreenMediaMode, mediaType: string)
 
 function indexClues(media: readonly LibraryGridCandidate[]): IndexedClue[] {
   const clues = new Map<string, IndexedClue>()
-  const add = (key: string, kind: QuizLibraryGridClueKind, label: string, mediaKey: string) => {
-    const found = clues.get(key) ?? { key, kind, label, mediaIds: new Set<string>() }
-    found.mediaIds.add(mediaKey)
+  const add = (
+    key: string,
+    kind: QuizLibraryGridClueKind,
+    label: string,
+    mediaKey: string,
+    builds = true
+  ) => {
+    const found = clues.get(key) ?? {
+      key,
+      kind,
+      label,
+      mediaIds: new Set<string>(),
+      validIds: new Set<string>()
+    }
+    found.validIds.add(mediaKey)
+    if (builds) found.mediaIds.add(mediaKey)
     clues.set(key, found)
   }
   for (const item of media) {
@@ -94,7 +118,9 @@ function indexClues(media: readonly LibraryGridCandidate[]): IndexedClue[] {
         person.billingOrder != null &&
         person.billingOrder >= 0 &&
         person.billingOrder < 10
-      if (topActor) add(`actor:${person.id}`, 'actor', `Main cast: ${person.name}`, item.key)
+      if (person.role === 'actor') {
+        add(`actor:${person.id}`, 'actor', `Cast: ${person.name}`, item.key, topActor)
+      }
       if (person.role === 'director') {
         add(`director:${person.id}`, 'director', `Directed by ${person.name}`, item.key)
       }
@@ -157,25 +183,57 @@ export function availableLibraryGridHint(
   return invalid.length === 2 ? [valid, ...invalid] : []
 }
 
-function chooseClues(
-  clues: readonly IndexedClue[],
-  rng: () => number
-): { rows: IndexedClue[]; columns: IndexedClue[]; answers: string[][]; reveal: string[] } | null {
-  // Keep prolific clue families from crowding out genres/decades while keeping
-  // the constraint search bounded for large personal libraries.
+function knownClueFamilies(clues: readonly IndexedClue[]): IndexedClue[][] {
   const byKind = new Map<QuizLibraryGridClueKind, IndexedClue[]>()
   for (const clue of clues) {
     const family = byKind.get(clue.kind)
     if (family) family.push(clue)
     else byKind.set(clue.kind, [clue])
   }
-  const pool = [...byKind.values()]
-    .flatMap((values) =>
-      [...values]
-        .sort((a, b) => a.mediaIds.size - b.mediaIds.size || a.key.localeCompare(b.key))
-        .slice(0, 24)
-    )
-    .sort((a, b) => a.key.localeCompare(b.key))
+  return [...byKind.entries()].map(([kind, values]) =>
+    [...values]
+      .sort((a, b) => b.mediaIds.size - a.mediaIds.size || a.key.localeCompare(b.key))
+      .slice(0, kind === 'company' ? LIBRARY_GRID_COMPANY_CLUES : LIBRARY_GRID_FAMILY_CLUES)
+  )
+}
+
+/** The clue keys a board may draw from, per family (exported for tests). */
+export function libraryGridKnownClueKeys(
+  candidates: readonly LibraryGridCandidate[],
+  mediaMode: QuizScreenMediaMode = 'both'
+): string[] {
+  const media = candidates.filter(
+    (item) => item.imagePath.trim() && screenMediaMatches(mediaMode, item.mediaType)
+  )
+  return knownClueFamilies(indexClues(media)).flat().map((clue) => clue.key)
+}
+
+/** Why a title was rejected for a cell: which of its two facts it fails. */
+export function libraryGridMissReason(
+  row: Pick<QuizLibraryGridClue, 'label' | 'matchKeys'>,
+  column: Pick<QuizLibraryGridClue, 'label' | 'matchKeys'>,
+  titleKey: string
+): string {
+  const inRow = row.matchKeys.includes(titleKey)
+  const inColumn = column.matchKeys.includes(titleKey)
+  if (inRow && !inColumn) return `Matches ${row.label}, but not ${column.label}`
+  if (!inRow && inColumn) return `Matches ${column.label}, but not ${row.label}`
+  return `Matches neither ${row.label} nor ${column.label}`
+}
+
+function chooseClues(
+  clues: readonly IndexedClue[],
+  rng: () => number
+): { rows: IndexedClue[]; columns: IndexedClue[]; answers: string[][]; reveal: string[] } | null {
+  // Keep prolific clue families from crowding out genres/decades while keeping
+  // the constraint search bounded for large personal libraries. Each family
+  // offers its best-known clues (the most titles: famous actors and directors,
+  // the big studios), a seeded sample of them enters the search, and the
+  // search order is shuffled so successive boards differ.
+  const pool = shuffle(
+    knownClueFamilies(clues).flatMap((known) => shuffle(known, rng).slice(0, SEARCH_CLUES_PER_FAMILY)),
+    rng
+  )
   const compatible = new Map<string, IndexedClue[]>()
   for (const clue of pool) {
     compatible.set(
@@ -237,9 +295,12 @@ export function buildLibraryGridQuestion(
   const selected = chooseClues(indexClues(media), rng)
   if (!selected) return null
   const allKeys = media.map((item) => item.key)
-  const cells: QuizLibraryGridCell[] = selected.answers.map((validKeys, index) => {
-    const rowIds = selected.rows[Math.floor(index / 3)].mediaIds
-    const columnIds = selected.columns[index % 3].mediaIds
+  const cells: QuizLibraryGridCell[] = selected.answers.map((_buildKeys, index) => {
+    const rowIds = selected.rows[Math.floor(index / 3)].validIds
+    const columnIds = selected.columns[index % 3].validIds
+    // Every title that truly matches both facts is accepted, not only the
+    // top-billed ones the board was built from.
+    const validKeys = intersect(rowIds, columnIds)
     const nearMisses = allKeys.filter(
       (key) => rowIds.has(key) !== columnIds.has(key)
     )
@@ -257,7 +318,10 @@ export function buildLibraryGridQuestion(
     }
   }).filter((cell): cell is QuizLibraryGridCell => cell != null)
   if (cells.length !== 9) return null
-  const strip = ({ mediaIds: _mediaIds, ...clue }: IndexedClue): QuizLibraryGridClue => clue
+  const strip = ({ mediaIds: _mediaIds, validIds, ...clue }: IndexedClue): QuizLibraryGridClue => ({
+    ...clue,
+    matchKeys: [...validIds]
+  })
   return {
     id: `library-grid-${seed}`,
     kind: 'libraryGrid',

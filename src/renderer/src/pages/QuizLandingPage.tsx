@@ -36,9 +36,7 @@ const GROUPS: Array<{ title: string; games: GameCard[] }> = [
   {
     title: 'Images',
     games: [
-      { to: '/quiz/images', kinds: ['imageReveal'], title: 'Image Reveal', body: 'Identify covers or art through four reveal stages.', availability: 'imageReveal', minimum: 4 },
-      { to: '/quiz/silhouette', kinds: ['silhouette'], title: 'Silhouette', body: 'Recognise a character or the title they belong to.', availability: 'silhouette', minimum: 4 },
-      { to: '/quiz/panels', kinds: ['mangaPanel'], title: 'Manga Panels', body: 'Name a manga from a safely selected local page.', availability: 'mangaPanel', minimum: 4 }
+      { to: '/quiz/images', kinds: ['imageReveal', 'imageRevealTyped'], title: 'Image Reveal', body: 'Identify covers or art through four reveal stages.', availability: 'imageReveal', minimum: 4 },
     ]
   },
   {
@@ -48,14 +46,14 @@ const GROUPS: Array<{ title: string; games: GameCard[] }> = [
       { to: '/quiz/library-grid', kinds: ['libraryGrid'], title: 'Library Grid', body: 'Fill nine intersections with movies or TV shows matching both facts.', availability: 'libraryGrid', minimum: 9, availabilityLabel: (count) => `${count} solvable cells` },
       { to: '/quiz/movie-chain', kinds: ['movieChainEasy', 'movieChainNormal', 'movieChainHard'], title: 'Movie Chain', body: 'Reach a target title through shared main-cast actors and directors.', availability: 'movieChain', minimum: 1, availabilityLabel: (count) => `${count} eligible endpoint pairs` },
       { to: '/quiz/link-wall', kinds: ['linkWall'], title: 'Link Wall', body: 'Sort sixteen movies and TV shows into four hidden connection groups.', availability: 'linkWall', minimum: 16, availabilityLabel: () => 'Solvable wall ready' },
-      { to: '/quiz/chronology', kinds: ['chronology'], title: 'Chronology', body: 'Order four connected titles by release date.', availability: 'chronology', minimum: 4 }
+      { to: '/quiz/chronology', kinds: ['chronologyPoints'], title: 'Chronology', body: 'Order four connected titles by release date.', availability: 'chronology', minimum: 4 }
     ]
   },
   {
     title: 'Library',
     games: [
       { to: '/quiz/cast', kinds: ['cast'], title: 'Cast Quiz', body: 'Match an actor to a movie or TV show they appeared in.', availability: 'cast', minimum: 4 },
-      { to: '/quiz/va', kinds: ['va'], title: 'Voice Actor Quiz', body: 'Find the character from another anime who shares the same Japanese voice actor.', availability: 'va', minimum: 4 },
+      { to: '/quiz/va', kinds: ['va', 'vaName'], title: 'Voice Actor Quiz', body: 'Match characters who share a Japanese voice actor, or name the voice actor from photos.', availability: 'va', minimum: 4 },
       { to: '/quiz/synopsis', kinds: ['synopsis'], title: 'Synopsis Quiz', body: 'Identify a title from a spoiler-conscious excerpt.', availability: 'synopsis', minimum: 4 },
       { to: '/quiz/libraryle', kinds: ['libraryle'], title: 'Libraryle', body: 'Find a hidden movie or TV title from attribute feedback.', availability: 'libraryle', minimum: 8, availabilityLabel: (count) => `${count} possible targets` },
       { to: '/quiz/mystery-career', kinds: ['mysteryCareer'], title: 'Mystery Career', body: 'Identify an actor or director from progressively revealed credits.', availability: 'mysteryCareer', minimum: 1, availabilityLabel: (count) => `${count} possible careers` },
@@ -67,9 +65,12 @@ const GROUPS: Array<{ title: string; games: GameCard[] }> = [
     games: [
       { to: '/football/quiz/champion', kinds: ['footballChampion'], title: 'Football Champion', body: 'Name verified edition winners from nine competition lineages.', footballAvailability: 'champion', minimum: 5 },
       { to: '/football/quiz/scoreline', kinds: ['footballScoreline'], title: 'Football Scoreline', body: 'Recover exact final scores from archived match records.', footballAvailability: 'scoreline', minimum: 5 },
-      { to: '/football/quiz/career-path', kinds: ['footballCareerPath'], title: 'Football Career Path', body: 'Identify a player from verified senior-club spells.', footballAvailability: 'careerPath', minimum: 5 },
+      { to: '/football/quiz/career-path', kinds: ['footballCareerGuess'], title: 'Football Career Path', body: 'Type the player as their senior clubs are revealed in career order.', footballAvailability: 'careerPath', minimum: 5 },
       { to: '/football/quiz/chronology', kinds: ['footballChronology'], title: 'Football Chronology', body: 'Order four champion editions from one competition.', footballAvailability: 'chronology', minimum: 4 },
-      { to: '/football/quiz/player-grid', kinds: ['footballPlayerGrid'], title: 'Football Player Grid', body: 'Fill a 3x3 player grid from verified career intersections.', footballAvailability: 'playerGrid', minimum: 1, availabilityLabel: () => 'Solvable board ready' }
+      { to: '/football/quiz/player-grid', kinds: ['footballPlayerGrid'], title: 'Football Player Grid', body: 'Fill a 3x3 player grid from verified career intersections.', footballAvailability: 'playerGrid', minimum: 1, availabilityLabel: () => 'Solvable board ready' },
+      { to: '/football/quiz/wordle', kinds: ['footballWordle'], title: 'Football Wordle', body: 'Find a mystery player from nation, position, club, league, age, height and shirt feedback.', footballAvailability: 'wordle', minimum: 8, availabilityLabel: (count) => `${count} players with full profiles` },
+      { to: '/football/quiz/lineup', kinds: ['footballLineup'], title: 'Name the XI', body: 'Type a famous match\'s starting eleven, laid out by formation.', footballAvailability: 'lineup', minimum: 1, availabilityLabel: (count) => `${count} matches with lineups` },
+      { to: '/football/quiz/transfers', kinds: ['footballTransfer'], title: 'Transfer Higher or Lower', body: 'Did this move cost more or less than the last one?', footballAvailability: 'transfer', minimum: 2, availabilityLabel: (count) => `${count} priced transfers` }
     ]
   },
   {

@@ -6,6 +6,7 @@ import { qk } from '../lib/queryKeys'
 import EntityHeader from '../components/EntityHeader'
 import BackButton from '../components/BackButton'
 import AddToListMenu from '../components/AddToListMenu'
+import { AddQuoteButton, EntityQuotesSection } from '../components/quotes/EntityQuotes'
 import CoverImage from '../components/CoverImage'
 import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
@@ -279,7 +280,17 @@ export default function PersonDetailPage() {
           // list, or a title's cast) — '/people' is specifically Voice Actors.
           leaveDeleted((path) => path === `/people/${personId}`, '/people')
         }}
-        actions={<AddToListMenu kind="person" entityId={personId} />}
+        actions={
+          <>
+            <AddToListMenu kind="person" entityId={personId} />
+            <AddQuoteButton
+              seed={{
+                speakerKind: 'person',
+                speaker: { id: personId, name: person.name, imagePath: person.photoPath }
+              }}
+            />
+          </>
+        }
       >
         {career.knownFor.length > 0 && (
           <Section
@@ -346,6 +357,8 @@ export default function PersonDetailPage() {
             </TabPanel>
           </>
         )}
+
+        <EntityQuotesSection filter={{ personId }} />
 
         {costars.length > 0 && (
           <Section title="Often appears with" subtitle="Shared titles in your library" className="mb-0">

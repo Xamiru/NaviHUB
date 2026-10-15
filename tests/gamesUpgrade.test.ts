@@ -111,6 +111,15 @@ describe('upgradeOne', () => {
     expect(links.linkedId(ids.rawg, 'bangumi')).toBe('2113')
     expect(enriched).toEqual([ids.rawg])
   })
+
+  it('retries only an unread wiki on an upgraded game, and reports it when the wiki stays unread', async () => {
+    db.prepare(`UPDATE media_item SET metadata = '{"catalogUpgraded":"2026-10-08"}' WHERE id = ?`).run(ids.title)
+    links.set(ids.title, 'fandom', 'yakuza:Yakuza 2', 'exact')
+    await expect(upgradeOne({ id: ids.title, external_source: 'rawg' }, 196, 'exact')).rejects.toThrow(/franchise wiki/)
+    // The catalog pass was skipped: the game is still unlinked to the work.
+    expect(links.get(ids.title, 'launchbox')).toBeNull()
+    expect(enriched).toEqual([ids.title])
+  })
 })
 
 describe('start', () => {

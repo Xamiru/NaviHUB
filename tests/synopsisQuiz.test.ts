@@ -10,7 +10,8 @@ import {
 function item(
   mediaId: number,
   mediaType: MediaType,
-  title = `${mediaType} ${mediaId}`,
+  // '#' keeps the number from reading as a sequel number (one franchise each).
+  title = `${mediaType} #${mediaId}`,
   extra: Partial<QuizSynopsisItem> = {}
 ): QuizSynopsisItem {
   return {
@@ -84,5 +85,40 @@ describe('synopsis first-entry safety', () => {
       expect.arrayContaining(['Code Geass R2', 'Code Geass', 'Code Geass: Lelouch of the Rebellion'])
     )
     expect(titleAliasVariants(['Steins;Gate: The Movie'])).toContain('Steins;Gate')
+  })
+})
+
+describe('synopsis cleanup and franchise options', () => {
+  it('strips source credits, rewrite credits and trailing notes from the excerpt', () => {
+    const noisy = item(1, 'anime', 'Quiet Story', {
+      synopsis:
+        'A girl moves to a seaside town and joins the radio club. (Source: Crunchyroll)\n\n[Written by MAL Rewrite]\n\nNote: Episode 1 has an airtime of 48 minutes.'
+    })
+    const pool = [noisy, item(2, 'anime'), item(3, 'anime'), item(4, 'anime')]
+    const question = buildSynopsisQuizQuestions(pool, 4, 5).find((q) => q.answer.mediaId === 1)!
+    expect(question.excerpt).toBe('A girl moves to a seaside town and joins the radio club.')
+  })
+
+  it('never offers another entry of the answer franchise, nor two from one franchise', () => {
+    const pool = [
+      item(1, 'anime', 'Titan Saga'),
+      item(2, 'anime', 'Titan Saga Season 2'),
+      item(3, 'anime', 'Titan Saga: The Final'),
+      item(4, 'anime', 'Spin-off', { relationAliases: ['Titan Saga'] }),
+      item(5, 'anime', 'Other Show'),
+      item(6, 'anime', 'Other Show II'),
+      item(7, 'anime', 'Third Show'),
+      item(8, 'anime', 'Fourth Show')
+    ]
+    for (let seed = 0; seed < 20; seed++) {
+      for (const question of buildSynopsisQuizQuestions(pool, 4, seed)) {
+        if (question.answer.mediaId !== 1) continue
+        const titles = question.options.map((option) => option.title)
+        expect(titles).not.toContain('Titan Saga Season 2')
+        expect(titles).not.toContain('Titan Saga: The Final')
+        expect(titles).not.toContain('Spin-off')
+        expect(titles.filter((title) => title.startsWith('Other Show')).length).toBeLessThanOrEqual(1)
+      }
+    }
   })
 })

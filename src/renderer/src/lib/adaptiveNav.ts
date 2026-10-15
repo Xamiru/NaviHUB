@@ -47,6 +47,7 @@ const LIBRARY_DRAWER_ITEMS: ArchiveNavItem[] = [
   { to: '/actors', label: 'Actors', group: 'Connections' },
   { to: '/studios', label: 'Studios', group: 'Connections' },
   { to: '/lists', label: 'Lists', visibilityKey: 'lists', group: 'Organise' },
+  { to: '/quotes', label: 'Quotes', visibilityKey: 'quotes', group: 'Organise' },
   { to: '/tags', label: 'Tags', visibilityKey: 'tags', group: 'Organise' }
 ]
 
@@ -383,12 +384,13 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
       ]
     }
   }
-  if (pathname.startsWith('/lists') || pathname.startsWith('/tags')) {
+  if (underAny(pathname, ['/lists', '/tags', '/quotes'])) {
     return {
       title: 'Collections',
       descriptor: 'Curated archive',
       items: [
         { to: '/lists', label: 'Lists' },
+        { to: '/quotes', label: 'Quotes' },
         { to: '/tags', label: 'Tags' }
       ]
     }

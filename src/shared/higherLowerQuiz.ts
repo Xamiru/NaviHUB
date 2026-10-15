@@ -4,6 +4,8 @@ export interface HigherLowerValueSource {
   releaseDate: string | null
   totalUnits: number | null
   score: number | null
+  // The 0-100 community score (communityScoreSql), when a source provides one.
+  communityScore?: number | null
 }
 
 export const HIGHER_LOWER_MEDIA_TYPES: ReadonlyArray<{ key: MediaType; label: string }> = [
@@ -43,7 +45,12 @@ export function higherLowerValue(
     const year = Number(match[1])
     return Number.isInteger(year) && year > 0 ? year : null
   }
-  const raw = metric === 'totalUnits' ? item.totalUnits : item.score
+  const raw =
+    metric === 'totalUnits'
+      ? item.totalUnits
+      : metric === 'communityScore'
+        ? (item.communityScore == null ? null : Math.round(item.communityScore))
+        : item.score
   return typeof raw === 'number' && Number.isFinite(raw) && raw > 0 ? raw : null
 }
 
@@ -58,6 +65,17 @@ export function higherLowerCopy(mediaType: MediaType, metric: QuizHigherLowerMet
       question: (challenger: string, reference: string) =>
         `Is ${challenger} older or newer than ${reference}?`,
       formatValue: (value: number) => String(value)
+    }
+  }
+  if (metric === 'communityScore') {
+    return {
+      setupLabel: 'Community rating',
+      valueLabel: 'Community rating',
+      higherLabel: 'Higher',
+      lowerLabel: 'Lower',
+      question: (challenger: string, reference: string) =>
+        `Is ${challenger} rated higher or lower than ${reference}?`,
+      formatValue: (value: number) => `${value} / 100`
     }
   }
   if (metric === 'personalScore') {

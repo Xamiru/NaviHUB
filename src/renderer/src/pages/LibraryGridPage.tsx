@@ -12,7 +12,7 @@ import { useAllCompletedStatuses } from '../lib/hooks'
 import { usePersistedState } from '../lib/navState'
 import { qk } from '../lib/queryKeys'
 import { isNewQuizBest, quizScorePolicy, quizSeed } from '@shared/quizCore'
-import { availableLibraryGridHint, libraryGridScore } from '@shared/libraryGrid'
+import { availableLibraryGridHint, libraryGridMissReason, libraryGridScore } from '@shared/libraryGrid'
 import type {
   QuizConsumptionScope,
   QuizLibraryGridQuestion,
@@ -200,7 +200,13 @@ export default function LibraryGridPage() {
         {
           cellKey: currentCell.key,
           title: title.label,
-          reason: used ? 'Already used elsewhere' : 'Does not match both clues'
+          reason: used
+            ? 'Already used elsewhere'
+            : libraryGridMissReason(
+                question.rows[currentCell.row],
+                question.columns[currentCell.column],
+                title.key
+              )
         }
       ])
       return

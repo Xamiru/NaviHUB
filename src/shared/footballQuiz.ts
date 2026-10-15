@@ -35,6 +35,8 @@ export interface FootballScorelineCandidate {
   awayImagePath?: string | null
   matchDate: string
   stage: string | null
+  // football_stage.kind: league | group | knockout | final | qualifier.
+  stageKind?: string | null
   homeScore: number
   awayScore: number
   homeExtraTime: number | null
@@ -136,44 +138,104 @@ function scoreChoice(
   return { key: label, label }
 }
 
+type ScoreShape = Pick<
+  FootballScorelineCandidate,
+  'homeScore' | 'awayScore' | 'homeExtraTime' | 'awayExtraTime' | 'homePenalties' | 'awayPenalties'
+>
+
+/**
+ * Wrong scores in the answer's own format: a match that went to extra time or
+ * penalties gets options that did too (still level after 90 minutes when the
+ * answer was), so an "aet" or "pens" suffix never singles out the answer.
+ */
+export function plausibleScoreShapes(answer: ScoreShape, rng: () => number): ScoreShape[] {
+  const hasExtra = answer.homeExtraTime != null && answer.awayExtraTime != null
+  const hasPens = answer.homePenalties != null && answer.awayPenalties != null
+  const level90 = answer.homeScore === answer.awayScore
+  const shape = (h: number, a: number, eh: number | null, ea: number | null, ph: number | null, pa: number | null): ScoreShape => ({
+    homeScore: h, awayScore: a, homeExtraTime: eh, awayExtraTime: ea, homePenalties: ph, awayPenalties: pa
+  })
+  const valid = (item: ScoreShape): boolean => {
+    if (item.homeScore < 0 || item.awayScore < 0) return false
+    if (hasExtra && level90 && item.homeScore !== item.awayScore) return false
+    if (hasExtra && (item.homeExtraTime! < item.homeScore || item.awayExtraTime! < item.awayScore)) return false
+    // Level after extra time with no shootout cannot happen, unless the answer
+    // itself is such a match (a replay-era tie).
+    if (hasExtra && !hasPens && answer.homeExtraTime !== answer.awayExtraTime && item.homeExtraTime === item.awayExtraTime) return false
+    if (hasPens) {
+      if (item.homePenalties! < 0 || item.awayPenalties! < 0 || item.homePenalties === item.awayPenalties) return false
+      // Penalties follow a level match.
+      const h = hasExtra ? item.homeExtraTime! : item.homeScore
+      const a = hasExtra ? item.awayExtraTime! : item.awayScore
+      if (h !== a) return false
+    }
+    return true
+  }
+  const { homeScore: h, awayScore: a } = answer
+  const eh = answer.homeExtraTime
+  const ea = answer.awayExtraTime
+  const ph = answer.homePenalties
+  const pa = answer.awayPenalties
+  const candidates: ScoreShape[] = []
+  if (!hasExtra && !hasPens) {
+    for (const [x, y] of [[a, h], [h + 1, a], [h, a + 1], [h - 1, a], [h, a - 1], [h + 1, a + 1], [h - 1, a - 1]] as const) {
+      candidates.push(shape(x, y, null, null, null, null))
+    }
+  } else {
+    const shift = (dh: number, da: number, deh: number, dea: number, dph: number, dpa: number) =>
+      shape(h + dh, a + da, eh == null ? null : eh + deh, ea == null ? null : ea + dea, ph == null ? null : ph + dph, pa == null ? null : pa + dpa)
+    // Mirror the whole match, move the level 90-minute score, or change who
+    // scored in extra time or won the shootout.
+    candidates.push(shape(a, h, ea, eh, pa, ph))
+    candidates.push(shift(1, 1, 1, 1, 0, 0), shift(-1, -1, -1, -1, 0, 0))
+    if (hasExtra && !hasPens) candidates.push(shift(0, 0, 1, 0, 0, 0), shift(0, 0, 0, 1, 0, 0), shift(0, 0, -1, 0, 0, 0), shift(0, 0, 0, -1, 0, 0))
+    if (hasPens) candidates.push(shift(0, 0, 0, 0, 1, 0), shift(0, 0, 0, 0, 0, 1), shift(0, 0, 0, 0, -1, 0), shift(0, 0, 0, 0, 0, -1), shape(h, a, eh, ea, pa, ph))
+    if (hasExtra && hasPens) candidates.push(shift(1, 1, 1, 1, 0, 0), shift(0, 0, 1, 1, 0, 0))
+  }
+  const answerLabel = formatFootballScore(answer)
+  const seen = new Set<string>([answerLabel])
+  const out: ScoreShape[] = []
+  for (const item of shuffle(candidates, rng)) {
+    if (!valid(item)) continue
+    const label = formatFootballScore(item)
+    if (seen.has(label)) continue
+    seen.add(label)
+    out.push(item)
+    if (out.length === 3) break
+  }
+  return out
+}
+
 function plausibleScores(answer: FootballScorelineCandidate, rng: () => number): QuizChallengeChoice[] {
-  const choices = new Map<string, QuizChallengeChoice>()
-  const add = (home: number, away: number): void => {
-    const item = scoreChoice({
-      homeScore: Math.max(0, home),
-      awayScore: Math.max(0, away),
-      homeExtraTime: null,
-      awayExtraTime: null,
-      homePenalties: null,
-      awayPenalties: null
-    })
-    choices.set(item.key, item)
-  }
-  const answerChoice = scoreChoice(answer)
-  choices.set(answerChoice.key, answerChoice)
-  const candidates: [number, number][] = [
-    [answer.awayScore, answer.homeScore],
-    [answer.homeScore + 1, answer.awayScore],
-    [answer.homeScore, answer.awayScore + 1],
-    [Math.max(0, answer.homeScore - 1), answer.awayScore],
-    [answer.homeScore, Math.max(0, answer.awayScore - 1)],
-    [answer.homeScore + 1, answer.awayScore + 1],
-    [Math.max(0, answer.homeScore - 1), Math.max(0, answer.awayScore - 1)]
-  ]
-  for (const [home, away] of shuffle(candidates, rng)) {
-    add(home, away)
-    if (choices.size >= 4) break
-  }
-  return shuffle([...choices.values()].slice(0, 4), rng)
+  return shuffle([answer, ...plausibleScoreShapes(answer, rng)].map(scoreChoice), rng)
+}
+
+const BIG_MATCH_STAGE = /\b(final|semi|quarter)/i
+
+/** Finals and knockout rounds, plus every international-tournament match. */
+export function isBigFootballMatch(
+  candidate: Pick<FootballScorelineCandidate, 'stage' | 'competitionKey'> & { stageKind?: string | null }
+): boolean {
+  return (
+    candidate.stageKind === 'knockout' ||
+    candidate.stageKind === 'final' ||
+    (candidate.stage != null && BIG_MATCH_STAGE.test(candidate.stage)) ||
+    candidate.competitionKey === 'world-cup' ||
+    candidate.competitionKey === 'euros'
+  )
 }
 
 export function buildFootballScorelineQuestions(
   candidates: readonly FootballScorelineCandidate[],
   length: number,
-  seed: number
+  seed: number,
+  scope: 'big' | 'any' = 'big'
 ): QuizFootballScorelineQuestion[] {
   const rng = seededRng(seed)
-  return balancedDeal(candidates, Math.max(1, length), (item) => item.competitionKey, rng).map(
+  // Big matches first: a random league fixture from 1990 is rarely knowable.
+  const big = scope === 'big' ? candidates.filter(isBigFootballMatch) : []
+  const pool = big.length >= Math.max(1, length) ? big : candidates
+  return balancedDeal(pool, Math.max(1, length), (item) => item.competitionKey, rng).map(
     (answer, index) => {
       const answerChoice = scoreChoice(answer)
       return {
@@ -222,19 +284,35 @@ export function buildFootballCareerQuestions(
     const signature = candidate.spells.map((spell) => `${spell.team}:${spell.start}:${spell.end}:${spell.loan}`).join('|')
     return signatures.get(signature) === 1
   })
-  return shuffle(eligible, rng).slice(0, Math.max(1, length)).flatMap((answer, index) => {
-    const distractors = shuffle(eligible.filter((item) => item.personId !== answer.personId), rng).slice(0, 3)
-    if (distractors.length < 3) return []
-    return [{
-      id: `football-career-${seed}-${index}`,
-      kind: 'footballCareerPath' as const,
-      prompt: 'Which player followed this senior club career path?',
-      choices: shuffle([answer, ...distractors], rng).map((item) => choice(item.personId, item.name)),
-      validKeys: [String(answer.personId)],
-      spells: shortenedSpells(answer),
-      datasetRevision: answer.datasetRevision
-    }]
-  })
+  // Typed guesses (2026-10-14): the clubs reveal in career order, two at the
+  // start and one more per wrong guess, and any quiz-pack player can be typed,
+  // so there are no four names to eliminate from.
+  const players = eligible
+    .map((item) => ({ key: String(item.personId), label: item.name }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+  return shuffle(eligible, rng).slice(0, Math.max(1, length)).map((answer, index) => ({
+    id: `football-career-${seed}-${index}`,
+    kind: 'footballCareerPath' as const,
+    prompt: 'Which player followed this senior club career path?',
+    choices: [],
+    validKeys: [String(answer.personId)],
+    answer: { key: String(answer.personId), label: answer.name },
+    players,
+    spells: shortenedSpells(answer),
+    datasetRevision: answer.datasetRevision
+  }))
+}
+
+export const FOOTBALL_CAREER_START_SPELLS = 2
+
+/** Points for one career: 100 with the opening clubs, 20 less per extra club revealed. */
+export function footballCareerGuessPoints(solved: boolean, wrongGuesses: number): number {
+  return solved ? Math.max(20, 100 - 20 * wrongGuesses) : 0
+}
+
+/** How many wrong guesses a career allows: until every shown club is revealed, then one last try. */
+export function footballCareerMaxGuesses(spellCount: number): number {
+  return Math.max(1, spellCount - FOOTBALL_CAREER_START_SPELLS + 1)
 }
 
 export function buildFootballChronologyQuestions(
@@ -252,8 +330,14 @@ export function buildFootballChronologyQuestions(
   let attempts = 0
   while (out.length < Math.max(1, length) && usable.length && attempts++ < length * 20) {
     const group = usable[Math.floor(rng() * usable.length)]
-    const entries = shuffle(group, rng).slice(0, 4)
-    if (new Set(entries.map((entry) => entry.year)).size < 4) continue
+    // Four different champions: a club named twice could not be told apart.
+    const entries: FootballChampionCandidate[] = []
+    for (const entry of shuffle(group, rng)) {
+      if (entries.some((item) => item.teamId === entry.teamId || item.year === entry.year)) continue
+      entries.push(entry)
+      if (entries.length === 4) break
+    }
+    if (entries.length < 4) continue
     const choices = shuffle(entries, rng).map((entry) => ({
       ...choice(entry.seasonId, entry.teamName),
       seasonId: entry.seasonId,
