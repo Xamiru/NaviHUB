@@ -106,12 +106,12 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'The contents included foreign and local news, the latter emphasizing progress and reforms under Moḥammad Shah (Mīrzā Ṣāleḥ, ed. Rāʾīn, pp. 19-21).',
+          text: 'The contents included foreign and local news, the latter emphasizing progress and reforms under Moḥammad Shah',
           lang: 'en',
           cite: { source: 'iranica-floor-cap', loc: { section: 'ČĀP', para: '20' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/cap-print-printing-a-persian-word-probably-derived-from-hindi-chapna/'
           }
         },

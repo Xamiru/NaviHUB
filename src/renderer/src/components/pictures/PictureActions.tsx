@@ -1,5 +1,4 @@
 import { useId, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
@@ -42,7 +41,6 @@ export function usePictureActions({
   busy: boolean
 } {
   const qc = useQueryClient()
-  const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
   const [dialog, setDialog] = useState<DialogState>(null)
   const { data: source = 'manual' } = useQuery({
@@ -160,7 +158,7 @@ export function usePictureActions({
       )
       if (opts.openTitle && one.mediaType) {
         const to = pathForMedia({ id: mediaId, mediaType: one.mediaType })
-        items.push({ label: `Open ${one.mediaTitle ?? 'title'}`, onSelect: () => navigate(to) })
+        items.push({ label: `Open ${one.mediaTitle ?? 'title'}`, to })
       }
     }
     items.push({ label: 'Remove', danger: true, disabled: busy, onSelect: () => remove(images) })

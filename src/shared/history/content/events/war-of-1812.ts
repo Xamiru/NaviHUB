@@ -126,20 +126,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q11',
-          text: 'This "Treaty of Peace and Amity Between the United States and Great Britain" was signed on December 24, 1814. It ended the War of 1812, fought between Great Britain and the United States.',
-          lang: 'en',
-          cite: {
-            source: 'nara-milestone-treaty-of-ghent',
-            loc: { section: 'Treaty of Ghent (1814)', para: '1' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-07',
-            url: 'https://www.archives.gov/milestone-documents/treaty-of-ghent'
-          }
-        },
-        {
           id: 'q1',
           text: 'As an important neutral trading nation, the United States became ensnarled in the European conflict that pitted Napoleonic France against Great Britain and her continental allies.',
           lang: 'en',
@@ -151,6 +137,20 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1801-1829/war-of-1812'
+          }
+        },
+        {
+          id: 'q11',
+          text: 'This "Treaty of Peace and Amity Between the United States and Great Britain" was signed on December 24, 1814. It ended the War of 1812, fought between Great Britain and the United States.',
+          lang: 'en',
+          cite: {
+            source: 'nara-milestone-treaty-of-ghent',
+            loc: { section: 'Treaty of Ghent (1814)', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.archives.gov/milestone-documents/treaty-of-ghent'
           }
         },
         {

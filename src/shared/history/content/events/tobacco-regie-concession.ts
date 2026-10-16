@@ -212,7 +212,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q2',
-          text: '1890 The granting of a tobacco concession by Nāṣer al-Din Shah to a British citizen, Major Gerald F. Talbot, to buy, sell, and manufacture tobacco throughout Persia for 50 years; formation of the Imperial Tobacco Corporation of Persia.',
+          text: 'The granting of a tobacco concession by Nāṣer al-Din Shah to a British citizen, Major Gerald F. Talbot, to buy, sell, and manufacture tobacco throughout Persia for 50 years; formation of the Imperial Tobacco Corporation of Persia.',
           lang: 'en',
           cite: {
             source: 'iranica-yarshater-chronology-part-2',
@@ -220,7 +220,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
           }
         },
@@ -355,12 +355,6 @@ export default defineEvent({
       ]
     }
   ],
-  hero: {
-    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f3/The_Young_Nasir_Al-Din_Shah_Qajar.jpg/1280px-The_Young_Nasir_Al-Din_Shah_Qajar.jpg',
-    page: 'https://commons.wikimedia.org/wiki/File:The_Young_Nasir_Al-Din_Shah_Qajar.jpg',
-    credit: { creator: 'Mirza Abolhassan Khan Ghaffari' },
-    license: { id: 'public-domain' }
-  },
   course: [
     {
       date: {
@@ -389,5 +383,16 @@ export default defineEvent({
   furtherReading: [
     { source: 'adamiyat-1981-shuresh-bar-emtiyaznameh-ye-rezhi', perspective: 'iranian' },
     { source: 'nateq-1994-bazarganan-dar-dad-o-setad', perspective: 'iranian' }
+  ],
+  places: [
+    {
+      ref: 'place:tehran',
+      cites: [
+        {
+          source: 'iranica-calmard-atabak-e-azam',
+          loc: { section: 'ATĀBAK-E AʿẒAM, AMĪN-AL-SOLṬĀN', para: '10' }
+        }
+      ]
+    }
   ]
 })

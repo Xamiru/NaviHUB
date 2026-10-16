@@ -82,21 +82,6 @@ export default defineEvent({
   ],
   sections: [
     {
-      kind: 'background',
-      quotes: [
-        {
-          id: 'q7',
-          text: 'The violent measures taken against the Jews in November, 1938, were nominally in retaliation for the killing of an official of the German Embassy in Paris.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-imt-judgment-war-crimes-and-crimes-against-humanity',
-            loc: { section: 'PERSECUTION OF THE JEWS', para: '8' }
-          },
-          provenance: { via: 'web', at: '2026-10-07', url: 'https://avalon.law.yale.edu/imt/judwarcr.asp' }
-        }
-      ]
-    },
-    {
       kind: 'overview',
       quotes: [
         {
@@ -108,16 +93,6 @@ export default defineEvent({
             loc: { section: 'Total Mobilization, Resistance, and the Holocaust', para: '4' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/42.htm' }
-        },
-        {
-          id: 'q8',
-          text: 'By the autumn of 1938, the Nazi policy towards the Jews had reached the stage where it was directed towards the complete exclusion of Jews from German life. Pogroms were organised which included the burning and demolishing of synagogues, the looting of Jewish businesses, and the arrest of prominent Jewish business men.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-imt-judgment-war-crimes-and-crimes-against-humanity',
-            loc: { section: 'PERSECUTION OF THE JEWS', para: '7' }
-          },
-          provenance: { via: 'web', at: '2026-10-07', url: 'https://avalon.law.yale.edu/imt/judwarcr.asp' }
         }
       ]
     },
@@ -133,6 +108,31 @@ export default defineEvent({
             loc: { section: 'Total Mobilization, Resistance, and the Holocaust', para: '4' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/42.htm' }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q7',
+          text: 'The violent measures taken against the Jews in November, 1938, were nominally in retaliation for the killing of an official of the German Embassy in Paris.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-imt-judgment-war-crimes-and-crimes-against-humanity',
+            loc: { section: 'PERSECUTION OF THE JEWS', para: '8' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'https://avalon.law.yale.edu/imt/judwarcr.asp' }
+        },
+        {
+          id: 'q8',
+          text: 'By the autumn of 1938, the Nazi policy towards the Jews had reached the stage where it was directed towards the complete exclusion of Jews from German life. Pogroms were organised which included the burning and demolishing of synagogues, the looting of Jewish businesses, and the arrest of prominent Jewish business men.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-imt-judgment-war-crimes-and-crimes-against-humanity',
+            loc: { section: 'PERSECUTION OF THE JEWS', para: '7' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'https://avalon.law.yale.edu/imt/judwarcr.asp' }
         }
       ]
     }
@@ -178,5 +178,16 @@ export default defineEvent({
   },
   furtherReading: [
     { source: 'graml-1988-reichskristallnacht', perspective: 'european' }
+  ],
+  places: [
+    {
+      ref: 'place:berlin',
+      cites: [
+        {
+          source: 'loc-germany-country-study-1995',
+          loc: { section: 'Total Mobilization, Resistance, and the Holocaust', para: '5' }
+        }
+      ]
+    }
   ]
 })

@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -48,7 +48,7 @@ export default definePerson({
   roles: ['diplomat'],
   sections: [
     {
-      kind: 'career',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',
@@ -63,7 +63,12 @@ export default definePerson({
             at: '2026-10-06',
             url: 'https://encyclopedia.1914-1918-online.net/article/persiairan/'
           }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'career',
+      quotes: [
         {
           id: 'q2',
           text: 'By the spring of 1916, the allied forces, advancing from the north and the south, had managed to wipe out all the German positions in the provinces. Only a few agents, notably Wassmuss, were still holding out in the country.',

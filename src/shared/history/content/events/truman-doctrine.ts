@@ -212,5 +212,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Special_Message_to_Congress_on_Greece_and_Turkey_The_Truman_Doctrine.jpg',
     credit: { institution: 'Harry S. Truman Library & Museum' },
     license: { id: 'public-domain' }
-  }
+  },
+  places: [
+    { ref: 'place:washington-dc' }
+  ]
 })

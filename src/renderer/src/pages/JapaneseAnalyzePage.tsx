@@ -40,7 +40,7 @@ export default function JapaneseAnalyzePage() {
       width="wide"
       aside={
         result ? (
-          <ContextPanel title="Reading evidence" identity={result.stats.tokenCount}>
+          <ContextPanel title="How much you know" identity={result.stats.tokenCount}>
             <ContextFact label="Known by usage">{pct(knownShare(result.stats.tiers))}</ContextFact>
             <ContextFact label="Known unique words">
               {pct(uniqueKnownShare(result.stats.tiers))}
@@ -52,13 +52,7 @@ export default function JapaneseAnalyzePage() {
               Select a highlighted word in the text to open the mining panel.
             </ContextFact>
           </ContextPanel>
-        ) : (
-          <ContextPanel title="Analysis flow" identity="empty-analysis">
-            <ContextFact label="Input">Paste Japanese text from any local source.</ContextFact>
-            <ContextFact label="Evidence">Coverage uses your current offline study state.</ContextFact>
-            <ContextFact label="Output">Unknown words can move directly into mining.</ContextFact>
-          </ContextPanel>
-        )
+        ) : undefined
       }
     >
       <PageHeader

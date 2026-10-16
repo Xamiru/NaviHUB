@@ -192,7 +192,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q11',
-          text: '1852 Mirzā Taqi Khan Amir Kabir (b. 1807), reformist and capable prime minister, is executed by order of Nāṣer-al-Din Shah.',
+          text: 'Mirzā Taqi Khan Amir Kabir (b. 1807), reformist and capable prime minister, is executed by order of Nāṣer-al-Din Shah.',
           lang: 'en',
           cite: {
             source: 'iranica-yarshater-chronology-part-2',
@@ -200,7 +200,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
           }
         },

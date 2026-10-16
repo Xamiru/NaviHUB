@@ -77,6 +77,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'In the course of the nineteenth century, France seized Algeria and Tunisia, while Britain began its occupation of Egypt in 1882.',
+          lang: 'en',
+          cite: {
+            source: 'loc-turkey-country-study-1995',
+            loc: { section: 'External Threats and Internal Transformations', para: '7' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/turkey/10.htm' }
+        },
+        {
           id: 'q1',
           text: 'In 1881 a French force crossed the Algerian frontier under pretext of chastising the independent Khmir or Kroumir tribes on the north-east of the regency, and, quickly dropping the mask, advanced on the capital and compelled the Bey to accept the French protectorate.',
           lang: 'en',
@@ -86,16 +96,6 @@ export default defineEvent({
             at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Tunisia'
           }
-        },
-        {
-          id: 'q2',
-          text: 'In the course of the nineteenth century, France seized Algeria and Tunisia, while Britain began its occupation of Egypt in 1882.',
-          lang: 'en',
-          cite: {
-            source: 'loc-turkey-country-study-1995',
-            loc: { section: 'External Threats and Internal Transformations', para: '7' }
-          },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/turkey/10.htm' }
         }
       ]
     },

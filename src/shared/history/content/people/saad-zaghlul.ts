@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Saad Zaghlul', lang: 'en', role: 'primary' },
     { text: 'سعد زغلول', lang: 'ar', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -75,7 +75,7 @@ export default definePerson({
   ],
   sections: [
     {
-      kind: 'career',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',
@@ -90,7 +90,12 @@ export default definePerson({
             at: '2026-10-06',
             url: 'https://encyclopedia.1914-1918-online.net/article/egypt/'
           }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'career',
+      quotes: [
         {
           id: 'q2',
           text: 'On April 4, 1921, Zaghlul\'s return to Egypt was met by an unprecedented welcome, showing that the vast majority of Egyptians supported him.',

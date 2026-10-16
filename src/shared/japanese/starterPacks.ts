@@ -1,4 +1,4 @@
-// The six offline packs the Japanese section leans on, in install order, and
+// The seven offline packs the Japanese section leans on, in install order, and
 // how to tell each is installed. Shared by the Today banner and the one-click
 // starter install in main, so the two can never disagree about what
 // "installed" means. Settings' per-pack cards still test the same things inline.
@@ -50,6 +50,12 @@ export const STARTER_PACKS: StarterPack[] = [
     title: 'Example sentences (Tatoeba)',
     size: null,
     unlocks: 'The sentence feed and examples in the dictionary and on cards.'
+  },
+  {
+    key: 'voice',
+    title: 'Japanese voice (Open JTalk)',
+    size: '~25 MB',
+    unlocks: 'Hear any word or sentence spoken, with its pitch accent.'
   }
 ]
 
@@ -58,6 +64,7 @@ export interface StarterPackFacts {
   krad: boolean
   grammar: boolean
   sentences: boolean
+  voice: boolean
 }
 
 export function starterPackInstalled(key: StarterPackKey, facts: StarterPackFacts): boolean {
@@ -77,6 +84,8 @@ export function starterPackInstalled(key: StarterPackKey, facts: StarterPackFact
       return facts.grammar
     case 'sentences':
       return facts.sentences
+    case 'voice':
+      return facts.voice
   }
 }
 

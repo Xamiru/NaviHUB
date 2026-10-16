@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { formatTime } from '@shared/subtitles'
 import type { MediaDetail, VideoFile } from '@shared/types'
@@ -70,8 +70,6 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
   const continueFile = files.find((f) => !f.watchedAt)
   const watched = files.filter((f) => f.watchedAt).length
 
-  const navigate = useNavigate()
-  const play = (f: VideoFile): void => navigate(`/watch/file/${f.id}`)
   const openExternal = (f: VideoFile): void => {
     void api.video.openExternal({ kind: 'file', fileId: f.id }).catch(toastError)
   }
@@ -94,9 +92,9 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
         <>
           <div className="mb-2 flex items-center gap-2 text-sm">
             {continueFile && (
-              <button className="btn-ghost px-3 py-1" onClick={() => play(continueFile)}>
+              <Link className="btn-ghost px-3 py-1" to={`/watch/file/${continueFile.id}`}>
                 {continueFile.resumeSeconds ? 'Resume' : 'Play next'} · {continueFile.title}
-              </button>
+              </Link>
             )}
             <button className="btn-ghost px-3 py-1" disabled={busy} onClick={() => void rescan()}>
               Rescan

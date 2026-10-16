@@ -318,5 +318,16 @@ export default defineEvent({
       },
       license: { id: 'public-domain' }
     }
+  ],
+  places: [
+    {
+      ref: 'place:washington-dc',
+      cites: [
+        {
+          source: 'hrw-1998-world-report-iran',
+          loc: { section: 'World Report 1998: Iran', para: '40' }
+        }
+      ]
+    }
   ]
 })

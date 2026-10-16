@@ -24,7 +24,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-13',
+  researched: '2026-10-16',
   died: {
     alts: [
       {
@@ -171,5 +171,18 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1687', approx: true },
+        cites: [
+          {
+            source: 'loc-name-authority-mir-ways-hotak',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  }
 })

@@ -338,5 +338,13 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Nader_Shah_grave.jpg',
     credit: { creator: 'Ayazsa' },
     license: { id: 'cc-by', version: '4.0', url: 'https://creativecommons.org/licenses/by/4.0' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:quchan',
+      cites: [
+        { source: 'iranica-perry-afsharids', loc: { section: 'AFSHARIDS', para: '2' } }
+      ]
+    }
+  ]
 })

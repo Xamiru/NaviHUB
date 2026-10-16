@@ -57,6 +57,12 @@ export default defineEvent({
       cites: [
         { source: 'nam-transvaal-war', loc: { section: 'Transvaal War', para: '34' } }
       ]
+    },
+    {
+      ref: 'place:pretoria',
+      cites: [
+        { source: 'nam-transvaal-war', loc: { section: 'Transvaal War', para: '19' } }
+      ]
     }
   ],
   polities: [

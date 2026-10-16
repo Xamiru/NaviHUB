@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Heinrich Himmler', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -130,13 +130,13 @@ export default definePerson({
         },
         {
           id: 'q3',
-          text: 'the Reichs Security Head Office (RSHA) which was at the same time both one of the principal offices (Hauptamter) of the SS under Himmler as Reichsfuehrer SS and an office in the Ministry of the Interior under Himmler as Chief of the German Police.',
+          text: 'This consolidation under the leadership of Heydrich of the Security Police, a State organisation, and the SD, a Party organisation, was formalised by the decree of 27th September, 1939, which united the various state and Party offices which were under Heydrich as Chief of the Security Police and SD into one administrative unit, the Reichs Security Head Office (RSHA) which was at the same time both one of the principal offices (Hauptamter) of the SS under Himmler as Reichsfuehrer SS and an office in the Ministry of the Interior under Himmler as Chief of the German Police.',
           lang: 'en',
           cite: {
             source: 'avalon-imt-judgment-the-accused-organisations',
             loc: { section: 'Judgment: The Accused Organisations' }
           },
-          provenance: { via: 'web', at: '2026-10-08', url: 'https://avalon.law.yale.edu/imt/judorg.asp' }
+          provenance: { via: 'web', at: '2026-10-16', url: 'https://avalon.law.yale.edu/imt/judorg.asp' }
         },
         {
           id: 'q4',

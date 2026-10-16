@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
+import JapaneseHubTabs from '../components/japanese/JapaneseHubTabs'
 import EmptyState from '../components/EmptyState'
 import Section from '../components/Section'
 import { api } from '../lib/api'
@@ -61,6 +62,7 @@ export default function JapaneseKanjiPartsPage() {
 
   return (
     <EditorialDetailFrame width="wide">
+      <JapaneseHubTabs />
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Kanji by Parts"

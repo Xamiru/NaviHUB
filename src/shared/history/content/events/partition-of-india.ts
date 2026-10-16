@@ -177,20 +177,6 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/pakistan/13.htm' }
         },
         {
-          id: 'q1',
-          text: '(1)As from the fifteenth day of August, nineteen hundred and forty-seven, two independent Dominions shall be set up in India, to be known respectively as India and Pakistan.',
-          lang: 'en',
-          cite: {
-            source: 'legislation-gov-uk-indian-independence-act-1947',
-            loc: { section: 'Section 1' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.legislation.gov.uk/ukpga/Geo6/10-11/30/enacted'
-          }
-        },
-        {
           id: 'q2',
           text: 'At midnight, on August 15, 1947, India strode to freedom amidst ecstatic shouting of "Jai Hind" (roughly, Long Live India), when Nehru delivered a memorable and moving speech on India\'s "tryst with destiny."',
           lang: 'en',
@@ -291,6 +277,39 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/india/22.htm' }
         }
       ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q1',
+          text: '(1)As from the fifteenth day of August, nineteen hundred and forty-seven, two independent Dominions shall be set up in India, to be known respectively as India and Pakistan.',
+          lang: 'en',
+          cite: {
+            source: 'legislation-gov-uk-indian-independence-act-1947',
+            loc: { section: 'Section 1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.legislation.gov.uk/ukpga/Geo6/10-11/30/enacted'
+          }
+        },
+        {
+          id: 'q13',
+          text: 'An Act to make provision for the setting up in India of two independent Dominions, to substitute other provisions for certain provisions of the Government of India Act,1935 which apply outside those Dominions, and to provide for other matters consequential on or connected with the setting up of those Dominions.',
+          lang: 'en',
+          cite: {
+            source: 'legislation-gov-uk-indian-independence-act-1947',
+            loc: { section: 'Long title' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.legislation.gov.uk/ukpga/Geo6/10-11/30/enacted'
+          }
+        }
+      ]
     }
   ],
   course: [
@@ -350,35 +369,6 @@ export default defineEvent({
           loc: { section: 'Political Impasse and Independence', para: '4' }
         },
         provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/india/21.htm' }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1947-07-18' },
-            cites: [
-              {
-                source: 'legislation-gov-uk-indian-independence-act-1947',
-                loc: { section: 'Indian Independence Act 1947' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q13',
-        text: 'An Act to make provision for the setting up in India of two independent Dominions, to substitute other provisions for certain provisions of the Government of India Act,1935 which apply outside those Dominions, and to provide for other matters consequential on or connected with the setting up of those Dominions.',
-        lang: 'en',
-        cite: {
-          source: 'legislation-gov-uk-indian-independence-act-1947',
-          loc: { section: 'Long title' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.legislation.gov.uk/ukpga/Geo6/10-11/30/enacted'
-        }
       }
     },
     {

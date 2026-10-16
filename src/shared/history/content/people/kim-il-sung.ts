@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Kim Il Sung', lang: 'en', role: 'primary' },
     { text: '김일성', lang: 'ko', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -156,5 +156,18 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  died: {
+    alts: [
+      {
+        value: { d: '1994-07-08' },
+        cites: [
+          {
+            source: 'loc-name-authority-kim-il-sung',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
+  }
 })

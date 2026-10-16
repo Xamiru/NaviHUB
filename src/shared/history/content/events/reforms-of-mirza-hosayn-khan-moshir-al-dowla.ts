@@ -106,7 +106,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'Mīrzā Ḥosayn Khan Mošīr-al-Dawla, Persian ambassador to Istanbul, had for some time been urging Nāṣer-al-Dīn Shah to adopt such reforms; in December 1870 the shah recalled him to Tehran to undertake the necessary measures (Bakhash, pp. 77-120; Nashat, pp. 43-94).',
+          text: 'Mīrzā Ḥosayn Khan Mošīr-al-Dawla, Persian ambassador to Istanbul, had for some time been urging Nāṣer-al-Dīn Shah to adopt such reforms; in December 1870 the shah recalled him to Tehran to undertake the necessary measures',
           lang: 'en',
           cite: {
             source: 'iranica-nashat-darbar-e-azam',
@@ -114,13 +114,13 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/darbar-e-azam'
           }
         },
         {
           id: 'q2',
-          text: 'He had been ambassador in Istanbul after 1856, and now he drew up extensive plans for the reorganization of the army, including measures to regulate the army budget, reform conscription, and improve military education (Nashat, pp. 55-71).',
+          text: 'He had been ambassador in Istanbul after 1856, and now he drew up extensive plans for the reorganization of the army, including measures to regulate the army budget, reform conscription, and improve military education',
           lang: 'en',
           cite: {
             source: 'iranica-cronin-army-qajar',
@@ -128,13 +128,13 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/army-v/'
           }
         },
         {
           id: 'q3',
-          text: 'Although in the text of Nāṣer-al-Dīn Shah’s edict Mošīr-al-Dawla is credited with creation of the darbār-e aʿẓam, the principal arguments for ministerial accountability and coordinating the work of the highest state officials had already been set forth in the essay “Ketābča-ye ḡaybī yā daftar-e tanẓīmat” by Mīrzā Malkom Khan in 1276/1859 (Nashat, p. 79).',
+          text: 'Although in the text of Nāṣer-al-Dīn Shah’s edict Mošīr-al-Dawla is credited with creation of the darbār-e aʿẓam, the principal arguments for ministerial accountability and coordinating the work of the highest state officials had already been set forth in the essay “Ketābča-ye ḡaybī yā daftar-e tanẓīmat” by Mīrzā Malkom Khan in 1276/1859',
           lang: 'en',
           cite: {
             source: 'iranica-nashat-darbar-e-azam',
@@ -142,7 +142,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/darbar-e-azam'
           }
         }
@@ -163,7 +163,7 @@ export default defineEvent({
         },
         {
           id: 'q5',
-          text: 'DARBĀR-E AʿẒAM (lit., “the great court”), a council of ministers established in October 1872 asone of several experiments undertaken in the reign of Nāṣer-al-Dīn Shah (1264-1313/1848-96) to reorganize and rationalize the Persian administration on the model of Western cabinet government.',
+          text: 'DARBĀR-E AʿẒAM (lit., “the great court”), a council of ministers established in October 1872 […] to reorganize and rationalize the Persian administration on the model of Western cabinet government.',
           lang: 'en',
           cite: {
             source: 'iranica-nashat-darbar-e-azam',
@@ -171,7 +171,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/darbar-e-azam'
           }
         },
@@ -290,7 +290,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q11',
-        text: 'Later, with the political restructuring of the 1870s and the promotion of the spirit of reform that was encouraged by Mirzā Ḥosayn Khan Mošir-al-Dawla during his tenure as grand vizier (ṣadr-e aʿẓam; December 1870-September 1873) and his subsequent positions as Minister of Foreign Affairs (wazir-e omur-e ḵāreja; 1873-80) and Minister of War (wazir-e jang; 1874-80), some change was introduced in the journalistic culture (Ādamiyat, p. 386).',
+        text: 'Later, with the political restructuring of the 1870s and the promotion of the spirit of reform that was encouraged by Mirzā Ḥosayn Khan Mošir-al-Dawla during his tenure as grand vizier (ṣadr-e aʿẓam; December 1870-September 1873) and his subsequent positions as Minister of Foreign Affairs (wazir-e omur-e ḵāreja; 1873-80) and Minister of War (wazir-e jang; 1874-80), some change was introduced in the journalistic culture',
         lang: 'en',
         cite: {
           source: 'iranica-nabavi-journalism-qajar',
@@ -298,7 +298,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/journalism-i-qajar-period/'
         }
       }
@@ -334,7 +334,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q12',
-        text: 'The edict establishing the darbār-e aʿẓam, drafted by Mīrzā Ḥosayn Khan Mošīr-al-Dawla and approved by Nāṣer-al-Dīn Shah on 20 Šaʿbān 1289/23 October 1872, defined the authority of the individual cabinet ministers, as well as their relation to the central authority (for the text, see Ṣanīʿ-al-Dawla, pp. 162-66).',
+        text: 'The edict establishing the darbār-e aʿẓam, drafted by Mīrzā Ḥosayn Khan Mošīr-al-Dawla and approved by Nāṣer-al-Dīn Shah on 20 Šaʿbān 1289/23 October 1872, defined the authority of the individual cabinet ministers, as well as their relation to the central authority',
         lang: 'en',
         cite: {
           source: 'iranica-nashat-darbar-e-azam',
@@ -342,7 +342,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/darbar-e-azam'
         }
       }

@@ -179,34 +179,6 @@ export default defineEvent({
             at: '2026-10-07',
             url: 'https://history.state.gov/milestones/1953-1960/khrushchev-20th-congress'
           }
-        },
-        {
-          id: 'q6',
-          text: 'Stalin acted not through persuasion, explanation, and patient cooperation with people, but by imposing his concepts and demanding absolute submission to his opinion. Whoever opposed this concept or tried to prove his viewpoint, and the correctness of his position-was doomed to removal from the leading collective and to subsequent moral and physical annihilation.',
-          lang: 'en',
-          cite: {
-            source: 'fordham-khrushchev-1956-secret-speech',
-            loc: { section: 'Secret Speech' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-07',
-            url: 'https://sourcebooks.fordham.edu/mod/1956khrushchev-secret1.html'
-          }
-        },
-        {
-          id: 'q7',
-          text: 'In practice Stalin ignored the norms of party life and trampled on the Leninist principle of collective party leadership.',
-          lang: 'en',
-          cite: {
-            source: 'fordham-khrushchev-1956-secret-speech',
-            loc: { section: 'Secret Speech' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-07',
-            url: 'https://sourcebooks.fordham.edu/mod/1956khrushchev-secret1.html'
-          }
         }
       ]
     },
@@ -277,6 +249,39 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-07',
             url: 'https://history.state.gov/milestones/1953-1960/khrushchev-20th-congress'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q6',
+          text: 'Stalin acted not through persuasion, explanation, and patient cooperation with people, but by imposing his concepts and demanding absolute submission to his opinion. Whoever opposed this concept or tried to prove his viewpoint, and the correctness of his position-was doomed to removal from the leading collective and to subsequent moral and physical annihilation.',
+          lang: 'en',
+          cite: {
+            source: 'fordham-khrushchev-1956-secret-speech',
+            loc: { section: 'Secret Speech' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://sourcebooks.fordham.edu/mod/1956khrushchev-secret1.html'
+          }
+        },
+        {
+          id: 'q7',
+          text: 'In practice Stalin ignored the norms of party life and trampled on the Leninist principle of collective party leadership.',
+          lang: 'en',
+          cite: {
+            source: 'fordham-khrushchev-1956-secret-speech',
+            loc: { section: 'Secret Speech' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://sourcebooks.fordham.edu/mod/1956khrushchev-secret1.html'
           }
         }
       ]

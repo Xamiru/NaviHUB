@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'constitutional-revolution-historiography',
   about: ['event:persian-constitutional-revolution'],
   topic: 'historiography',
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   framing: {
     id: 'q1',
     text: 'According to Mohammad-Reza Afshari, the historians of the Constitutional Revolution can be divided into three groups:',
@@ -53,7 +53,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/sattar-khan-one-of-the-most-popular-heroes-from-tabriz-who-defended-the-town-during-the-lesser-autocracy-in-1908-09/'
           }
         }
@@ -77,7 +77,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/sattar-khan-one-of-the-most-popular-heroes-from-tabriz-who-defended-the-town-during-the-lesser-autocracy-in-1908-09/'
           }
         }
@@ -101,7 +101,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/sattar-khan-one-of-the-most-popular-heroes-from-tabriz-who-defended-the-town-during-the-lesser-autocracy-in-1908-09/'
           }
         },

@@ -61,6 +61,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q3',
+          text: 'The occupation of Iran proved of vital importance to the Allied cause and brought Iran closer to the Western powers. Britain, the Soviet Union, and the United States together managed to move over 5 million tons of munitions and other war matériel across Iran to the Soviet Union.',
+          lang: 'en',
+          cite: {
+            source: 'loc-iran-country-study-1987',
+            loc: { section: 'WORLD WAR II AND THE AZARBAIJAN CRISIS', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/iran/16.htm' }
+        },
+        {
           id: 'q1',
           text: 'It was lend-lease which, in September 1941 after the German attack on the Soviet Union, made the United States an auxiliary of Great Britain in the task of delivering supplies to the USSR through the Persian Corridor.',
           lang: 'en',
@@ -81,16 +91,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://archive.org/download/CMHPub8-1/CMHPub8-1_djvu.txt'
           }
-        },
-        {
-          id: 'q3',
-          text: 'The occupation of Iran proved of vital importance to the Allied cause and brought Iran closer to the Western powers. Britain, the Soviet Union, and the United States together managed to move over 5 million tons of munitions and other war matériel across Iran to the Soviet Union.',
-          lang: 'en',
-          cite: {
-            source: 'loc-iran-country-study-1987',
-            loc: { section: 'WORLD WAR II AND THE AZARBAIJAN CRISIS', para: '2' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/iran/16.htm' }
         }
       ]
     },
@@ -192,5 +192,16 @@ export default defineEvent({
   ],
   furtherReading: [
     { source: 'hasanli-2006-at-the-dawn-of-the-cold-war', perspective: 'central-asian' }
+  ],
+  places: [
+    {
+      ref: 'place:tehran',
+      cites: [
+        {
+          source: 'loc-iran-country-study-1987',
+          loc: { section: 'WORLD WAR II AND THE AZARBAIJAN CRISIS', para: '2' }
+        }
+      ]
+    }
   ]
 })

@@ -284,7 +284,7 @@ export default defineEvent({
         },
         {
           id: 'q8',
-          text: 'This deliberately ambiguous language was intended to get around a specific Russian demand to support ʿAbbās Mirzā as successor to the throne (having dropped an earlier, and insulting, demand to include formal recognition of Fatḥ-ʿAli as shah in the treaty; see Atkin, p. 143).',
+          text: 'This deliberately ambiguous language was intended to get around a specific Russian demand to support ʿAbbās Mirzā as successor to the throne',
           lang: 'en',
           cite: {
             source: 'iranica-daniel-golestan-treaty',
@@ -292,7 +292,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/golestan-treaty/'
           }
         },
@@ -326,7 +326,7 @@ export default defineEvent({
         },
         {
           id: 'q11',
-          text: 'One of the most hotly contested areas continued to be the area between Lake Gokča and Erevan, and the Russian military occupation of the Gokča district in 1825 precipitated the second Russo-Persian War of 1826-28 (Watson, pp. 206-7).',
+          text: 'One of the most hotly contested areas continued to be the area between Lake Gokča and Erevan, and the Russian military occupation of the Gokča district in 1825 precipitated the second Russo-Persian War of 1826-28',
           lang: 'en',
           cite: {
             source: 'iranica-daniel-golestan-treaty',
@@ -334,7 +334,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/golestan-treaty/'
           }
         }

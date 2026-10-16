@@ -5,7 +5,10 @@ const m = vi.hoisted(() => ({
   activeId: vi.fn(),
   record: vi.fn(),
   startWatch: vi.fn(),
-  stopWatch: vi.fn()
+  stopWatch: vi.fn(),
+  spec: vi.fn(),
+  shots: vi.fn(),
+  addFromPaths: vi.fn()
 }))
 vi.mock('child_process', () => ({ spawn: m.spawn }))
 vi.mock('fs', () => ({ existsSync: () => true }))
@@ -20,7 +23,24 @@ vi.mock('../src/main/achievementWatcher', () => ({
   stopWatch: m.stopWatch
 }))
 vi.mock('../src/main/logBus', () => ({ logWarn: vi.fn() }))
-import { startSession, finalizeActiveGameSession, getLaunchStatus } from '../src/main/gameLaunch'
+// The launch spec is emulation.ts's job (tests/emulation.test.ts); here the
+// linked executable is the way to play.
+vi.mock('../src/main/emulation', () => ({
+  launchSpec: () => m.spec(),
+  findSessionShots: (...args: unknown[]) => m.shots(...args),
+  SHOT_GRACE_MS: 8_000
+}))
+vi.mock('../src/main/pictures', () => ({ addFromPaths: (...args: unknown[]) => m.addFromPaths(...args) }))
+const NATIVE = {
+  program: 'C:\\Games\\game.exe',
+  args: [],
+  cwd: 'C:\\Games',
+  via: 'native',
+  platform: null,
+  native: true,
+  emulatorId: null
+}
+import { startSession, finalizeActiveGameSession, getLaunchStatus, importSessionShots } from '../src/main/gameLaunch'
 const platform = Object.getOwnPropertyDescriptor(process, 'platform')!
 let child: EventEmitter & { unref: () => void }
 beforeEach(() => {
@@ -31,6 +51,7 @@ beforeEach(() => {
   m.spawn.mockReturnValue(child)
   m.activeId.mockReturnValue(4)
   m.record.mockReturnValue({ progressDelta: 1, progressAfter: 21 })
+  m.spec.mockReturnValue(NATIVE)
 })
 afterEach(() => {
   finalizeActiveGameSession()
@@ -44,7 +65,7 @@ describe('playthrough identity during a running game', () => {
     m.activeId.mockReturnValue(9)
     vi.advanceTimersByTime(3600_000)
     child.emit('exit', 0)
-    expect(m.record).toHaveBeenCalledWith(1, 1790157600, 1790161200, 3600, 4)
+    expect(m.record).toHaveBeenCalledWith(1, 1790157600, 1790161200, 3600, 4, { via: 'native', platform: null })
     expect(m.activeId).toHaveBeenCalledTimes(1)
     expect(getLaunchStatus()).toMatchObject({ state: 'ended', durationSec: 3600 })
   })
@@ -71,5 +92,45 @@ describe('playthrough identity during a running game', () => {
     child.emit('error', new Error('Launch failed'))
     expect(m.record).not.toHaveBeenCalled()
     expect(getLaunchStatus()).toMatchObject({ state: 'error' })
+  })
+
+  it('spawns the emulator with its argv, then offers the session screenshots once', async () => {
+    m.spec.mockReturnValue({
+      program: 'C:\\Emu\\pcsx2-qt.exe',
+      args: ['-batch', '-fullscreen', '--', 'D:\\PS2\\sotc.iso'],
+      cwd: 'C:\\Emu',
+      via: 'emu:pcsx2',
+      platform: 'ps2',
+      native: false,
+      emulatorId: 3
+    })
+    m.shots.mockResolvedValue(['C:\\shots\\a.png', 'C:\\shots\\b.png'])
+    m.addFromPaths.mockReturnValue({ added: [{}, {}], skipped: 0 })
+    const { id } = startSession(1, { kind: 'rom', romId: 5 })
+    expect(m.spawn).toHaveBeenCalledWith(
+      'C:\\Emu\\pcsx2-qt.exe',
+      ['-batch', '-fullscreen', '--', 'D:\\PS2\\sotc.iso'],
+      expect.objectContaining({ cwd: 'C:\\Emu', detached: true })
+    )
+    vi.advanceTimersByTime(600_000)
+    child.emit('exit', 0)
+    expect(m.record.mock.calls[0][5]).toEqual({ via: 'emu:pcsx2', platform: 'ps2' })
+    expect(getLaunchStatus()).toMatchObject({ state: 'ended', shotsPending: true })
+    await vi.advanceTimersByTimeAsync(8_500)
+    expect(m.shots).toHaveBeenCalledWith(3, expect.any(Number), expect.any(Number))
+    expect(getLaunchStatus()).toMatchObject({ shotsPending: false, screenshotCount: 2 })
+    vi.useRealTimers()
+    await expect(importSessionShots(id)).resolves.toEqual({ added: 2, skipped: 0 })
+    expect(m.addFromPaths).toHaveBeenCalledWith(1, 'fanart', ['C:\\shots\\a.png', 'C:\\shots\\b.png'])
+    await expect(importSessionShots(id)).rejects.toThrow(/no longer available/)
+  })
+
+  it('never sweeps screenshots while the app is quitting', () => {
+    m.spec.mockReturnValue({ ...NATIVE, via: 'emu:dolphin', platform: 'gc', native: false, emulatorId: 2 })
+    startSession(1)
+    vi.advanceTimersByTime(120_000)
+    finalizeActiveGameSession()
+    vi.advanceTimersByTime(20_000)
+    expect(m.shots).not.toHaveBeenCalled()
   })
 })

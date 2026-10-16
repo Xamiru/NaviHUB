@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'iran-in-the-first-world-war-neutrality',
   about: ['event:iran-in-the-first-world-war'],
   topic: 'foreign-role',
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'neutrality-violated-on-a-pretext',
@@ -61,7 +61,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q3',
-          text: 'the real reason for his loss of support was his failure to persuade the Russians to withdraw from Azarbaijan, which had given the Turks an excuse to invade Persia (see below; Olson, pp. 65-70).',
+          text: 'The deputies soon rejected his program, however, and he resigned; although it was not mentioned in the debates, the real reason for his loss of support was his failure to persuade the Russians to withdraw from Azarbaijan, which had given the Turks an excuse to invade Persia',
           lang: 'en',
           cite: {
             source: 'iranica-ettehadiyeh-constitutional-revolution-aftermath',
@@ -69,7 +69,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/constitutional-revolution-iv/'
           }
         }

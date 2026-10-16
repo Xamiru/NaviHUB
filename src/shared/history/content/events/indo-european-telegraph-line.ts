@@ -212,7 +212,7 @@ export default defineEvent({
         },
         {
           id: 'q4',
-          text: 'The British decided to lay telegraph lines through Iran after early attempts to lay submarine cables under the Red Sea and Indian Ocean failed (British Parliamentary Papers, pp. 31-32).',
+          text: 'The British decided to lay telegraph lines through Iran after early attempts to lay submarine cables under the Red Sea and Indian Ocean failed',
           lang: 'en',
           cite: {
             source: 'iranica-rubin-indo-european-telegraph-department',
@@ -220,7 +220,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/indo-european-telegraph-department'
           }
         }

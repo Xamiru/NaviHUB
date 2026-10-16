@@ -250,7 +250,7 @@ export default defineEvent({
       ]
     },
     {
-      kind: 'legacy',
+      kind: 'in-their-words',
       quotes: [
         {
           id: 'q8',

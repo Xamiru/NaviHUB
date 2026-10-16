@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'khiabani-uprising-historiography',
   about: ['event:khiabani-uprising', 'person:mohammad-khiabani'],
   topic: 'historiography',
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   framing: {
     id: 'q1',
     text: 'Despite general historical approbation of Ḵiābāni’s involvement in the Constitutional Revolution from 1908 to 1911, his post-1917 political activities remain a highly contentious topic, with frequently polemical and ideologically skewed historical accounts.',
@@ -112,7 +112,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q6',
-          text: 'which cite the purported renaming of the province as the Land of the Free as clear proof of Ḵiābāni’s secessionist objective because of the use of the term “Land,” which according to these accounts is indicative of Ḵiābāni’s desire to establish a separate territorial state',
+          text: 'This misapprehension has further confounded the objectives of the autonomous government in some historical accounts, which cite the purported renaming of the province as the Land of the Free as clear proof of Ḵiābāni’s secessionist objective because of the use of the term “Land,” which according to these accounts is indicative of Ḵiābāni’s desire to establish a separate territorial state',
           lang: 'en',
           cite: {
             source: 'iranica-bonakdarian-khiabani',
@@ -120,27 +120,12 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/%E1%B8%B5iabani-shaikh-mo%E1%B8%A5ammad/'
           }
         }
       ],
-      reception: [
-        {
-          id: 'q7',
-          text: 'This misapprehension has further confounded the objectives of the autonomous government in some historical accounts,',
-          lang: 'en',
-          cite: {
-            source: 'iranica-bonakdarian-khiabani',
-            loc: { section: 'ḴIĀBĀNI, SHAIKH MOḤAMMAD', para: '23' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/%E1%B8%B5iabani-shaikh-mo%E1%B8%A5ammad/'
-          }
-        }
-      ]
+      reception: []
     },
     {
       id: 'bolshevik-affinity',

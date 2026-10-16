@@ -212,5 +212,8 @@ export default defineEvent({
   furtherReading: [
     { source: 'inada-1960-meiji-kenpo-seiritsushi', perspective: 'japanese' },
     { source: 'takii-2003-bunmeishi-no-naka-no-meiji-kenpo', perspective: 'japanese' }
+  ],
+  places: [
+    { ref: 'place:tokyo' }
   ]
 })

@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   died: {
     alts: [
       {
@@ -96,6 +96,25 @@ export default definePerson({
   ],
   sections: [
     {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q4',
+          text: 'SHERE ALI KHAN (1825–1879), Amir of Afghanistan, was born in 1825, one of the younger sons of the amir Dost Mahommed, whom he succeeded in 1863.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-shere-ali-khan',
+            loc: { section: 'SHERE ALI KHAN', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Shere_Ali_Khan'
+          }
+        }
+      ]
+    },
+    {
       kind: 'career',
       quotes: [
         {
@@ -149,5 +168,18 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Sher_Ali_Khan_and_company_of_Afghanistan_in_1869.jpg',
     credit: { institution: 'The British Library', creator: 'John Burke' },
     license: { id: 'public-domain' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1825' },
+        cites: [
+          {
+            source: 'loc-name-authority-sher-ali-khan',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
   }
 })

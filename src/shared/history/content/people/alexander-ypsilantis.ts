@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -43,6 +43,25 @@ export default definePerson({
   regions: ['europe', 'russia-central-asia'],
   roles: ['military', 'revolutionary'],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q6',
+          text: 'Another Greek with Russian ties was Alexander Ypsilantis.',
+          lang: 'en',
+          cite: {
+            source: 'sowards-msu-balkan-lectures-greek-revolution',
+            loc: { section: 'Lecture 6: The Greek Revolution and the Greek State', para: '26' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://web.archive.org/web/20080510143919/http://www.lib.msu.edu/sowards/balkan/lecture6.html'
+          }
+        }
+      ]
+    },
     {
       kind: 'early-life',
       quotes: [
@@ -126,5 +145,18 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Ypsilantis_Alexander.JPG',
     credit: { institution: 'National Historical Museum of Greece', creator: 'Dionysios Tsokos' },
     license: { id: 'public-domain' }
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1828-01-31' },
+        cites: [
+          {
+            source: 'loc-name-authority-alexander-ypsilantis',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
   }
 })

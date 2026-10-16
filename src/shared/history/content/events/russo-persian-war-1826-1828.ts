@@ -243,7 +243,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q11',
-          text: '1826 Second war with Russia; Persian forces are defeated.',
+          text: 'Second war with Russia; Persian forces are defeated.',
           lang: 'en',
           cite: {
             source: 'iranica-yarshater-chronology-part-1',
@@ -251,7 +251,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-1/'
           }
         },

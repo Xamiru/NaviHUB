@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePitchRecorder, type Take } from '../lib/usePitchRecorder'
 import PageHeader from '../components/PageHeader'
+import JapaneseHubTabs from '../components/japanese/JapaneseHubTabs'
 import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
 import TutorSessionContinue from '../components/TutorSessionContinue'
 import { OUTPUT_UNITS, checkOutput, type OutputUnit } from '@shared/japanese/output'
@@ -236,6 +237,7 @@ export default function JapaneseOutputPage() {
     const percent = Math.round((score / (unit.prompts.length * 2)) * 100)
     return (
       <div className="mx-auto max-w-xl p-6">
+        <JapaneseHubTabs />
         <PageHeader
           back={{ to: '/japanese/tutor', label: 'Tutor' }}
           title="Output unit complete"
@@ -260,6 +262,7 @@ export default function JapaneseOutputPage() {
 
   return (
     <div className="mx-auto max-w-[1320px] p-4 sm:p-6">
+      <JapaneseHubTabs />
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Controlled Japanese output"

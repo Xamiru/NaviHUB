@@ -321,7 +321,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q17',
-        text: 'by Article II. Austria consented to “a new organization of Germany without the participation of the empire of Austria,” […] These Articles, enmbodying the more important terms, were included with slight verbal alterations in the treaty of peace signed at Prague on the 23rd of August.',
+        text: 'By the preliminary treaty of peace signed at Nikolsburg on the 26th of July the great objects for which […] Prussia had fought were fully secured.',
         lang: 'en',
         cite: {
           source: 'britannica-1911-germany-history',
@@ -329,7 +329,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-07',
+          at: '2026-10-16',
           url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
         }
       }

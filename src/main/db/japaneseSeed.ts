@@ -1,4 +1,32 @@
 import type Database from 'better-sqlite3'
+import { backfillSeedKeys, insertSeedCourse, syncSeedContent, type SeedPack } from './japaneseSeedSync'
+import { SEED_VERSION } from './japaneseSeedVersion'
+import { N4B_COURSE } from './jpSeed/n4Grammar2'
+import { N3C_COURSE } from './jpSeed/n3Grammar3'
+import { N2C_COURSE } from './jpSeed/n2Grammar3'
+import { N2D_COURSE } from './jpSeed/n2Grammar4'
+import { N1C_COURSE } from './jpSeed/n1Grammar3'
+import { N1D_COURSE } from './jpSeed/n1Grammar4'
+import {
+  N5_ADVERB,
+  N5_DESHOU,
+  N5_GA,
+  N5_ICHIBAN,
+  N5_KARA,
+  N5_KEDO,
+  N5_KOSOADO,
+  N5_MAE,
+  N5_MASHOU,
+  N5_MOU,
+  N5_NAI,
+  N5_NARU,
+  N5_NI_IKU,
+  N5_TAI,
+  N5_TEIRU,
+  N5_TEMOII,
+  N5_TOKI,
+  N5_YA
+} from './jpSeed/n5Spine'
 import { SET_PHRASES_COURSE, VN_SLANG_COURSE } from './japaneseSeed4'
 import {
   RADICALS_COURSE,
@@ -24,6 +52,10 @@ import {
 // can run it against an in-memory database.
 
 export interface SeedCard {
+  // Identity within its lesson for the content sync (japaneseSeedSync.ts).
+  // Defaults to `front`. When correcting a shipped front, set this to the OLD
+  // front so the existing row (and its review history) is updated in place.
+  key?: string
   front: string
   reading?: string
   back: string
@@ -37,6 +69,12 @@ export interface SeedCard {
 }
 
 export interface SeedLesson {
+  // FROZEN identity (`<course key>.<id>`) the content sync matches rows by.
+  // Never change or reuse one; japaneseSeedKeys.lock.json fails on a vanished key.
+  key: string
+  // Titles this lesson shipped under before, so the one-time key backfill
+  // still recognises a library seeded before a rename.
+  formerTitles?: string[]
   kind: 'grammar' | 'vocab' | 'kanji'
   title: string
   body?: string
@@ -44,6 +82,7 @@ export interface SeedLesson {
 }
 
 export interface SeedCourse {
+  formerTitles?: string[]
   title: string
   description: string
   level: string // display label, e.g. "N5", "N4–N3"
@@ -51,42 +90,50 @@ export interface SeedCourse {
   lessons: SeedLesson[]
 }
 
-const N5_COURSE: SeedCourse = {
+// A course as authored. Its step is its position in ALL_PACKS, stamped there,
+// so slotting a course in never means renumbering every later literal.
+export type SeedCourseDef = Omit<SeedCourse, 'difficulty'>
+
+const N5_COURSE: SeedCourseDef = {
   title: 'JLPT N5 Foundations',
   description:
     'Core beginner grammar and vocabulary, roughly following the JLPT N5 syllabus. ' +
     'Read a lesson, mark it as learned, then practice it in Review and Quiz.',
   level: 'N5',
-  difficulty: 1,
   lessons: [
     {
+      key: 'n5.01',
       kind: 'vocab',
       title: 'Greetings & set phrases',
       cards: [
-        { front: 'おはようございます', back: 'good morning', pos: 'expression' },
-        { front: 'こんにちは', back: 'hello / good afternoon', pos: 'expression' },
-        { front: 'こんばんは', back: 'good evening', pos: 'expression' },
-        { front: 'さようなら', back: 'goodbye', pos: 'expression' },
-        { front: 'おやすみなさい', back: 'good night', pos: 'expression' },
-        { front: 'ありがとうございます', back: 'thank you', pos: 'expression' },
-        { front: 'すみません', back: 'excuse me / sorry', pos: 'expression' },
-        { front: 'ごめんなさい', back: 'I am sorry', pos: 'expression' },
-        { front: 'はい', back: 'yes', pos: 'expression' },
-        { front: 'いいえ', back: 'no', pos: 'expression' },
-        { front: 'お願いします', reading: 'おねがいします', back: 'please (requesting)', pos: 'expression' },
-        { front: 'はじめまして', back: 'nice to meet you', pos: 'expression' },
+        { front: 'おはようございます', back: 'good morning', pos: 'expression', exampleJp: '先生、おはようございます。', exampleReading: 'せんせい、おはようございます。', exampleEn: 'Good morning, teacher.' },
+        { front: 'こんにちは', back: 'hello / good afternoon', pos: 'expression', exampleJp: 'こんにちは、田中さん。', exampleReading: 'こんにちは、たなかさん。', exampleEn: 'Hello, Tanaka.' },
+        { front: 'こんばんは', back: 'good evening', pos: 'expression', exampleJp: 'こんばんは、今日は寒いですね。', exampleReading: 'こんばんは、きょうはさむいですね。', exampleEn: "Good evening — it's cold today, isn't it?" },
+        { front: 'さようなら', back: 'goodbye', pos: 'expression', exampleJp: '皆さん、さようなら。', exampleReading: 'みなさん、さようなら。', exampleEn: 'Goodbye, everyone.' },
+        { front: 'おやすみなさい', back: 'good night', pos: 'expression', exampleJp: 'お母さん、おやすみなさい。', exampleReading: 'おかあさん、おやすみなさい。', exampleEn: 'Good night, Mom.' },
+        { front: 'ありがとうございます', back: 'thank you', pos: 'expression', exampleJp: 'プレゼント、ありがとうございます。', exampleReading: 'プレゼント、ありがとうございます。', exampleEn: 'Thank you for the present.' },
+        { front: 'すみません', back: 'excuse me / sorry', pos: 'expression', exampleJp: 'すみません、ちょっといいですか。', exampleReading: 'すみません、ちょっといいですか。', exampleEn: 'Excuse me, do you have a moment?' },
+        { front: 'ごめんなさい', back: 'I am sorry', pos: 'expression', exampleJp: '遅れて、ごめんなさい。', exampleReading: 'おくれて、ごめんなさい。', exampleEn: "Sorry I'm late." },
+        { front: 'はい', back: 'yes', pos: 'expression', exampleJp: 'はい、そうです。', exampleReading: 'はい、そうです。', exampleEn: "Yes, that's right." },
+        { front: 'いいえ', back: 'no', pos: 'expression', exampleJp: 'いいえ、違います。', exampleReading: 'いいえ、ちがいます。', exampleEn: "No, that's not right." },
+        { front: 'お願いします', reading: 'おねがいします', back: 'please (requesting)', pos: 'expression', exampleJp: 'コーヒーを一つお願いします。', exampleReading: 'コーヒーをひとつおねがいします。', exampleEn: 'One coffee, please.' },
+        { front: 'はじめまして', back: 'nice to meet you', pos: 'expression', exampleJp: 'はじめまして、山田です。', exampleReading: 'はじめまして、やまだです。', exampleEn: "Nice to meet you, I'm Yamada." },
         {
           front: 'いただきます',
           back: 'said before eating',
           pos: 'expression',
-          notes: 'Literally "I humbly receive".'
+          notes: 'Literally "I humbly receive".',
+          exampleJp: 'じゃあ、いただきます。',
+          exampleReading: 'じゃあ、いただきます。',
+          exampleEn: "Well then, let's eat."
         },
-        { front: 'ごちそうさまでした', back: 'said after eating', pos: 'expression' },
-        { front: 'いってきます', back: "I'm off (leaving home)", pos: 'expression' },
-        { front: 'ただいま', back: "I'm home", pos: 'expression' }
+        { front: 'ごちそうさまでした', back: 'said after eating', pos: 'expression', exampleJp: 'ごちそうさまでした。おいしかったです。', exampleReading: 'ごちそうさまでした。おいしかったです。', exampleEn: 'Thank you for the meal. It was delicious.' },
+        { front: 'いってきます', back: "I'm off (leaving home)", pos: 'expression', exampleJp: 'いってきます。夜には帰ります。', exampleReading: 'いってきます。よるにはかえります。', exampleEn: "I'm off. I'll be back tonight." },
+        { front: 'ただいま', back: "I'm home", pos: 'expression', exampleJp: 'ただいま。今帰ったよ。', exampleReading: 'ただいま。いまかえったよ。', exampleEn: "I'm home. I just got back." }
       ]
     },
     {
+      key: 'n5.02',
       kind: 'grammar',
       title: 'Topics with は',
       body: `は marks the TOPIC of the sentence — what the sentence is about. Written with the kana は but pronounced "wa" when used as a particle.
@@ -107,10 +154,13 @@ The topic is often dropped entirely once it is clear from context; Japanese pref
           front: '田中さんは先生です。',
           reading: 'たなかさんはせんせいです。',
           back: 'Mr. Tanaka is a teacher.'
-        }
+        },
+        { front: '兄は大学生です。', reading: 'あにはだいがくせいです。', back: 'My older brother is a university student.' },
+        { front: '今日は休みです。', reading: 'きょうはやすみです。', back: 'Today is a day off.' }
       ]
     },
     {
+      key: 'n5.03',
       kind: 'grammar',
       title: 'です / だ — polite and plain',
       body: `です is the polite copula — "is / am / are". Its plain (casual) form is だ.
@@ -133,32 +183,36 @@ Negative and past of です:
           front: '山田さんは医者ではありません。',
           reading: 'やまださんはいしゃではありません。',
           back: 'Ms. Yamada is not a doctor.'
-        }
+        },
+        { front: '昨日は日曜日でした。', reading: 'きのうはにちようびでした。', back: 'Yesterday was Sunday.' },
+        { front: 'これはペンじゃないです。', reading: 'これはペンじゃないです。', back: "This isn't a pen." }
       ]
     },
     {
+      key: 'n5.04',
       kind: 'vocab',
       title: 'People & family',
       cards: [
-        { front: '人', reading: 'ひと', back: 'person', pos: 'noun' },
-        { front: '男', reading: 'おとこ', back: 'man', pos: 'noun' },
-        { front: '女', reading: 'おんな', back: 'woman', pos: 'noun' },
-        { front: '子供', reading: 'こども', back: 'child', pos: 'noun' },
-        { front: '友達', reading: 'ともだち', back: 'friend', pos: 'noun' },
-        { front: '家族', reading: 'かぞく', back: 'family', pos: 'noun' },
-        { front: '父', reading: 'ちち', back: '(my) father', pos: 'noun' },
-        { front: '母', reading: 'はは', back: '(my) mother', pos: 'noun' },
-        { front: 'お父さん', reading: 'おとうさん', back: "father (someone's / addressing)", pos: 'noun' },
-        { front: 'お母さん', reading: 'おかあさん', back: "mother (someone's / addressing)", pos: 'noun' },
-        { front: '兄', reading: 'あに', back: '(my) older brother', pos: 'noun' },
-        { front: '姉', reading: 'あね', back: '(my) older sister', pos: 'noun' },
-        { front: '弟', reading: 'おとうと', back: 'younger brother', pos: 'noun' },
-        { front: '妹', reading: 'いもうと', back: 'younger sister', pos: 'noun' },
-        { front: '先生', reading: 'せんせい', back: 'teacher', pos: 'noun' },
-        { front: '学生', reading: 'がくせい', back: 'student', pos: 'noun' }
+        { front: '人', reading: 'ひと', back: 'person', pos: 'noun', exampleJp: '駅に人がたくさんいます。', exampleReading: 'えきにひとがたくさんいます。', exampleEn: 'There are lots of people at the station.' },
+        { front: '男', reading: 'おとこ', back: 'man', pos: 'noun', exampleJp: '男の人が走っています。', exampleReading: 'おとこのひとがはしっています。', exampleEn: 'A man is running.' },
+        { front: '女', reading: 'おんな', back: 'woman', pos: 'noun', exampleJp: '女の人が歌を歌っています。', exampleReading: 'おんなのひとがうたをうたっています。', exampleEn: 'A woman is singing a song.' },
+        { front: '子供', reading: 'こども', back: 'child', pos: 'noun', exampleJp: '公園で子供が遊んでいます。', exampleReading: 'こうえんでこどもがあそんでいます。', exampleEn: 'Children are playing in the park.' },
+        { front: '友達', reading: 'ともだち', back: 'friend', pos: 'noun', exampleJp: '友達と映画を見ました。', exampleReading: 'ともだちとえいがをみました。', exampleEn: 'I watched a movie with a friend.' },
+        { front: '家族', reading: 'かぞく', back: 'family', pos: 'noun', exampleJp: '私の家族は四人です。', exampleReading: 'わたしのかぞくはよにんです。', exampleEn: 'There are four people in my family.' },
+        { front: '父', reading: 'ちち', back: '(my) father', pos: 'noun', exampleJp: '父は銀行で働いています。', exampleReading: 'ちちはぎんこうではたらいています。', exampleEn: 'My father works at a bank.' },
+        { front: '母', reading: 'はは', back: '(my) mother', pos: 'noun', exampleJp: '母は料理が上手です。', exampleReading: 'はははりょうりがじょうずです。', exampleEn: 'My mother is good at cooking.' },
+        { front: 'お父さん', reading: 'おとうさん', back: "father (someone's / addressing)", pos: 'noun', exampleJp: 'お父さんはお元気ですか。', exampleReading: 'おとうさんはおげんきですか。', exampleEn: 'How is your father?' },
+        { front: 'お母さん', reading: 'おかあさん', back: "mother (someone's / addressing)", pos: 'noun', exampleJp: 'お母さん、ご飯まだ？', exampleReading: 'おかあさん、ごはんまだ？', exampleEn: 'Mom, is dinner ready yet?' },
+        { front: '兄', reading: 'あに', back: '(my) older brother', pos: 'noun', exampleJp: '兄は大学生です。', exampleReading: 'あにはだいがくせいです。', exampleEn: 'My older brother is a university student.' },
+        { front: '姉', reading: 'あね', back: '(my) older sister', pos: 'noun', exampleJp: '姉は東京に住んでいます。', exampleReading: 'あねはとうきょうにすんでいます。', exampleEn: 'My older sister lives in Tokyo.' },
+        { front: '弟', reading: 'おとうと', back: 'younger brother', pos: 'noun', exampleJp: '弟はまだ小学生です。', exampleReading: 'おとうとはまだしょうがくせいです。', exampleEn: 'My younger brother is still in elementary school.' },
+        { front: '妹', reading: 'いもうと', back: 'younger sister', pos: 'noun', exampleJp: '妹と買い物に行きました。', exampleReading: 'いもうととかいものにいきました。', exampleEn: 'I went shopping with my younger sister.' },
+        { front: '先生', reading: 'せんせい', back: 'teacher', pos: 'noun', exampleJp: '先生に質問しました。', exampleReading: 'せんせいにしつもんしました。', exampleEn: 'I asked the teacher a question.' },
+        { front: '学生', reading: 'がくせい', back: 'student', pos: 'noun', exampleJp: '私はこの大学の学生です。', exampleReading: 'わたしはこのだいがくのがくせいです。', exampleEn: "I'm a student at this university." }
       ]
     },
     {
+      key: 'n5.05',
       kind: 'grammar',
       title: 'Questions with か and question words',
       body: `Add か to the end of a statement to turn it into a question — no word-order change, and no question mark needed:
@@ -180,33 +234,38 @@ The question word simply sits where the answer would go:
       cards: [
         { front: 'これは何ですか。', reading: 'これはなんですか。', back: 'What is this?' },
         { front: 'トイレはどこですか。', reading: 'トイレはどこですか。', back: 'Where is the toilet?' },
-        { front: 'あの人は誰ですか。', reading: 'あのひとはだれですか。', back: 'Who is that person?' }
+        { front: 'あの人は誰ですか。', reading: 'あのひとはだれですか。', back: 'Who is that person?' },
+        { front: 'いつ東京に来ましたか。', reading: 'いつとうきょうにきましたか。', back: 'When did you come to Tokyo?' },
+        { front: 'それはいくらですか。', reading: 'それはいくらですか。', back: 'How much is that?' }
       ]
     },
+    N5_KOSOADO,
     {
+      key: 'n5.06',
       kind: 'vocab',
       title: 'Numbers & time',
       cards: [
-        { front: '一', reading: 'いち', back: 'one', pos: 'number' },
-        { front: '二', reading: 'に', back: 'two', pos: 'number' },
-        { front: '三', reading: 'さん', back: 'three', pos: 'number' },
-        { front: '四', reading: 'よん', back: 'four', pos: 'number' },
-        { front: '五', reading: 'ご', back: 'five', pos: 'number' },
-        { front: '六', reading: 'ろく', back: 'six', pos: 'number' },
-        { front: '七', reading: 'なな', back: 'seven', pos: 'number' },
-        { front: '八', reading: 'はち', back: 'eight', pos: 'number' },
-        { front: '九', reading: 'きゅう', back: 'nine', pos: 'number' },
-        { front: '十', reading: 'じゅう', back: 'ten', pos: 'number' },
-        { front: '百', reading: 'ひゃく', back: 'hundred', pos: 'number' },
-        { front: '千', reading: 'せん', back: 'thousand', pos: 'number' },
-        { front: '今日', reading: 'きょう', back: 'today', pos: 'noun' },
-        { front: '明日', reading: 'あした', back: 'tomorrow', pos: 'noun' },
-        { front: '昨日', reading: 'きのう', back: 'yesterday', pos: 'noun' },
-        { front: '今', reading: 'いま', back: 'now', pos: 'noun' },
-        { front: '時間', reading: 'じかん', back: 'time; hour', pos: 'noun' }
+        { front: '一', reading: 'いち', back: 'one', pos: 'number', exampleJp: 'りんごを一つください。', exampleReading: 'りんごをひとつください。', exampleEn: 'One apple, please.' },
+        { front: '二', reading: 'に', back: 'two', pos: 'number', exampleJp: '二時に会いましょう。', exampleReading: 'にじにあいましょう。', exampleEn: "Let's meet at two." },
+        { front: '三', reading: 'さん', back: 'three', pos: 'number', exampleJp: '三月に京都へ行きます。', exampleReading: 'さんがつにきょうとへいきます。', exampleEn: "I'm going to Kyoto in March." },
+        { front: '四', reading: 'よん', back: 'four', pos: 'number', exampleJp: '毎日四時間勉強します。', exampleReading: 'まいにちよじかんべんきょうします。', exampleEn: 'I study for four hours every day.' },
+        { front: '五', reading: 'ご', back: 'five', pos: 'number', exampleJp: '五分待ってください。', exampleReading: 'ごふんまってください。', exampleEn: 'Please wait five minutes.' },
+        { front: '六', reading: 'ろく', back: 'six', pos: 'number', exampleJp: '朝六時に起きます。', exampleReading: 'あさろくじにおきます。', exampleEn: 'I get up at six in the morning.' },
+        { front: '七', reading: 'なな', back: 'seven', pos: 'number', exampleJp: '七月は暑いです。', exampleReading: 'しちがつはあついです。', exampleEn: 'July is hot.' },
+        { front: '八', reading: 'はち', back: 'eight', pos: 'number', exampleJp: '八時に家を出ます。', exampleReading: 'はちじにいえをでます。', exampleEn: 'I leave home at eight.' },
+        { front: '九', reading: 'きゅう', back: 'nine', pos: 'number', exampleJp: '九月に学校が始まります。', exampleReading: 'くがつにがっこうがはじまります。', exampleEn: 'School starts in September.' },
+        { front: '十', reading: 'じゅう', back: 'ten', pos: 'number', exampleJp: 'パーティーに十人来ました。', exampleReading: 'パーティーにじゅうにんきました。', exampleEn: 'Ten people came to the party.' },
+        { front: '百', reading: 'ひゃく', back: 'hundred', pos: 'number', exampleJp: 'このペンは百円です。', exampleReading: 'このペンはひゃくえんです。', exampleEn: 'This pen is 100 yen.' },
+        { front: '千', reading: 'せん', back: 'thousand', pos: 'number', exampleJp: '千円しかありません。', exampleReading: 'せんえんしかありません。', exampleEn: 'I only have 1,000 yen.' },
+        { front: '今日', reading: 'きょう', back: 'today', pos: 'noun', exampleJp: '今日は暑いですね。', exampleReading: 'きょうはあついですね。', exampleEn: "It's hot today, isn't it?" },
+        { front: '明日', reading: 'あした', back: 'tomorrow', pos: 'noun', exampleJp: '明日、友達に会います。', exampleReading: 'あした、ともだちにあいます。', exampleEn: "I'm meeting a friend tomorrow." },
+        { front: '昨日', reading: 'きのう', back: 'yesterday', pos: 'noun', exampleJp: '昨日は雨でした。', exampleReading: 'きのうはあめでした。', exampleEn: 'It rained yesterday.' },
+        { front: '今', reading: 'いま', back: 'now', pos: 'noun', exampleJp: '今、何時ですか。', exampleReading: 'いま、なんじですか。', exampleEn: 'What time is it now?' },
+        { front: '時間', reading: 'じかん', back: 'time; hour', pos: 'noun', exampleJp: '今日は時間がありません。', exampleReading: 'きょうはじかんがありません。', exampleEn: "I don't have time today." }
       ]
     },
     {
+      key: 'n5.07',
       kind: 'grammar',
       title: 'Verb groups and the ます form',
       body: `Japanese verbs come in three groups. Dictionary form ends in -u; the polite ます form is what you'll use most at first.
@@ -228,32 +287,36 @@ Group 3 (irregular — only two):
           front: '日本語を勉強します。',
           reading: 'にほんごをべんきょうします。',
           back: 'I study Japanese.'
-        }
+        },
+        { front: '毎晩本を読みます。', reading: 'まいばんほんをよみます。', back: 'I read a book every night.' },
+        { front: '明日友達が来ます。', reading: 'あしたともだちがきます。', back: 'A friend is coming tomorrow.' }
       ]
     },
     {
+      key: 'n5.08',
       kind: 'vocab',
       title: 'Everyday verbs I',
       cards: [
-        { front: '行く', reading: 'いく', back: 'to go', pos: 'verb (u)' },
-        { front: '来る', reading: 'くる', back: 'to come', pos: 'verb (irregular)' },
-        { front: '帰る', reading: 'かえる', back: 'to return home', pos: 'verb (u)' },
-        { front: '食べる', reading: 'たべる', back: 'to eat', pos: 'verb (ru)' },
-        { front: '飲む', reading: 'のむ', back: 'to drink', pos: 'verb (u)' },
-        { front: '見る', reading: 'みる', back: 'to see; to watch', pos: 'verb (ru)' },
-        { front: '聞く', reading: 'きく', back: 'to listen; to ask', pos: 'verb (u)' },
-        { front: '読む', reading: 'よむ', back: 'to read', pos: 'verb (u)' },
-        { front: '書く', reading: 'かく', back: 'to write', pos: 'verb (u)' },
-        { front: '話す', reading: 'はなす', back: 'to speak', pos: 'verb (u)' },
-        { front: '買う', reading: 'かう', back: 'to buy', pos: 'verb (u)' },
-        { front: '会う', reading: 'あう', back: 'to meet', pos: 'verb (u)' },
-        { front: '起きる', reading: 'おきる', back: 'to get up; to wake', pos: 'verb (ru)' },
-        { front: '寝る', reading: 'ねる', back: 'to sleep; to go to bed', pos: 'verb (ru)' },
-        { front: '立つ', reading: 'たつ', back: 'to stand', pos: 'verb (u)' },
-        { front: '座る', reading: 'すわる', back: 'to sit', pos: 'verb (u)' }
+        { front: '行く', reading: 'いく', back: 'to go', pos: 'verb (u)', exampleJp: '毎日学校に行きます。', exampleReading: 'まいにちがっこうにいきます。', exampleEn: 'I go to school every day.' },
+        { front: '来る', reading: 'くる', back: 'to come', pos: 'verb (irregular)', exampleJp: '友達が家に来ました。', exampleReading: 'ともだちがいえにきました。', exampleEn: 'A friend came to my house.' },
+        { front: '帰る', reading: 'かえる', back: 'to return home', pos: 'verb (u)', exampleJp: '六時に家に帰ります。', exampleReading: 'ろくじにいえにかえります。', exampleEn: 'I go home at six.' },
+        { front: '食べる', reading: 'たべる', back: 'to eat', pos: 'verb (ru)', exampleJp: '朝、パンを食べます。', exampleReading: 'あさ、パンをたべます。', exampleEn: 'I eat bread in the morning.' },
+        { front: '飲む', reading: 'のむ', back: 'to drink', pos: 'verb (u)', exampleJp: '毎朝コーヒーを飲みます。', exampleReading: 'まいあさコーヒーをのみます。', exampleEn: 'I drink coffee every morning.' },
+        { front: '見る', reading: 'みる', back: 'to see; to watch', pos: 'verb (ru)', exampleJp: '夜、テレビを見ます。', exampleReading: 'よる、テレビをみます。', exampleEn: 'I watch TV at night.' },
+        { front: '聞く', reading: 'きく', back: 'to listen; to ask', pos: 'verb (u)', exampleJp: '電車で音楽を聞きます。', exampleReading: 'でんしゃでおんがくをききます。', exampleEn: 'I listen to music on the train.' },
+        { front: '読む', reading: 'よむ', back: 'to read', pos: 'verb (u)', exampleJp: '寝る前に本を読みます。', exampleReading: 'ねるまえにほんをよみます。', exampleEn: 'I read a book before going to bed.' },
+        { front: '書く', reading: 'かく', back: 'to write', pos: 'verb (u)', exampleJp: '友達に手紙を書きました。', exampleReading: 'ともだちにてがみをかきました。', exampleEn: 'I wrote a letter to a friend.' },
+        { front: '話す', reading: 'はなす', back: 'to speak', pos: 'verb (u)', exampleJp: '先生と日本語で話しました。', exampleReading: 'せんせいとにほんごではなしました。', exampleEn: 'I spoke with the teacher in Japanese.' },
+        { front: '買う', reading: 'かう', back: 'to buy', pos: 'verb (u)', exampleJp: 'スーパーで卵を買いました。', exampleReading: 'スーパーでたまごをかいました。', exampleEn: 'I bought eggs at the supermarket.' },
+        { front: '会う', reading: 'あう', back: 'to meet', pos: 'verb (u)', exampleJp: '駅で友達に会いました。', exampleReading: 'えきでともだちにあいました。', exampleEn: 'I met a friend at the station.' },
+        { front: '起きる', reading: 'おきる', back: 'to get up; to wake', pos: 'verb (ru)', exampleJp: '毎朝七時に起きます。', exampleReading: 'まいあさしちじにおきます。', exampleEn: 'I get up at seven every morning.' },
+        { front: '寝る', reading: 'ねる', back: 'to sleep; to go to bed', pos: 'verb (ru)', exampleJp: '昨日は早く寝ました。', exampleReading: 'きのうははやくねました。', exampleEn: 'I went to bed early yesterday.' },
+        { front: '立つ', reading: 'たつ', back: 'to stand', pos: 'verb (u)', exampleJp: '先生が前に立っています。', exampleReading: 'せんせいがまえにたっています。', exampleEn: 'The teacher is standing at the front.' },
+        { front: '座る', reading: 'すわる', back: 'to sit', pos: 'verb (u)', exampleJp: 'どうぞ、ここに座ってください。', exampleReading: 'どうぞ、ここにすわってください。', exampleEn: 'Please, sit here.' }
       ]
     },
     {
+      key: 'n5.09',
       kind: 'grammar',
       title: 'Objects and targets: を and に',
       body: `を marks the DIRECT OBJECT — the thing the action is done to. As a particle it is pronounced "o".
@@ -274,32 +337,36 @@ A sentence can use both at once: [receiver]に [object]を [verb].`,
           front: '友達に手紙を書きます。',
           reading: 'ともだちにてがみをかきます。',
           back: 'I write a letter to my friend.'
-        }
+        },
+        { front: '毎朝新聞を読みます。', reading: 'まいあさしんぶんをよみます。', back: 'I read the newspaper every morning.' },
+        { front: '母に電話をかけます。', reading: 'ははにでんわをかけます。', back: "I'll call my mother." }
       ]
     },
     {
+      key: 'n5.10',
       kind: 'vocab',
       title: 'Places & directions',
       cards: [
-        { front: '家', reading: 'いえ', back: 'house; home', pos: 'noun' },
-        { front: '学校', reading: 'がっこう', back: 'school', pos: 'noun' },
-        { front: '駅', reading: 'えき', back: 'station', pos: 'noun' },
-        { front: '銀行', reading: 'ぎんこう', back: 'bank', pos: 'noun' },
-        { front: '病院', reading: 'びょういん', back: 'hospital', pos: 'noun' },
-        { front: '図書館', reading: 'としょかん', back: 'library', pos: 'noun' },
-        { front: '公園', reading: 'こうえん', back: 'park', pos: 'noun' },
-        { front: '店', reading: 'みせ', back: 'shop', pos: 'noun' },
-        { front: 'レストラン', back: 'restaurant', pos: 'noun' },
-        { front: 'トイレ', back: 'toilet', pos: 'noun' },
-        { front: '上', reading: 'うえ', back: 'up; above; on top', pos: 'noun' },
-        { front: '下', reading: 'した', back: 'down; below; under', pos: 'noun' },
-        { front: '中', reading: 'なか', back: 'inside; middle', pos: 'noun' },
-        { front: '外', reading: 'そと', back: 'outside', pos: 'noun' },
-        { front: '右', reading: 'みぎ', back: 'right (side)', pos: 'noun' },
-        { front: '左', reading: 'ひだり', back: 'left (side)', pos: 'noun' }
+        { front: '家', reading: 'いえ', back: 'house; home', pos: 'noun', exampleJp: '家で晩ご飯を食べます。', exampleReading: 'いえでばんごはんをたべます。', exampleEn: 'I eat dinner at home.' },
+        { front: '学校', reading: 'がっこう', back: 'school', pos: 'noun', exampleJp: '学校は八時半に始まります。', exampleReading: 'がっこうははちじはんにはじまります。', exampleEn: 'School starts at half past eight.' },
+        { front: '駅', reading: 'えき', back: 'station', pos: 'noun', exampleJp: '駅の前に銀行があります。', exampleReading: 'えきのまえにぎんこうがあります。', exampleEn: 'There is a bank in front of the station.' },
+        { front: '銀行', reading: 'ぎんこう', back: 'bank', pos: 'noun', exampleJp: '銀行でお金を下ろしました。', exampleReading: 'ぎんこうでおかねをおろしました。', exampleEn: 'I withdrew money at the bank.' },
+        { front: '病院', reading: 'びょういん', back: 'hospital', pos: 'noun', exampleJp: '病院は駅の近くにあります。', exampleReading: 'びょういんはえきのちかくにあります。', exampleEn: 'The hospital is near the station.' },
+        { front: '図書館', reading: 'としょかん', back: 'library', pos: 'noun', exampleJp: '図書館で勉強します。', exampleReading: 'としょかんでべんきょうします。', exampleEn: 'I study at the library.' },
+        { front: '公園', reading: 'こうえん', back: 'park', pos: 'noun', exampleJp: '日曜日に公園を散歩しました。', exampleReading: 'にちようびにこうえんをさんぽしました。', exampleEn: 'I took a walk in the park on Sunday.' },
+        { front: '店', reading: 'みせ', back: 'shop', pos: 'noun', exampleJp: 'あの店のパンはおいしいです。', exampleReading: 'あのみせのパンはおいしいです。', exampleEn: 'The bread at that shop is good.' },
+        { front: 'レストラン', back: 'restaurant', pos: 'noun', exampleJp: '駅の近くに新しいレストランができました。', exampleReading: 'えきのちかくにあたらしいレストランができました。', exampleEn: 'A new restaurant opened near the station.' },
+        { front: 'トイレ', back: 'toilet', pos: 'noun', exampleJp: 'トイレはあちらです。', exampleReading: 'トイレはあちらです。', exampleEn: 'The toilet is over there.' },
+        { front: '上', reading: 'うえ', back: 'up; above; on top', pos: 'noun', exampleJp: '冷蔵庫の上に猫がいます。', exampleReading: 'れいぞうこのうえにねこがいます。', exampleEn: "There's a cat on top of the fridge." },
+        { front: '下', reading: 'した', back: 'down; below; under', pos: 'noun', exampleJp: '机の下にかばんがあります。', exampleReading: 'つくえのしたにかばんがあります。', exampleEn: "There's a bag under the desk." },
+        { front: '中', reading: 'なか', back: 'inside; middle', pos: 'noun', exampleJp: '箱の中に何がありますか。', exampleReading: 'はこのなかになにがありますか。', exampleEn: 'What is in the box?' },
+        { front: '外', reading: 'そと', back: 'outside', pos: 'noun', exampleJp: '外は寒いです。', exampleReading: 'そとはさむいです。', exampleEn: "It's cold outside." },
+        { front: '右', reading: 'みぎ', back: 'right (side)', pos: 'noun', exampleJp: '駅を出て、右に曲がってください。', exampleReading: 'えきをでて、みぎにまがってください。', exampleEn: 'Leave the station and turn right.' },
+        { front: '左', reading: 'ひだり', back: 'left (side)', pos: 'noun', exampleJp: '銀行は郵便局の左にあります。', exampleReading: 'ぎんこうはゆうびんきょくのひだりにあります。', exampleEn: 'The bank is to the left of the post office.' }
       ]
     },
     {
+      key: 'n5.11',
       kind: 'grammar',
       title: 'Location and direction: で and へ',
       body: `で marks WHERE an action happens:
@@ -320,10 +387,13 @@ Compare with に, which marks where something exists or arrives. Rough rule: act
           back: 'I study at the library.'
         },
         { front: '日本へ行きたいです。', reading: 'にほんへいきたいです。', back: 'I want to go to Japan.' },
-        { front: 'バスで駅へ行きます。', reading: 'バスでえきへいきます。', back: 'I go to the station by bus.' }
+        { front: 'バスで駅へ行きます。', reading: 'バスでえきへいきます。', back: 'I go to the station by bus.' },
+        { front: 'レストランで晩ご飯を食べました。', reading: 'レストランでばんごはんをたべました。', back: 'I had dinner at a restaurant.' },
+        { front: '来週、大阪へ行きます。', reading: 'らいしゅう、おおさかへいきます。', back: "I'm going to Osaka next week." }
       ]
     },
     {
+      key: 'n5.12',
       kind: 'grammar',
       title: 'Negative and past: ません / ました / ませんでした',
       body: `The ます ending conjugates for polarity and tense — the verb itself doesn't change further:
@@ -343,32 +413,40 @@ Time words usually pin down the tense: 昨日 (yesterday) + ました, 明日 (t
           front: '今朝コーヒーを飲みませんでした。',
           reading: 'けさコーヒーをのみませんでした。',
           back: "I didn't drink coffee this morning."
-        }
+        },
+        { front: '昨日は勉強しませんでした。', reading: 'きのうはべんきょうしませんでした。', back: "I didn't study yesterday." },
+        { front: '日曜日は働きません。', reading: 'にちようびははたらきません。', back: "I don't work on Sundays." }
       ]
     },
+    N5_GA,
+    N5_TAI,
+    N5_MASHOU,
+    N5_NI_IKU,
     {
+      key: 'n5.13',
       kind: 'vocab',
       title: 'Food & drink',
       cards: [
-        { front: '水', reading: 'みず', back: 'water', pos: 'noun' },
-        { front: 'お茶', reading: 'おちゃ', back: 'tea', pos: 'noun' },
-        { front: 'コーヒー', back: 'coffee', pos: 'noun' },
-        { front: '牛乳', reading: 'ぎゅうにゅう', back: 'milk', pos: 'noun' },
-        { front: 'ご飯', reading: 'ごはん', back: 'rice; meal', pos: 'noun' },
-        { front: 'パン', back: 'bread', pos: 'noun' },
-        { front: '肉', reading: 'にく', back: 'meat', pos: 'noun' },
-        { front: '魚', reading: 'さかな', back: 'fish', pos: 'noun' },
-        { front: '野菜', reading: 'やさい', back: 'vegetables', pos: 'noun' },
-        { front: '果物', reading: 'くだもの', back: 'fruit', pos: 'noun' },
-        { front: '卵', reading: 'たまご', back: 'egg', pos: 'noun' },
-        { front: '寿司', reading: 'すし', back: 'sushi', pos: 'noun' },
-        { front: 'お酒', reading: 'おさけ', back: 'alcohol; sake', pos: 'noun' },
-        { front: '朝ご飯', reading: 'あさごはん', back: 'breakfast', pos: 'noun' },
-        { front: '昼ご飯', reading: 'ひるごはん', back: 'lunch', pos: 'noun' },
-        { front: '晩ご飯', reading: 'ばんごはん', back: 'dinner', pos: 'noun' }
+        { front: '水', reading: 'みず', back: 'water', pos: 'noun', exampleJp: '水を一杯ください。', exampleReading: 'みずをいっぱいください。', exampleEn: 'A glass of water, please.' },
+        { front: 'お茶', reading: 'おちゃ', back: 'tea', pos: 'noun', exampleJp: '温かいお茶をどうぞ。', exampleReading: 'あたたかいおちゃをどうぞ。', exampleEn: "Here's some hot tea." },
+        { front: 'コーヒー', back: 'coffee', pos: 'noun', exampleJp: 'コーヒーに砂糖を入れますか。', exampleReading: 'コーヒーにさとうをいれますか。', exampleEn: 'Do you take sugar in your coffee?' },
+        { front: '牛乳', reading: 'ぎゅうにゅう', back: 'milk', pos: 'noun', exampleJp: '毎朝牛乳を飲みます。', exampleReading: 'まいあさぎゅうにゅうをのみます。', exampleEn: 'I drink milk every morning.' },
+        { front: 'ご飯', reading: 'ごはん', back: 'rice; meal', pos: 'noun', exampleJp: 'もうご飯を食べましたか。', exampleReading: 'もうごはんをたべましたか。', exampleEn: 'Have you eaten yet?' },
+        { front: 'パン', back: 'bread', pos: 'noun', exampleJp: '朝ご飯はいつもパンです。', exampleReading: 'あさごはんはいつもパンです。', exampleEn: 'I always have bread for breakfast.' },
+        { front: '肉', reading: 'にく', back: 'meat', pos: 'noun', exampleJp: '私は肉より魚が好きです。', exampleReading: 'わたしはにくよりさかながすきです。', exampleEn: 'I prefer fish to meat.' },
+        { front: '魚', reading: 'さかな', back: 'fish', pos: 'noun', exampleJp: '父は魚が好きです。', exampleReading: 'ちちはさかながすきです。', exampleEn: 'My father likes fish.' },
+        { front: '野菜', reading: 'やさい', back: 'vegetables', pos: 'noun', exampleJp: '野菜をたくさん食べましょう。', exampleReading: 'やさいをたくさんたべましょう。', exampleEn: "Let's eat lots of vegetables." },
+        { front: '果物', reading: 'くだもの', back: 'fruit', pos: 'noun', exampleJp: '果物の中でみかんが一番好きです。', exampleReading: 'くだもののなかでみかんがいちばんすきです。', exampleEn: 'Of all fruit, I like mandarins best.' },
+        { front: '卵', reading: 'たまご', back: 'egg', pos: 'noun', exampleJp: '卵を二つ買いました。', exampleReading: 'たまごをふたつかいました。', exampleEn: 'I bought two eggs.' },
+        { front: '寿司', reading: 'すし', back: 'sushi', pos: 'noun', exampleJp: '週末に寿司を食べに行きました。', exampleReading: 'しゅうまつにすしをたべにいきました。', exampleEn: 'I went out for sushi at the weekend.' },
+        { front: 'お酒', reading: 'おさけ', back: 'alcohol; sake', pos: 'noun', exampleJp: '父はお酒を飲みません。', exampleReading: 'ちちはおさけをのみません。', exampleEn: "My father doesn't drink alcohol." },
+        { front: '朝ご飯', reading: 'あさごはん', back: 'breakfast', pos: 'noun', exampleJp: '今朝は朝ご飯を食べませんでした。', exampleReading: 'けさはあさごはんをたべませんでした。', exampleEn: "I didn't have breakfast this morning." },
+        { front: '昼ご飯', reading: 'ひるごはん', back: 'lunch', pos: 'noun', exampleJp: '一緒に昼ご飯を食べませんか。', exampleReading: 'いっしょにひるごはんをたべませんか。', exampleEn: 'Would you like to have lunch together?' },
+        { front: '晩ご飯', reading: 'ばんごはん', back: 'dinner', pos: 'noun', exampleJp: '今日の晩ご飯は何ですか。', exampleReading: 'きょうのばんごはんはなんですか。', exampleEn: "What's for dinner today?" }
       ]
     },
     {
+      key: 'n5.14',
       kind: 'grammar',
       title: 'い-adjectives',
       body: `い-adjectives end in い and conjugate by themselves — no です needed for the grammar, though polite speech adds です anyway:
@@ -388,33 +466,37 @@ Watch out: いい (good) conjugates from its older form よい → よくない,
           front: 'その映画は面白くなかったです。',
           reading: 'そのえいがはおもしろくなかったです。',
           back: 'That movie was not interesting.'
-        }
+        },
+        { front: 'このカレーは辛くないです。', reading: 'このカレーはからくないです。', back: "This curry isn't spicy." },
+        { front: '昨日のパーティーは楽しかったです。', reading: 'きのうのパーティーはたのしかったです。', back: "Yesterday's party was fun." }
       ]
     },
     {
+      key: 'n5.15',
       kind: 'vocab',
       title: 'Core adjectives',
       cards: [
-        { front: '大きい', reading: 'おおきい', back: 'big', pos: 'i-adjective' },
-        { front: '小さい', reading: 'ちいさい', back: 'small', pos: 'i-adjective' },
-        { front: '新しい', reading: 'あたらしい', back: 'new', pos: 'i-adjective' },
-        { front: '古い', reading: 'ふるい', back: 'old (things)', pos: 'i-adjective' },
-        { front: '高い', reading: 'たかい', back: 'tall; expensive', pos: 'i-adjective' },
-        { front: '安い', reading: 'やすい', back: 'cheap', pos: 'i-adjective' },
-        { front: 'いい', back: 'good', pos: 'i-adjective', notes: 'Conjugates from よい: よくない, よかった.' },
-        { front: '悪い', reading: 'わるい', back: 'bad', pos: 'i-adjective' },
-        { front: '暑い', reading: 'あつい', back: 'hot (weather)', pos: 'i-adjective' },
-        { front: '寒い', reading: 'さむい', back: 'cold (weather)', pos: 'i-adjective' },
-        { front: '面白い', reading: 'おもしろい', back: 'interesting; funny', pos: 'i-adjective' },
-        { front: '美味しい', reading: 'おいしい', back: 'delicious', pos: 'i-adjective' },
-        { front: '難しい', reading: 'むずかしい', back: 'difficult', pos: 'i-adjective' },
-        { front: '簡単', reading: 'かんたん', back: 'easy; simple', pos: 'na-adjective' },
-        { front: '静か', reading: 'しずか', back: 'quiet', pos: 'na-adjective' },
-        { front: '元気', reading: 'げんき', back: 'healthy; energetic', pos: 'na-adjective' },
-        { front: '好き', reading: 'すき', back: 'liked; favorite', pos: 'na-adjective' }
+        { front: '大きい', reading: 'おおきい', back: 'big', pos: 'i-adjective', exampleJp: '大きい犬がいます。', exampleReading: 'おおきいいぬがいます。', exampleEn: "There's a big dog." },
+        { front: '小さい', reading: 'ちいさい', back: 'small', pos: 'i-adjective', exampleJp: 'この靴は小さいです。', exampleReading: 'このくつはちいさいです。', exampleEn: 'These shoes are small.' },
+        { front: '新しい', reading: 'あたらしい', back: 'new', pos: 'i-adjective', exampleJp: '新しい車を買いました。', exampleReading: 'あたらしいくるまをかいました。', exampleEn: 'I bought a new car.' },
+        { front: '古い', reading: 'ふるい', back: 'old (things)', pos: 'i-adjective', exampleJp: 'この町には古いお寺がたくさんあります。', exampleReading: 'このまちにはふるいおてらがたくさんあります。', exampleEn: 'This town has many old temples.' },
+        { front: '高い', reading: 'たかい', back: 'tall; expensive', pos: 'i-adjective', exampleJp: 'このかばんは高いです。', exampleReading: 'このかばんはたかいです。', exampleEn: 'This bag is expensive.' },
+        { front: '安い', reading: 'やすい', back: 'cheap', pos: 'i-adjective', exampleJp: 'この店の野菜は安いです。', exampleReading: 'このみせのやさいはやすいです。', exampleEn: 'The vegetables at this shop are cheap.' },
+        { front: 'いい', back: 'good', pos: 'i-adjective', notes: 'Conjugates from よい: よくない, よかった.', exampleJp: '今日はいい天気ですね。', exampleReading: 'きょうはいいてんきですね。', exampleEn: "It's nice weather today, isn't it?" },
+        { front: '悪い', reading: 'わるい', back: 'bad', pos: 'i-adjective', exampleJp: '天気が悪いから、出かけません。', exampleReading: 'てんきがわるいから、でかけません。', exampleEn: "The weather is bad, so I won't go out." },
+        { front: '暑い', reading: 'あつい', back: 'hot (weather)', pos: 'i-adjective', exampleJp: '今日はとても暑いです。', exampleReading: 'きょうはとてもあついです。', exampleEn: "It's very hot today." },
+        { front: '寒い', reading: 'さむい', back: 'cold (weather)', pos: 'i-adjective', exampleJp: '北海道の冬は寒いです。', exampleReading: 'ほっかいどうのふゆはさむいです。', exampleEn: 'Winters in Hokkaido are cold.' },
+        { front: '面白い', reading: 'おもしろい', back: 'interesting; funny', pos: 'i-adjective', exampleJp: 'この漫画はとても面白いです。', exampleReading: 'このまんがはとてもおもしろいです。', exampleEn: 'This manga is really interesting.' },
+        { front: '美味しい', reading: 'おいしい', back: 'delicious', pos: 'i-adjective', exampleJp: 'このケーキは美味しいです。', exampleReading: 'このケーキはおいしいです。', exampleEn: 'This cake is delicious.' },
+        { front: '難しい', reading: 'むずかしい', back: 'difficult', pos: 'i-adjective', exampleJp: '漢字は難しいですが、面白いです。', exampleReading: 'かんじはむずかしいですが、おもしろいです。', exampleEn: 'Kanji are difficult, but interesting.' },
+        { front: '簡単', reading: 'かんたん', back: 'easy; simple', pos: 'na-adjective', exampleJp: 'この問題は簡単です。', exampleReading: 'このもんだいはかんたんです。', exampleEn: 'This problem is easy.' },
+        { front: '静か', reading: 'しずか', back: 'quiet', pos: 'na-adjective', exampleJp: 'この公園は静かです。', exampleReading: 'このこうえんはしずかです。', exampleEn: 'This park is quiet.' },
+        { front: '元気', reading: 'げんき', back: 'healthy; energetic', pos: 'na-adjective', exampleJp: '祖母はとても元気です。', exampleReading: 'そぼはとてもげんきです。', exampleEn: 'My grandmother is very well.' },
+        { front: '好き', reading: 'すき', back: 'liked; favorite', pos: 'na-adjective', exampleJp: '私は夏が好きです。', exampleReading: 'わたしはなつがすきです。', exampleEn: 'I like summer.' }
       ]
     },
     {
+      key: 'n5.16',
       kind: 'grammar',
       title: 'な-adjectives and possessive の',
       body: `な-adjectives behave like nouns: they need な before a noun and です／だ to end a sentence.
@@ -432,10 +514,15 @@ Watch out: いい (good) conjugates from its older form よい → よくない,
       cards: [
         { front: 'ここは静かな公園です。', reading: 'ここはしずかなこうえんです。', back: 'This is a quiet park.' },
         { front: '私は犬が好きです。', reading: 'わたしはいぬがすきです。', back: 'I like dogs.' },
-        { front: 'これは私の傘です。', reading: 'これはわたしのかさです。', back: 'This is my umbrella.' }
+        { front: 'これは私の傘です。', reading: 'これはわたしのかさです。', back: 'This is my umbrella.' },
+        { front: '彼はとても親切な人です。', reading: 'かれはとてもしんせつなひとです。', back: 'He is a very kind person.' },
+        { front: 'これは田中さんの車です。', reading: 'これはたなかさんのくるまです。', back: "This is Tanaka's car." }
       ]
     },
+    N5_NARU,
+    N5_ADVERB,
     {
+      key: 'n5.17',
       kind: 'grammar',
       title: 'て-form and てください',
       body: `The て-form connects verbs to other words and chains actions. Formation from the ます-stem:
@@ -460,32 +547,39 @@ Two everyday uses:
           front: '朝ご飯を食べて、学校に行きます。',
           reading: 'あさごはんをたべて、がっこうにいきます。',
           back: 'I eat breakfast and then go to school.'
-        }
+        },
+        { front: 'ここに名前を書いてください。', reading: 'ここになまえをかいてください。', back: 'Please write your name here.' },
+        { front: 'シャワーを浴びて、寝ました。', reading: 'シャワーをあびて、ねました。', back: 'I took a shower and went to bed.' }
       ]
     },
+    N5_TEIRU,
+    N5_TEMOII,
+    N5_MAE,
     {
+      key: 'n5.18',
       kind: 'vocab',
       title: 'Everyday verbs II',
       cards: [
-        { front: 'する', back: 'to do', pos: 'verb (irregular)' },
-        { front: '勉強する', reading: 'べんきょうする', back: 'to study', pos: 'verb (irregular)' },
-        { front: '働く', reading: 'はたらく', back: 'to work', pos: 'verb (u)' },
-        { front: '休む', reading: 'やすむ', back: 'to rest; to take a day off', pos: 'verb (u)' },
-        { front: '作る', reading: 'つくる', back: 'to make', pos: 'verb (u)' },
-        { front: '使う', reading: 'つかう', back: 'to use', pos: 'verb (u)' },
-        { front: '待つ', reading: 'まつ', back: 'to wait', pos: 'verb (u)' },
-        { front: '歩く', reading: 'あるく', back: 'to walk', pos: 'verb (u)' },
-        { front: '走る', reading: 'はしる', back: 'to run', pos: 'verb (u)' },
-        { front: '泳ぐ', reading: 'およぐ', back: 'to swim', pos: 'verb (u)' },
-        { front: '教える', reading: 'おしえる', back: 'to teach; to tell', pos: 'verb (ru)' },
-        { front: '分かる', reading: 'わかる', back: 'to understand', pos: 'verb (u)' },
-        { front: '知る', reading: 'しる', back: 'to know', pos: 'verb (u)' },
-        { front: '入る', reading: 'はいる', back: 'to enter', pos: 'verb (u)' },
-        { front: '出る', reading: 'でる', back: 'to exit; to leave', pos: 'verb (ru)' },
-        { front: '遊ぶ', reading: 'あそぶ', back: 'to play; to hang out', pos: 'verb (u)' }
+        { front: 'する', back: 'to do', pos: 'verb (irregular)', exampleJp: '週末は何をしますか。', exampleReading: 'しゅうまつはなにをしますか。', exampleEn: 'What do you do at weekends?' },
+        { front: '勉強する', reading: 'べんきょうする', back: 'to study', pos: 'verb (irregular)', exampleJp: '毎晩日本語を勉強します。', exampleReading: 'まいばんにほんごをべんきょうします。', exampleEn: 'I study Japanese every evening.' },
+        { front: '働く', reading: 'はたらく', back: 'to work', pos: 'verb (u)', exampleJp: '姉は病院で働いています。', exampleReading: 'あねはびょういんではたらいています。', exampleEn: 'My older sister works at a hospital.' },
+        { front: '休む', reading: 'やすむ', back: 'to rest; to take a day off', pos: 'verb (u)', exampleJp: '風邪で学校を休みました。', exampleReading: 'かぜでがっこうをやすみました。', exampleEn: 'I stayed home from school with a cold.' },
+        { front: '作る', reading: 'つくる', back: 'to make', pos: 'verb (u)', exampleJp: '母が晩ご飯を作りました。', exampleReading: 'ははがばんごはんをつくりました。', exampleEn: 'My mother made dinner.' },
+        { front: '使う', reading: 'つかう', back: 'to use', pos: 'verb (u)', exampleJp: 'このパソコンを使ってもいいですか。', exampleReading: 'このパソコンをつかってもいいですか。', exampleEn: 'May I use this computer?' },
+        { front: '待つ', reading: 'まつ', back: 'to wait', pos: 'verb (u)', exampleJp: '駅で友達を待ちました。', exampleReading: 'えきでともだちをまちました。', exampleEn: 'I waited for my friend at the station.' },
+        { front: '歩く', reading: 'あるく', back: 'to walk', pos: 'verb (u)', exampleJp: '毎日駅まで歩きます。', exampleReading: 'まいにちえきまであるきます。', exampleEn: 'I walk to the station every day.' },
+        { front: '走る', reading: 'はしる', back: 'to run', pos: 'verb (u)', exampleJp: '朝、公園を走ります。', exampleReading: 'あさ、こうえんをはしります。', exampleEn: 'I run in the park in the morning.' },
+        { front: '泳ぐ', reading: 'およぐ', back: 'to swim', pos: 'verb (u)', exampleJp: '夏は海で泳ぎます。', exampleReading: 'なつはうみでおよぎます。', exampleEn: 'In summer I swim in the sea.' },
+        { front: '教える', reading: 'おしえる', back: 'to teach; to tell', pos: 'verb (ru)', exampleJp: '先生が漢字を教えてくれました。', exampleReading: 'せんせいがかんじをおしえてくれました。', exampleEn: 'The teacher taught me kanji.' },
+        { front: '分かる', reading: 'わかる', back: 'to understand', pos: 'verb (u)', exampleJp: 'この言葉の意味が分かりません。', exampleReading: 'このことばのいみがわかりません。', exampleEn: "I don't understand the meaning of this word." },
+        { front: '知る', reading: 'しる', back: 'to know', pos: 'verb (u)', exampleJp: 'その人の名前を知りません。', exampleReading: 'そのひとのなまえをしりません。', exampleEn: "I don't know that person's name." },
+        { front: '入る', reading: 'はいる', back: 'to enter', pos: 'verb (u)', exampleJp: '部屋に入ってもいいですか。', exampleReading: 'へやにはいってもいいですか。', exampleEn: 'May I come into the room?' },
+        { front: '出る', reading: 'でる', back: 'to exit; to leave', pos: 'verb (ru)', exampleJp: '電車を降りて、駅を出ました。', exampleReading: 'でんしゃをおりて、えきをでました。', exampleEn: 'I got off the train and left the station.' },
+        { front: '遊ぶ', reading: 'あそぶ', back: 'to play; to hang out', pos: 'verb (u)', exampleJp: '子供たちは外で遊んでいます。', exampleReading: 'こどもたちはそとであそんでいます。', exampleEn: 'The children are playing outside.' }
       ]
     },
     {
+      key: 'n5.19',
       kind: 'grammar',
       title: 'Existence: います / あります and counters',
       body: `Two verbs mean "there is / to exist":
@@ -515,33 +609,37 @@ The counter usually sits right before the verb: 猫が二匹います。`,
           reading: 'こうえんにこどもがさんにんいます。',
           back: 'There are three children in the park.'
         },
-        { front: '猫が二匹います。', reading: 'ねこがにひきいます。', back: 'There are two cats.' }
+        { front: '猫が二匹います。', reading: 'ねこがにひきいます。', back: 'There are two cats.' },
+        { front: '駅の前に大きな本屋があります。', reading: 'えきのまえにおおきなほんやがあります。', back: "There's a big bookshop in front of the station." },
+        { front: '教室に学生が十人います。', reading: 'きょうしつにがくせいがじゅうにんいます。', back: 'There are ten students in the classroom.' }
       ]
     },
     {
+      key: 'n5.20',
       kind: 'vocab',
       title: 'Daily life & objects',
       cards: [
-        { front: '本', reading: 'ほん', back: 'book', pos: 'noun' },
-        { front: 'ペン', back: 'pen', pos: 'noun' },
-        { front: '机', reading: 'つくえ', back: 'desk', pos: 'noun' },
-        { front: '椅子', reading: 'いす', back: 'chair', pos: 'noun' },
-        { front: '車', reading: 'くるま', back: 'car', pos: 'noun' },
-        { front: '電車', reading: 'でんしゃ', back: 'train', pos: 'noun' },
-        { front: '自転車', reading: 'じてんしゃ', back: 'bicycle', pos: 'noun' },
-        { front: '電話', reading: 'でんわ', back: 'telephone', pos: 'noun' },
-        { front: '時計', reading: 'とけい', back: 'clock; watch', pos: 'noun' },
-        { front: '傘', reading: 'かさ', back: 'umbrella', pos: 'noun' },
-        { front: '鞄', reading: 'かばん', back: 'bag', pos: 'noun' },
-        { front: '服', reading: 'ふく', back: 'clothes', pos: 'noun' },
-        { front: '靴', reading: 'くつ', back: 'shoes', pos: 'noun' },
-        { front: 'お金', reading: 'おかね', back: 'money', pos: 'noun' },
-        { front: '映画', reading: 'えいが', back: 'movie', pos: 'noun' },
-        { front: '音楽', reading: 'おんがく', back: 'music', pos: 'noun' },
-        { front: '天気', reading: 'てんき', back: 'weather', pos: 'noun' }
+        { front: '本', reading: 'ほん', back: 'book', pos: 'noun', exampleJp: '図書館で本を借りました。', exampleReading: 'としょかんでほんをかりました。', exampleEn: 'I borrowed a book from the library.' },
+        { front: 'ペン', back: 'pen', pos: 'noun', exampleJp: 'ペンを貸してください。', exampleReading: 'ペンをかしてください。', exampleEn: 'Please lend me a pen.' },
+        { front: '机', reading: 'つくえ', back: 'desk', pos: 'noun', exampleJp: '机の上に辞書があります。', exampleReading: 'つくえのうえにじしょがあります。', exampleEn: 'There is a dictionary on the desk.' },
+        { front: '椅子', reading: 'いす', back: 'chair', pos: 'noun', exampleJp: 'この椅子に座ってもいいですか。', exampleReading: 'このいすにすわってもいいですか。', exampleEn: 'May I sit on this chair?' },
+        { front: '車', reading: 'くるま', back: 'car', pos: 'noun', exampleJp: '父の車は白いです。', exampleReading: 'ちちのくるまはしろいです。', exampleEn: "My father's car is white." },
+        { front: '電車', reading: 'でんしゃ', back: 'train', pos: 'noun', exampleJp: '毎朝電車で会社に行きます。', exampleReading: 'まいあさでんしゃでかいしゃにいきます。', exampleEn: 'I go to work by train every morning.' },
+        { front: '自転車', reading: 'じてんしゃ', back: 'bicycle', pos: 'noun', exampleJp: '自転車で学校に行きます。', exampleReading: 'じてんしゃでがっこうにいきます。', exampleEn: 'I go to school by bicycle.' },
+        { front: '電話', reading: 'でんわ', back: 'telephone', pos: 'noun', exampleJp: '夜、母に電話しました。', exampleReading: 'よる、ははにでんわしました。', exampleEn: 'I called my mother in the evening.' },
+        { front: '時計', reading: 'とけい', back: 'clock; watch', pos: 'noun', exampleJp: 'この時計は祖父のです。', exampleReading: 'このとけいはそふのです。', exampleEn: "This watch is my grandfather's." },
+        { front: '傘', reading: 'かさ', back: 'umbrella', pos: 'noun', exampleJp: '雨だから、傘を持って行ってください。', exampleReading: 'あめだから、かさをもっていってください。', exampleEn: "It's raining, so please take an umbrella." },
+        { front: '鞄', reading: 'かばん', back: 'bag', pos: 'noun', exampleJp: '鞄の中に財布があります。', exampleReading: 'かばんのなかにさいふがあります。', exampleEn: 'My wallet is in my bag.' },
+        { front: '服', reading: 'ふく', back: 'clothes', pos: 'noun', exampleJp: '新しい服を買いました。', exampleReading: 'あたらしいふくをかいました。', exampleEn: 'I bought new clothes.' },
+        { front: '靴', reading: 'くつ', back: 'shoes', pos: 'noun', exampleJp: '玄関で靴を脱いでください。', exampleReading: 'げんかんでくつをぬいでください。', exampleEn: 'Please take off your shoes at the entrance.' },
+        { front: 'お金', reading: 'おかね', back: 'money', pos: 'noun', exampleJp: 'お金がないから、旅行に行けません。', exampleReading: 'おかねがないから、りょこうにいけません。', exampleEn: "I don't have any money, so I can't go on a trip." },
+        { front: '映画', reading: 'えいが', back: 'movie', pos: 'noun', exampleJp: '週末、映画を見に行きました。', exampleReading: 'しゅうまつ、えいがをみにいきました。', exampleEn: 'I went to see a movie at the weekend.' },
+        { front: '音楽', reading: 'おんがく', back: 'music', pos: 'noun', exampleJp: '音楽を聞きながら勉強します。', exampleReading: 'おんがくをききながらべんきょうします。', exampleEn: 'I study while listening to music.' },
+        { front: '天気', reading: 'てんき', back: 'weather', pos: 'noun', exampleJp: '明日の天気はどうですか。', exampleReading: 'あしたのてんきはどうですか。', exampleEn: "What's the weather going to be like tomorrow?" }
       ]
     },
     {
+      key: 'n5.21',
       kind: 'grammar',
       title: 'Connecting: と, も and the plain past た-form',
       body: `と joins nouns — a closed "and" list (only nouns, all items named):
@@ -563,24 +661,35 @@ The た-form also appears inside larger patterns later (たことがある "have
       cards: [
         { front: '犬と猫が好きです。', reading: 'いぬとねこがすきです。', back: 'I like dogs and cats.' },
         { front: '私も行きます。', reading: 'わたしもいきます。', back: 'I will go too.' },
-        { front: '昨日寿司を食べた。', reading: 'きのうすしをたべた。', back: 'I ate sushi yesterday. (casual)' }
+        { front: '昨日寿司を食べた。', reading: 'きのうすしをたべた。', back: 'I ate sushi yesterday. (casual)' },
+        { front: '兄と姉がいます。', reading: 'あにとあねがいます。', back: 'I have an older brother and an older sister.' },
+        { front: '昨日、友達と公園で遊んだ。', reading: 'きのう、ともだちとこうえんであそんだ。', back: 'I hung out with a friend in the park yesterday.' }
       ]
-    }
+    },
+    N5_NAI,
+    N5_KARA,
+    N5_KEDO,
+    N5_TOKI,
+    N5_MOU,
+    N5_DESHOU,
+    N5_YA,
+    N5_ICHIBAN
   ]
 }
 
 // Kanji cards: front = the character, reading = its most common reading,
 // back = meaning, onyomi/kunyomi = comma-separated readings (kun readings show
 // okurigana in parentheses), example_* = one common word using the kanji.
-const N5_KANJI_COURSE: SeedCourse = {
+const N5_KANJI_COURSE: SeedCourseDef = {
   title: 'JLPT N5 Kanji',
   description:
     'The ~100 kanji of JLPT N5, grouped by theme. Recognizing these (plus your vocab) ' +
-    'is the first big step toward reading manga and visual novels without furigana.',
+    'is the first big step toward reading manga and visual novels without furigana. ' +
+    'The Path then asks for your first core word deck: the courses alone teach only a few hundred words.',
   level: 'N5',
-  difficulty: 3,
   lessons: [
     {
+      key: 'kanji.01',
       kind: 'kanji',
       title: 'Numbers & time',
       cards: [
@@ -608,6 +717,7 @@ const N5_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'kanji.02',
       kind: 'kanji',
       title: 'People & body',
       cards: [
@@ -629,6 +739,7 @@ const N5_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'kanji.03',
       kind: 'kanji',
       title: 'Places & nature',
       cards: [
@@ -653,6 +764,7 @@ const N5_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'kanji.04',
       kind: 'kanji',
       title: 'Verbs & actions',
       cards: [
@@ -674,6 +786,7 @@ const N5_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'kanji.05',
       kind: 'kanji',
       title: 'Adjectives, size & direction',
       cards: [
@@ -698,6 +811,7 @@ const N5_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'kanji.06',
       kind: 'kanji',
       title: 'School, days & everyday',
       cards: [
@@ -722,16 +836,16 @@ const N5_KANJI_COURSE: SeedCourse = {
   ]
 }
 
-const CASUAL_COURSE: SeedCourse = {
+const CASUAL_COURSE: SeedCourseDef = {
   title: 'Manga & VN Japanese',
   description:
     'The casual, spoken Japanese that fills manga and visual novel dialogue but ' +
     'textbooks barely touch: contractions, sentence-final particles, gendered speech ' +
     'and slang. Assumes the N5 Foundations grammar.',
   level: 'N5–N4',
-  difficulty: 4,
   lessons: [
     {
+      key: 'casual.01',
       kind: 'grammar',
       title: 'てる / でる — the ている contraction',
       body: `In speech and dialogue, 〜ている almost always drops the い:
@@ -746,10 +860,13 @@ The polite form contracts too in relaxed speech: 知ってます, 待ってま�
       cards: [
         { front: '何してるの？', reading: 'なにしてるの？', back: 'What are you doing?' },
         { front: '雨が降ってる。', reading: 'あめがふってる。', back: "It's raining." },
-        { front: 'ずっと待ってたよ。', reading: 'ずっとまってたよ。', back: 'I was waiting the whole time!' }
+        { front: 'ずっと待ってたよ。', reading: 'ずっとまってたよ。', back: 'I was waiting the whole time!' },
+        { front: '今、何読んでるの？', reading: 'いま、なによんでるの？', back: 'What are you reading right now?' },
+        { front: '彼、まだ寝てるよ。', reading: 'かれ、まだねてるよ。', back: "He's still asleep." }
       ]
     },
     {
+      key: 'casual.02',
       kind: 'grammar',
       title: 'ちゃう / じゃう — the てしまう contraction',
       body: `〜てしまう (to do completely / to do regrettably / to end up doing) contracts in speech:
@@ -768,10 +885,13 @@ Future/volitional: 行っちゃおう — "let's just go".`,
       cards: [
         { front: '忘れちゃった。', reading: 'わすれちゃった。', back: 'I totally forgot.' },
         { front: '全部食べちゃったの？', reading: 'ぜんぶたべちゃったの？', back: 'You ate it ALL?' },
-        { front: 'もう帰っちゃうの？', reading: 'もうかえっちゃうの？', back: "You're leaving already?" }
+        { front: 'もう帰っちゃうの？', reading: 'もうかえっちゃうの？', back: "You're leaving already?" },
+        { front: '財布、落としちゃった。', reading: 'さいふ、おとしちゃった。', back: 'I went and dropped my wallet.' },
+        { front: '金魚が死んじゃった。', reading: 'きんぎょがしんじゃった。', back: 'The goldfish died.' }
       ]
     },
     {
+      key: 'casual.03',
       kind: 'grammar',
       title: 'なきゃ / なくちゃ — casual obligation',
       body: `"Must do" in textbooks is なければならない／なくてはいけない. Dialogue contracts it hard, and usually drops the second half entirely:
@@ -786,10 +906,13 @@ Dropping ならない/いけない is standard; the bare なきゃ／なくち�
       cards: [
         { front: 'もう行かなきゃ。', reading: 'もういかなきゃ。', back: 'I gotta go.' },
         { front: '勉強しなくちゃ。', reading: 'べんきょうしなくちゃ。', back: 'I have to study.' },
-        { front: '早く逃げないと！', reading: 'はやくにげないと！', back: 'We have to run, now!' }
+        { front: '早く逃げないと！', reading: 'はやくにげないと！', back: 'We have to run, now!' },
+        { front: '明日早く起きなきゃ。', reading: 'あしたはやくおきなきゃ。', back: "I've got to get up early tomorrow." },
+        { front: '宿題を出さなくちゃ。', reading: 'しゅくだいをださなくちゃ。', back: 'Gotta hand in my homework.' }
       ]
     },
     {
+      key: 'casual.04',
       kind: 'grammar',
       title: 'Sentence-final particles: よ・ね・な・ぞ・ぜ',
       body: `These carry the tone of a line — manga dialogue leans on them constantly:
@@ -805,10 +928,13 @@ Dropping ならない/いけない is standard; the bare なきゃ／なくち�
       cards: [
         { front: 'いい天気だね。', reading: 'いいてんきだね。', back: 'Nice weather, huh?' },
         { front: 'それは違うよ。', reading: 'それはちがうよ。', back: "That's wrong, you know." },
-        { front: '行くぞ！', reading: 'いくぞ！', back: "We're going! (rough)" }
+        { front: '行くぞ！', reading: 'いくぞ！', back: "We're going! (rough)" },
+        { front: '今日は暑いぜ。', reading: 'きょうはあついぜ。', back: "It's hot today, man. (rough, masculine)" },
+        { front: 'この映画、面白いな。', reading: 'このえいが、おもしろいな。', back: "This movie's good. (musing to oneself)" }
       ]
     },
     {
+      key: 'casual.05',
       kind: 'grammar',
       title: 'Casual questions — の？ and dropped か',
       body: `Polite questions end in か. Casual speech usually drops it and asks with rising intonation, or ends in の:
@@ -823,10 +949,13 @@ Bare か after plain forms sounds blunt/masculine: 来るか？ — often だ is
       cards: [
         { front: 'これ、食べるの？', reading: 'これ、たべるの？', back: 'You gonna eat this?' },
         { front: '大丈夫？', reading: 'だいじょうぶ？', back: 'You okay?' },
-        { front: '何それ？', reading: 'なにそれ？', back: "What's that?" }
+        { front: '何それ？', reading: 'なにそれ？', back: "What's that?" },
+        { front: 'どこ行くの？', reading: 'どこいくの？', back: 'Where are you going?' },
+        { front: 'もう食べた？', reading: 'もうたべた？', back: 'Have you eaten yet?' }
       ]
     },
     {
+      key: 'casual.06',
       kind: 'grammar',
       title: 'じゃない・だろ・でしょ — assertions and tag questions',
       body: `Three lookalikes that dialogue uses constantly:
@@ -839,10 +968,13 @@ On weather forecasts and predictions でしょう is the standard "probably": �
       cards: [
         { front: 'いいじゃない！', reading: 'いいじゃない！', back: "That's great! (exclamation)" },
         { front: '言っただろ。', reading: 'いっただろ。', back: "I told you, didn't I? (masc.)" },
-        { front: '分かるでしょ？', reading: 'わかるでしょ？', back: 'You get it, right?' }
+        { front: '分かるでしょ？', reading: 'わかるでしょ？', back: 'You get it, right?' },
+        { front: '君も来るだろ？', reading: 'きみもくるだろ？', back: "You're coming too, right? (masc.)" },
+        { front: '彼、来ないでしょ？', reading: 'かれ、こないでしょ？', back: "He's not coming, right?" }
       ]
     },
     {
+      key: 'casual.07',
       kind: 'grammar',
       title: 'Masculine vs feminine speech',
       body: `Japanese fiction marks character gender/roughness through speech style — crucial for reading dialogue:
@@ -858,10 +990,13 @@ Real people mix these freely; manga exaggerates them so you can tell who's talki
       cards: [
         { front: '俺が行くよ。', reading: 'おれがいくよ。', back: "I'll go. (rough masculine)" },
         { front: 'あたし、知らないわ。', reading: 'あたし、しらないわ。', back: "I don't know. (feminine)" },
-        { front: 'そんなの知らねえよ。', reading: 'そんなのしらねえよ。', back: "How should I know?! (very rough)" }
+        { front: 'そんなの知らねえよ。', reading: 'そんなのしらねえよ。', back: "How should I know?! (very rough)" },
+        { front: '僕は田中です。', reading: 'ぼくはたなかです。', back: "I'm Tanaka. (soft masculine)" },
+        { front: 'これ、可愛いわね。', reading: 'これ、かわいいわね。', back: "This is cute, isn't it? (feminine)" }
       ]
     },
     {
+      key: 'casual.08',
       kind: 'grammar',
       title: 'Commands: imperatives, 〜な and volitional',
       body: `Manga is full of shouted commands the ます form never prepared you for:
@@ -880,10 +1015,13 @@ Volitional ("let's"): ます-stem-based polite ましょう → plain form:
       cards: [
         { front: '待て！', reading: 'まて！', back: 'Wait! (command)' },
         { front: '触るな！', reading: 'さわるな！', back: "Don't touch it!" },
-        { front: '一緒に行こう。', reading: 'いっしょにいこう。', back: "Let's go together." }
+        { front: '一緒に行こう。', reading: 'いっしょにいこう。', back: "Let's go together." },
+        { front: '早く寝ろ！', reading: 'はやくねろ！', back: 'Go to bed, now!' },
+        { front: '嘘をつくな！', reading: 'うそをつくな！', back: "Don't lie!" }
       ]
     },
     {
+      key: 'casual.09',
       kind: 'grammar',
       title: 'って — casual quotes and topics',
       body: `って is the swiss-army particle of spoken Japanese, replacing longer patterns:
@@ -892,14 +1030,20 @@ Volitional ("let's"): ます-stem-based polite ましょう → plain form:
 2. Casual topic (= は/というのは): 田中さんって誰？ — "Who's Tanaka?"; 明日って何曜日？ — "What day is tomorrow, again?"
 3. ってこと (= ということ): "meaning… / so that means…": 行かないってこと？ — "So you mean you're not going?"
 
-If a line has って, first try reading it as "says/said" — then as "as for".`,
+If a line has って, first try reading it as "says/said" — then as "as for".
+
+んだって passes on something you heard: "I heard that…, apparently…". It is the casual version of んだそうだ: 明日、休みなんだって — "Apparently tomorrow's a day off."`,
       cards: [
         { front: '明日って何曜日？', reading: 'あしたってなんようび？', back: 'What day is it tomorrow, again?' },
         { front: '田中さんって誰？', reading: 'たなかさんってだれ？', back: "Who's Tanaka?" },
-        { front: '好きだって言った。', reading: 'すきだっていった。', back: '(She) said she likes you.' }
+        { front: '好きだって言った。', reading: 'すきだっていった。', back: '(She) said she likes you.' },
+        { front: '明日は雨だって。', reading: 'あしたはあめだって。', back: "They say it'll rain tomorrow." },
+        { front: '猫って可愛いよね。', reading: 'ねこってかわいいよね。', back: "Cats are cute, aren't they?" },
+        { front: '田中さん、来月結婚するんだって。', reading: 'たなかさん、らいげつけっこんするんだって。', back: "I heard Tanaka's getting married next month." }
       ]
     },
     {
+      key: 'casual.10',
       kind: 'grammar',
       title: 'Trailing けど / のに — unfinished sentences',
       body: `Japanese dialogue loves ending mid-sentence; the trailing particle carries the unsaid part:
@@ -912,10 +1056,13 @@ The 〜んだ／〜の before けど (行きたい**んだ**けど) adds the exp
       cards: [
         { front: '行きたいんだけど…。', reading: 'いきたいんだけど…。', back: 'I want to go, but… (trailing)' },
         { front: '言ったのに…。', reading: 'いったのに…。', back: 'But I told you…' },
-        { front: '時間もないし…。', reading: 'じかんもないし…。', back: "We don't have time, and… (trailing)" }
+        { front: '時間もないし…。', reading: 'じかんもないし…。', back: "We don't have time, and… (trailing)" },
+        { front: 'ちょっと聞きたいんだけど…。', reading: 'ちょっとききたいんだけど…。', back: "There's something I wanted to ask… (soft opener)" },
+        { front: 'もっと早く来ればよかったのに…。', reading: 'もっとはやくくればよかったのに…。', back: 'You should have come earlier…' }
       ]
     },
     {
+      key: 'casual.11',
       kind: 'vocab',
       title: 'Slang & interjections',
       cards: [
@@ -938,16 +1085,16 @@ The 〜んだ／〜の before けど (行きたい**んだ**けど) adds the exp
   ]
 }
 
-const N4_COURSE: SeedCourse = {
+const N4_COURSE: SeedCourseDef = {
   title: 'JLPT N4 Grammar',
   description:
     'The next tier after N5 Foundations: the patterns that unlock most real manga and ' +
     'VN sentences — relative clauses, んだ, potential, conditionals, passive/causative, ' +
     'hearsay and appearance, giving and receiving.',
   level: 'N4',
-  difficulty: 7,
   lessons: [
     {
+      key: 'n4.01',
       kind: 'grammar',
       title: 'Explanatory ～んです / ～んだ',
       body: `んです (casual んだ, written のだ) wraps a sentence to mark it as an EXPLANATION — of a situation, or a request for one. Dialogue is saturated with it.
@@ -966,10 +1113,13 @@ In casual speech it often shows up as just の: 行くの？／行くんだ.`,
       cards: [
         { front: 'どうしたんですか。', reading: 'どうしたんですか。', back: "What's wrong? (asking for an explanation)" },
         { front: '頭が痛いんです。', reading: 'あたまがいたいんです。', back: '(It’s that) I have a headache.' },
-        { front: '明日、試験があるんだ。', reading: 'あした、しけんがあるんだ。', back: '(The thing is,) I have an exam tomorrow.' }
+        { front: '明日、試験があるんだ。', reading: 'あした、しけんがあるんだ。', back: '(The thing is,) I have an exam tomorrow.' },
+        { front: 'どうして遅れたんですか。', reading: 'どうしておくれたんですか。', back: 'Why were you late?' },
+        { front: '電車が止まったんです。', reading: 'でんしゃがとまったんです。', back: 'The thing is, the train stopped.' }
       ]
     },
     {
+      key: 'n4.02',
       kind: 'grammar',
       title: 'Relative clauses — sentences that modify nouns',
       body: `Japanese has no "who/that/which". Instead, the WHOLE modifying clause goes directly in front of the noun, in plain form:
@@ -984,10 +1134,13 @@ This is arguably THE most important structure for reading: long Japanese sentenc
       cards: [
         { front: '母が作った料理は美味しい。', reading: 'ははがつくったりょうりはおいしい。', back: 'The food my mother makes is delicious.' },
         { front: '眼鏡をかけている人は先生です。', reading: 'めがねをかけているひとはせんせいです。', back: 'The person wearing glasses is the teacher.' },
-        { front: '昨日買った本を読んでいる。', reading: 'きのうかったほんをよんでいる。', back: "I'm reading the book I bought yesterday." }
+        { front: '昨日買った本を読んでいる。', reading: 'きのうかったほんをよんでいる。', back: "I'm reading the book I bought yesterday." },
+        { front: 'あそこで本を読んでいる人は誰ですか。', reading: 'あそこでほんをよんでいるひとはだれですか。', back: 'Who is the person reading a book over there?' },
+        { front: '私が生まれた町は海の近くにある。', reading: 'わたしがうまれたまちはうみのちかくにある。', back: 'The town where I was born is near the sea.' }
       ]
     },
     {
+      key: 'n4.03',
       kind: 'grammar',
       title: 'Potential form — できる・～える・～られる',
       body: `"Can do" has its own conjugation:
@@ -1004,10 +1157,13 @@ The potential verb conjugates like a Group 2 verb: 読めない, 読めた, 読�
       cards: [
         { front: '日本語が読めますか。', reading: 'にほんごがよめますか。', back: 'Can you read Japanese?' },
         { front: '納豆は食べられない。', reading: 'なっとうはたべられない。', back: "I can't eat nattō." },
-        { front: '明日は来られる？', reading: 'あしたはこられる？', back: 'Can you come tomorrow?' }
+        { front: '明日は来られる？', reading: 'あしたはこられる？', back: 'Can you come tomorrow?' },
+        { front: '泳げますか。', reading: 'およげますか。', back: 'Can you swim?' },
+        { front: 'この店ではカードが使えません。', reading: 'このみせではカードがつかえません。', back: "You can't pay by card in this shop." }
       ]
     },
     {
+      key: 'n4.04',
       kind: 'grammar',
       title: '～たり～たりする — doing things like…',
       body: `Lists actions non-exhaustively ("things like X and Y, among others"). Compare と, which lists nouns exhaustively — たり does for verbs what など does for nouns.
@@ -1023,10 +1179,13 @@ Paired opposites make an idiom: 行ったり来たり "back and forth", つけ�
       cards: [
         { front: '週末は映画を見たり、買い物したりします。', reading: 'しゅうまつはえいがをみたり、かいものしたりします。', back: 'On weekends I watch movies, go shopping and such.' },
         { front: '泣いたり笑ったりした。', reading: 'ないたりわらったりした。', back: 'I cried and laughed (by turns).' },
-        { front: '行ったり来たりしている。', reading: 'いったりきたりしている。', back: '(He) keeps going back and forth.' }
+        { front: '行ったり来たりしている。', reading: 'いったりきたりしている。', back: '(He) keeps going back and forth.' },
+        { front: '休みの日は掃除したり、洗濯したりします。', reading: 'やすみのひはそうじしたり、せんたくしたりします。', back: 'On my days off I do things like cleaning and laundry.' },
+        { front: '雨が降ったり止んだりしている。', reading: 'あめがふったりやんだりしている。', back: 'It keeps raining on and off.' }
       ]
     },
     {
+      key: 'n4.05',
       kind: 'grammar',
       title: '～ながら — while doing',
       body: `Two actions by the same person at the same time: ます-stem + ながら. The MAIN action comes last; the ながら clause is the background one.
@@ -1040,10 +1199,13 @@ Only for simultaneous actions by one subject — "while I was out, he called" us
       cards: [
         { front: '音楽を聞きながら勉強する。', reading: 'おんがくをききながらべんきょうする。', back: 'I study while listening to music.' },
         { front: '歩きながら話しましょう。', reading: 'あるきながらはなしましょう。', back: "Let's talk while we walk." },
-        { front: 'テレビを見ながらご飯を食べる。', reading: 'テレビをみながらごはんをたべる。', back: 'I eat while watching TV.' }
+        { front: 'テレビを見ながらご飯を食べる。', reading: 'テレビをみながらごはんをたべる。', back: 'I eat while watching TV.' },
+        { front: 'コーヒーを飲みながら新聞を読む。', reading: 'コーヒーをのみながらしんぶんをよむ。', back: 'I read the newspaper while drinking coffee.' },
+        { front: '働きながら大学に通っている。', reading: 'はたらきながらだいがくにかよっている。', back: "I'm going to university while working." }
       ]
     },
     {
+      key: 'n4.06',
       kind: 'grammar',
       title: 'Conditionals I: ～たら',
       body: `The all-purpose "if / when / after": た-form + ら.
@@ -1061,10 +1223,13 @@ Works with adjectives and nouns too:
       cards: [
         { front: '雨が降ったら、行きません。', reading: 'あめがふったら、いきません。', back: "If it rains, I won't go." },
         { front: '家に帰ったら、電話してね。', reading: 'いえにかえったら、でんわしてね。', back: 'Call me when you get home.' },
-        { front: '安かったら、買います。', reading: 'やすかったら、かいます。', back: "If it's cheap, I'll buy it." }
+        { front: '安かったら、買います。', reading: 'やすかったら、かいます。', back: "If it's cheap, I'll buy it." },
+        { front: '駅に着いたら、連絡してください。', reading: 'えきについたら、れんらくしてください。', back: 'Please contact me when you get to the station.' },
+        { front: '宝くじが当たったら、何をしますか。', reading: 'たからくじがあたったら、なにをしますか。', back: 'What would you do if you won the lottery?' }
       ]
     },
     {
+      key: 'n4.07',
       kind: 'grammar',
       title: 'Conditionals II: ～と and ～ば',
       body: `と — automatic/natural consequence. Dictionary form + と; the result must be something that reliably follows, not a request or decision:
@@ -1082,10 +1247,13 @@ Works with adjectives and nouns too:
       cards: [
         { front: '春になると、桜が咲きます。', reading: 'はるになると、さくらがさきます。', back: 'When spring comes, the cherry blossoms bloom.' },
         { front: 'このボタンを押すと、ドアが開く。', reading: 'このボタンをおすと、ドアがあく。', back: 'If you press this button, the door opens.' },
-        { front: '時間があれば、手伝います。', reading: 'じかんがあれば、てつだいます。', back: "If I have time, I'll help." }
+        { front: '時間があれば、手伝います。', reading: 'じかんがあれば、てつだいます。', back: "If I have time, I'll help." },
+        { front: 'まっすぐ行くと、駅があります。', reading: 'まっすぐいくと、えきがあります。', back: "If you go straight on, you'll come to the station." },
+        { front: '安ければ、買います。', reading: 'やすければ、かいます。', back: "If it's cheap, I'll buy it." }
       ]
     },
     {
+      key: 'n4.08',
       kind: 'grammar',
       title: 'Conditionals III: ～なら — "if that\'s the case"',
       body: `なら takes something the OTHER person said or implied and builds on it: "if we're talking about X / if it's true that X".
@@ -1100,10 +1268,13 @@ Key contrast with たら: 日本に行ったら買う = buy AFTER arriving; 日�
       cards: [
         { front: '日本に行くなら、京都がおすすめです。', reading: 'にほんにいくなら、きょうとがおすすめです。', back: "If you're going to Japan, I recommend Kyoto." },
         { front: '寿司なら、あの店が一番だ。', reading: 'すしなら、あのみせがいちばんだ。', back: "If it's sushi (you want), that place is the best." },
-        { front: '嫌なら、やめてもいいよ。', reading: 'いやなら、やめてもいいよ。', back: "If you don't like it, you can quit." }
+        { front: '嫌なら、やめてもいいよ。', reading: 'いやなら、やめてもいいよ。', back: "If you don't like it, you can quit." },
+        { front: '暇なら、手伝ってくれない？', reading: 'ひまなら、てつだってくれない？', back: "If you're free, could you help me?" },
+        { front: '雨なら、試合は中止です。', reading: 'あめなら、しあいはちゅうしです。', back: 'If it rains, the match is cancelled.' }
       ]
     },
     {
+      key: 'n4.09',
       kind: 'grammar',
       title: 'Giving & receiving: あげる・くれる・もらう',
       body: `Three verbs make the direction of giving or benefit explicit when they are used:
@@ -1121,10 +1292,13 @@ Attached to て-forms they mark who a favor was done for:
       cards: [
         { front: '友達にプレゼントをあげた。', reading: 'ともだちにプレゼントをあげた。', back: 'I gave my friend a present.' },
         { front: '姉が傘を貸してくれた。', reading: 'あねがかさをかしてくれた。', back: 'My (older) sister kindly lent me an umbrella.' },
-        { front: '先生に漢字を教えてもらった。', reading: 'せんせいにかんじをおしえてもらった。', back: 'I had the teacher teach me kanji.' }
+        { front: '先生に漢字を教えてもらった。', reading: 'せんせいにかんじをおしえてもらった。', back: 'I had the teacher teach me kanji.' },
+        { front: '父が時計を買ってくれた。', reading: 'ちちがとけいをかってくれた。', back: 'My father bought me a watch.' },
+        { front: '友達に誕生日プレゼントをもらった。', reading: 'ともだちにたんじょうびプレゼントをもらった。', back: 'I got a birthday present from a friend.' }
       ]
     },
     {
+      key: 'n4.10',
       kind: 'grammar',
       title: '～ておく・～てある・～てみる',
       body: `Three て-form helpers you meet constantly:
@@ -1137,10 +1311,13 @@ All three conjugate on the final verb: 買っておいた, 書いてあった, �
       cards: [
         { front: 'ホテルを予約しておいた。', reading: 'ホテルをよやくしておいた。', back: 'I booked a hotel in advance.' },
         { front: '窓が開けてある。', reading: 'まどがあけてある。', back: 'The window has been (left) opened.' },
-        { front: '一度食べてみてください。', reading: 'いちどたべてみてください。', back: 'Please try eating it once.' }
+        { front: '一度食べてみてください。', reading: 'いちどたべてみてください。', back: 'Please try eating it once.' },
+        { front: '冷蔵庫にビールが冷やしてある。', reading: 'れいぞうこにビールがひやしてある。', back: "There's beer chilling in the fridge." },
+        { front: 'この服を着てみてもいいですか。', reading: 'このふくをきてみてもいいですか。', back: 'May I try on these clothes?' }
       ]
     },
     {
+      key: 'n4.11',
       kind: 'grammar',
       title: 'Passive ～れる／～られる',
       body: `Formation:
@@ -1158,10 +1335,13 @@ Dialogue uses 言われた ("was told / they said to me") constantly.`,
       cards: [
         { front: '先生に褒められた。', reading: 'せんせいにほめられた。', back: 'I was praised by the teacher.' },
         { front: '雨に降られて、風邪をひいた。', reading: 'あめにふられて、かぜをひいた。', back: 'I got rained on and caught a cold.' },
-        { front: '財布を盗まれた！', reading: 'さいふをぬすまれた！', back: 'My wallet got stolen!' }
+        { front: '財布を盗まれた！', reading: 'さいふをぬすまれた！', back: 'My wallet got stolen!' },
+        { front: '電車で足を踏まれた。', reading: 'でんしゃであしをふまれた。', back: 'Someone stepped on my foot on the train.' },
+        { front: 'この寺は八百年前に建てられた。', reading: 'このてらははっぴゃくねんまえにたてられた。', back: 'This temple was built 800 years ago.' }
       ]
     },
     {
+      key: 'n4.12',
       kind: 'grammar',
       title: 'Causative ～せる／～させる',
       body: `"Make someone do" or "let someone do":
@@ -1179,10 +1359,13 @@ Causative + passive = "was made to do": 飲まされた "I was made to drink".`,
       cards: [
         { front: '母は弟に野菜を食べさせた。', reading: 'はははおとうとにやさいをたべさせた。', back: 'Mom made my little brother eat vegetables.' },
         { front: '子供を公園で遊ばせる。', reading: 'こどもをこうえんであそばせる。', back: 'I let the kids play in the park.' },
-        { front: '笑わせないでよ。', reading: 'わらわせないでよ。', back: "Don't make me laugh!" }
+        { front: '笑わせないでよ。', reading: 'わらわせないでよ。', back: "Don't make me laugh!" },
+        { front: '先生は学生に作文を書かせた。', reading: 'せんせいはがくせいにさくぶんをかかせた。', back: 'The teacher had the students write an essay.' },
+        { front: '少し休ませてください。', reading: 'すこしやすませてください。', back: 'Please let me rest for a bit.' }
       ]
     },
     {
+      key: 'n4.13',
       kind: 'grammar',
       title: 'The two ～そう — "looks like" vs "I heard"',
       body: `Same syllable, two different grammars — telling them apart is a rite of passage:
@@ -1200,10 +1383,13 @@ Rule of thumb: stem+そう = your eyes; plain+そう = your ears. Before a noun 
       cards: [
         { front: '雨が降りそうだ。', reading: 'あめがふりそうだ。', back: "It looks like it's about to rain." },
         { front: 'このケーキ、美味しそう！', reading: 'このケーキ、おいしそう！', back: 'This cake looks delicious!' },
-        { front: '田中さんは来ないそうだ。', reading: 'たなかさんはこないそうだ。', back: 'I hear Tanaka isn’t coming.' }
+        { front: '田中さんは来ないそうだ。', reading: 'たなかさんはこないそうだ。', back: 'I hear Tanaka isn’t coming.' },
+        { front: '彼は忙しそうだ。', reading: 'かれはいそがしそうだ。', back: 'He looks busy.' },
+        { front: 'ニュースによると、明日は寒くなるそうだ。', reading: 'ニュースによると、あしたはさむくなるそうだ。', back: "According to the news, it's going to get cold tomorrow." }
       ]
     },
     {
+      key: 'n4.14',
       kind: 'grammar',
       title: '～らしい・～みたい・～よう(だ)',
       body: `Three ways to hedge, from evidence-based to impressionistic:
@@ -1216,10 +1402,13 @@ For reading: みたい dominates dialogue, ようだ dominates narration.`,
       cards: [
         { front: '彼は学生らしい。', reading: 'かれはがくせいらしい。', back: "Apparently he's a student." },
         { front: '夢みたいだ。', reading: 'ゆめみたいだ。', back: "It's like a dream." },
-        { front: '誰もいないようだ。', reading: 'だれもいないようだ。', back: 'It seems nobody is here.' }
+        { front: '誰もいないようだ。', reading: 'だれもいないようだ。', back: 'It seems nobody is here.' },
+        { front: '外は雨が降っているみたいだ。', reading: 'そとはあめがふっているみたいだ。', back: "It looks like it's raining outside." },
+        { front: '彼は本当に怒っているようだ。', reading: 'かれはほんとうにおこっているようだ。', back: 'He seems to be really angry.' }
       ]
     },
     {
+      key: 'n4.15',
       kind: 'grammar',
       title: '～かもしれない・～はず(だ)',
       body: `・かもしれない — "might / maybe" (weak, ~50% or less). Plain form + かもしれない; casual clip: かも.
@@ -1233,10 +1422,13 @@ Both attach to plain forms; nouns take の before はず (学生のはず) and n
       cards: [
         { front: '明日は雪かもしれない。', reading: 'あしたはゆきかもしれない。', back: 'It might snow tomorrow.' },
         { front: 'もう着いているはずだ。', reading: 'もうついているはずだ。', back: 'They should have arrived by now.' },
-        { front: 'そんなはずがない！', reading: 'そんなはずがない！', back: "That can't be! / No way!" }
+        { front: 'そんなはずがない！', reading: 'そんなはずがない！', back: "That can't be! / No way!" },
+        { front: 'バスが来ないから、遅れるかもしれない。', reading: 'バスがこないから、おくれるかもしれない。', back: "The bus isn't coming, so I might be late." },
+        { front: '鍵はかばんの中にあるはずです。', reading: 'かぎはかばんのなかにあるはずです。', back: 'The key should be in the bag.' }
       ]
     },
     {
+      key: 'n4.16',
       kind: 'grammar',
       title: 'Volitional + と思う・つもり — plans and intentions',
       body: `The plain volitional (行こう, 食べよう — from the casual-speech course) combines with と思う for soft intentions:
@@ -1248,14 +1440,20 @@ Both attach to plain forms; nouns take の before はず (学生のはず) and n
 夏休みに国へ帰るつもりだ。 — "I intend to go home over summer break."
 Negative: 行かないつもり ("plan not to") vs 行くつもりはない ("have no intention of going" — stronger).
 
-Volitional + かな muses aloud: 何を食べようかな — "what'll I eat, I wonder…" — inner-monologue fuel in manga.`,
+Volitional + かな muses aloud: 何を食べようかな — "what'll I eat, I wonder…" — inner-monologue fuel in manga.
+
+In the past, つもりだった means "I meant to / I intended to", usually for a plan that did not happen: 行くつもりだったけど、行けなかった — "I meant to go, but I couldn't."`,
       cards: [
         { front: '留学しようと思っています。', reading: 'りゅうがくしようとおもっています。', back: "I'm thinking of studying abroad." },
         { front: '夏休みに国へ帰るつもりだ。', reading: 'なつやすみにくにへかえるつもりだ。', back: 'I plan to go back home for summer break.' },
-        { front: '何を食べようかな。', reading: 'なにをたべようかな。', back: 'What shall I eat, I wonder…' }
+        { front: '何を食べようかな。', reading: 'なにをたべようかな。', back: 'What shall I eat, I wonder…' },
+        { front: '来年、車を買おうと思う。', reading: 'らいねん、くるまをかおうとおもう。', back: "I'm thinking of buying a car next year." },
+        { front: '今夜は早く寝るつもりです。', reading: 'こんやははやくねるつもりです。', back: 'I intend to go to bed early tonight.' },
+        { front: '電話するつもりだったけど、忘れてしまった。', reading: 'でんわするつもりだったけど、わすれてしまった。', back: 'I meant to call, but I forgot.' }
       ]
     },
     {
+      key: 'n4.17',
       kind: 'grammar',
       title: 'Purpose: ～ために・～ように',
       body: `・ために — deliberate purpose, controllable action (same subject): 家族のために働く "work for my family"; 家を買うために貯金している "saving to buy a house". After nouns: Nの ために.
@@ -1264,14 +1462,20 @@ Volitional + かな muses aloud: 何を食べようかな — "what'll I eat, I 
 　日本語が話せるように、毎日練習する。 — "I practice daily so that I can speak Japanese."
 　忘れないように、メモした。 — "I noted it down so I wouldn't forget."
 
-Test: if the goal verb is potential (～える) or negative (～ない), it's ように; a plain action you'll do yourself → ために.`,
+Test: if the goal verb is potential (～える) or negative (～ない), it's ように; a plain action you'll do yourself → ために.
+
+In formal notices, ～ことのないように means "so that (it) never happens": 二度とこのようなことのないよう注意いたします — "We will take care that this never happens again."`,
       cards: [
         { front: '家族のために働いている。', reading: 'かぞくのためにはたらいている。', back: "I work for my family's sake." },
         { front: '日本語が話せるように、毎日練習する。', reading: 'にほんごがはなせるように、まいにちれんしゅうする。', back: 'I practice every day so that I can speak Japanese.' },
-        { front: '忘れないように、メモした。', reading: 'わすれないように、メモした。', back: "I made a note so I wouldn't forget." }
+        { front: '忘れないように、メモした。', reading: 'わすれないように、メモした。', back: "I made a note so I wouldn't forget." },
+        { front: '健康のために、毎朝走っている。', reading: 'けんこうのために、まいあさはしっている。', back: 'I run every morning for my health.' },
+        { front: '後ろの人にも聞こえるように、大きな声で話した。', reading: 'うしろのひとにもきこえるように、おおきなこえではなした。', back: 'I spoke loudly so that the people at the back could hear too.' },
+        { front: '忘れ物をすることのないように、気をつけてください。', reading: 'わすれものをすることのないように、きをつけてください。', back: 'Please take care not to leave anything behind.' }
       ]
     },
     {
+      key: 'n4.18',
       kind: 'grammar',
       title: '～やすい・～にくい・～すぎる',
       body: `Three suffixes that glue onto the ます-stem:
@@ -1286,10 +1490,13 @@ Casual clipped exclamation: やばすぎ！ 高すぎ！ — the る drops.`,
       cards: [
         { front: 'この本は読みやすい。', reading: 'このほんはよみやすい。', back: 'This book is easy to read.' },
         { front: 'この漢字は覚えにくい。', reading: 'このかんじはおぼえにくい。', back: 'This kanji is hard to memorize.' },
-        { front: '食べすぎた。お腹が痛い。', reading: 'たべすぎた。おなかがいたい。', back: 'I ate too much. My stomach hurts.' }
+        { front: '食べすぎた。お腹が痛い。', reading: 'たべすぎた。おなかがいたい。', back: 'I ate too much. My stomach hurts.' },
+        { front: 'このペンは書きやすい。', reading: 'このペンはかきやすい。', back: 'This pen is easy to write with.' },
+        { front: 'この部屋は暑すぎる。', reading: 'このへやはあつすぎる。', back: 'This room is too hot.' }
       ]
     },
     {
+      key: 'n4.19',
       kind: 'grammar',
       title: 'こと patterns: ことができる・たことがある・ことにする',
       body: `こと ("thing/fact") nominalizes verbs into several set patterns:
@@ -1303,10 +1510,13 @@ Casual clipped exclamation: やばすぎ！ 高すぎ！ — the る drops.`,
       cards: [
         { front: '日本に行ったことがありますか。', reading: 'にほんにいったことがありますか。', back: 'Have you ever been to Japan?' },
         { front: '毎日走ることにした。', reading: 'まいにちはしることにした。', back: 'I decided to run every day.' },
-        { front: '東京に引っ越すことになった。', reading: 'とうきょうにひっこすことになった。', back: "It's been decided that I'm moving to Tokyo." }
+        { front: '東京に引っ越すことになった。', reading: 'とうきょうにひっこすことになった。', back: "It's been decided that I'm moving to Tokyo." },
+        { front: '彼女はピアノを弾くことができる。', reading: 'かのじょはピアノをひくことができる。', back: 'She can play the piano.' },
+        { front: '一度富士山に登ったことがある。', reading: 'いちどふじさんにのぼったことがある。', back: 'I have climbed Mount Fuji once.' }
       ]
     },
     {
+      key: 'n4.20',
       kind: 'grammar',
       title: 'Comparisons: ～より・～のほうが・～ほど～ない',
       body: `・XよりYのほうが… — "Y more than X": 犬より猫のほうが好きだ "I like cats more than dogs". Either half can drop when obvious: こっちのほうがいい "this one's better".
@@ -1319,185 +1529,195 @@ Casual clipped exclamation: やばすぎ！ 高すぎ！ — the る drops.`,
       cards: [
         { front: '犬より猫のほうが好きだ。', reading: 'いぬよりねこのほうがすきだ。', back: 'I like cats more than dogs.' },
         { front: '今日は昨日ほど暑くない。', reading: 'きょうはきのうほどあつくない。', back: "Today isn't as hot as yesterday." },
-        { front: '世界で一番強い。', reading: 'せかいでいちばんつよい。', back: 'The strongest in the world.' }
+        { front: '世界で一番強い。', reading: 'せかいでいちばんつよい。', back: 'The strongest in the world.' },
+        { front: '電車のほうがバスより速い。', reading: 'でんしゃのほうがバスよりはやい。', back: 'The train is faster than the bus.' },
+        { front: 'この町は東京ほど便利じゃない。', reading: 'このまちはとうきょうほどべんりじゃない。', back: "This town isn't as convenient as Tokyo." }
       ]
     }
   ]
 }
 
-const N4_VOCAB_COURSE: SeedCourse = {
+const N4_VOCAB_COURSE: SeedCourseDef = {
   title: 'JLPT N4 Vocabulary',
   description:
-    'Core N4 words grouped by theme — the everyday vocabulary that carries most ' +
-    'slice-of-life manga and VN scenes. Best studied alongside the N4 Grammar course.',
+    'A starter set of 111 core N4 words grouped by theme — the everyday vocabulary that carries ' +
+    'most slice-of-life manga and VN scenes. N4 needs about 1,500 words in all; the core word ' +
+    'decks the Path asks you to build supply the rest.',
   level: 'N4',
-  difficulty: 8,
   lessons: [
     {
+      key: 'n4vocab.01',
       kind: 'vocab',
       title: 'Time & frequency',
       cards: [
-        { front: 'いつも', back: 'always; usually', pos: 'adverb' },
-        { front: 'たいてい', back: 'usually; mostly', pos: 'adverb' },
-        { front: 'ときどき', reading: 'ときどき', back: 'sometimes', pos: 'adverb' },
-        { front: 'たまに', back: 'occasionally', pos: 'adverb' },
-        { front: 'ぜんぜん', back: 'not at all (with negative)', pos: 'adverb' },
-        { front: 'もうすぐ', back: 'soon; any time now', pos: 'adverb' },
-        { front: 'さっき', back: 'a moment ago', pos: 'adverb' },
-        { front: 'あとで', back: 'later', pos: 'adverb' },
-        { front: '急に', reading: 'きゅうに', back: 'suddenly', pos: 'adverb' },
-        { front: 'やっと', back: 'finally; at last', pos: 'adverb' },
-        { front: 'ずっと', back: 'the whole time; by far', pos: 'adverb' },
-        { front: '最近', reading: 'さいきん', back: 'recently', pos: 'noun/adverb' },
-        { front: 'このごろ', back: 'these days', pos: 'adverb' },
-        { front: '将来', reading: 'しょうらい', back: 'the future', pos: 'noun' },
-        { front: '途中', reading: 'とちゅう', back: 'on the way; midway', pos: 'noun' },
-        { front: '間に合う', reading: 'まにあう', back: 'to be on time; to make it', pos: 'verb (u)' }
+        { front: 'いつも', back: 'always; usually', pos: 'adverb', exampleJp: '朝はいつもコーヒーを飲みます。', exampleReading: 'あさはいつもコーヒーをのみます。', exampleEn: 'I always drink coffee in the morning.' },
+        { front: 'たいてい', back: 'usually; mostly', pos: 'adverb', exampleJp: '週末はたいてい家にいます。', exampleReading: 'しゅうまつはたいていいえにいます。', exampleEn: "I'm usually at home at weekends." },
+        { front: 'ときどき', reading: 'ときどき', back: 'sometimes', pos: 'adverb', exampleJp: 'ときどき友達と映画を見ます。', exampleReading: 'ときどきともだちとえいがをみます。', exampleEn: 'I sometimes watch movies with friends.' },
+        { front: 'たまに', back: 'occasionally', pos: 'adverb', exampleJp: 'たまに外で晩ご飯を食べます。', exampleReading: 'たまにそとでばんごはんをたべます。', exampleEn: 'Occasionally I eat dinner out.' },
+        { front: 'ぜんぜん', back: 'not at all (with negative)', pos: 'adverb', exampleJp: 'この映画はぜんぜん面白くなかった。', exampleReading: 'このえいがはぜんぜんおもしろくなかった。', exampleEn: "This movie wasn't interesting at all." },
+        { front: 'もうすぐ', back: 'soon; any time now', pos: 'adverb', exampleJp: 'もうすぐ夏休みです。', exampleReading: 'もうすぐなつやすみです。', exampleEn: 'The summer holidays are coming soon.' },
+        { front: 'さっき', back: 'a moment ago', pos: 'adverb', exampleJp: 'さっき田中さんから電話がありました。', exampleReading: 'さっきたなかさんからでんわがありました。', exampleEn: 'Tanaka called a moment ago.' },
+        { front: 'あとで', back: 'later', pos: 'adverb', exampleJp: 'あとで連絡します。', exampleReading: 'あとでれんらくします。', exampleEn: "I'll get in touch later." },
+        { front: '急に', reading: 'きゅうに', back: 'suddenly', pos: 'adverb', exampleJp: '急に雨が降ってきた。', exampleReading: 'きゅうにあめがふってきた。', exampleEn: 'It suddenly started raining.' },
+        { front: 'やっと', back: 'finally; at last', pos: 'adverb', exampleJp: 'やっと宿題が終わった。', exampleReading: 'やっとしゅくだいがおわった。', exampleEn: 'I finally finished my homework.' },
+        { front: 'ずっと', back: 'the whole time; by far', pos: 'adverb', exampleJp: '昨日はずっと家にいました。', exampleReading: 'きのうはずっといえにいました。', exampleEn: 'I was at home the whole day yesterday.' },
+        { front: '最近', reading: 'さいきん', back: 'recently', pos: 'noun/adverb', exampleJp: '最近、よく眠れません。', exampleReading: 'さいきん、よくねむれません。', exampleEn: "I haven't been sleeping well recently." },
+        { front: 'このごろ', back: 'these days', pos: 'adverb', exampleJp: 'このごろ、寒くなりましたね。', exampleReading: 'このごろ、さむくなりましたね。', exampleEn: "It's got cold these days, hasn't it?" },
+        { front: '将来', reading: 'しょうらい', back: 'the future', pos: 'noun', exampleJp: '将来、先生になりたいです。', exampleReading: 'しょうらい、せんせいになりたいです。', exampleEn: 'In the future, I want to become a teacher.' },
+        { front: '途中', reading: 'とちゅう', back: 'on the way; midway', pos: 'noun', exampleJp: '学校へ行く途中で友達に会った。', exampleReading: 'がっこうへいくとちゅうでともだちにあった。', exampleEn: 'I met a friend on the way to school.' },
+        { front: '間に合う', reading: 'まにあう', back: 'to be on time; to make it', pos: 'verb (u)', exampleJp: '走ったので、電車に間に合った。', exampleReading: 'はしったので、でんしゃにまにあった。', exampleEn: 'I ran, so I made the train.' }
       ]
     },
     {
+      key: 'n4vocab.02',
       kind: 'vocab',
       title: 'Feelings & reactions',
       cards: [
-        { front: '嬉しい', reading: 'うれしい', back: 'happy; glad', pos: 'i-adjective' },
-        { front: '悲しい', reading: 'かなしい', back: 'sad', pos: 'i-adjective' },
-        { front: '寂しい', reading: 'さびしい', back: 'lonely', pos: 'i-adjective' },
-        { front: '恥ずかしい', reading: 'はずかしい', back: 'embarrassed; embarrassing', pos: 'i-adjective' },
-        { front: '怖い', reading: 'こわい', back: 'scary; scared', pos: 'i-adjective' },
-        { front: '眠い', reading: 'ねむい', back: 'sleepy', pos: 'i-adjective' },
-        { front: '疲れる', reading: 'つかれる', back: 'to get tired', pos: 'verb (ru)' },
-        { front: '心配', reading: 'しんぱい', back: 'worry; concern', pos: 'na-adjective/noun' },
-        { front: '安心', reading: 'あんしん', back: 'relief; peace of mind', pos: 'na-adjective/noun' },
-        { front: '気分', reading: 'きぶん', back: 'mood; feeling', pos: 'noun' },
-        { front: '気持ち', reading: 'きもち', back: 'feeling; sensation', pos: 'noun' },
-        { front: '楽しみ', reading: 'たのしみ', back: 'something to look forward to', pos: 'noun', notes: '楽しみにしている = "I\'m looking forward to it".' },
-        { front: 'びっくりする', back: 'to be surprised', pos: 'verb (irregular)' },
-        { front: '怒る', reading: 'おこる', back: 'to get angry', pos: 'verb (u)' },
-        { front: '笑う', reading: 'わらう', back: 'to laugh; to smile', pos: 'verb (u)' },
-        { front: '泣く', reading: 'なく', back: 'to cry', pos: 'verb (u)' }
+        { front: '嬉しい', reading: 'うれしい', back: 'happy; glad', pos: 'i-adjective', exampleJp: '手紙をもらって、とても嬉しかった。', exampleReading: 'てがみをもらって、とてもうれしかった。', exampleEn: 'I was really happy to get the letter.' },
+        { front: '悲しい', reading: 'かなしい', back: 'sad', pos: 'i-adjective', exampleJp: 'その映画は悲しい話です。', exampleReading: 'そのえいがはかなしいはなしです。', exampleEn: 'That movie is a sad story.' },
+        { front: '寂しい', reading: 'さびしい', back: 'lonely', pos: 'i-adjective', exampleJp: '友達が引っ越して、寂しいです。', exampleReading: 'ともだちがひっこして、さびしいです。', exampleEn: 'My friend moved away, and I feel lonely.' },
+        { front: '恥ずかしい', reading: 'はずかしい', back: 'embarrassed; embarrassing', pos: 'i-adjective', exampleJp: '人の前で話すのは恥ずかしい。', exampleReading: 'ひとのまえではなすのははずかしい。', exampleEn: 'Speaking in front of people is embarrassing.' },
+        { front: '怖い', reading: 'こわい', back: 'scary; scared', pos: 'i-adjective', exampleJp: '夜の森は怖いです。', exampleReading: 'よるのもりはこわいです。', exampleEn: 'The forest at night is scary.' },
+        { front: '眠い', reading: 'ねむい', back: 'sleepy', pos: 'i-adjective', exampleJp: '昨日遅く寝たので、眠いです。', exampleReading: 'きのうおそくねたので、ねむいです。', exampleEn: "I went to bed late last night, so I'm sleepy." },
+        { front: '疲れる', reading: 'つかれる', back: 'to get tired', pos: 'verb (ru)', exampleJp: 'たくさん歩いて、疲れました。', exampleReading: 'たくさんあるいて、つかれました。', exampleEn: 'I walked a lot and got tired.' },
+        { front: '心配', reading: 'しんぱい', back: 'worry; concern', pos: 'na-adjective/noun', exampleJp: '母はいつも私のことを心配しています。', exampleReading: 'はははいつもわたしのことをしんぱいしています。', exampleEn: 'My mother is always worried about me.' },
+        { front: '安心', reading: 'あんしん', back: 'relief; peace of mind', pos: 'na-adjective/noun', exampleJp: '無事だと聞いて、安心しました。', exampleReading: 'ぶじだときいて、あんしんしました。', exampleEn: 'I was relieved to hear you were safe.' },
+        { front: '気分', reading: 'きぶん', back: 'mood; feeling', pos: 'noun', exampleJp: '今日は気分がいいです。', exampleReading: 'きょうはきぶんがいいです。', exampleEn: "I'm in a good mood today." },
+        { front: '気持ち', reading: 'きもち', back: 'feeling; sensation', pos: 'noun', exampleJp: '温泉に入ると、気持ちがいい。', exampleReading: 'おんせんにはいると、きもちがいい。', exampleEn: 'Getting into a hot spring feels good.' },
+        { front: '楽しみ', reading: 'たのしみ', back: 'something to look forward to', pos: 'noun', notes: '楽しみにしている = "I\'m looking forward to it".', exampleJp: '来週の旅行が楽しみです。', exampleReading: 'らいしゅうのりょこうがたのしみです。', exampleEn: "I'm looking forward to next week's trip." },
+        { front: 'びっくりする', back: 'to be surprised', pos: 'verb (irregular)', exampleJp: '急に大きな音がして、びっくりした。', exampleReading: 'きゅうにおおきなおとがして、びっくりした。', exampleEn: 'There was a sudden loud noise, and I jumped.' },
+        { front: '怒る', reading: 'おこる', back: 'to get angry', pos: 'verb (u)', exampleJp: '遅れたので、先生が怒った。', exampleReading: 'おくれたので、せんせいがおこった。', exampleEn: 'I was late, so the teacher got angry.' },
+        { front: '笑う', reading: 'わらう', back: 'to laugh; to smile', pos: 'verb (u)', exampleJp: '彼の話を聞いて、みんなが笑った。', exampleReading: 'かれのはなしをきいて、みんながわらった。', exampleEn: 'Everyone laughed when they heard his story.' },
+        { front: '泣く', reading: 'なく', back: 'to cry', pos: 'verb (u)', exampleJp: '赤ちゃんが泣いています。', exampleReading: 'あかちゃんがないています。', exampleEn: 'The baby is crying.' }
       ]
     },
     {
+      key: 'n4vocab.03',
       kind: 'vocab',
       title: 'People & communication',
       cards: [
-        { front: '挨拶', reading: 'あいさつ', back: 'greeting', pos: 'noun' },
-        { front: '返事', reading: 'へんじ', back: 'reply; answer', pos: 'noun' },
-        { front: '連絡', reading: 'れんらく', back: 'contact; getting in touch', pos: 'noun' },
-        { front: '相談', reading: 'そうだん', back: 'consultation; talking something over', pos: 'noun' },
-        { front: '約束', reading: 'やくそく', back: 'promise; appointment', pos: 'noun' },
-        { front: 'けんか', back: 'fight; quarrel', pos: 'noun' },
-        { front: 'お礼', reading: 'おれい', back: 'thanks; token of gratitude', pos: 'noun' },
-        { front: '失礼', reading: 'しつれい', back: 'rudeness; excuse me', pos: 'na-adjective/noun', notes: '失礼します = "pardon the intrusion".' },
-        { front: '丁寧', reading: 'ていねい', back: 'polite; careful', pos: 'na-adjective' },
-        { front: '客', reading: 'きゃく', back: 'guest; customer', pos: 'noun', notes: 'Usually お客さん／お客様.' },
-        { front: '理由', reading: 'りゆう', back: 'reason', pos: 'noun' },
-        { front: '意見', reading: 'いけん', back: 'opinion', pos: 'noun' },
-        { front: '興味', reading: 'きょうみ', back: 'interest (in something)', pos: 'noun', notes: '～に興味がある.' },
-        { front: '嘘をつく', reading: 'うそをつく', back: 'to tell a lie', pos: 'expression' },
-        { front: '誘う', reading: 'さそう', back: 'to invite', pos: 'verb (u)' },
-        { front: '紹介する', reading: 'しょうかいする', back: 'to introduce', pos: 'verb (irregular)' }
+        { front: '挨拶', reading: 'あいさつ', back: 'greeting', pos: 'noun', exampleJp: '朝、近所の人に挨拶をします。', exampleReading: 'あさ、きんじょのひとにあいさつをします。', exampleEn: 'I greet my neighbours in the morning.' },
+        { front: '返事', reading: 'へんじ', back: 'reply; answer', pos: 'noun', exampleJp: 'メールの返事がまだ来ません。', exampleReading: 'メールのへんじがまだきません。', exampleEn: "I still haven't had a reply to my email." },
+        { front: '連絡', reading: 'れんらく', back: 'contact; getting in touch', pos: 'noun', exampleJp: '着いたら連絡してください。', exampleReading: 'ついたられんらくしてください。', exampleEn: 'Please get in touch when you arrive.' },
+        { front: '相談', reading: 'そうだん', back: 'consultation; talking something over', pos: 'noun', exampleJp: '先生に将来のことを相談しました。', exampleReading: 'せんせいにしょうらいのことをそうだんしました。', exampleEn: 'I talked with my teacher about my future.' },
+        { front: '約束', reading: 'やくそく', back: 'promise; appointment', pos: 'noun', exampleJp: '友達と三時に会う約束をした。', exampleReading: 'ともだちとさんじにあうやくそくをした。', exampleEn: 'I arranged to meet a friend at three.' },
+        { front: 'けんか', back: 'fight; quarrel', pos: 'noun', exampleJp: '弟とけんかをしてしまった。', exampleReading: 'おとうととけんかをしてしまった。', exampleEn: 'I ended up fighting with my younger brother.' },
+        { front: 'お礼', reading: 'おれい', back: 'thanks; token of gratitude', pos: 'noun', exampleJp: '手伝ってくれたお礼に、ケーキを買った。', exampleReading: 'てつだってくれたおれいに、ケーキをかった。', exampleEn: 'I bought a cake to say thanks for the help.' },
+        { front: '失礼', reading: 'しつれい', back: 'rudeness; excuse me', pos: 'na-adjective/noun', notes: '失礼します = "pardon the intrusion".', exampleJp: '失礼ですが、お名前は？', exampleReading: 'しつれいですが、おなまえは？', exampleEn: 'Excuse me, but may I have your name?' },
+        { front: '丁寧', reading: 'ていねい', back: 'polite; careful', pos: 'na-adjective', exampleJp: '先生は丁寧に説明してくれた。', exampleReading: 'せんせいはていねいにせつめいしてくれた。', exampleEn: 'The teacher explained it carefully.' },
+        { front: '客', reading: 'きゃく', back: 'guest; customer', pos: 'noun', notes: 'Usually お客さん／お客様.', exampleJp: '店にはたくさんの客がいた。', exampleReading: 'みせにはたくさんのきゃくがいた。', exampleEn: 'There were lots of customers in the shop.' },
+        { front: '理由', reading: 'りゆう', back: 'reason', pos: 'noun', exampleJp: '遅れた理由を教えてください。', exampleReading: 'おくれたりゆうをおしえてください。', exampleEn: 'Please tell me why you were late.' },
+        { front: '意見', reading: 'いけん', back: 'opinion', pos: 'noun', exampleJp: '皆さんの意見を聞かせてください。', exampleReading: 'みなさんのいけんをきかせてください。', exampleEn: "Please let me hear everyone's opinions." },
+        { front: '興味', reading: 'きょうみ', back: 'interest (in something)', pos: 'noun', notes: '～に興味がある.', exampleJp: '古い映画に興味があります。', exampleReading: 'ふるいえいがにきょうみがあります。', exampleEn: "I'm interested in old movies." },
+        { front: '嘘をつく', reading: 'うそをつく', back: 'to tell a lie', pos: 'expression', exampleJp: '子供の時、母に嘘をついた。', exampleReading: 'こどものとき、ははにうそをついた。', exampleEn: 'When I was a child, I lied to my mother.' },
+        { front: '誘う', reading: 'さそう', back: 'to invite', pos: 'verb (u)', exampleJp: '友達をパーティーに誘いました。', exampleReading: 'ともだちをパーティーにさそいました。', exampleEn: 'I invited a friend to the party.' },
+        { front: '紹介する', reading: 'しょうかいする', back: 'to introduce', pos: 'verb (irregular)', exampleJp: '友達を両親に紹介しました。', exampleReading: 'ともだちをりょうしんにしょうかいしました。', exampleEn: 'I introduced my friend to my parents.' }
       ]
     },
     {
+      key: 'n4vocab.04',
       kind: 'vocab',
       title: 'Daily life & plans',
       cards: [
-        { front: '洗濯', reading: 'せんたく', back: 'laundry', pos: 'noun' },
-        { front: '掃除', reading: 'そうじ', back: 'cleaning', pos: 'noun' },
-        { front: '引っ越し', reading: 'ひっこし', back: 'moving (house)', pos: 'noun' },
-        { front: '留守', reading: 'るす', back: 'being away from home', pos: 'noun' },
-        { front: 'ごみ', back: 'trash; garbage', pos: 'noun' },
-        { front: '鍵', reading: 'かぎ', back: 'key; lock', pos: 'noun' },
-        { front: '財布', reading: 'さいふ', back: 'wallet', pos: 'noun' },
-        { front: '携帯', reading: 'けいたい', back: 'mobile phone', pos: 'noun', notes: 'Also スマホ (smartphone).' },
-        { front: '布団', reading: 'ふとん', back: 'futon; bedding', pos: 'noun' },
-        { front: '予定', reading: 'よてい', back: 'plan; schedule', pos: 'noun' },
-        { front: '都合', reading: 'つごう', back: 'convenience; circumstances', pos: 'noun', notes: '都合がいい／悪い = works / doesn\'t work (for me).' },
-        { front: '用事', reading: 'ようじ', back: 'errand; things to do', pos: 'noun' },
-        { front: '準備', reading: 'じゅんび', back: 'preparation', pos: 'noun' },
-        { front: '約束を守る', reading: 'やくそくをまもる', back: 'to keep a promise', pos: 'expression' },
-        { front: '片付ける', reading: 'かたづける', back: 'to tidy up; to put away', pos: 'verb (ru)' },
-        { front: '捨てる', reading: 'すてる', back: 'to throw away', pos: 'verb (ru)' }
+        { front: '洗濯', reading: 'せんたく', back: 'laundry', pos: 'noun', exampleJp: '日曜日に洗濯をします。', exampleReading: 'にちようびにせんたくをします。', exampleEn: 'I do the laundry on Sundays.' },
+        { front: '掃除', reading: 'そうじ', back: 'cleaning', pos: 'noun', exampleJp: '毎週、部屋の掃除をします。', exampleReading: 'まいしゅう、へやのそうじをします。', exampleEn: 'I clean my room every week.' },
+        { front: '引っ越し', reading: 'ひっこし', back: 'moving (house)', pos: 'noun', exampleJp: '来月、引っ越しをします。', exampleReading: 'らいげつ、ひっこしをします。', exampleEn: "I'm moving house next month." },
+        { front: '留守', reading: 'るす', back: 'being away from home', pos: 'noun', exampleJp: '田中さんは今、留守です。', exampleReading: 'たなかさんはいま、るすです。', exampleEn: 'Tanaka is out right now.' },
+        { front: 'ごみ', back: 'trash; garbage', pos: 'noun', exampleJp: 'ごみは月曜日に出してください。', exampleReading: 'ごみはげつようびにだしてください。', exampleEn: 'Please put the rubbish out on Mondays.' },
+        { front: '鍵', reading: 'かぎ', back: 'key; lock', pos: 'noun', exampleJp: '鍵をかけるのを忘れた。', exampleReading: 'かぎをかけるのをわすれた。', exampleEn: 'I forgot to lock the door.' },
+        { front: '財布', reading: 'さいふ', back: 'wallet', pos: 'noun', exampleJp: '財布を家に忘れてきた。', exampleReading: 'さいふをいえにわすれてきた。', exampleEn: 'I left my wallet at home.' },
+        { front: '携帯', reading: 'けいたい', back: 'mobile phone', pos: 'noun', notes: 'Also スマホ (smartphone).', exampleJp: '携帯の電池がなくなった。', exampleReading: 'けいたいのでんちがなくなった。', exampleEn: 'My phone battery died.' },
+        { front: '布団', reading: 'ふとん', back: 'futon; bedding', pos: 'noun', exampleJp: '寝る前に布団を敷きます。', exampleReading: 'ねるまえにふとんをしきます。', exampleEn: 'I lay out my futon before going to bed.' },
+        { front: '予定', reading: 'よてい', back: 'plan; schedule', pos: 'noun', exampleJp: '週末の予定はありますか。', exampleReading: 'しゅうまつのよていはありますか。', exampleEn: 'Do you have any plans for the weekend?' },
+        { front: '都合', reading: 'つごう', back: 'convenience; circumstances', pos: 'noun', notes: '都合がいい／悪い = works / doesn\'t work (for me).', exampleJp: '明日の都合はどうですか。', exampleReading: 'あしたのつごうはどうですか。', exampleEn: 'Does tomorrow work for you?' },
+        { front: '用事', reading: 'ようじ', back: 'errand; things to do', pos: 'noun', exampleJp: '用事があるので、先に帰ります。', exampleReading: 'ようじがあるので、さきにかえります。', exampleEn: "I have something to do, so I'll head home first." },
+        { front: '準備', reading: 'じゅんび', back: 'preparation', pos: 'noun', exampleJp: '旅行の準備はできましたか。', exampleReading: 'りょこうのじゅんびはできましたか。', exampleEn: 'Are you ready for the trip?' },
+        { front: '約束を守る', reading: 'やくそくをまもる', back: 'to keep a promise', pos: 'expression', exampleJp: '彼はいつも約束を守る。', exampleReading: 'かれはいつもやくそくをまもる。', exampleEn: 'He always keeps his promises.' },
+        { front: '片付ける', reading: 'かたづける', back: 'to tidy up; to put away', pos: 'verb (ru)', exampleJp: '遊んだら、おもちゃを片付けなさい。', exampleReading: 'あそんだら、おもちゃをかたづけなさい。', exampleEn: "Put your toys away when you've finished playing." },
+        { front: '捨てる', reading: 'すてる', back: 'to throw away', pos: 'verb (ru)', exampleJp: '古い服を捨てました。', exampleReading: 'ふるいふくをすてました。', exampleEn: 'I threw away some old clothes.' }
       ]
     },
     {
+      key: 'n4vocab.05',
       kind: 'vocab',
       title: 'Getting around',
       cards: [
-        { front: '近く', reading: 'ちかく', back: 'nearby; vicinity', pos: 'noun' },
-        { front: '隣', reading: 'となり', back: 'next to; neighbor', pos: 'noun' },
-        { front: '向かい', reading: 'むかい', back: 'across from; opposite', pos: 'noun' },
-        { front: '交差点', reading: 'こうさてん', back: 'intersection', pos: 'noun' },
-        { front: '信号', reading: 'しんごう', back: 'traffic light', pos: 'noun' },
-        { front: '橋', reading: 'はし', back: 'bridge', pos: 'noun' },
-        { front: 'まっすぐ', back: 'straight ahead', pos: 'adverb' },
-        { front: '曲がる', reading: 'まがる', back: 'to turn (a corner)', pos: 'verb (u)' },
-        { front: '渡る', reading: 'わたる', back: 'to cross (a street, bridge)', pos: 'verb (u)' },
-        { front: '止まる', reading: 'とまる', back: 'to stop', pos: 'verb (u)' },
-        { front: '乗り換える', reading: 'のりかえる', back: 'to transfer (trains)', pos: 'verb (ru)' },
-        { front: '迎える', reading: 'むかえる', back: 'to go meet; to welcome', pos: 'verb (ru)', notes: '迎えに行く = "go pick (someone) up".' },
-        { front: '寄る', reading: 'よる', back: 'to drop by', pos: 'verb (u)' },
-        { front: '道に迷う', reading: 'みちにまよう', back: 'to get lost', pos: 'expression' },
-        { front: '急ぐ', reading: 'いそぐ', back: 'to hurry', pos: 'verb (u)' }
+        { front: '近く', reading: 'ちかく', back: 'nearby; vicinity', pos: 'noun', exampleJp: 'この近くに駅はありますか。', exampleReading: 'このちかくにえきはありますか。', exampleEn: 'Is there a station near here?' },
+        { front: '隣', reading: 'となり', back: 'next to; neighbor', pos: 'noun', exampleJp: '隣の部屋から音楽が聞こえる。', exampleReading: 'となりのへやからおんがくがきこえる。', exampleEn: 'I can hear music from the next room.' },
+        { front: '向かい', reading: 'むかい', back: 'across from; opposite', pos: 'noun', exampleJp: '銀行は駅の向かいにあります。', exampleReading: 'ぎんこうはえきのむかいにあります。', exampleEn: 'The bank is across from the station.' },
+        { front: '交差点', reading: 'こうさてん', back: 'intersection', pos: 'noun', exampleJp: '次の交差点を右に曲がってください。', exampleReading: 'つぎのこうさてんをみぎにまがってください。', exampleEn: 'Please turn right at the next intersection.' },
+        { front: '信号', reading: 'しんごう', back: 'traffic light', pos: 'noun', exampleJp: '信号が赤のときは渡ってはいけません。', exampleReading: 'しんごうがあかのときはわたってはいけません。', exampleEn: 'You must not cross when the light is red.' },
+        { front: '橋', reading: 'はし', back: 'bridge', pos: 'noun', exampleJp: 'この川には古い橋があります。', exampleReading: 'このかわにはふるいはしがあります。', exampleEn: 'There is an old bridge over this river.' },
+        { front: 'まっすぐ', back: 'straight ahead', pos: 'adverb', exampleJp: 'この道をまっすぐ行ってください。', exampleReading: 'このみちをまっすぐいってください。', exampleEn: 'Please go straight along this road.' },
+        { front: '曲がる', reading: 'まがる', back: 'to turn (a corner)', pos: 'verb (u)', exampleJp: '二つ目の角を左に曲がります。', exampleReading: 'ふたつめのかどをひだりにまがります。', exampleEn: 'You turn left at the second corner.' },
+        { front: '渡る', reading: 'わたる', back: 'to cross (a street, bridge)', pos: 'verb (u)', exampleJp: '橋を渡ると、公園があります。', exampleReading: 'はしをわたると、こうえんがあります。', exampleEn: "When you cross the bridge, there's a park." },
+        { front: '止まる', reading: 'とまる', back: 'to stop', pos: 'verb (u)', exampleJp: '車が家の前に止まった。', exampleReading: 'くるまがいえのまえにとまった。', exampleEn: 'A car stopped in front of the house.' },
+        { front: '乗り換える', reading: 'のりかえる', back: 'to transfer (trains)', pos: 'verb (ru)', exampleJp: '新宿で電車を乗り換えます。', exampleReading: 'しんじゅくででんしゃをのりかえます。', exampleEn: 'I change trains at Shinjuku.' },
+        { front: '迎える', reading: 'むかえる', back: 'to go meet; to welcome', pos: 'verb (ru)', notes: '迎えに行く = "go pick (someone) up".', exampleJp: '駅まで友達を迎えに行きます。', exampleReading: 'えきまでともだちをむかえにいきます。', exampleEn: "I'm going to the station to meet a friend." },
+        { front: '寄る', reading: 'よる', back: 'to drop by', pos: 'verb (u)', exampleJp: '帰りにスーパーに寄ります。', exampleReading: 'かえりにスーパーによります。', exampleEn: "I'll stop by the supermarket on the way home." },
+        { front: '道に迷う', reading: 'みちにまよう', back: 'to get lost', pos: 'expression', exampleJp: '初めての町で道に迷った。', exampleReading: 'はじめてのまちでみちにまよった。', exampleEn: "I got lost in a town I'd never been to." },
+        { front: '急ぐ', reading: 'いそぐ', back: 'to hurry', pos: 'verb (u)', exampleJp: '時間がないから、急ぎましょう。', exampleReading: 'じかんがないから、いそぎましょう。', exampleEn: "There's no time, so let's hurry." }
       ]
     },
     {
+      key: 'n4vocab.06',
       kind: 'vocab',
       title: 'Everyday verbs III',
       cards: [
-        { front: '見つける', reading: 'みつける', back: 'to find', pos: 'verb (ru)' },
-        { front: '探す', reading: 'さがす', back: 'to look for', pos: 'verb (u)' },
-        { front: '選ぶ', reading: 'えらぶ', back: 'to choose', pos: 'verb (u)' },
-        { front: '決める', reading: 'きめる', back: 'to decide', pos: 'verb (ru)' },
-        { front: '変わる', reading: 'かわる', back: 'to change (by itself)', pos: 'verb (u)', notes: '変える = to change (something).' },
-        { front: '続ける', reading: 'つづける', back: 'to continue (something)', pos: 'verb (ru)' },
-        { front: '覚える', reading: 'おぼえる', back: 'to memorize; to learn', pos: 'verb (ru)' },
-        { front: '思い出す', reading: 'おもいだす', back: 'to recall; to remember', pos: 'verb (u)' },
-        { front: '忘れる', reading: 'わすれる', back: 'to forget', pos: 'verb (ru)' },
-        { front: '調べる', reading: 'しらべる', back: 'to look up; to investigate', pos: 'verb (ru)' },
-        { front: '伝える', reading: 'つたえる', back: 'to convey; to pass on (a message)', pos: 'verb (ru)' },
-        { front: '受ける', reading: 'うける', back: 'to receive; to take (an exam)', pos: 'verb (ru)' },
-        { front: '遅れる', reading: 'おくれる', back: 'to be late', pos: 'verb (ru)' },
-        { front: '慣れる', reading: 'なれる', back: 'to get used to', pos: 'verb (ru)' },
-        { front: '手伝う', reading: 'てつだう', back: 'to help (with a task)', pos: 'verb (u)' },
-        { front: '頑張る', reading: 'がんばる', back: 'to do one\'s best', pos: 'verb (u)' }
+        { front: '見つける', reading: 'みつける', back: 'to find', pos: 'verb (ru)', exampleJp: '道で財布を見つけた。', exampleReading: 'みちでさいふをみつけた。', exampleEn: 'I found a wallet on the road.' },
+        { front: '探す', reading: 'さがす', back: 'to look for', pos: 'verb (u)', exampleJp: 'なくした鍵を探しています。', exampleReading: 'なくしたかぎをさがしています。', exampleEn: "I'm looking for the key I lost." },
+        { front: '選ぶ', reading: 'えらぶ', back: 'to choose', pos: 'verb (u)', exampleJp: '好きな色を選んでください。', exampleReading: 'すきないろをえらんでください。', exampleEn: 'Please choose a colour you like.' },
+        { front: '決める', reading: 'きめる', back: 'to decide', pos: 'verb (ru)', exampleJp: '夏休みの旅行先を決めました。', exampleReading: 'なつやすみのりょこうさきをきめました。', exampleEn: 'I decided where to go for the summer holidays.' },
+        { front: '変わる', reading: 'かわる', back: 'to change (by itself)', pos: 'verb (u)', notes: '変える = to change (something).', exampleJp: 'この町は十年でずいぶん変わった。', exampleReading: 'このまちはじゅうねんでずいぶんかわった。', exampleEn: 'This town has changed a lot in ten years.' },
+        { front: '続ける', reading: 'つづける', back: 'to continue (something)', pos: 'verb (ru)', exampleJp: '毎日練習を続けることが大事です。', exampleReading: 'まいにちれんしゅうをつづけることがだいじです。', exampleEn: "It's important to keep practising every day." },
+        { front: '覚える', reading: 'おぼえる', back: 'to memorize; to learn', pos: 'verb (ru)', exampleJp: '新しい言葉をたくさん覚えました。', exampleReading: 'あたらしいことばをたくさんおぼえました。', exampleEn: 'I memorized lots of new words.' },
+        { front: '思い出す', reading: 'おもいだす', back: 'to recall; to remember', pos: 'verb (u)', exampleJp: 'その歌を聞くと、子供の頃を思い出す。', exampleReading: 'そのうたをきくと、こどものころをおもいだす。', exampleEn: 'That song reminds me of my childhood.' },
+        { front: '忘れる', reading: 'わすれる', back: 'to forget', pos: 'verb (ru)', exampleJp: '宿題を家に忘れました。', exampleReading: 'しゅくだいをいえにわすれました。', exampleEn: 'I left my homework at home.' },
+        { front: '調べる', reading: 'しらべる', back: 'to look up; to investigate', pos: 'verb (ru)', exampleJp: '分からない言葉を辞書で調べた。', exampleReading: 'わからないことばをじしょでしらべた。', exampleEn: "I looked up the words I didn't know in a dictionary." },
+        { front: '伝える', reading: 'つたえる', back: 'to convey; to pass on (a message)', pos: 'verb (ru)', exampleJp: '田中さんによろしく伝えてください。', exampleReading: 'たなかさんによろしくつたえてください。', exampleEn: 'Please give Tanaka my regards.' },
+        { front: '受ける', reading: 'うける', back: 'to receive; to take (an exam)', pos: 'verb (ru)', exampleJp: '来月、試験を受けます。', exampleReading: 'らいげつ、しけんをうけます。', exampleEn: "I'm taking an exam next month." },
+        { front: '遅れる', reading: 'おくれる', back: 'to be late', pos: 'verb (ru)', exampleJp: '電車が遅れて、学校に遅刻した。', exampleReading: 'でんしゃがおくれて、がっこうにちこくした。', exampleEn: 'The train was delayed, so I was late for school.' },
+        { front: '慣れる', reading: 'なれる', back: 'to get used to', pos: 'verb (ru)', exampleJp: '新しい仕事に慣れましたか。', exampleReading: 'あたらしいしごとになれましたか。', exampleEn: 'Have you got used to your new job?' },
+        { front: '手伝う', reading: 'てつだう', back: 'to help (with a task)', pos: 'verb (u)', exampleJp: '母の料理を手伝いました。', exampleReading: 'ははのりょうりをてつだいました。', exampleEn: 'I helped my mother with the cooking.' },
+        { front: '頑張る', reading: 'がんばる', back: 'to do one\'s best', pos: 'verb (u)', exampleJp: '試験まで頑張ります。', exampleReading: 'しけんまでがんばります。', exampleEn: "I'll do my best until the exam." }
       ]
     },
     {
+      key: 'n4vocab.07',
       kind: 'vocab',
       title: 'Description II',
       cards: [
-        { front: '便利', reading: 'べんり', back: 'convenient', pos: 'na-adjective' },
-        { front: '不便', reading: 'ふべん', back: 'inconvenient', pos: 'na-adjective' },
-        { front: '有名', reading: 'ゆうめい', back: 'famous', pos: 'na-adjective' },
-        { front: '大事', reading: 'だいじ', back: 'important; precious', pos: 'na-adjective', notes: 'お大事に = "get well soon".' },
-        { front: '大切', reading: 'たいせつ', back: 'important; treasured', pos: 'na-adjective' },
-        { front: '必要', reading: 'ひつよう', back: 'necessary', pos: 'na-adjective/noun' },
-        { front: '自由', reading: 'じゆう', back: 'free; freedom', pos: 'na-adjective/noun' },
-        { front: '危ない', reading: 'あぶない', back: 'dangerous', pos: 'i-adjective' },
-        { front: '安全', reading: 'あんぜん', back: 'safe; safety', pos: 'na-adjective/noun' },
-        { front: '邪魔', reading: 'じゃま', back: 'hindrance; in the way', pos: 'na-adjective/noun', notes: 'お邪魔します when entering a home.' },
-        { front: '真面目', reading: 'まじめ', back: 'serious; diligent', pos: 'na-adjective' },
-        { front: '優しい', reading: 'やさしい', back: 'kind; gentle', pos: 'i-adjective' },
-        { front: '厳しい', reading: 'きびしい', back: 'strict; harsh', pos: 'i-adjective' },
-        { front: 'ひどい', back: 'terrible; cruel', pos: 'i-adjective' },
-        { front: '素晴らしい', reading: 'すばらしい', back: 'wonderful', pos: 'i-adjective' },
-        { front: '変', reading: 'へん', back: 'strange; weird', pos: 'na-adjective' }
+        { front: '便利', reading: 'べんり', back: 'convenient', pos: 'na-adjective', exampleJp: 'このアプリはとても便利です。', exampleReading: 'このアプリはとてもべんりです。', exampleEn: 'This app is really convenient.' },
+        { front: '不便', reading: 'ふべん', back: 'inconvenient', pos: 'na-adjective', exampleJp: '駅から遠くて不便です。', exampleReading: 'えきからとおくてふべんです。', exampleEn: "It's far from the station, which is inconvenient." },
+        { front: '有名', reading: 'ゆうめい', back: 'famous', pos: 'na-adjective', exampleJp: 'この店はラーメンで有名です。', exampleReading: 'このみせはラーメンでゆうめいです。', exampleEn: 'This place is famous for its ramen.' },
+        { front: '大事', reading: 'だいじ', back: 'important; precious', pos: 'na-adjective', notes: 'お大事に = "get well soon".', exampleJp: 'これは祖母からもらった大事な指輪です。', exampleReading: 'これはそぼからもらっただいじなゆびわです。', exampleEn: 'This is a precious ring I got from my grandmother.' },
+        { front: '大切', reading: 'たいせつ', back: 'important; treasured', pos: 'na-adjective', exampleJp: '家族は一番大切です。', exampleReading: 'かぞくはいちばんたいせつです。', exampleEn: 'Family is the most important thing.' },
+        { front: '必要', reading: 'ひつよう', back: 'necessary', pos: 'na-adjective/noun', exampleJp: '旅行にはパスポートが必要です。', exampleReading: 'りょこうにはパスポートがひつようです。', exampleEn: 'You need a passport to travel.' },
+        { front: '自由', reading: 'じゆう', back: 'free; freedom', pos: 'na-adjective/noun', exampleJp: '週末は自由な時間がたくさんある。', exampleReading: 'しゅうまつはじゆうなじかんがたくさんある。', exampleEn: 'I have lots of free time at weekends.' },
+        { front: '危ない', reading: 'あぶない', back: 'dangerous', pos: 'i-adjective', exampleJp: '道で遊ぶのは危ないよ。', exampleReading: 'みちであそぶのはあぶないよ。', exampleEn: 'Playing in the street is dangerous.' },
+        { front: '安全', reading: 'あんぜん', back: 'safe; safety', pos: 'na-adjective/noun', exampleJp: 'この町は夜も安全です。', exampleReading: 'このまちはよるもあんぜんです。', exampleEn: 'This town is safe even at night.' },
+        { front: '邪魔', reading: 'じゃま', back: 'hindrance; in the way', pos: 'na-adjective/noun', notes: 'お邪魔します when entering a home.', exampleJp: '邪魔だから、そこをどいて。', exampleReading: 'じゃまだから、そこをどいて。', exampleEn: "You're in the way — move." },
+        { front: '真面目', reading: 'まじめ', back: 'serious; diligent', pos: 'na-adjective', exampleJp: '弟はとても真面目な学生です。', exampleReading: 'おとうとはとてもまじめながくせいです。', exampleEn: 'My younger brother is a very serious student.' },
+        { front: '優しい', reading: 'やさしい', back: 'kind; gentle', pos: 'i-adjective', exampleJp: '新しい先生はとても優しい。', exampleReading: 'あたらしいせんせいはとてもやさしい。', exampleEn: 'The new teacher is very kind.' },
+        { front: '厳しい', reading: 'きびしい', back: 'strict; harsh', pos: 'i-adjective', exampleJp: '父は時間に厳しい人です。', exampleReading: 'ちちはじかんにきびしいひとです。', exampleEn: 'My father is strict about time.' },
+        { front: 'ひどい', back: 'terrible; cruel', pos: 'i-adjective', exampleJp: '昨日はひどい雨だった。', exampleReading: 'きのうはひどいあめだった。', exampleEn: 'There was terrible rain yesterday.' },
+        { front: '素晴らしい', reading: 'すばらしい', back: 'wonderful', pos: 'i-adjective', exampleJp: '山の上からの景色は素晴らしかった。', exampleReading: 'やまのうえからのけしきはすばらしかった。', exampleEn: 'The view from the top of the mountain was wonderful.' },
+        { front: '変', reading: 'へん', back: 'strange; weird', pos: 'na-adjective', exampleJp: '台所から変な匂いがする。', exampleReading: 'だいどころからへんなにおいがする。', exampleEn: "There's a strange smell coming from the kitchen." }
       ]
     }
   ]
 }
 
-const N4_KANJI_COURSE: SeedCourse = {
+const N4_KANJI_COURSE: SeedCourseDef = {
   title: 'JLPT N4 Kanji',
   description:
     'The ~160 kanji of JLPT N4, grouped by theme. Together with the N5 deck this ' +
-    'covers the characters that appear on nearly every manga page.',
+    'covers the characters that appear on nearly every manga page. From N3 on, the Path adds ' +
+    'kanji decks for the characters these courses do not reach.',
   level: 'N4',
-  difficulty: 9,
   lessons: [
     {
+      key: 'n4kanji.01',
       kind: 'kanji',
       title: 'Seasons & time',
       cards: [
@@ -1520,6 +1740,7 @@ const N4_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n4kanji.02',
       kind: 'kanji',
       title: 'World & places',
       cards: [
@@ -1543,6 +1764,7 @@ const N4_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n4kanji.03',
       kind: 'kanji',
       title: 'Body & health',
       cards: [
@@ -1560,6 +1782,7 @@ const N4_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n4kanji.04',
       kind: 'kanji',
       title: 'People & relationships',
       cards: [
@@ -1581,6 +1804,7 @@ const N4_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n4kanji.05',
       kind: 'kanji',
       title: 'Movement & travel',
       cards: [
@@ -1602,6 +1826,7 @@ const N4_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n4kanji.06',
       kind: 'kanji',
       title: 'Learning & work',
       cards: [
@@ -1626,6 +1851,7 @@ const N4_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n4kanji.07',
       kind: 'kanji',
       title: 'Actions & thought',
       cards: [
@@ -1648,6 +1874,7 @@ const N4_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n4kanji.08',
       kind: 'kanji',
       title: 'Food & creatures',
       cards: [
@@ -1670,6 +1897,7 @@ const N4_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n4kanji.09',
       kind: 'kanji',
       title: 'Buildings & directions',
       cards: [
@@ -1690,6 +1918,7 @@ const N4_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n4kanji.10',
       kind: 'kanji',
       title: 'Description & qualities',
       cards: [
@@ -1714,6 +1943,7 @@ const N4_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n4kanji.11',
       kind: 'kanji',
       title: 'Media & communication',
       cards: [
@@ -1738,16 +1968,16 @@ const N4_KANJI_COURSE: SeedCourse = {
   ]
 }
 
-const CASUAL2_COURSE: SeedCourse = {
+const CASUAL2_COURSE: SeedCourseDef = {
   title: 'Manga & VN Japanese II',
   description:
     'The second helping of dialogue Japanese: recognizing polite/honorific speech, ' +
     'rough contractions, Kansai dialect, character role-language, and the onomatopoeia ' +
     'that fills every panel.',
   level: 'N4–N3',
-  difficulty: 11,
   lessons: [
     {
+      key: 'casual2.01',
       kind: 'grammar',
       title: 'Keigo I — recognizing honorific speech (尊敬語)',
       body: `Butlers, shopkeepers and polite characters use 尊敬語 (respectful language) about OTHERS' actions. You mostly need to RECOGNIZE the special verbs:
@@ -1764,10 +1994,13 @@ The store-clerk set phrase いらっしゃいませ ("welcome!") is いらっし
       cards: [
         { front: '先生はいらっしゃいますか。', reading: 'せんせいはいらっしゃいますか。', back: 'Is the teacher in? (honorific)' },
         { front: 'どうぞ召し上がってください。', reading: 'どうぞめしあがってください。', back: 'Please, go ahead and eat. (honorific)' },
-        { front: 'お名前は何とおっしゃいますか。', reading: 'おなまえはなんとおっしゃいますか。', back: 'What is your name? (honorific)' }
+        { front: 'お名前は何とおっしゃいますか。', reading: 'おなまえはなんとおっしゃいますか。', back: 'What is your name? (honorific)' },
+        { front: '社長はもうお帰りになりました。', reading: 'しゃちょうはもうおかえりになりました。', back: 'The company president has already gone home. (honorific)' },
+        { front: '何をご覧になっていますか。', reading: 'なにをごらんになっていますか。', back: 'What are you looking at? (honorific)' }
       ]
     },
     {
+      key: 'casual2.02',
       kind: 'grammar',
       title: 'Keigo II — humble speech (謙譲語) and です/ます upgrades',
       body: `謙譲語 (humble language) lowers the SPEAKER's own actions:
@@ -1783,10 +2016,13 @@ Everyday upgrades you'll see constantly: します→いたします, ありま�
       cards: [
         { front: '田中と申します。', reading: 'たなかともうします。', back: 'My name is Tanaka. (humble)' },
         { front: 'すぐ参ります。', reading: 'すぐまいります。', back: "I'll be right there. (humble)" },
-        { front: '少々お待ちください。', reading: 'しょうしょうおまちください。', back: 'Please wait a moment. (formal)' }
+        { front: '少々お待ちください。', reading: 'しょうしょうおまちください。', back: 'Please wait a moment. (formal)' },
+        { front: '明日、お伺いします。', reading: 'あした、おうかがいします。', back: "I'll visit you tomorrow. (humble)" },
+        { front: '私がご案内いたします。', reading: 'わたしがごあんないいたします。', back: "I'll show you the way. (humble)" }
       ]
     },
     {
+      key: 'casual2.03',
       kind: 'grammar',
       title: 'Rough speech: ねえ, ちゃ, and やがる',
       body: `Rough/male dialogue mangles standard forms in predictable ways:
@@ -1800,10 +2036,13 @@ Rough second-person pronouns: お前（おまえ）, てめえ, きさま — al
       cards: [
         { front: 'そんなの知らねえよ。', reading: 'そんなのしらねえよ。', back: "How should I know?! (rough)" },
         { front: 'ここに入っちゃだめだ。', reading: 'ここにはいっちゃだめだ。', back: "You can't come in here." },
-        { front: 'あいつ、逃げやがった！', reading: 'あいつ、にげやがった！', back: 'That bastard ran away!' }
+        { front: 'あいつ、逃げやがった！', reading: 'あいつ、にげやがった！', back: 'That bastard ran away!' },
+        { front: 'うるせえな！', reading: 'うるせえな！', back: 'Shut up! (rough うるさい)' },
+        { front: '勝手に決めやがって。', reading: 'かってにきめやがって。', back: 'Deciding it all on your own, damn you.' }
       ]
     },
     {
+      key: 'casual2.04',
       kind: 'grammar',
       title: 'Kansai-ben basics',
       body: `The Osaka/Kyoto dialect is the most common non-standard speech in fiction — comedians, energetic characters, and anyone "from Osaka":
@@ -1819,10 +2058,13 @@ Set phrases: なんでやねん！ ("what the heck!?" — the tsukkomi retort), 
       cards: [
         { front: 'そんなん知らんわ。', reading: 'そんなんしらんわ。', back: "I don't know anything about that. (Kansai)" },
         { front: 'ほんまにめっちゃうまいで！', reading: 'ほんまにめっちゃうまいで！', back: "It's seriously super tasty! (Kansai)" },
-        { front: 'なんでやねん！', reading: 'なんでやねん！', back: 'What the heck!? (the classic tsukkomi)' }
+        { front: 'なんでやねん！', reading: 'なんでやねん！', back: 'What the heck!? (the classic tsukkomi)' },
+        { front: '今日はあかんわ。', reading: 'きょうはあかんわ。', back: "Today's no good. (Kansai)" },
+        { front: '何してんねん？', reading: 'なにしてんねん？', back: 'What are you doing? (Kansai)' }
       ]
     },
     {
+      key: 'casual2.05',
       kind: 'grammar',
       title: 'Role language (役割語) — hearing the character type',
       body: `Fiction assigns stereotyped speech to character archetypes. Real people don't talk like this — manga characters absolutely do:
@@ -1837,10 +2079,13 @@ You don't need to produce any of this — you need to stop being confused when �
       cards: [
         { front: 'わしは何も知らんのじゃ。', reading: 'わしはなにもしらんのじゃ。', back: "I don't know anything. (old-man speech)" },
         { front: 'まあ、素敵ですわ！', reading: 'まあ、すてきですわ！', back: 'My, how lovely! (ojōsama speech)' },
-        { front: '拙者は忍者でござる。', reading: 'せっしゃはにんじゃでござる。', back: 'I am a ninja. (samurai speech)' }
+        { front: '拙者は忍者でござる。', reading: 'せっしゃはにんじゃでござる。', back: 'I am a ninja. (samurai speech)' },
+        { front: 'わしが若い頃はのう…。', reading: 'わしがわかいころはのう…。', back: 'Back when I was young… (old-man speech)' },
+        { front: '我が名はダークネスなり。', reading: 'わがなはダークネスなり。', back: 'My name is Darkness. (pompous archaic speech)' }
       ]
     },
     {
+      key: 'casual2.06',
       kind: 'grammar',
       title: 'ってば・ったら・っけ — insistence and recall',
       body: `Three small endings that carry a lot of tone:
@@ -1853,10 +2098,13 @@ Both are pure dialogue — you'll never see them in narration, and they instantl
       cards: [
         { front: 'もういいってば！', reading: 'もういいってば！', back: "I SAID it's fine already!" },
         { front: 'あれ、今日って何曜日だっけ？', reading: 'あれ、きょうってなんようびだっけ？', back: 'Wait, what day is it again?' },
-        { front: 'あの人ったら、また忘れたの。', reading: 'あのひとったら、またわすれたの。', back: 'Honestly, that man — he forgot again.' }
+        { front: 'あの人ったら、また忘れたの。', reading: 'あのひとったら、またわすれたの。', back: 'Honestly, that man — he forgot again.' },
+        { front: '早くしろってば！', reading: 'はやくしろってば！', back: 'I SAID hurry up!' },
+        { front: '宿題、どこに置いたっけ？', reading: 'しゅくだい、どこにおいたっけ？', back: 'Where did I put my homework again?' }
       ]
     },
     {
+      key: 'casual2.07',
       kind: 'grammar',
       title: 'かよ・かい・のか — question-particle flavors',
       body: `Beyond plain か, dialogue tunes questions with these:
@@ -1870,10 +2118,13 @@ The rougher the particle, the more emotional the panel — かよ almost always 
       cards: [
         { front: 'マジかよ！', reading: 'マジかよ！', back: "You're kidding me!" },
         { front: '元気かい？', reading: 'げんきかい？', back: 'You doing okay? (friendly)' },
-        { front: '本当に行くのか？', reading: 'ほんとうにいくのか？', back: "You're really going? (blunt)" }
+        { front: '本当に行くのか？', reading: 'ほんとうにいくのか？', back: "You're really going? (blunt)" },
+        { front: 'また遅刻かよ。', reading: 'またちこくかよ。', back: 'Late again? Seriously?' },
+        { front: 'そうか、もう帰るのか。', reading: 'そうか、もうかえるのか。', back: "I see, so you're going home already." }
       ]
     },
     {
+      key: 'casual2.08',
       kind: 'grammar',
       title: 'もん・んだもん・こと — excuse and exclamation endings',
       body: `・もん（＝もの） — childish/cute justification, "because…!": だって、眠いんだもん。 "but I'm sleepy!" Usually after んだ; the whole だって～んだもん frame is the signature of a pouting character.
@@ -1888,10 +2139,13 @@ These endings mark WHO is speaking as much as what they say — half of reading 
       cards: [
         { front: 'だって、眠いんだもん。', reading: 'だって、ねむいんだもん。', back: "But I'm sleepy! (childish excuse)" },
         { front: 'まあ、きれいだこと。', reading: 'まあ、きれいだこと。', back: 'My, how pretty. (refined feminine)' },
-        { front: 'なんか変だぞ…。', reading: 'なんかへんだぞ…。', back: "Something's off… (to oneself)" }
+        { front: 'なんか変だぞ…。', reading: 'なんかへんだぞ…。', back: "Something's off… (to oneself)" },
+        { front: 'だって知らなかったもん。', reading: 'だってしらなかったもん。', back: "But I didn't know! (childish excuse)" },
+        { front: '怖いもん、行きたくない。', reading: 'こわいもん、いきたくない。', back: "It's scary — I don't want to go!" }
       ]
     },
     {
+      key: 'casual2.09',
       kind: 'vocab',
       title: 'Onomatopoeia I — feelings & states',
       cards: [
@@ -1914,6 +2168,7 @@ These endings mark WHO is speaking as much as what they say — half of reading 
       ]
     },
     {
+      key: 'casual2.10',
       kind: 'vocab',
       title: 'Onomatopoeia II — actions & sounds',
       cards: [
@@ -1936,6 +2191,7 @@ These endings mark WHO is speaking as much as what they say — half of reading 
       ]
     },
     {
+      key: 'casual2.11',
       kind: 'vocab',
       title: 'Slang & interjections II',
       cards: [
@@ -1960,15 +2216,15 @@ These endings mark WHO is speaking as much as what they say — half of reading 
   ]
 }
 
-const N3_COURSE: SeedCourse = {
+const N3_COURSE: SeedCourseDef = {
   title: 'JLPT N3 Grammar I',
   description:
     'A first pass at intermediate grammar — the patterns narration leans on once ' +
     'dialogue stops being the hard part. Do this after the N4 courses.',
   level: 'N3',
-  difficulty: 13,
   lessons: [
     {
+      key: 'n3.01',
       kind: 'grammar',
       title: '～ところ — about to / in the middle of / just did',
       body: `ところ ("place/point") after a verb pins down WHERE in the action you are — the tense of the verb before it does all the work:
@@ -1979,14 +2235,20 @@ const N3_COURSE: SeedCourse = {
 
 Common in excuses on the phone: 今、出るところ！ "I'm just leaving!"
 
-Compare たばかり (next lesson) — たところ is "at this very moment"; たばかり stretches to "recently".`,
+Compare たばかり (next lesson) — たところ is "at this very moment"; たばかり stretches to "recently".
+
+Past ところだった is a near miss: "almost, nearly (but it didn't happen)". 危うく遅刻するところだった — "I was almost late." 危うく or もう少しで often comes first; without them, ところだった can also just mean "was about to".`,
       cards: [
         { front: '今から食べるところだ。', reading: 'いまからたべるところだ。', back: "I'm just about to eat." },
         { front: '今、宿題をしているところ。', reading: 'いま、しゅくだいをしているところ。', back: "I'm in the middle of homework right now." },
-        { front: '駅に着いたところです。', reading: 'えきについたところです。', back: 'I just arrived at the station.' }
+        { front: '駅に着いたところです。', reading: 'えきについたところです。', back: 'I just arrived at the station.' },
+        { front: 'ちょうど出かけるところだった。', reading: 'ちょうどでかけるところだった。', back: 'I was just about to head out.' },
+        { front: '今、ご飯を作っているところだから、後で電話するね。', reading: 'いま、ごはんをつくっているところだから、あとででんわするね。', back: "I'm in the middle of cooking, so I'll call you later." },
+        { front: '危うく車にひかれるところだった。', reading: 'あやうくくるまにひかれるところだった。', back: 'I very nearly got hit by a car.' }
       ]
     },
     {
+      key: 'n3.02',
       kind: 'grammar',
       title: '～ばかり — just did / nothing but',
       body: `Two main jobs:
@@ -2001,10 +2263,13 @@ In dialogue you'll meet the casual variant ばっか(り): 嘘ばっか！ "noth
       cards: [
         { front: '日本に来たばかりです。', reading: 'にほんにきたばかりです。', back: 'I just came to Japan (recently).' },
         { front: '弟はゲームをしてばかりいる。', reading: 'おとうとはゲームをしてばかりいる。', back: 'My brother does nothing but play games.' },
-        { front: '嘘ばっかり！', reading: 'うそばっかり！', back: 'Nothing but lies!' }
+        { front: '嘘ばっかり！', reading: 'うそばっかり！', back: 'Nothing but lies!' },
+        { front: '買ったばかりの傘をなくした。', reading: 'かったばかりのかさをなくした。', back: "I lost the umbrella I'd just bought." },
+        { front: '彼は文句ばかり言っている。', reading: 'かれはもんくばかりいっている。', back: 'He does nothing but complain.' }
       ]
     },
     {
+      key: 'n3.03',
       kind: 'grammar',
       title: '～ば～ほど — the more, the more',
       body: `Repeat the verb/adjective in ば-form then plain form, add ほど:
@@ -2018,10 +2283,13 @@ Shortcut without repetition: plain + ほど also compares degree: 泣きたい�
       cards: [
         { front: '考えれば考えるほど、分からなくなる。', reading: 'かんがえればかんがえるほど、わからなくなる。', back: 'The more I think about it, the less I understand.' },
         { front: '安ければ安いほどいい。', reading: 'やすければやすいほどいい。', back: 'The cheaper, the better.' },
-        { front: '泣きたいほど嬉しい。', reading: 'なきたいほどうれしい。', back: 'So happy I could cry.' }
+        { front: '泣きたいほど嬉しい。', reading: 'なきたいほどうれしい。', back: 'So happy I could cry.' },
+        { front: '練習すればするほど上手になる。', reading: 'れんしゅうすればするほどじょうずになる。', back: 'The more you practice, the better you get.' },
+        { front: '話せば話すほど、彼が好きになった。', reading: 'はなせばはなすほど、かれがすきになった。', back: 'The more we talked, the more I liked him.' }
       ]
     },
     {
+      key: 'n3.04',
       kind: 'grammar',
       title: '～うちに — while it lasts / before it changes',
       body: `うちに marks a window of opportunity: do it WHILE the state holds, because it won't.
@@ -2037,10 +2305,13 @@ Different from 間に: 間に is a neutral time span; うちに carries urgency 
       cards: [
         { front: '温かいうちに食べてください。', reading: 'あたたかいうちにたべてください。', back: "Please eat it while it's warm." },
         { front: '忘れないうちにメモしよう。', reading: 'わすれないうちにメモしよう。', back: 'Let me note it down before I forget.' },
-        { front: '若いうちに色々な国へ行きたい。', reading: 'わかいうちにいろいろなくにへいきたい。', back: "I want to visit many countries while I'm young." }
+        { front: '若いうちに色々な国へ行きたい。', reading: 'わかいうちにいろいろなくにへいきたい。', back: "I want to visit many countries while I'm young." },
+        { front: '冷めないうちに飲んでね。', reading: 'さめないうちにのんでね。', back: 'Drink it before it gets cold.' },
+        { front: '話しているうちに、眠くなってきた。', reading: 'はなしているうちに、ねむくなってきた。', back: 'While we were talking, I started getting sleepy.' }
       ]
     },
     {
+      key: 'n3.05',
       kind: 'grammar',
       title: '～間・～間に — during',
       body: `間（あいだ） is a time span. The に decides the shape of the action:
@@ -2052,10 +2323,13 @@ Attach to nouns with の, to verbs in ている form: 寝ている間に "while 
       cards: [
         { front: '夏休みの間、田舎にいた。', reading: 'なつやすみのあいだ、いなかにいた。', back: 'I was in the countryside throughout summer break.' },
         { front: '寝ている間に、雪が降った。', reading: 'ねているあいだに、ゆきがふった。', back: 'It snowed while I was sleeping.' },
-        { front: '留守の間に泥棒が入った。', reading: 'るすのあいだにどろぼうがはいった。', back: 'A burglar broke in while we were out.' }
+        { front: '留守の間に泥棒が入った。', reading: 'るすのあいだにどろぼうがはいった。', back: 'A burglar broke in while we were out.' },
+        { front: '授業の間、ずっと寝ていた。', reading: 'じゅぎょうのあいだ、ずっとねていた。', back: 'I slept through the whole class.' },
+        { front: '母が買い物している間に、部屋を片付けた。', reading: 'ははがかいものしているあいだに、へやをかたづけた。', back: 'I tidied my room while my mother was out shopping.' }
       ]
     },
     {
+      key: 'n3.06',
       kind: 'grammar',
       title: '～たびに — every time',
       body: `Dictionary form (or Nの) + たびに — "every time X, Y":
@@ -2069,10 +2343,13 @@ Implies Y reliably accompanies X — often nostalgia or exasperation. For a plai
       cards: [
         { front: 'この曲を聞くたびに、昔を思い出す。', reading: 'このきょくをきくたびに、むかしをおもいだす。', back: 'Every time I hear this song, I remember the old days.' },
         { front: '会うたびに大きくなってるね。', reading: 'あうたびにおおきくなってるね。', back: "You're bigger every time I see you!" },
-        { front: '旅行のたびにお土産を買う。', reading: 'りょこうのたびにおみやげをかう。', back: 'I buy souvenirs every time I travel.' }
+        { front: '旅行のたびにお土産を買う。', reading: 'りょこうのたびにおみやげをかう。', back: 'I buy souvenirs every time I travel.' },
+        { front: 'この写真を見るたびに笑ってしまう。', reading: 'このしゃしんをみるたびにわらってしまう。', back: "Every time I look at this photo, I can't help laughing." },
+        { front: '彼は会うたびに違う服を着ている。', reading: 'かれはあうたびにちがうふくをきている。', back: "Every time I see him, he's wearing different clothes." }
       ]
     },
     {
+      key: 'n3.07',
       kind: 'grammar',
       title: '～によると・～によって — according to / depending on',
       body: `Same に+よる, three distinct readings — context and the following clause decide:
@@ -2081,14 +2358,20 @@ Implies Y reliably accompanies X — often nostalgia or exasperation. For a plai
 ・によって — depends on: 人によって考え方が違う。 "Ways of thinking differ by person."
 ・によって — by means of / caused by (written style): 地震によって家が壊れた。 "Houses were destroyed by the earthquake."
 
-For reading, によると almost always signals "the narrator is citing something" — expect a そうだ at the end of the sentence.`,
+For reading, によると almost always signals "the narrator is citing something" — expect a そうだ at the end of the sentence.
+
+によれば is a slightly more formal twin of によると, with the same "according to" meaning; it often takes a hearsay ending (そうだ・らしい・ということだ), though news reports often just end in the plain form.`,
       cards: [
         { front: '天気予報によると、明日は雨だそうだ。', reading: 'てんきよほうによると、あしたはあめだそうだ。', back: 'According to the forecast, it will rain tomorrow.' },
         { front: '人によって考え方が違う。', reading: 'ひとによってかんがえかたがちがう。', back: 'Ways of thinking differ from person to person.' },
-        { front: '場合によっては中止になる。', reading: 'ばあいによってはちゅうしになる。', back: 'Depending on circumstances, it may be canceled.' }
+        { front: '場合によっては中止になる。', reading: 'ばあいによってはちゅうしになる。', back: 'Depending on circumstances, it may be canceled.' },
+        { front: '噂によると、あの二人は付き合っているらしい。', reading: 'うわさによると、あのふたりはつきあっているらしい。', back: 'Rumor has it those two are dating.' },
+        { front: '国によって習慣が違う。', reading: 'くにによってしゅうかんがちがう。', back: 'Customs differ from country to country.' },
+        { front: '警察の発表によれば、けが人はいない。', reading: 'けいさつのはっぴょうによれば、けがにんはいない。', back: 'According to the police announcement, no one was injured.' }
       ]
     },
     {
+      key: 'n3.08',
       kind: 'grammar',
       title: 'The わけ family — わけだ・わけがない・わけではない',
       body: `わけ ("reasoning/conclusion") builds three high-frequency patterns:
@@ -2101,10 +2384,13 @@ Dialogue clip: わけない (there's no way) and そういうわけで ("and tha
       cards: [
         { front: '道理で寒いわけだ。', reading: 'どうりでさむいわけだ。', back: "No wonder it's cold." },
         { front: '彼が犯人のわけがない。', reading: 'かれがはんにんのわけがない。', back: "There's no way he's the culprit." },
-        { front: '嫌いなわけではない。', reading: 'きらいなわけではない。', back: "It's not that I dislike it." }
+        { front: '嫌いなわけではない。', reading: 'きらいなわけではない。', back: "It's not that I dislike it." },
+        { front: '三年もアメリカにいたから、英語が上手なわけだ。', reading: 'さんねんもアメリカにいたから、えいごがじょうずなわけだ。', back: 'He lived in America for three whole years, so no wonder his English is good.' },
+        { front: 'こんな難しい問題、分かるわけがない。', reading: 'こんなむずかしいもんだい、わかるわけがない。', back: "There's no way I could understand a problem this hard." }
       ]
     },
     {
+      key: 'n3.09',
       kind: 'grammar',
       title: '～べき — should (obligation/judgment)',
       body: `Dictionary form + べき(だ) — "should / ought to", a statement of what's RIGHT (stronger and more judgmental than ほうがいい):
@@ -2122,10 +2408,13 @@ Contrast:
       cards: [
         { front: '約束は守るべきだ。', reading: 'やくそくはまもるべきだ。', back: 'Promises should be kept.' },
         { front: '君は医者に行くべきだよ。', reading: 'きみはいしゃにいくべきだよ。', back: 'You really should see a doctor.' },
-        { front: 'もっと早く言うべきだった。', reading: 'もっとはやくいうべきだった。', back: 'I should have said it sooner.' }
+        { front: 'もっと早く言うべきだった。', reading: 'もっとはやくいうべきだった。', back: 'I should have said it sooner.' },
+        { front: '学生は勉強するべきだ。', reading: 'がくせいはべんきょうするべきだ。', back: 'Students ought to study.' },
+        { front: 'そんなことは言うべきではない。', reading: 'そんなことはいうべきではない。', back: "You shouldn't say things like that." }
       ]
     },
     {
+      key: 'n3.10',
       kind: 'grammar',
       title: '～っぽい — -ish',
       body: `っぽい glues onto nouns, verb stems and adjective stems to make a casual "-ish/-like" い-adjective:
@@ -2141,10 +2430,13 @@ It conjugates as an い-adjective: 子供っぽくない, 子供っぽかった.
       cards: [
         { front: 'その言い方は子供っぽいよ。', reading: 'そのいいかたはこどもっぽいよ。', back: 'That way of talking is childish.' },
         { front: '最近、忘れっぽくなった。', reading: 'さいきん、わすれっぽくなった。', back: "I've gotten forgetful lately." },
-        { front: 'この服、安っぽく見える？', reading: 'このふく、やすっぽくみえる？', back: 'Does this outfit look cheap?' }
+        { front: 'この服、安っぽく見える？', reading: 'このふく、やすっぽくみえる？', back: 'Does this outfit look cheap?' },
+        { front: '彼女は怒りっぽい。', reading: 'かのじょはおこりっぽい。', back: 'She gets angry easily.' },
+        { front: 'あの人、外国人っぽいね。', reading: 'あのひと、がいこくじんっぽいね。', back: 'That person seems like a foreigner.' }
       ]
     },
     {
+      key: 'n3.11',
       kind: 'grammar',
       title: '～がる・～たがる — third-person feelings',
       body: `Japanese avoids stating others' inner feelings directly — 彼は嬉しい is odd. がる converts a feeling into observable behavior:
@@ -2158,10 +2450,13 @@ Noun form: 怖がり "a scaredy-cat", 寂しがり屋 "someone who gets lonely e
       cards: [
         { front: '妹は犬を飼いたがっている。', reading: 'いもうとはいぬをかいたがっている。', back: 'My little sister wants to get a dog.' },
         { front: '弟は注射を怖がっている。', reading: 'おとうとはちゅうしゃをこわがっている。', back: 'My little brother is scared of the shot.' },
-        { front: '彼は寂しがり屋だ。', reading: 'かれはさびしがりやだ。', back: 'He gets lonely easily.' }
+        { front: '彼は寂しがり屋だ。', reading: 'かれはさびしがりやだ。', back: 'He gets lonely easily.' },
+        { front: '子供はみんな外で遊びたがる。', reading: 'こどもはみんなそとであそびたがる。', back: 'Kids all want to play outside.' },
+        { front: '彼は新しいゲームを欲しがっている。', reading: 'かれはあたらしいゲームをほしがっている。', back: 'He wants the new game.' }
       ]
     },
     {
+      key: 'n3.12',
       kind: 'grammar',
       title: '～ようになる・～なくなる — change over time',
       body: `なる turns states into TRANSITIONS; with verbs it needs よう:
@@ -2170,14 +2465,20 @@ Noun form: 怖がり "a scaredy-cat", 寂しがり屋 "someone who gets lonely e
 ・ない + なくなる — stopped / no longer: 漢字が怖くなくなった。 "Kanji stopped being scary."
 ・する side: ようにする — "make a point of": 毎日単語を覚えるようにしている。 "I make it a habit to learn words daily."
 
-The pair ようになる (change happens) vs ようにする (you push the change) mirrors ことになる/ことにする from N4.`,
+The pair ようになる (change happens) vs ようにする (you push the change) mirrors ことになる/ことにする from N4.
+
+As advice or a gentle rule, ようにしましょう / ようにしてください asks someone to make a habit of something: 水をたくさん飲むようにしてください — "Please make a point of drinking plenty of water."`,
       cards: [
         { front: '日本語が読めるようになった。', reading: 'にほんごがよめるようになった。', back: "I've become able to read Japanese." },
         { front: '彼は最近、話さなくなった。', reading: 'かれはさいきん、はなさなくなった。', back: 'He stopped talking (to us) recently.' },
-        { front: '毎日復習するようにしている。', reading: 'まいにちふくしゅうするようにしている。', back: 'I make it a habit to review every day.' }
+        { front: '毎日復習するようにしている。', reading: 'まいにちふくしゅうするようにしている。', back: 'I make it a habit to review every day.' },
+        { front: '最近、野菜を食べるようになった。', reading: 'さいきん、やさいをたべるようになった。', back: "I've started eating vegetables lately." },
+        { front: '年を取って、遠くが見えなくなった。', reading: 'としをとって、とおくがみえなくなった。', back: 'As I got older, I stopped being able to see far.' },
+        { front: '夜は早く寝るようにしましょう。', reading: 'よるははやくねるようにしましょう。', back: "Let's make a point of going to bed early." }
       ]
     },
     {
+      key: 'n3.13',
       kind: 'grammar',
       title: '～かどうか — whether or not',
       body: `Embeds a yes/no question inside a sentence:
@@ -2194,10 +2495,13 @@ Reading payoff: long narration sentences constantly nest questions this way — 
       cards: [
         { front: '行くかどうか、まだ決めていない。', reading: 'いくかどうか、まだきめていない。', back: "I haven't decided whether to go or not." },
         { front: '本当かどうか分からない。', reading: 'ほんとうかどうかわからない。', back: "I don't know if it's true or not." },
-        { front: '誰が来るか知っていますか。', reading: 'だれがくるかしっていますか。', back: 'Do you know who is coming?' }
+        { front: '誰が来るか知っていますか。', reading: 'だれがくるかしっていますか。', back: 'Do you know who is coming?' },
+        { front: 'この答えが正しいかどうか確かめてください。', reading: 'このこたえがただしいかどうかたしかめてください。', back: 'Please check whether this answer is correct.' },
+        { front: '彼が来るかどうか、聞いてみる。', reading: 'かれがくるかどうか、きいてみる。', back: "I'll ask whether he's coming." }
       ]
     },
     {
+      key: 'n3.14',
       kind: 'grammar',
       title: '～しかない・～だけ — only',
       body: `Two "only"s with opposite grammar:
@@ -2207,14 +2511,20 @@ Reading payoff: long narration sentences constantly nest questions this way — 
 
 Verb + しかない — "no choice but to": 歩くしかない。 "Nothing for it but to walk."
 
-やるしかない！ — "we just have to do it!" — the pre-battle line of every shōnen protagonist.`,
+やるしかない！ — "we just have to do it!" — the pre-battle line of every shōnen protagonist.
+
+だけしか stacks the two for extra emphasis on how little there is; it still needs a negative ending: 百円だけしかない — "I've got just a hundred yen, nothing more."`,
       cards: [
         { front: '千円しかない。', reading: 'せんえんしかない。', back: "I've only got 1,000 yen (not enough)." },
         { front: 'もう、やるしかない！', reading: 'もう、やるしかない！', back: 'There\'s no choice — we just have to do it!' },
-        { front: '見ているだけでいい。', reading: 'みているだけでいい。', back: 'Just watching is enough for me.' }
+        { front: '見ているだけでいい。', reading: 'みているだけでいい。', back: 'Just watching is enough for me.' },
+        { front: '財布には百円しか入っていなかった。', reading: 'さいふにはひゃくえんしかはいっていなかった。', back: 'There was only 100 yen in my wallet.' },
+        { front: '終電を逃したから、歩いて帰るしかない。', reading: 'しゅうでんをのがしたから、あるいてかえるしかない。', back: 'I missed the last train, so I have no choice but to walk home.' },
+        { front: '参加者は三人だけしかいなかった。', reading: 'さんかしゃはさんにんだけしかいなかった。', back: 'There were only three participants.' }
       ]
     },
     {
+      key: 'n3.15',
       kind: 'grammar',
       title: 'いくら～ても — no matter how much',
       body: `ても ("even if") scaled up with a question word:
@@ -2229,10 +2539,13 @@ Plain ても alone = "even if": 雨が降っても行く。 "I'll go even if it 
       cards: [
         { front: 'いくら食べても太らない。', reading: 'いくらたべてもふとらない。', back: "No matter how much I eat, I don't gain weight." },
         { front: 'どんなに頑張っても勝てない。', reading: 'どんなにがんばってもかてない。', back: "No matter how hard I try, I can't win." },
-        { front: '雨が降っても行くよ。', reading: 'あめがふってもいくよ。', back: "I'm going even if it rains." }
+        { front: '雨が降っても行くよ。', reading: 'あめがふってもいくよ。', back: "I'm going even if it rains." },
+        { front: 'いくら呼んでも、返事がない。', reading: 'いくらよんでも、へんじがない。', back: "No matter how many times I call, there's no answer." },
+        { front: 'いくら高くても、この時計が欲しい。', reading: 'いくらたかくても、このとけいがほしい。', back: 'No matter how expensive it is, I want this watch.' }
       ]
     },
     {
+      key: 'n3.16',
       kind: 'grammar',
       title: '～させてもらう・～させてください — causative + favors',
       body: `Causative + the giving/receiving verbs = asking for or taking permission, extremely common in dialogue:
@@ -2247,21 +2560,23 @@ Recognition beats production here: parse させて + くれ/もらう/くださ�
       cards: [
         { front: 'ちょっと説明させてください。', reading: 'ちょっとせつめいさせてください。', back: 'Please let me explain.' },
         { front: '今日は早く帰らせてもらった。', reading: 'きょうははやくかえらせてもらった。', back: 'They let me go home early today.' },
-        { front: '一人にさせてくれ。', reading: 'ひとりにさせてくれ。', back: 'Let me be alone. (rough)' }
+        { front: '一人にさせてくれ。', reading: 'ひとりにさせてくれ。', back: 'Let me be alone. (rough)' },
+        { front: '私にやらせてください。', reading: 'わたしにやらせてください。', back: 'Please let me do it.' },
+        { front: '写真を撮らせてもらってもいいですか。', reading: 'しゃしんをとらせてもらってもいいですか。', back: 'Would it be all right if I took a photo?' }
       ]
     }
   ]
 }
 
-const N3B_COURSE: SeedCourse = {
+const N3B_COURSE: SeedCourseDef = {
   title: 'JLPT N3 Grammar II',
   description:
     'The second half of the core N3 patterns — contrast, cause, blame and the ' +
     'connective tissue of narration. Finishing this makes most seinen manga readable.',
   level: 'N3',
-  difficulty: 14,
   lessons: [
     {
+      key: 'n3b.01',
       kind: 'grammar',
       title: '～ずに — without doing',
       body: `ない-stem + ずに = "without doing" — the literary sibling of ないで:
@@ -2274,10 +2589,13 @@ Narration prefers ずに; dialogue prefers ないで. VNs will hand you both in 
       cards: [
         { front: '朝ご飯を食べずに家を出た。', reading: 'あさごはんをたべずにいえをでた。', back: 'I left home without eating breakfast.' },
         { front: '何もせずに待っていた。', reading: 'なにもせずにまっていた。', back: 'I waited without doing anything.' },
-        { front: '諦めずに頑張ろう。', reading: 'あきらめずにがんばろう。', back: "Let's keep at it without giving up." }
+        { front: '諦めずに頑張ろう。', reading: 'あきらめずにがんばろう。', back: "Let's keep at it without giving up." },
+        { front: '傘を持たずに出かけた。', reading: 'かさをもたずにでかけた。', back: 'I went out without an umbrella.' },
+        { front: '辞書を使わずに読んでみて。', reading: 'じしょをつかわずによんでみて。', back: 'Try reading it without a dictionary.' }
       ]
     },
     {
+      key: 'n3b.02',
       kind: 'grammar',
       title: '～まま — as it is / leaving it that way',
       body: `まま freezes a state while something else happens:
@@ -2291,10 +2609,13 @@ Narration prefers ずに; dialogue prefers ないで. VNs will hand you both in 
       cards: [
         { front: '電気をつけたまま寝てしまった。', reading: 'でんきをつけたままねてしまった。', back: 'I fell asleep with the light on.' },
         { front: 'この町は昔のままだ。', reading: 'このまちはむかしのままだ。', back: 'This town is just as it used to be.' },
-        { front: 'このままじゃだめだ！', reading: 'このままじゃだめだ！', back: "It can't go on like this!" }
+        { front: 'このままじゃだめだ！', reading: 'このままじゃだめだ！', back: "It can't go on like this!" },
+        { front: '靴を履いたまま部屋に入らないで。', reading: 'くつをはいたままへやにはいらないで。', back: "Don't come into the room with your shoes on." },
+        { front: '窓を開けたまま出かけてしまった。', reading: 'まどをあけたままでかけてしまった。', back: 'I went out and left the window open.' }
       ]
     },
     {
+      key: 'n3b.03',
       kind: 'grammar',
       title: '～だけでなく～も — not only… but also',
       body: `X だけでなく Y も — "not only X but Y too":
@@ -2303,14 +2624,20 @@ Narration prefers ずに; dialogue prefers ないで. VNs will hand you both in 
 
 Formal variants you'll read: ばかりでなく, のみならず (stiff/written). The Y clause usually carries も or まで.
 
-With clauses, plain form + だけでなく: 安いだけでなく、美味しい。 "Not only cheap — it's good."`,
+With clauses, plain form + だけでなく: 安いだけでなく、美味しい。 "Not only cheap — it's good."
+
+ばかりか～も is a stronger, more written "not only… but even"; the second item is usually more surprising than the first: 彼は漢字ばかりか、古文も読める — "Not only kanji — he can even read classical Japanese."`,
       cards: [
         { front: '彼は英語だけでなく、日本語も話せる。', reading: 'かれはえいごだけでなく、にほんごもはなせる。', back: 'He speaks not only English but also Japanese.' },
         { front: 'この店は安いだけでなく、美味しい。', reading: 'このみせはやすいだけでなく、おいしい。', back: 'This place is not only cheap but tasty.' },
-        { front: '子供だけでなく、大人も楽しめる。', reading: 'こどもだけでなく、おとなもたのしめる。', back: 'Adults can enjoy it too, not just kids.' }
+        { front: '子供だけでなく、大人も楽しめる。', reading: 'こどもだけでなく、おとなもたのしめる。', back: 'Adults can enjoy it too, not just kids.' },
+        { front: '彼女は歌だけでなく、ダンスも上手だ。', reading: 'かのじょはうただけでなく、ダンスもじょうずだ。', back: "She's good not only at singing but at dancing too." },
+        { front: 'この薬は頭痛だけでなく、熱にも効く。', reading: 'このくすりはずつうだけでなく、ねつにもきく。', back: 'This medicine works not just on headaches but on fever too.' },
+        { front: '彼は約束を破ったばかりか、謝りもしなかった。', reading: 'かれはやくそくをやぶったばかりか、あやまりもしなかった。', back: "Not only did he break his promise, he didn't even apologize." }
       ]
     },
     {
+      key: 'n3b.04',
       kind: 'grammar',
       title: '～はもちろん — not to mention',
       body: `X はもちろん Y (も) — "X goes without saying, and Y as well":
@@ -2321,11 +2648,14 @@ With clauses, plain form + だけでなく: 安いだけでなく、美味しい
 もちろん alone is the everyday "of course!" reply. The pattern version just extends that: "X — obviously — and also Y".`,
       cards: [
         { front: '平日はもちろん、週末も働いている。', reading: 'へいじつはもちろん、しゅうまつもはたらいている。', back: 'I work weekends too, not to mention weekdays.' },
-        { front: 'ひらがなはもちろん、漢字も書ける。', reading: 'ひらがなはもちろん、かんじもかける。', back: 'She can write kanji, never mind hiragana.' },
-        { front: 'もちろん、行くよ。', reading: 'もちろん、いくよ。', back: "Of course I'm going." }
+        { front: 'ひらがなはもちろん、漢字も書ける。', reading: 'ひらがなはもちろん、かんじもかける。', back: 'She can write hiragana, of course, and kanji too.' },
+        { front: 'もちろん、行くよ。', reading: 'もちろん、いくよ。', back: "Of course I'm going." },
+        { front: 'この店は味はもちろん、サービスもいい。', reading: 'このみせはあじはもちろん、サービスもいい。', back: 'The food is good here, not to mention the service.' },
+        { front: '彼は国内はもちろん、海外でも有名だ。', reading: 'かれはこくないはもちろん、かいがいでもゆうめいだ。', back: "He's famous at home, not to mention abroad." }
       ]
     },
     {
+      key: 'n3b.05',
       kind: 'grammar',
       title: '～に対して — toward / in contrast to',
       body: `Noun + に対して has two lives:
@@ -2338,10 +2668,13 @@ The noun-modifying form is に対する: 彼に対する気持ち "feelings towa
       cards: [
         { front: '目上の人に対して失礼だよ。', reading: 'めうえのひとにたいしてしつれいだよ。', back: "That's rude toward your seniors." },
         { front: '兄が静かなのに対して、弟はうるさい。', reading: 'あにがしずかなのにたいして、おとうとはうるさい。', back: 'The older brother is quiet, whereas the younger one is loud.' },
-        { front: '彼に対する気持ちが分からない。', reading: 'かれにたいするきもちがわからない。', back: "I don't understand my feelings toward him." }
+        { front: '彼に対する気持ちが分からない。', reading: 'かれにたいするきもちがわからない。', back: "I don't understand my feelings toward him." },
+        { front: '先生は学生に対して厳しい。', reading: 'せんせいはがくせいにたいしてきびしい。', back: 'The teacher is strict with the students.' },
+        { front: '質問に対して、彼は何も答えなかった。', reading: 'しつもんにたいして、かれはなにもこたえなかった。', back: 'He gave no answer at all to the question.' }
       ]
     },
     {
+      key: 'n3b.06',
       kind: 'grammar',
       title: '～について・～に関して — about / regarding',
       body: `Both mark a topic of discussion:
@@ -2351,14 +2684,20 @@ The noun-modifying form is に対する: 彼に対する気持ち "feelings towa
 
 Noun-modifying forms: についての／に関する + noun: 事件に関する情報 "information regarding the incident" — standard mystery-VN phrasing.
 
-Don't confuse について with につれて ("as… progresses", an N2 pattern) — same に+verb shape, unrelated meaning.`,
+Don't confuse について with につれて ("as… progresses", an N2 pattern) — same に+verb shape, unrelated meaning.
+
+に関わる means "affecting, bearing on" something serious: 命に関わる — "life-threatening", 名誉に関わる — "a matter of honour".`,
       cards: [
         { front: '日本の歴史について話しましょう。', reading: 'にほんのれきしについてはなしましょう。', back: "Let's talk about Japanese history." },
         { front: 'その件に関しては、後で説明する。', reading: 'そのけんにかんしては、あとでせつめいする。', back: "Regarding that matter, I'll explain later." },
-        { front: '事件に関する情報を集めている。', reading: 'じけんにかんするじょうほうをあつめている。', back: "I'm gathering information about the incident." }
+        { front: '事件に関する情報を集めている。', reading: 'じけんにかんするじょうほうをあつめている。', back: "I'm gathering information about the incident." },
+        { front: 'この本について、どう思う？', reading: 'このほんについて、どうおもう？', back: 'What do you think about this book?' },
+        { front: '環境問題に関して、レポートを書いた。', reading: 'かんきょうもんだいにかんして、レポートをかいた。', back: 'I wrote a report on environmental issues.' },
+        { front: '命に関わる病気ではないので、安心してください。', reading: 'いのちにかかわるびょうきではないので、あんしんしてください。', back: "It isn't a life-threatening illness, so please don't worry." }
       ]
     },
     {
+      key: 'n3b.07',
       kind: 'grammar',
       title: '～ため(に) — because of (cause)',
       body: `You met ために as PURPOSE (N4). Its second reading is CAUSE — and tense tells them apart:
@@ -2372,10 +2711,13 @@ This is announcement/narration language — station loudspeakers, news captions,
       cards: [
         { front: '事故のため、電車が遅れています。', reading: 'じこのため、でんしゃがおくれています。', back: 'Trains are delayed due to an accident.' },
         { front: '台風のため、学校が休みになった。', reading: 'たいふうのため、がっこうがやすみになった。', back: 'School was canceled because of the typhoon.' },
-        { front: '雨のため、試合は中止です。', reading: 'あめのため、しあいはちゅうしです。', back: 'The match is canceled due to rain.' }
+        { front: '雨のため、試合は中止です。', reading: 'あめのため、しあいはちゅうしです。', back: 'The match is canceled due to rain.' },
+        { front: '大雪のため、道路が通行止めになった。', reading: 'おおゆきのため、どうろがつうこうどめになった。', back: 'The road was closed because of heavy snow.' },
+        { front: '電車が遅れたため、会議に間に合わなかった。', reading: 'でんしゃがおくれたため、かいぎにまにあわなかった。', back: "The train was delayed, so I didn't make it to the meeting." }
       ]
     },
     {
+      key: 'n3b.08',
       kind: 'grammar',
       title: '～せいで・～おかげで — blame and credit',
       body: `Both mean "because of", but with opposite feelings:
@@ -2389,10 +2731,13 @@ Sarcastic おかげで exists too: おかげでひどい目にあったよ "than
       cards: [
         { front: 'お前のせいで負けたんだぞ！', reading: 'おまえのせいでまけたんだぞ！', back: 'We lost because of you!' },
         { front: '先生のおかげで合格しました。', reading: 'せんせいのおかげでごうかくしました。', back: 'I passed thanks to my teacher.' },
-        { front: '人のせいにするなよ。', reading: 'ひとのせいにするなよ。', back: "Don't blame it on others." }
+        { front: '人のせいにするなよ。', reading: 'ひとのせいにするなよ。', back: "Don't blame it on others." },
+        { front: '寝不足のせいで、頭が痛い。', reading: 'ねぶそくのせいで、あたまがいたい。', back: 'My head hurts from lack of sleep.' },
+        { front: '君のおかげで助かったよ。', reading: 'きみのおかげでたすかったよ。', back: 'You saved me — thanks to you.' }
       ]
     },
     {
+      key: 'n3b.09',
       kind: 'grammar',
       title: '～ふりをする — pretending',
       body: `Plain form / noun-の + ふりをする — "pretend to":
@@ -2405,10 +2750,13 @@ The noun ふり alone shows up in 見て見ぬふり "turning a blind eye" (seei
       cards: [
         { front: '寝ているふりをした。', reading: 'ねているふりをした。', back: 'I pretended to be asleep.' },
         { front: '聞こえないふりをするな。', reading: 'きこえないふりをするな。', back: "Don't pretend you can't hear me." },
-        { front: '彼女は平気なふりをしている。', reading: 'かのじょはへいきなふりをしている。', back: "She's acting like she's fine." }
+        { front: '彼女は平気なふりをしている。', reading: 'かのじょはへいきなふりをしている。', back: "She's acting like she's fine." },
+        { front: '彼は知らないふりをした。', reading: 'かれはしらないふりをした。', back: 'He pretended not to know.' },
+        { front: '死んだふりをしろ！', reading: 'しんだふりをしろ！', back: 'Play dead!' }
       ]
     },
     {
+      key: 'n3b.10',
       kind: 'grammar',
       title: '～ということ — the fact that…',
       body: `という + こと wraps a whole clause into a noun — how Japanese embeds statements:
@@ -2424,10 +2772,13 @@ When a sentence feels endless, find ということ and read everything before i
       cards: [
         { front: '彼が犯人だということが分かった。', reading: 'かれがはんにんだということがわかった。', back: 'It became clear that he is the culprit.' },
         { front: 'ということは、君も見たのか。', reading: 'ということは、きみもみたのか。', back: 'So that means you saw it too?' },
-        { front: 'どういうことだよ！', reading: 'どういうことだよ！', back: "What's that supposed to mean?!" }
+        { front: 'どういうことだよ！', reading: 'どういうことだよ！', back: "What's that supposed to mean?!" },
+        { front: '一番大切なのは、諦めないということだ。', reading: 'いちばんたいせつなのは、あきらめないということだ。', back: 'The most important thing is not giving up.' },
+        { front: '明日は休みだということを忘れていた。', reading: 'あしたはやすみだということをわすれていた。', back: 'I forgot that tomorrow is a day off.' }
       ]
     },
     {
+      key: 'n3b.11',
       kind: 'grammar',
       title: '～場合（は） — in the case of',
       body: `場合（ばあい） is the formal "if/when the situation arises":
@@ -2441,10 +2792,13 @@ Cousin phrase: 場合によっては "depending on circumstances". Rules, announ
       cards: [
         { front: '雨の場合は中止です。', reading: 'あめのばあいはちゅうしです。', back: 'In case of rain, it will be canceled.' },
         { front: '遅れる場合は連絡してください。', reading: 'おくれるばあいはれんらくしてください。', back: "Please contact us if you'll be late." },
-        { front: '見つけた場合はどうすればいい？', reading: 'みつけたばあいはどうすればいい？', back: 'What should I do if I find it?' }
+        { front: '見つけた場合はどうすればいい？', reading: 'みつけたばあいはどうすればいい？', back: 'What should I do if I find it?' },
+        { front: '火事の場合は、エレベーターを使わないでください。', reading: 'かじのばあいは、エレベーターをつかわないでください。', back: 'In case of fire, do not use the elevator.' },
+        { front: '質問がある場合は、手を挙げてください。', reading: 'しつもんがあるばあいは、てをあげてください。', back: 'If you have a question, please raise your hand.' }
       ]
     },
     {
+      key: 'n3b.12',
       kind: 'grammar',
       title: 'たとえ～ても — even if (hypothetically)',
       body: `たとえ announces up front that the coming ても is hypothetical — it braces the sentence:
@@ -2456,10 +2810,13 @@ The combo pattern to burn in: たとえ + て-form + も. Dramatic dialogue love
       cards: [
         { front: 'たとえ雨が降っても、行くよ。', reading: 'たとえあめがふっても、いくよ。', back: "Even if it rains, I'm going." },
         { front: 'たとえ冗談でも、それは言うな。', reading: 'たとえじょうだんでも、それはいうな。', back: "Even as a joke, don't say that." },
-        { front: 'たとえ世界が敵になっても、守る。', reading: 'たとえせかいがてきになっても、まもる。', back: "Even if the world turns against us, I'll protect you." }
+        { front: 'たとえ世界が敵になっても、守る。', reading: 'たとえせかいがてきになっても、まもる。', back: "Even if the world turns against us, I'll protect you." },
+        { front: 'たとえ失敗しても、後悔はしない。', reading: 'たとえしっぱいしても、こうかいはしない。', back: "Even if I fail, I won't regret it." },
+        { front: 'たとえ親に反対されても、この道を選ぶ。', reading: 'たとえおやにはんたいされても、このみちをえらぶ。', back: "Even if my parents oppose it, I'm choosing this path." }
       ]
     },
     {
+      key: 'n3b.13',
       kind: 'grammar',
       title: '～わりに(は) — considering',
       body: `X わりに Y — "Y, considering X" (the two don't match expectations):
@@ -2472,10 +2829,13 @@ Attach: noun + の, plain forms directly. Cousin: にしては ("for a…"): 初
       cards: [
         { front: 'この店は値段のわりに美味しい。', reading: 'このみせはねだんのわりにおいしい。', back: 'This place is tasty for the price.' },
         { front: '彼は年のわりに若く見える。', reading: 'かれはとしのわりにわかくみえる。', back: 'He looks young for his age.' },
-        { front: '初めてにしては上手だね。', reading: 'はじめてにしてはじょうずだね。', back: "You're good, for a first-timer." }
+        { front: '初めてにしては上手だね。', reading: 'はじめてにしてはじょうずだね。', back: "You're good, for a first-timer." },
+        { front: 'この部屋は広いわりに家賃が安い。', reading: 'このへやはひろいわりにやちんがやすい。', back: 'This room is cheap considering how spacious it is.' },
+        { front: '彼女はよく食べるわりに痩せている。', reading: 'かのじょはよくたべるわりにやせている。', back: "She's slim considering how much she eats." }
       ]
     },
     {
+      key: 'n3b.14',
       kind: 'grammar',
       title: '～くせに — even though (accusing)',
       body: `くせに is のに with a sneer — "even though / and yet", aimed AT someone:
@@ -2489,10 +2849,13 @@ Trailing off with it is a tsundere trademark: 何よ、心配したくせに…�
       cards: [
         { front: '知ってるくせに、教えてくれない。', reading: 'しってるくせに、おしえてくれない。', back: "You know, and yet you won't tell me." },
         { front: '子供のくせに生意気だ。', reading: 'こどものくせになまいきだ。', back: 'Cheeky, for a kid.' },
-        { front: '心配したくせに…。', reading: 'しんぱいしたくせに…。', back: 'Even though you were worried about me… (teasing)' }
+        { front: '心配したくせに…。', reading: 'しんぱいしたくせに…。', back: 'Even though you were worried about me… (teasing)' },
+        { front: '下手なくせに、文句ばかり言う。', reading: 'へたなくせに、もんくばかりいう。', back: "He's bad at it, yet all he does is complain." },
+        { front: '自分は遅れたくせに、人には怒るんだね。', reading: 'じぶんはおくれたくせに、ひとにはおこるんだね。', back: 'You were late yourself, and yet you get angry at others.' }
       ]
     },
     {
+      key: 'n3b.15',
       kind: 'grammar',
       title: '～っぱなし — left running / kept on',
       body: `ます-stem + っぱなし — something started and never dealt with:
@@ -2504,10 +2867,13 @@ Grammatically a noun: takes だ/の/にする. The casual cousin of てある/�
       cards: [
         { front: '水を出しっぱなしにしないで。', reading: 'みずをだしっぱなしにしないで。', back: "Don't leave the water running." },
         { front: '今日は一日中立ちっぱなしだった。', reading: 'きょうはいちにちじゅうたちっぱなしだった。', back: 'I was on my feet all day today.' },
-        { front: 'うちのチームは負けっぱなしだ。', reading: 'うちのチームはまけっぱなしだ。', back: "Our team just keeps losing." }
+        { front: 'うちのチームは負けっぱなしだ。', reading: 'うちのチームはまけっぱなしだ。', back: "Our team just keeps losing." },
+        { front: 'テレビをつけっぱなしで寝てしまった。', reading: 'テレビをつけっぱなしでねてしまった。', back: 'I fell asleep with the TV left on.' },
+        { front: 'ドアを開けっぱなしにするな。', reading: 'ドアをあけっぱなしにするな。', back: "Don't leave the door open." }
       ]
     },
     {
+      key: 'n3b.16',
       kind: 'grammar',
       title: '～とおり(に) — just as / the way',
       body: `とおり ("way/route") after a clause or noun = "exactly as":
@@ -2520,187 +2886,195 @@ Grammatically a noun: takes だ/の/にする. The casual cousin of てある/�
       cards: [
         { front: '私が言うとおりにやってみて。', reading: 'わたしがいうとおりにやってみて。', back: 'Try doing it just the way I say.' },
         { front: '思ったとおりだ。', reading: 'おもったとおりだ。', back: 'Just as I thought.' },
-        { front: '作戦は予定どおりに進んでいる。', reading: 'さくせんはよていどおりにすすんでいる。', back: 'The operation is going according to plan.' }
+        { front: '作戦は予定どおりに進んでいる。', reading: 'さくせんはよていどおりにすすんでいる。', back: 'The operation is going according to plan.' },
+        { front: '説明書のとおりに組み立てた。', reading: 'せつめいしょのとおりにくみたてた。', back: 'I assembled it following the instructions.' },
+        { front: '先生の言ったとおりになった。', reading: 'せんせいのいったとおりになった。', back: 'It turned out just as the teacher said.' }
       ]
     }
   ]
 }
 
-const N3_VOCAB_COURSE: SeedCourse = {
+const N3_VOCAB_COURSE: SeedCourseDef = {
   title: 'JLPT N3 Vocabulary',
   description:
-    'Core intermediate words — feelings, judgment, society and the abstract nouns ' +
-    'narration runs on. From here on, most new vocabulary should come from what you ' +
-    'read (mine it!); this deck covers the unavoidable core.',
+    'A starter set of 112 core intermediate words — feelings, judgment, society and the abstract ' +
+    'nouns narration runs on. N3 needs about 3,700 words; the core word decks the Path asks for ' +
+    'and the words you mine from reading supply the rest.',
   level: 'N3',
-  difficulty: 15,
   lessons: [
     {
+      key: 'n3vocab.01',
       kind: 'vocab',
       title: 'Emotions & the heart',
       cards: [
-        { front: '不安', reading: 'ふあん', back: 'anxiety; unease', pos: 'na-adjective/noun' },
-        { front: '我慢', reading: 'がまん', back: 'endurance; putting up with it', pos: 'noun', notes: '我慢できない = "I can\'t stand it".' },
-        { front: '緊張', reading: 'きんちょう', back: 'nervousness; tension', pos: 'noun' },
-        { front: '感動', reading: 'かんどう', back: 'being (deeply) moved', pos: 'noun' },
-        { front: '期待', reading: 'きたい', back: 'expectation; hope', pos: 'noun' },
-        { front: '後悔', reading: 'こうかい', back: 'regret', pos: 'noun' },
-        { front: '恋', reading: 'こい', back: 'romantic love', pos: 'noun' },
-        { front: '憧れる', reading: 'あこがれる', back: 'to yearn for; to look up to', pos: 'verb (ru)' },
-        { front: '羨ましい', reading: 'うらやましい', back: 'envious; "I\'m jealous"', pos: 'i-adjective' },
-        { front: '悔しい', reading: 'くやしい', back: 'frustrating; vexing', pos: 'i-adjective', notes: 'The post-defeat word in every sports manga.' },
-        { front: '落ち込む', reading: 'おちこむ', back: 'to feel down', pos: 'verb (u)' },
-        { front: '照れる', reading: 'てれる', back: 'to be bashful', pos: 'verb (ru)' },
-        { front: '甘える', reading: 'あまえる', back: 'to act spoiled; to depend on someone\'s kindness', pos: 'verb (ru)' },
-        { front: '気になる', reading: 'きになる', back: 'to weigh on one\'s mind; to be curious about', pos: 'expression' },
-        { front: '気に入る', reading: 'きにいる', back: 'to take a liking to', pos: 'expression' },
-        { front: 'ほっとする', back: 'to feel relieved', pos: 'expression' }
+        { front: '不安', reading: 'ふあん', back: 'anxiety; unease', pos: 'na-adjective/noun', exampleJp: '明日の試験が不安です。', exampleReading: 'あしたのしけんがふあんです。', exampleEn: "I'm anxious about tomorrow's exam." },
+        { front: '我慢', reading: 'がまん', back: 'endurance; putting up with it', pos: 'noun', notes: '我慢できない = "I can\'t stand it".', exampleJp: '痛いけど、もう少し我慢してください。', exampleReading: 'いたいけど、もうすこしがまんしてください。', exampleEn: 'It hurts, but please bear with it a little longer.' },
+        { front: '緊張', reading: 'きんちょう', back: 'nervousness; tension', pos: 'noun', exampleJp: '面接の前はいつも緊張する。', exampleReading: 'めんせつのまえはいつもきんちょうする。', exampleEn: 'I always get nervous before an interview.' },
+        { front: '感動', reading: 'かんどう', back: 'being (deeply) moved', pos: 'noun', exampleJp: 'その映画を見て、とても感動した。', exampleReading: 'そのえいがをみて、とてもかんどうした。', exampleEn: 'I was deeply moved by that movie.' },
+        { front: '期待', reading: 'きたい', back: 'expectation; hope', pos: 'noun', exampleJp: '新しいゲームに期待している。', exampleReading: 'あたらしいゲームにきたいしている。', exampleEn: 'I have high hopes for the new game.' },
+        { front: '後悔', reading: 'こうかい', back: 'regret', pos: 'noun', exampleJp: 'あの時、言わなかったことを後悔している。', exampleReading: 'あのとき、いわなかったことをこうかいしている。', exampleEn: 'I regret not saying it back then.' },
+        { front: '恋', reading: 'こい', back: 'romantic love', pos: 'noun', exampleJp: '彼は初めての恋をした。', exampleReading: 'かれははじめてのこいをした。', exampleEn: 'He fell in love for the first time.' },
+        { front: '憧れる', reading: 'あこがれる', back: 'to yearn for; to look up to', pos: 'verb (ru)', exampleJp: '子供の頃、宇宙飛行士に憧れていた。', exampleReading: 'こどものころ、うちゅうひこうしにあこがれていた。', exampleEn: 'As a child, I looked up to astronauts.' },
+        { front: '羨ましい', reading: 'うらやましい', back: 'envious; "I\'m jealous"', pos: 'i-adjective', exampleJp: '毎日旅行できるなんて、羨ましいな。', exampleReading: 'まいにちりょこうできるなんて、うらやましいな。', exampleEn: "You get to travel every day? I'm jealous." },
+        { front: '悔しい', reading: 'くやしい', back: 'frustrating; vexing', pos: 'i-adjective', notes: 'The post-defeat word in every sports manga.', exampleJp: '一点差で負けて、悔しかった。', exampleReading: 'いってんさでまけて、くやしかった。', exampleEn: 'Losing by one point was so frustrating.' },
+        { front: '落ち込む', reading: 'おちこむ', back: 'to feel down', pos: 'verb (u)', exampleJp: '試験に落ちて、落ち込んでいる。', exampleReading: 'しけんにおちて、おちこんでいる。', exampleEn: "I failed the exam and I'm feeling down." },
+        { front: '照れる', reading: 'てれる', back: 'to be bashful', pos: 'verb (ru)', exampleJp: '褒められて、彼は照れていた。', exampleReading: 'ほめられて、かれはてれていた。', exampleEn: 'He was bashful when he was praised.' },
+        { front: '甘える', reading: 'あまえる', back: 'to act spoiled; to depend on someone\'s kindness', pos: 'verb (ru)', exampleJp: '妹はいつも母に甘えている。', exampleReading: 'いもうとはいつもははにあまえている。', exampleEn: 'My younger sister is always leaning on our mother.' },
+        { front: '気になる', reading: 'きになる', back: 'to weigh on one\'s mind; to be curious about', pos: 'expression', exampleJp: '彼女の言葉がずっと気になっている。', exampleReading: 'かのじょのことばがずっときになっている。', exampleEn: 'What she said has been on my mind ever since.' },
+        { front: '気に入る', reading: 'きにいる', back: 'to take a liking to', pos: 'expression', exampleJp: 'このかばん、とても気に入った。', exampleReading: 'このかばん、とてもきにいった。', exampleEn: 'I really like this bag.' },
+        { front: 'ほっとする', back: 'to feel relieved', pos: 'expression', exampleJp: '試験が終わって、ほっとした。', exampleReading: 'しけんがおわって、ほっとした。', exampleEn: 'I felt relieved when the exam was over.' }
       ]
     },
     {
+      key: 'n3vocab.02',
       kind: 'vocab',
       title: 'Verbs IV — trust, choice, change',
       cards: [
-        { front: '気づく', reading: 'きづく', back: 'to notice; to realize', pos: 'verb (u)' },
-        { front: '諦める', reading: 'あきらめる', back: 'to give up', pos: 'verb (ru)' },
-        { front: '信じる', reading: 'しんじる', back: 'to believe; to trust', pos: 'verb (ru)' },
-        { front: '疑う', reading: 'うたがう', back: 'to doubt; to suspect', pos: 'verb (u)' },
-        { front: '断る', reading: 'ことわる', back: 'to refuse; to decline', pos: 'verb (u)' },
-        { front: '頼む', reading: 'たのむ', back: 'to request; to rely on', pos: 'verb (u)', notes: '頼む！ alone = "please, I\'m begging you!"' },
-        { front: '助ける', reading: 'たすける', back: 'to save; to help', pos: 'verb (ru)' },
-        { front: '守る', reading: 'まもる', back: 'to protect; to keep (a promise)', pos: 'verb (u)' },
-        { front: '育てる', reading: 'そだてる', back: 'to raise; to bring up', pos: 'verb (ru)' },
-        { front: '増える', reading: 'ふえる', back: 'to increase', pos: 'verb (ru)' },
-        { front: '減る', reading: 'へる', back: 'to decrease', pos: 'verb (u)', notes: 'お腹が減った = "I\'m hungry" (casual).' },
-        { front: '進む', reading: 'すすむ', back: 'to advance; to progress', pos: 'verb (u)' },
-        { front: '戻る', reading: 'もどる', back: 'to return; to go back', pos: 'verb (u)' },
-        { front: '渡す', reading: 'わたす', back: 'to hand over', pos: 'verb (u)' },
-        { front: '拾う', reading: 'ひろう', back: 'to pick up (off the ground)', pos: 'verb (u)' },
-        { front: '隠す', reading: 'かくす', back: 'to hide (something)', pos: 'verb (u)', notes: '隠れる = to hide (oneself).' }
+        { front: '気づく', reading: 'きづく', back: 'to notice; to realize', pos: 'verb (u)', exampleJp: '財布を落としたことに気づかなかった。', exampleReading: 'さいふをおとしたことにきづかなかった。', exampleEn: "I didn't notice I'd dropped my wallet." },
+        { front: '諦める', reading: 'あきらめる', back: 'to give up', pos: 'verb (ru)', exampleJp: '最後まで諦めないで。', exampleReading: 'さいごまであきらめないで。', exampleEn: "Don't give up until the end." },
+        { front: '信じる', reading: 'しんじる', back: 'to believe; to trust', pos: 'verb (ru)', exampleJp: '君の言葉を信じるよ。', exampleReading: 'きみのことばをしんじるよ。', exampleEn: 'I believe what you say.' },
+        { front: '疑う', reading: 'うたがう', back: 'to doubt; to suspect', pos: 'verb (u)', exampleJp: '警察は彼を疑っている。', exampleReading: 'けいさつはかれをうたがっている。', exampleEn: 'The police suspect him.' },
+        { front: '断る', reading: 'ことわる', back: 'to refuse; to decline', pos: 'verb (u)', exampleJp: '仕事が忙しくて、誘いを断った。', exampleReading: 'しごとがいそがしくて、さそいをことわった。', exampleEn: 'I was busy with work, so I turned down the invitation.' },
+        { front: '頼む', reading: 'たのむ', back: 'to request; to rely on', pos: 'verb (u)', notes: '頼む！ alone = "please, I\'m begging you!"', exampleJp: '友達に引っ越しの手伝いを頼んだ。', exampleReading: 'ともだちにひっこしのてつだいをたのんだ。', exampleEn: 'I asked a friend to help me move.' },
+        { front: '助ける', reading: 'たすける', back: 'to save; to help', pos: 'verb (ru)', exampleJp: '川に落ちた子供を助けた。', exampleReading: 'かわにおちたこどもをたすけた。', exampleEn: 'I saved a child who had fallen into the river.' },
+        { front: '守る', reading: 'まもる', back: 'to protect; to keep (a promise)', pos: 'verb (u)', exampleJp: '約束は必ず守ります。', exampleReading: 'やくそくはかならずまもります。', exampleEn: 'I always keep my promises.' },
+        { front: '育てる', reading: 'そだてる', back: 'to raise; to bring up', pos: 'verb (ru)', exampleJp: '祖母は五人の子供を育てた。', exampleReading: 'そぼはごにんのこどもをそだてた。', exampleEn: 'My grandmother raised five children.' },
+        { front: '増える', reading: 'ふえる', back: 'to increase', pos: 'verb (ru)', exampleJp: '最近、外国人の観光客が増えた。', exampleReading: 'さいきん、がいこくじんのかんこうきゃくがふえた。', exampleEn: 'The number of foreign tourists has gone up recently.' },
+        { front: '減る', reading: 'へる', back: 'to decrease', pos: 'verb (u)', notes: 'お腹が減った = "I\'m hungry" (casual).', exampleJp: '運動して、体重が三キロ減った。', exampleReading: 'うんどうして、たいじゅうがさんキロへった。', exampleEn: 'I exercised and lost three kilos.' },
+        { front: '進む', reading: 'すすむ', back: 'to advance; to progress', pos: 'verb (u)', exampleJp: '工事は予定通りに進んでいる。', exampleReading: 'こうじはよていどおりにすすんでいる。', exampleEn: 'The construction is going according to plan.' },
+        { front: '戻る', reading: 'もどる', back: 'to return; to go back', pos: 'verb (u)', exampleJp: '忘れ物をして、家に戻った。', exampleReading: 'わすれものをして、いえにもどった。', exampleEn: 'I forgot something and went back home.' },
+        { front: '渡す', reading: 'わたす', back: 'to hand over', pos: 'verb (u)', exampleJp: 'この書類を部長に渡してください。', exampleReading: 'このしょるいをぶちょうにわたしてください。', exampleEn: 'Please hand these documents to the department manager.' },
+        { front: '拾う', reading: 'ひろう', back: 'to pick up (off the ground)', pos: 'verb (u)', exampleJp: '道でごみを拾った。', exampleReading: 'みちでごみをひろった。', exampleEn: 'I picked up some rubbish off the street.' },
+        { front: '隠す', reading: 'かくす', back: 'to hide (something)', pos: 'verb (u)', notes: '隠れる = to hide (oneself).', exampleJp: '彼は本当の気持ちを隠している。', exampleReading: 'かれはほんとうのきもちをかくしている。', exampleEn: 'He is hiding his true feelings.' }
       ]
     },
     {
+      key: 'n3vocab.03',
       kind: 'vocab',
       title: 'School, work & society',
       cards: [
-        { front: '社会', reading: 'しゃかい', back: 'society', pos: 'noun' },
-        { front: '先輩', reading: 'せんぱい', back: 'senior (school/work)', pos: 'noun' },
-        { front: '後輩', reading: 'こうはい', back: 'junior (school/work)', pos: 'noun' },
-        { front: '上司', reading: 'じょうし', back: 'boss; superior', pos: 'noun' },
-        { front: '部下', reading: 'ぶか', back: 'subordinate', pos: 'noun' },
-        { front: '同僚', reading: 'どうりょう', back: 'coworker', pos: 'noun' },
-        { front: '会議', reading: 'かいぎ', back: 'meeting; conference', pos: 'noun' },
-        { front: '書類', reading: 'しょるい', back: 'documents; paperwork', pos: 'noun' },
-        { front: '給料', reading: 'きゅうりょう', back: 'salary', pos: 'noun' },
-        { front: '残業', reading: 'ざんぎょう', back: 'overtime work', pos: 'noun' },
-        { front: '就職', reading: 'しゅうしょく', back: 'getting a job', pos: 'noun' },
-        { front: '面接', reading: 'めんせつ', back: 'interview', pos: 'noun' },
-        { front: '卒業', reading: 'そつぎょう', back: 'graduation', pos: 'noun' },
-        { front: '入学', reading: 'にゅうがく', back: 'school entrance', pos: 'noun' },
-        { front: '成績', reading: 'せいせき', back: 'grades; results', pos: 'noun' },
-        { front: '部活', reading: 'ぶかつ', back: 'school club activities', pos: 'noun' }
+        { front: '社会', reading: 'しゃかい', back: 'society', pos: 'noun', exampleJp: '社会のルールを守ることは大切だ。', exampleReading: 'しゃかいのルールをまもることはたいせつだ。', exampleEn: "It's important to follow society's rules." },
+        { front: '先輩', reading: 'せんぱい', back: 'senior (school/work)', pos: 'noun', exampleJp: '部活の先輩に相談した。', exampleReading: 'ぶかつのせんぱいにそうだんした。', exampleEn: 'I talked it over with a senior from my club.' },
+        { front: '後輩', reading: 'こうはい', back: 'junior (school/work)', pos: 'noun', exampleJp: '後輩に仕事を教えている。', exampleReading: 'こうはいにしごとをおしえている。', exampleEn: "I'm teaching a junior colleague the job." },
+        { front: '上司', reading: 'じょうし', back: 'boss; superior', pos: 'noun', exampleJp: '上司に報告書を出した。', exampleReading: 'じょうしにほうこくしょをだした。', exampleEn: 'I handed my report to my boss.' },
+        { front: '部下', reading: 'ぶか', back: 'subordinate', pos: 'noun', exampleJp: '彼は部下に優しい上司だ。', exampleReading: 'かれはぶかにやさしいじょうしだ。', exampleEn: 'He is a boss who is kind to his subordinates.' },
+        { front: '同僚', reading: 'どうりょう', back: 'coworker', pos: 'noun', exampleJp: '同僚と昼ご飯を食べに行った。', exampleReading: 'どうりょうとひるごはんをたべにいった。', exampleEn: 'I went to lunch with a coworker.' },
+        { front: '会議', reading: 'かいぎ', back: 'meeting; conference', pos: 'noun', exampleJp: '午後三時から会議があります。', exampleReading: 'ごごさんじからかいぎがあります。', exampleEn: "There's a meeting from three in the afternoon." },
+        { front: '書類', reading: 'しょるい', back: 'documents; paperwork', pos: 'noun', exampleJp: '必要な書類を準備してください。', exampleReading: 'ひつようなしょるいをじゅんびしてください。', exampleEn: 'Please prepare the necessary documents.' },
+        { front: '給料', reading: 'きゅうりょう', back: 'salary', pos: 'noun', exampleJp: '来月から給料が上がる。', exampleReading: 'らいげつからきゅうりょうがあがる。', exampleEn: 'My salary goes up from next month.' },
+        { front: '残業', reading: 'ざんぎょう', back: 'overtime work', pos: 'noun', exampleJp: '昨日は十時まで残業した。', exampleReading: 'きのうはじゅうじまでざんぎょうした。', exampleEn: 'I worked overtime until ten last night.' },
+        { front: '就職', reading: 'しゅうしょく', back: 'getting a job', pos: 'noun', exampleJp: '姉は銀行に就職した。', exampleReading: 'あねはぎんこうにしゅうしょくした。', exampleEn: 'My older sister got a job at a bank.' },
+        { front: '面接', reading: 'めんせつ', back: 'interview', pos: 'noun', exampleJp: '明日、会社の面接があります。', exampleReading: 'あした、かいしゃのめんせつがあります。', exampleEn: 'I have a job interview tomorrow.' },
+        { front: '卒業', reading: 'そつぎょう', back: 'graduation', pos: 'noun', exampleJp: '来年の三月に大学を卒業します。', exampleReading: 'らいねんのさんがつにだいがくをそつぎょうします。', exampleEn: 'I graduate from university next March.' },
+        { front: '入学', reading: 'にゅうがく', back: 'school entrance', pos: 'noun', exampleJp: '弟は四月に高校に入学した。', exampleReading: 'おとうとはしがつにこうこうににゅうがくした。', exampleEn: 'My younger brother started high school in April.' },
+        { front: '成績', reading: 'せいせき', back: 'grades; results', pos: 'noun', exampleJp: '今学期は成績が上がった。', exampleReading: 'こんがっきはせいせきがあがった。', exampleEn: 'My grades went up this term.' },
+        { front: '部活', reading: 'ぶかつ', back: 'school club activities', pos: 'noun', exampleJp: '放課後は部活でサッカーをしている。', exampleReading: 'ほうかごはぶかつでサッカーをしている。', exampleEn: 'After school I play football in my club.' }
       ]
     },
     {
+      key: 'n3vocab.04',
       kind: 'vocab',
       title: 'Abstract nouns — cause, result, state',
       cards: [
-        { front: '目的', reading: 'もくてき', back: 'purpose; goal', pos: 'noun' },
-        { front: '理想', reading: 'りそう', back: 'ideal', pos: 'noun' },
-        { front: '想像', reading: 'そうぞう', back: 'imagination', pos: 'noun' },
-        { front: '記憶', reading: 'きおく', back: 'memory (faculty)', pos: 'noun', notes: '記憶喪失 = amnesia — you WILL meet this word.' },
-        { front: '経験', reading: 'けいけん', back: 'experience', pos: 'noun' },
-        { front: '知識', reading: 'ちしき', back: 'knowledge', pos: 'noun' },
-        { front: '判断', reading: 'はんだん', back: 'judgment; decision', pos: 'noun' },
-        { front: '解決', reading: 'かいけつ', back: 'resolution; solving', pos: 'noun' },
-        { front: '結果', reading: 'けっか', back: 'result', pos: 'noun' },
-        { front: '原因', reading: 'げんいん', back: 'cause', pos: 'noun' },
-        { front: '影響', reading: 'えいきょう', back: 'influence; effect', pos: 'noun' },
-        { front: '状態', reading: 'じょうたい', back: 'state; condition', pos: 'noun' },
-        { front: '状況', reading: 'じょうきょう', back: 'situation; circumstances', pos: 'noun' },
-        { front: '可能', reading: 'かのう', back: 'possible', pos: 'na-adjective' },
-        { front: '無駄', reading: 'むだ', back: 'futile; waste', pos: 'na-adjective/noun', notes: '無駄だ！ = "It\'s useless!"' },
-        { front: '秘密', reading: 'ひみつ', back: 'secret', pos: 'noun' }
+        { front: '目的', reading: 'もくてき', back: 'purpose; goal', pos: 'noun', exampleJp: '旅行の目的は何ですか。', exampleReading: 'りょこうのもくてきはなんですか。', exampleEn: 'What is the purpose of your trip?' },
+        { front: '理想', reading: 'りそう', back: 'ideal', pos: 'noun', exampleJp: '理想と現実は違う。', exampleReading: 'りそうとげんじつはちがう。', exampleEn: 'Ideals and reality are different.' },
+        { front: '想像', reading: 'そうぞう', back: 'imagination', pos: 'noun', exampleJp: '想像していたより難しかった。', exampleReading: 'そうぞうしていたよりむずかしかった。', exampleEn: 'It was harder than I had imagined.' },
+        { front: '記憶', reading: 'きおく', back: 'memory (faculty)', pos: 'noun', notes: '記憶喪失 = amnesia — you WILL meet this word.', exampleJp: '子供の頃の記憶はほとんどない。', exampleReading: 'こどものころのきおくはほとんどない。', exampleEn: 'I have almost no memories of my childhood.' },
+        { front: '経験', reading: 'けいけん', back: 'experience', pos: 'noun', exampleJp: '海外で働いた経験があります。', exampleReading: 'かいがいではたらいたけいけんがあります。', exampleEn: 'I have experience working abroad.' },
+        { front: '知識', reading: 'ちしき', back: 'knowledge', pos: 'noun', exampleJp: '彼は歴史の知識が豊富だ。', exampleReading: 'かれはれきしのちしきがほうふだ。', exampleEn: 'He has a wealth of knowledge about history.' },
+        { front: '判断', reading: 'はんだん', back: 'judgment; decision', pos: 'noun', exampleJp: '自分で判断してください。', exampleReading: 'じぶんではんだんしてください。', exampleEn: 'Please decide for yourself.' },
+        { front: '解決', reading: 'かいけつ', back: 'resolution; solving', pos: 'noun', exampleJp: 'その問題はもう解決した。', exampleReading: 'そのもんだいはもうかいけつした。', exampleEn: 'That problem has already been solved.' },
+        { front: '結果', reading: 'けっか', back: 'result', pos: 'noun', exampleJp: '試験の結果はどうだった？', exampleReading: 'しけんのけっかはどうだった？', exampleEn: 'How did your exam results turn out?' },
+        { front: '原因', reading: 'げんいん', back: 'cause', pos: 'noun', exampleJp: '事故の原因はまだ分からない。', exampleReading: 'じこのげんいんはまだわからない。', exampleEn: 'The cause of the accident is still unknown.' },
+        { front: '影響', reading: 'えいきょう', back: 'influence; effect', pos: 'noun', exampleJp: '台風の影響で電車が止まった。', exampleReading: 'たいふうのえいきょうででんしゃがとまった。', exampleEn: 'The trains stopped because of the typhoon.' },
+        { front: '状態', reading: 'じょうたい', back: 'state; condition', pos: 'noun', exampleJp: 'その車はいい状態だった。', exampleReading: 'そのくるまはいいじょうたいだった。', exampleEn: 'That car was in good condition.' },
+        { front: '状況', reading: 'じょうきょう', back: 'situation; circumstances', pos: 'noun', exampleJp: '今の状況を説明してください。', exampleReading: 'いまのじょうきょうをせつめいしてください。', exampleEn: 'Please explain the current situation.' },
+        { front: '可能', reading: 'かのう', back: 'possible', pos: 'na-adjective', exampleJp: '明日までに終わらせることは可能ですか。', exampleReading: 'あしたまでにおわらせることはかのうですか。', exampleEn: 'Is it possible to finish it by tomorrow?' },
+        { front: '無駄', reading: 'むだ', back: 'futile; waste', pos: 'na-adjective/noun', notes: '無駄だ！ = "It\'s useless!"', exampleJp: '彼に言っても無駄だよ。', exampleReading: 'かれにいってもむだだよ。', exampleEn: "It's no use telling him." },
+        { front: '秘密', reading: 'ひみつ', back: 'secret', pos: 'noun', exampleJp: 'これは私たちだけの秘密だよ。', exampleReading: 'これはわたしたちだけのひみつだよ。', exampleEn: 'This is our secret — just between us.' }
       ]
     },
     {
+      key: 'n3vocab.05',
       kind: 'vocab',
       title: 'Adverbs & connectors II',
       cards: [
-        { front: '例えば', reading: 'たとえば', back: 'for example', pos: 'adverb' },
-        { front: 'つまり', back: 'in other words; in short', pos: 'conjunction' },
-        { front: 'ただし', back: 'however; provided that', pos: 'conjunction' },
-        { front: 'しかも', back: 'moreover; on top of that', pos: 'conjunction' },
-        { front: 'さらに', back: 'furthermore; even more', pos: 'adverb' },
-        { front: '一応', reading: 'いちおう', back: 'more or less; just in case', pos: 'adverb' },
-        { front: '結局', reading: 'けっきょく', back: 'in the end; after all', pos: 'adverb' },
-        { front: '案外', reading: 'あんがい', back: 'unexpectedly; surprisingly', pos: 'adverb' },
-        { front: '意外と', reading: 'いがいと', back: 'surprisingly; contrary to expectations', pos: 'adverb' },
-        { front: '絶対に', reading: 'ぜったいに', back: 'absolutely; definitely', pos: 'adverb' },
-        { front: '必ず', reading: 'かならず', back: 'without fail; always', pos: 'adverb' },
-        { front: 'きっと', back: 'surely; no doubt', pos: 'adverb' },
-        { front: 'もしかしたら', back: 'possibly; perhaps', pos: 'adverb' },
-        { front: 'なるべく', back: 'as much as possible', pos: 'adverb' },
-        { front: 'わざわざ', back: 'going out of one\'s way (to do)', pos: 'adverb' },
-        { front: 'それにしても', back: 'even so; still…', pos: 'conjunction' }
+        { front: '例えば', reading: 'たとえば', back: 'for example', pos: 'adverb', exampleJp: '例えば、どんな本が好きですか。', exampleReading: 'たとえば、どんなほんがすきですか。', exampleEn: 'For example, what kind of books do you like?' },
+        { front: 'つまり', back: 'in other words; in short', pos: 'conjunction', exampleJp: 'つまり、行けないということですか。', exampleReading: 'つまり、いけないということですか。', exampleEn: "So you mean you can't go?" },
+        { front: 'ただし', back: 'however; provided that', pos: 'conjunction', exampleJp: '入場は無料です。ただし、予約が必要です。', exampleReading: 'にゅうじょうはむりょうです。ただし、よやくがひつようです。', exampleEn: 'Admission is free. However, you need a reservation.' },
+        { front: 'しかも', back: 'moreover; on top of that', pos: 'conjunction', exampleJp: 'この店は安くて、しかもおいしい。', exampleReading: 'このみせはやすくて、しかもおいしい。', exampleEn: "This place is cheap, and on top of that it's good." },
+        { front: 'さらに', back: 'furthermore; even more', pos: 'adverb', exampleJp: '雨はさらに強くなった。', exampleReading: 'あめはさらにつよくなった。', exampleEn: 'The rain got even heavier.' },
+        { front: '一応', reading: 'いちおう', back: 'more or less; just in case', pos: 'adverb', exampleJp: '一応、傘を持って行こう。', exampleReading: 'いちおう、かさをもっていこう。', exampleEn: "Let's take an umbrella just in case." },
+        { front: '結局', reading: 'けっきょく', back: 'in the end; after all', pos: 'adverb', exampleJp: '結局、旅行には行かなかった。', exampleReading: 'けっきょく、りょこうにはいかなかった。', exampleEn: "In the end, I didn't go on the trip." },
+        { front: '案外', reading: 'あんがい', back: 'unexpectedly; surprisingly', pos: 'adverb', exampleJp: 'テストは案外簡単だった。', exampleReading: 'テストはあんがいかんたんだった。', exampleEn: 'The test was surprisingly easy.' },
+        { front: '意外と', reading: 'いがいと', back: 'surprisingly; contrary to expectations', pos: 'adverb', exampleJp: '彼は意外と料理が上手だ。', exampleReading: 'かれはいがいとりょうりがじょうずだ。', exampleEn: "He's surprisingly good at cooking." },
+        { front: '絶対に', reading: 'ぜったいに', back: 'absolutely; definitely', pos: 'adverb', exampleJp: '絶対に諦めない。', exampleReading: 'ぜったいにあきらめない。', exampleEn: "I'll never give up." },
+        { front: '必ず', reading: 'かならず', back: 'without fail; always', pos: 'adverb', exampleJp: '毎朝必ず牛乳を飲む。', exampleReading: 'まいあさかならずぎゅうにゅうをのむ。', exampleEn: 'I drink milk every morning without fail.' },
+        { front: 'きっと', back: 'surely; no doubt', pos: 'adverb', exampleJp: '明日はきっと晴れるよ。', exampleReading: 'あしたはきっとはれるよ。', exampleEn: "It'll surely be sunny tomorrow." },
+        { front: 'もしかしたら', back: 'possibly; perhaps', pos: 'adverb', exampleJp: 'もしかしたら、彼は来ないかもしれない。', exampleReading: 'もしかしたら、かれはこないかもしれない。', exampleEn: "Perhaps he won't come." },
+        { front: 'なるべく', back: 'as much as possible', pos: 'adverb', exampleJp: 'なるべく早く返事をください。', exampleReading: 'なるべくはやくへんじをください。', exampleEn: 'Please reply as soon as you can.' },
+        { front: 'わざわざ', back: 'going out of one\'s way (to do)', pos: 'adverb', exampleJp: 'わざわざ来てくれて、ありがとう。', exampleReading: 'わざわざきてくれて、ありがとう。', exampleEn: 'Thank you for going out of your way to come.' },
+        { front: 'それにしても', back: 'even so; still…', pos: 'conjunction', exampleJp: 'それにしても、今日は暑いね。', exampleReading: 'それにしても、きょうはあついね。', exampleEn: "Still, it's hot today, isn't it?" }
       ]
     },
     {
+      key: 'n3vocab.06',
       kind: 'vocab',
       title: 'Body, life & money',
       cards: [
-        { front: '怪我', reading: 'けが', back: 'injury', pos: 'noun', notes: '怪我をする = to get hurt.' },
-        { front: '涙', reading: 'なみだ', back: 'tears', pos: 'noun' },
-        { front: '汗', reading: 'あせ', back: 'sweat', pos: 'noun' },
-        { front: '息', reading: 'いき', back: 'breath', pos: 'noun', notes: '息をする = to breathe.' },
-        { front: '夢', reading: 'ゆめ', back: 'dream', pos: 'noun' },
-        { front: '骨', reading: 'ほね', back: 'bone', pos: 'noun' },
-        { front: '血', reading: 'ち', back: 'blood', pos: 'noun' },
-        { front: '肌', reading: 'はだ', back: 'skin', pos: 'noun' },
-        { front: '命', reading: 'いのち', back: 'life (the one you have)', pos: 'noun' },
-        { front: '家賃', reading: 'やちん', back: 'rent', pos: 'noun' },
-        { front: '貯金', reading: 'ちょきん', back: 'savings', pos: 'noun' },
-        { front: '節約', reading: 'せつやく', back: 'saving; economizing', pos: 'noun' },
-        { front: '借金', reading: 'しゃっきん', back: 'debt', pos: 'noun' },
-        { front: '無料', reading: 'むりょう', back: 'free of charge', pos: 'noun', notes: 'Also タダ (casual).' },
-        { front: '募集', reading: 'ぼしゅう', back: 'recruitment; "wanted"', pos: 'noun' },
-        { front: '遅刻', reading: 'ちこく', back: 'being late', pos: 'noun' }
+        { front: '怪我', reading: 'けが', back: 'injury', pos: 'noun', notes: '怪我をする = to get hurt.', exampleJp: 'サッカーで足に怪我をした。', exampleReading: 'サッカーであしにけがをした。', exampleEn: 'I hurt my leg playing football.' },
+        { front: '涙', reading: 'なみだ', back: 'tears', pos: 'noun', exampleJp: '彼女の目に涙が浮かんだ。', exampleReading: 'かのじょのめになみだがうかんだ。', exampleEn: 'Tears welled up in her eyes.' },
+        { front: '汗', reading: 'あせ', back: 'sweat', pos: 'noun', exampleJp: '走って、汗をかいた。', exampleReading: 'はしって、あせをかいた。', exampleEn: 'I ran and worked up a sweat.' },
+        { front: '息', reading: 'いき', back: 'breath', pos: 'noun', notes: '息をする = to breathe.', exampleJp: '階段を上って、息が苦しい。', exampleReading: 'かいだんをのぼって、いきがくるしい。', exampleEn: "I climbed the stairs and I'm out of breath." },
+        { front: '夢', reading: 'ゆめ', back: 'dream', pos: 'noun', exampleJp: '昨日、怖い夢を見た。', exampleReading: 'きのう、こわいゆめをみた。', exampleEn: 'I had a scary dream last night.' },
+        { front: '骨', reading: 'ほね', back: 'bone', pos: 'noun', exampleJp: '転んで、腕の骨を折った。', exampleReading: 'ころんで、うでのほねをおった。', exampleEn: 'I fell and broke my arm.' },
+        { front: '血', reading: 'ち', back: 'blood', pos: 'noun', exampleJp: '指から血が出ている。', exampleReading: 'ゆびからちがでている。', exampleEn: 'My finger is bleeding.' },
+        { front: '肌', reading: 'はだ', back: 'skin', pos: 'noun', exampleJp: '夏は肌が焼けやすい。', exampleReading: 'なつははだがやけやすい。', exampleEn: 'Skin burns easily in summer.' },
+        { front: '命', reading: 'いのち', back: 'life (the one you have)', pos: 'noun', exampleJp: '医者は彼の命を救った。', exampleReading: 'いしゃはかれのいのちをすくった。', exampleEn: 'The doctor saved his life.' },
+        { front: '家賃', reading: 'やちん', back: 'rent', pos: 'noun', exampleJp: 'この部屋の家賃は高い。', exampleReading: 'このへやのやちんはたかい。', exampleEn: 'The rent for this apartment is high.' },
+        { front: '貯金', reading: 'ちょきん', back: 'savings', pos: 'noun', exampleJp: '旅行のために貯金している。', exampleReading: 'りょこうのためにちょきんしている。', exampleEn: "I'm saving up for a trip." },
+        { front: '節約', reading: 'せつやく', back: 'saving; economizing', pos: 'noun', exampleJp: '電気代を節約しよう。', exampleReading: 'でんきだいをせつやくしよう。', exampleEn: "Let's save on electricity." },
+        { front: '借金', reading: 'しゃっきん', back: 'debt', pos: 'noun', exampleJp: '彼には大きな借金がある。', exampleReading: 'かれにはおおきなしゃっきんがある。', exampleEn: 'He has a large debt.' },
+        { front: '無料', reading: 'むりょう', back: 'free of charge', pos: 'noun', notes: 'Also タダ (casual).', exampleJp: '子供は入場無料です。', exampleReading: 'こどもはにゅうじょうむりょうです。', exampleEn: 'Admission is free for children.' },
+        { front: '募集', reading: 'ぼしゅう', back: 'recruitment; "wanted"', pos: 'noun', exampleJp: 'アルバイトを募集しています。', exampleReading: 'アルバイトをぼしゅうしています。', exampleEn: "We're hiring part-time staff." },
+        { front: '遅刻', reading: 'ちこく', back: 'being late', pos: 'noun', exampleJp: '寝坊して、学校に遅刻した。', exampleReading: 'ねぼうして、がっこうにちこくした。', exampleEn: 'I overslept and was late for school.' }
       ]
     },
     {
+      key: 'n3vocab.07',
       kind: 'vocab',
       title: 'Character & description III',
       cards: [
-        { front: '複雑', reading: 'ふくざつ', back: 'complicated', pos: 'na-adjective' },
-        { front: '単純', reading: 'たんじゅん', back: 'simple; simplistic', pos: 'na-adjective' },
-        { front: '正直', reading: 'しょうじき', back: 'honest', pos: 'na-adjective', notes: '正直、～ = "honestly, …" as an adverb.' },
-        { front: '素直', reading: 'すなお', back: 'honest with oneself; docile', pos: 'na-adjective', notes: '素直じゃない = the tsundere diagnosis.' },
-        { front: '真剣', reading: 'しんけん', back: 'serious; earnest', pos: 'na-adjective' },
-        { front: '熱心', reading: 'ねっしん', back: 'enthusiastic; devoted', pos: 'na-adjective' },
-        { front: '冷静', reading: 'れいせい', back: 'calm; cool-headed', pos: 'na-adjective' },
-        { front: '積極的', reading: 'せっきょくてき', back: 'proactive; assertive', pos: 'na-adjective' },
-        { front: '消極的', reading: 'しょうきょくてき', back: 'passive; reserved', pos: 'na-adjective' },
-        { front: '得意', reading: 'とくい', back: 'good at; one\'s forte', pos: 'na-adjective' },
-        { front: '苦手', reading: 'にがて', back: 'bad at; hard to deal with', pos: 'na-adjective' },
-        { front: '平気', reading: 'へいき', back: 'fine; unfazed', pos: 'na-adjective', notes: '平気だよ = "I\'m fine."' },
-        { front: '不思議', reading: 'ふしぎ', back: 'mysterious; strange', pos: 'na-adjective' },
-        { front: '当たり前', reading: 'あたりまえ', back: 'obvious; a given', pos: 'na-adjective/noun', notes: '当たり前だろ！ = "obviously!"' },
-        { front: '適当', reading: 'てきとう', back: 'suitable — or half-hearted (context!)', pos: 'na-adjective' },
-        { front: '面倒', reading: 'めんどう', back: 'a hassle; troublesome', pos: 'na-adjective/noun', notes: '面倒くさい／めんどくさい = "what a pain".' }
+        { front: '複雑', reading: 'ふくざつ', back: 'complicated', pos: 'na-adjective', exampleJp: 'この問題は複雑すぎる。', exampleReading: 'このもんだいはふくざつすぎる。', exampleEn: 'This problem is too complicated.' },
+        { front: '単純', reading: 'たんじゅん', back: 'simple; simplistic', pos: 'na-adjective', exampleJp: '単純なミスをしてしまった。', exampleReading: 'たんじゅんなミスをしてしまった。', exampleEn: 'I made a simple mistake.' },
+        { front: '正直', reading: 'しょうじき', back: 'honest', pos: 'na-adjective', notes: '正直、～ = "honestly, …" as an adverb.', exampleJp: '正直に言うと、あまり好きじゃない。', exampleReading: 'しょうじきにいうと、あまりすきじゃない。', exampleEn: "To be honest, I don't really like it." },
+        { front: '素直', reading: 'すなお', back: 'honest with oneself; docile', pos: 'na-adjective', notes: '素直じゃない = the tsundere diagnosis.', exampleJp: '素直に謝ったほうがいいよ。', exampleReading: 'すなおにあやまったほうがいいよ。', exampleEn: "You'd better just apologize." },
+        { front: '真剣', reading: 'しんけん', back: 'serious; earnest', pos: 'na-adjective', exampleJp: '彼は真剣な顔で話を聞いていた。', exampleReading: 'かれはしんけんなかおではなしをきいていた。', exampleEn: 'He was listening with a serious face.' },
+        { front: '熱心', reading: 'ねっしん', back: 'enthusiastic; devoted', pos: 'na-adjective', exampleJp: '彼女は熱心に日本語を勉強している。', exampleReading: 'かのじょはねっしんににほんごをべんきょうしている。', exampleEn: 'She is studying Japanese with real enthusiasm.' },
+        { front: '冷静', reading: 'れいせい', back: 'calm; cool-headed', pos: 'na-adjective', exampleJp: 'どんな時でも冷静でいたい。', exampleReading: 'どんなときでもれいせいでいたい。', exampleEn: 'I want to stay calm no matter what.' },
+        { front: '積極的', reading: 'せっきょくてき', back: 'proactive; assertive', pos: 'na-adjective', exampleJp: '授業では積極的に質問してください。', exampleReading: 'じゅぎょうではせっきょくてきにしつもんしてください。', exampleEn: 'Please ask questions actively in class.' },
+        { front: '消極的', reading: 'しょうきょくてき', back: 'passive; reserved', pos: 'na-adjective', exampleJp: '彼は新しいことに消極的だ。', exampleReading: 'かれはあたらしいことにしょうきょくてきだ。', exampleEn: 'He is reluctant to try new things.' },
+        { front: '得意', reading: 'とくい', back: 'good at; one\'s forte', pos: 'na-adjective', exampleJp: '姉は数学が得意です。', exampleReading: 'あねはすうがくがとくいです。', exampleEn: 'My older sister is good at maths.' },
+        { front: '苦手', reading: 'にがて', back: 'bad at; hard to deal with', pos: 'na-adjective', exampleJp: '私は朝早く起きるのが苦手です。', exampleReading: 'わたしはあさはやくおきるのがにがてです。', exampleEn: "I'm bad at getting up early." },
+        { front: '平気', reading: 'へいき', back: 'fine; unfazed', pos: 'na-adjective', notes: '平気だよ = "I\'m fine."', exampleJp: '少しくらい寒くても平気です。', exampleReading: 'すこしくらいさむくてもへいきです。', exampleEn: "A little cold doesn't bother me." },
+        { front: '不思議', reading: 'ふしぎ', back: 'mysterious; strange', pos: 'na-adjective', exampleJp: '不思議な夢を見た。', exampleReading: 'ふしぎなゆめをみた。', exampleEn: 'I had a strange dream.' },
+        { front: '当たり前', reading: 'あたりまえ', back: 'obvious; a given', pos: 'na-adjective/noun', notes: '当たり前だろ！ = "obviously!"', exampleJp: '約束を守るのは当たり前だ。', exampleReading: 'やくそくをまもるのはあたりまえだ。', exampleEn: 'Keeping your promises goes without saying.' },
+        { front: '適当', reading: 'てきとう', back: 'suitable — or half-hearted (context!)', pos: 'na-adjective', exampleJp: '彼はいつも適当に返事をする。', exampleReading: 'かれはいつもてきとうにへんじをする。', exampleEn: 'He always answers half-heartedly.' },
+        { front: '面倒', reading: 'めんどう', back: 'a hassle; troublesome', pos: 'na-adjective/noun', notes: '面倒くさい／めんどくさい = "what a pain".', exampleJp: '毎日料理するのは面倒だ。', exampleReading: 'まいにちりょうりするのはめんどうだ。', exampleEn: 'Cooking every day is a hassle.' }
       ]
     }
   ]
 }
 
-const N3_KANJI_COURSE: SeedCourse = {
+const N3_KANJI_COURSE: SeedCourseDef = {
   title: 'JLPT N3 Kanji Essentials',
   description:
-    'The ~150 highest-value kanji of the N3 set (the full level has ~370). Past this ' +
-    'point, new kanji stick best through reading — let the mining inbox catch the rest.',
+    'The ~150 highest-value kanji of the N3 set (the full level has ~370). The kanji decks ' +
+    'the Path asks for cover the rest, starting with the kanji in your own words.',
   level: 'N3',
-  difficulty: 16,
   lessons: [
     {
+      key: 'n3kanji.01',
       kind: 'kanji',
       title: 'Emotions',
       cards: [
@@ -2722,6 +3096,7 @@ const N3_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n3kanji.02',
       kind: 'kanji',
       title: 'Body & health II',
       cards: [
@@ -2743,6 +3118,7 @@ const N3_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n3kanji.03',
       kind: 'kanji',
       title: 'Movement & change II',
       cards: [
@@ -2764,6 +3140,7 @@ const N3_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n3kanji.04',
       kind: 'kanji',
       title: 'Mind & communication II',
       cards: [
@@ -2785,6 +3162,7 @@ const N3_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n3kanji.05',
       kind: 'kanji',
       title: 'Bonds & battles',
       cards: [
@@ -2806,6 +3184,7 @@ const N3_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n3kanji.06',
       kind: 'kanji',
       title: 'Abstract I',
       cards: [
@@ -2827,6 +3206,7 @@ const N3_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n3kanji.07',
       kind: 'kanji',
       title: 'Abstract II',
       cards: [
@@ -2848,6 +3228,7 @@ const N3_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n3kanji.08',
       kind: 'kanji',
       title: 'Nature II',
       cards: [
@@ -2869,6 +3250,7 @@ const N3_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n3kanji.09',
       kind: 'kanji',
       title: 'Home & objects II',
       cards: [
@@ -2890,6 +3272,7 @@ const N3_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n3kanji.10',
       kind: 'kanji',
       title: 'Success, failure & sums',
       cards: [
@@ -2913,15 +3296,15 @@ const N3_KANJI_COURSE: SeedCourse = {
   ]
 }
 
-const N2A_COURSE: SeedCourse = {
+const N2A_COURSE: SeedCourseDef = {
   title: 'JLPT N2 Grammar I',
   description:
     'The high-frequency core of N2 — obligation, inevitability and emphasis. ' +
     'Half of these are dramatic-dialogue staples; the other half carry narration.',
   level: 'N2',
-  difficulty: 18,
   lessons: [
     {
+      key: 'n2a.01',
       kind: 'grammar',
       title: '～わけにはいかない — can\'t very well…',
       body: `Dictionary form + わけにはいかない — "can't (for social/moral reasons)", even though physically possible:
@@ -2936,10 +3319,13 @@ Different from できない (ability) — わけにはいかない is about duty
       cards: [
         { front: 'ここで諦めるわけにはいかない。', reading: 'ここであきらめるわけにはいかない。', back: "I can't give up here." },
         { front: '負けるわけにはいかないんだ！', reading: 'まけるわけにはいかないんだ！', back: 'Losing is not an option!' },
-        { front: '行かないわけにはいかない。', reading: 'いかないわけにはいかない。', back: "I can't very well not go." }
+        { front: '行かないわけにはいかない。', reading: 'いかないわけにはいかない。', back: "I can't very well not go." },
+        { front: '約束したから、今さら断るわけにはいかない。', reading: 'やくそくしたから、いまさらことわるわけにはいかない。', back: "I promised, so I can't very well back out now." },
+        { front: '明日は試験だから、遊んでいるわけにはいかない。', reading: 'あしたはしけんだから、あそんでいるわけにはいかない。', back: "I have an exam tomorrow, so I can't be fooling around." }
       ]
     },
     {
+      key: 'n2a.02',
       kind: 'grammar',
       title: '～ざるを得ない — have no choice but to',
       body: `ない-stem + ざるを得ない（ざるをえない） — forced by circumstances:
@@ -2951,10 +3337,13 @@ Written/stiff — its presence marks formal narration or a reluctant character c
       cards: [
         { front: '彼の実力は認めざるを得ない。', reading: 'かれのじつりょくはみとめざるをえない。', back: 'I have to admit his ability.' },
         { front: '大会は中止せざるを得なかった。', reading: 'たいかいはちゅうしせざるをえなかった。', back: 'We had no choice but to cancel the tournament.' },
-        { front: '計画を変えざるを得ない。', reading: 'けいかくをかえざるをえない。', back: "We're forced to change the plan." }
+        { front: '計画を変えざるを得ない。', reading: 'けいかくをかえざるをえない。', back: "We're forced to change the plan." },
+        { front: '雨がひどいので、出発を延期せざるを得ない。', reading: 'あめがひどいので、しゅっぱつをえんきせざるをえない。', back: 'The rain is so heavy that we have no choice but to postpone our departure.' },
+        { front: '上司の命令なので、従わざるを得なかった。', reading: 'じょうしのめいれいなので、したがわざるをえなかった。', back: 'It was an order from my boss, so I had no choice but to obey.' }
       ]
     },
     {
+      key: 'n2a.03',
       kind: 'grammar',
       title: '～ずにはいられない — can\'t help but',
       body: `ない-stem + ずにはいられない — the urge is uncontrollable:
@@ -2968,10 +3357,13 @@ Compare ざるを得ない (external pressure) vs ずにはいられない (inte
       cards: [
         { front: '笑わずにはいられなかった。', reading: 'わらわずにはいられなかった。', back: "I couldn't help laughing." },
         { front: '彼女のことを考えずにはいられない。', reading: 'かのじょのことをかんがえずにはいられない。', back: "I can't stop thinking about her." },
-        { front: '泣かずにはいられなかった。', reading: 'なかずにはいられなかった。', back: "I couldn't hold back my tears." }
+        { front: '泣かずにはいられなかった。', reading: 'なかずにはいられなかった。', back: "I couldn't hold back my tears." },
+        { front: 'あの映画を見たら、誰でも感動せずにはいられない。', reading: 'あのえいがをみたら、だれでもかんどうせずにはいられない。', back: "Anyone who sees that film can't help being moved." },
+        { front: '結果が気になって、聞かずにはいられなかった。', reading: 'けっかがきになって、きかずにはいられなかった。', back: "I was so curious about the result that I couldn't help asking." }
       ]
     },
     {
+      key: 'n2a.04',
       kind: 'grammar',
       title: '～に違いない・～に決まっている — must be / definitely',
       body: `Two confident conclusions:
@@ -2983,10 +3375,13 @@ Attach to plain forms and nouns directly. 決まってる in a retort = "duh": �
       cards: [
         { front: '犯人はあいつに違いない。', reading: 'はんにんはあいつにちがいない。', back: 'The culprit must be him.' },
         { front: 'そんなの嘘に決まってるだろ！', reading: 'そんなのうそにきまってるだろ！', back: "That's obviously a lie!" },
-        { front: '行くに決まってるじゃん。', reading: 'いくにきまってるじゃん。', back: "Of course I'm going, duh." }
+        { front: '行くに決まってるじゃん。', reading: 'いくにきまってるじゃん。', back: "Of course I'm going, duh." },
+        { front: '電気がついているから、彼は家にいるに違いない。', reading: 'でんきがついているから、かれはいえにいるにちがいない。', back: 'The lights are on, so he must be home.' },
+        { front: '一人で全部やるなんて、無理に決まっている。', reading: 'ひとりでぜんぶやるなんて、むりにきまっている。', back: 'Doing it all alone is obviously impossible.' }
       ]
     },
     {
+      key: 'n2a.05',
       kind: 'grammar',
       title: '～ものだ — truths, nostalgia and mild lectures',
       body: `ものだ after plain forms has three big readings:
@@ -2999,10 +3394,13 @@ Casual contraction もんだ; exclamatory: 時間が経つのは早いものだ 
       cards: [
         { front: '人間は失敗するものだ。', reading: 'にんげんはしっぱいするものだ。', back: 'People make mistakes — that\'s just how it is.' },
         { front: '昔はよくここで遊んだものだ。', reading: 'むかしはよくここであそんだものだ。', back: 'We used to play here all the time.' },
-        { front: '年上には敬語を使うものだよ。', reading: 'としうえにはけいごをつかうものだよ。', back: "You're supposed to use polite speech with your elders." }
+        { front: '年上には敬語を使うものだよ。', reading: 'としうえにはけいごをつかうものだよ。', back: "You're supposed to use polite speech with your elders." },
+        { front: '時間が経つのは早いものだ。', reading: 'じかんがたつのははやいものだ。', back: 'How quickly time passes.' },
+        { front: '子供は親の背中を見て育つものだ。', reading: 'こどもはおやのせなかをみてそだつものだ。', back: "Children grow up following their parents' example." }
       ]
     },
     {
+      key: 'n2a.06',
       kind: 'grammar',
       title: '～ものか — like hell it is!',
       body: `Plain form + ものか（もんか） — emphatic, emotional denial:
@@ -3016,10 +3414,13 @@ One of the highest-value manga patterns per syllable: three kana, an entire defi
       cards: [
         { front: '負けるもんか！', reading: 'まけるもんか！', back: "Like hell I'll lose!" },
         { front: 'あんな店、二度と行くものか。', reading: 'あんなみせ、にどといくものか。', back: "As if I'd ever go there again." },
-        { front: '泣くもんか。', reading: 'なくもんか。', back: "I won't cry. I won't!" }
+        { front: '泣くもんか。', reading: 'なくもんか。', back: "I won't cry. I won't!" },
+        { front: 'あんな奴に頼むものか。', reading: 'あんなやつにたのむものか。', back: "As if I'd ask a guy like that for help." },
+        { front: 'お前なんかに分かるもんか！', reading: 'おまえなんかにわかるもんか！', back: "Like you'd ever understand!" }
       ]
     },
     {
+      key: 'n2a.07',
       kind: 'grammar',
       title: '～どころか・～どころではない — far from it',
       body: `・X どころか Y — "far from X, actually Y" (escalation or reversal):
@@ -3032,10 +3433,13 @@ One of the highest-value manga patterns per syllable: three kana, an entire defi
       cards: [
         { front: '感謝されるどころか、怒られた。', reading: 'かんしゃされるどころか、おこられた。', back: 'Far from being thanked, I got yelled at.' },
         { front: '今はそれどころじゃない！', reading: 'いまはそれどころじゃない！', back: "This is no time for that!" },
-        { front: '寒いどころか、雪まで降ってきた。', reading: 'さむいどころか、ゆきまでふってきた。', back: "Cold? It's even started snowing." }
+        { front: '寒いどころか、雪まで降ってきた。', reading: 'さむいどころか、ゆきまでふってきた。', back: "Cold? It's even started snowing." },
+        { front: '彼は謝るどころか、笑っていた。', reading: 'かれはあやまるどころか、わらっていた。', back: 'Far from apologizing, he was laughing.' },
+        { front: '忙しくて、旅行どころではない。', reading: 'いそがしくて、りょこうどころではない。', back: "I'm so busy that a trip is out of the question." }
       ]
     },
     {
+      key: 'n2a.08',
       kind: 'grammar',
       title: '～ばかりに — just because (and I regret it)',
       body: `Plain form + ばかりに — a single cause led to a bad outcome; heavy with regret:
@@ -3047,10 +3451,13 @@ The regret coloring separates it from neutral ため/から. Tragic-backstory na
       cards: [
         { front: '嘘をついたばかりに、信用を失った。', reading: 'うそをついたばかりに、しんようをうしなった。', back: 'Just because I lied, I lost their trust.' },
         { front: 'お金がないばかりに、夢を諦めた。', reading: 'おかねがないばかりに、ゆめをあきらめた。', back: 'Only because of money, I gave up my dream.' },
-        { front: '油断したばかりに、負けてしまった。', reading: 'ゆだんしたばかりに、まけてしまった。', back: 'I let my guard down for a moment — and lost.' }
+        { front: '油断したばかりに、負けてしまった。', reading: 'ゆだんしたばかりに、まけてしまった。', back: 'I let my guard down for a moment — and lost.' },
+        { front: '一言余計なことを言ったばかりに、喧嘩になった。', reading: 'ひとことよけいなことをいったばかりに、けんかになった。', back: 'Just because I said one word too many, it turned into a fight.' },
+        { front: '寝坊したばかりに、飛行機に乗り遅れた。', reading: 'ねぼうしたばかりに、ひこうきにのりおくれた。', back: 'All because I overslept, I missed my flight.' }
       ]
     },
     {
+      key: 'n2a.09',
       kind: 'grammar',
       title: '～あげく・～末に — after all that…',
       body: `Both mean "after much X, finally Y", attaching to た-form or noun+の:
@@ -3062,10 +3469,13 @@ Both signal a long process compressed into one sentence — narration shorthand 
       cards: [
         { front: 'さんざん悩んだあげく、断った。', reading: 'さんざんなやんだあげく、ことわった。', back: 'After agonizing over it, I turned it down.' },
         { front: '苦労の末に、ついに成功した。', reading: 'くろうのすえに、ついにせいこうした。', back: 'After much hardship, he finally succeeded.' },
-        { front: '長い戦いの末に、平和が戻った。', reading: 'ながいたたかいのすえに、へいわがもどった。', back: 'After a long war, peace returned.' }
+        { front: '長い戦いの末に、平和が戻った。', reading: 'ながいたたかいのすえに、へいわがもどった。', back: 'After a long war, peace returned.' },
+        { front: '二時間も待たされたあげく、会えなかった。', reading: 'にじかんもまたされたあげく、あえなかった。', back: 'After being kept waiting a full two hours, I never even got to see them.' },
+        { front: '話し合いの末、二人は別れることにした。', reading: 'はなしあいのすえ、ふたりはわかれることにした。', back: 'After talking it through, the two decided to break up.' }
       ]
     },
     {
+      key: 'n2a.10',
       kind: 'grammar',
       title: '～かける — half-done, about to',
       body: `ます-stem + かける／かけの — an action started but not finished:
@@ -3078,10 +3488,13 @@ Related: 〜かけている "on the verge of": 消えかけている "flickering
       cards: [
         { front: '彼は何か言いかけて、やめた。', reading: 'かれはなにかいいかけて、やめた。', back: 'He started to say something, then stopped.' },
         { front: '食べかけのパンが置いてある。', reading: 'たべかけのパンがおいてある。', back: 'A half-eaten piece of bread is sitting there.' },
-        { front: 'あの時、死にかけたんだ。', reading: 'あのとき、しにかけたんだ。', back: 'I nearly died back then.' }
+        { front: 'あの時、死にかけたんだ。', reading: 'あのとき、しにかけたんだ。', back: 'I nearly died back then.' },
+        { front: '読みかけの本がたくさんある。', reading: 'よみかけのほんがたくさんある。', back: 'I have lots of half-read books.' },
+        { front: '電車のドアが閉まりかけた時、彼が飛び乗った。', reading: 'でんしゃのドアがしまりかけたとき、かれがとびのった。', back: 'Just as the train doors were closing, he jumped on.' }
       ]
     },
     {
+      key: 'n2a.11',
       kind: 'grammar',
       title: '～がち・～気味 — tends to / a touch of',
       body: `Both attach to ます-stem or nouns and describe tendencies:
@@ -3093,10 +3506,13 @@ Related: 〜かけている "on the verge of": 消えかけている "flickering
       cards: [
         { front: '最近、彼は学校を休みがちだ。', reading: 'さいきん、かれはがっこうをやすみがちだ。', back: "He's been missing school a lot lately." },
         { front: 'ちょっと風邪気味なんだ。', reading: 'ちょっとかぜぎみなんだ。', back: "I think I'm coming down with a cold." },
-        { front: '大事なことを忘れがちだ。', reading: 'だいじなことをわすれがちだ。', back: 'I tend to forget the important things.' }
+        { front: '大事なことを忘れがちだ。', reading: 'だいじなことをわすれがちだ。', back: 'I tend to forget the important things.' },
+        { front: '冬は運動不足になりがちだ。', reading: 'ふゆはうんどうぶそくになりがちだ。', back: 'In winter you tend not to get enough exercise.' },
+        { front: '最近、少し太り気味だ。', reading: 'さいきん、すこしふとりぎみだ。', back: "I've been putting on a bit of weight lately." }
       ]
     },
     {
+      key: 'n2a.12',
       kind: 'grammar',
       title: '～向け・～向き — made for / suited to',
       body: `Both from 向く "to face":
@@ -3108,10 +3524,13 @@ Related: 〜かけている "on the verge of": 消えかけている "flickering
       cards: [
         { front: 'これは子供向けのアニメだ。', reading: 'これはこどもむけのアニメだ。', back: 'This is an anime made for children.' },
         { front: 'この仕事は君向きだと思う。', reading: 'このしごとはきみむきだとおもう。', back: 'I think this job suits you.' },
-        { front: '初心者向けに説明します。', reading: 'しょしんしゃむけにせつめいします。', back: "I'll explain it for beginners." }
+        { front: '初心者向けに説明します。', reading: 'しょしんしゃむけにせつめいします。', back: "I'll explain it for beginners." },
+        { front: 'これは外国人向けの日本語の教科書です。', reading: 'これはがいこくじんむけのにほんごのきょうかしょです。', back: 'This is a Japanese textbook for foreigners.' },
+        { front: '彼の性格は営業向きだ。', reading: 'かれのせいかくはえいぎょうむきだ。', back: 'His personality is suited to sales.' }
       ]
     },
     {
+      key: 'n2a.13',
       kind: 'grammar',
       title: '～はずだった — was supposed to',
       body: `はず (N4) in the past = a plan or expectation that DIDN'T happen:
@@ -3125,10 +3544,13 @@ Tragedy setup in one pattern: こんなはずじゃなかった。 "It wasn't su
       cards: [
         { front: '今日は休みのはずだった。', reading: 'きょうはやすみのはずだった。', back: 'Today was supposed to be my day off…' },
         { front: '彼も来るはずだったのに。', reading: 'かれもくるはずだったのに。', back: 'He was supposed to come too, and yet…' },
-        { front: 'こんなはずじゃなかった。', reading: 'こんなはずじゃなかった。', back: "It wasn't supposed to be like this." }
+        { front: 'こんなはずじゃなかった。', reading: 'こんなはずじゃなかった。', back: "It wasn't supposed to be like this." },
+        { front: '電車は十時に着くはずだった。', reading: 'でんしゃはじゅうじにつくはずだった。', back: 'The train was supposed to arrive at ten.' },
+        { front: '今日中に終わるはずだったのに、まだ半分も残っている。', reading: 'きょうじゅうにおわるはずだったのに、まだはんぶんものこっている。', back: 'It was supposed to be done today, yet more than half is still left.' }
       ]
     },
     {
+      key: 'n2a.14',
       kind: 'grammar',
       title: '～ことに（は） — to my (surprise/joy/regret)',
       body: `Emotion word + ことに fronts the speaker's reaction before the fact:
@@ -3141,10 +3563,13 @@ Pure narration furniture — once you can skim ～ことに、 you read the emot
       cards: [
         { front: '驚いたことに、彼は無事だった。', reading: 'おどろいたことに、かれはぶじだった。', back: 'To my surprise, he was unharmed.' },
         { front: '残念なことに、間に合わなかった。', reading: 'ざんねんなことに、まにあわなかった。', back: "Regrettably, we didn't make it in time." },
-        { front: '不思議なことに、誰もいなかった。', reading: 'ふしぎなことに、だれもいなかった。', back: 'Strangely enough, nobody was there.' }
+        { front: '不思議なことに、誰もいなかった。', reading: 'ふしぎなことに、だれもいなかった。', back: 'Strangely enough, nobody was there.' },
+        { front: '嬉しいことに、試験に合格した。', reading: 'うれしいことに、しけんにごうかくした。', back: 'To my delight, I passed the exam.' },
+        { front: '困ったことに、財布を家に忘れてきた。', reading: 'こまったことに、さいふをいえにわすれてきた。', back: 'To my dismay, I left my wallet at home.' }
       ]
     },
     {
+      key: 'n2a.15',
       kind: 'grammar',
       title: '～ことだから — knowing (that person)',
       body: `Person + のことだから — a prediction based on their known character:
@@ -3156,10 +3581,13 @@ Nearly always about a specific person both speakers know — it's gossip grammar
       cards: [
         { front: '彼のことだから、また遅れてくるよ。', reading: 'かれのことだから、またおくれてくるよ。', back: "Knowing him, he'll be late again." },
         { front: '君のことだから、大丈夫だと思ってた。', reading: 'きみのことだから、だいじょうぶだとおもってた。', back: 'Knowing you, I figured you\'d be fine.' },
-        { front: 'あの人のことだから、心配ないよ。', reading: 'あのひとのことだから、しんぱいないよ。', back: 'Knowing them, there\'s nothing to worry about.' }
+        { front: 'あの人のことだから、心配ないよ。', reading: 'あのひとのことだから、しんぱいないよ。', back: 'Knowing them, there\'s nothing to worry about.' },
+        { front: 'まじめな田中さんのことだから、きっと準備してくるよ。', reading: 'まじめなたなかさんのことだから、きっとじゅんびしてくるよ。', back: 'Knowing how conscientious Tanaka is, they will surely come prepared.' },
+        { front: '食いしん坊の弟のことだから、もう全部食べただろう。', reading: 'くいしんぼうのおとうとのことだから、もうぜんぶたべただろう。', back: "Knowing my greedy little brother, he's probably eaten it all already." }
       ]
     },
     {
+      key: 'n2a.16',
       kind: 'grammar',
       title: '～つつ（ある） — while / in the process of',
       body: `ます-stem + つつ — the literary counterpart of ながら:
@@ -3171,21 +3599,23 @@ Dialogue says ながら; narration says つつ. When a VN's prose shifts to つ�
       cards: [
         { front: '悪いと知りつつ、嘘をついた。', reading: 'わるいとしりつつ、うそをついた。', back: 'Knowing it was wrong, I still lied.' },
         { front: '町は少しずつ変わりつつある。', reading: 'まちはすこしずつかわりつつある。', back: 'The town is gradually changing.' },
-        { front: '夢は現実になりつつあった。', reading: 'ゆめはげんじつになりつつあった。', back: 'The dream was becoming reality.' }
+        { front: '夢は現実になりつつあった。', reading: 'ゆめはげんじつになりつつあった。', back: 'The dream was becoming reality.' },
+        { front: '体に悪いと思いつつ、毎晩夜更かししてしまう。', reading: 'からだにわるいとおもいつつ、まいばんよふかししてしまう。', back: "I know it's bad for me, yet I stay up late every night." },
+        { front: '新しい技術が広まりつつある。', reading: 'あたらしいぎじゅつがひろまりつつある。', back: 'New technology is gradually spreading.' }
       ]
     }
   ]
 }
 
-const N2B_COURSE: SeedCourse = {
+const N2B_COURSE: SeedCourseDef = {
   title: 'JLPT N2 Grammar II',
   description:
     'The rest of the N2 core — parallel change, concession, limits and the ' +
     '“might/can’t quite” family. Heavy on narration patterns.',
   level: 'N2',
-  difficulty: 19,
   lessons: [
     {
+      key: 'n2b.01',
       kind: 'grammar',
       title: '～につれて・～に従って — as one thing changes…',
       body: `Both link two changes moving together:
@@ -3199,10 +3629,13 @@ All attach to dictionary form or nouns.`,
       cards: [
         { front: '年を取るにつれて、涙もろくなる。', reading: 'としをとるにつれて、なみだもろくなる。', back: 'As you get older, you cry more easily.' },
         { front: '指示に従って行動してください。', reading: 'しじにしたがってこうどうしてください。', back: 'Please act according to instructions.' },
-        { front: '春の訪れとともに、雪が解けた。', reading: 'はるのおとずれとともに、ゆきがとけた。', back: 'With the coming of spring, the snow melted.' }
+        { front: '春の訪れとともに、雪が解けた。', reading: 'はるのおとずれとともに、ゆきがとけた。', back: 'With the coming of spring, the snow melted.' },
+        { front: '時間がたつにつれて、痛みは消えていった。', reading: 'じかんがたつにつれて、いたみはきえていった。', back: 'As time passed, the pain faded away.' },
+        { front: '山を登るに従って、気温が下がっていく。', reading: 'やまをのぼるにしたがって、きおんがさがっていく。', back: 'The higher you climb the mountain, the lower the temperature gets.' }
       ]
     },
     {
+      key: 'n2b.02',
       kind: 'grammar',
       title: '～一方（で）・～一方だ — meanwhile / keeps on',
       body: `一方（いっぽう） "one side" builds two patterns:
@@ -3214,10 +3647,13 @@ News narration and character-comparison scenes live on this word.`,
       cards: [
         { front: '物価は上がる一方だ。', reading: 'ぶっかはあがるいっぽうだ。', back: 'Prices just keep going up.' },
         { front: '働く一方で、大学にも通っている。', reading: 'はたらくいっぽうで、だいがくにもかよっている。', back: 'While working, she also attends university.' },
-        { front: '状況は悪くなる一方だった。', reading: 'じょうきょうはわるくなるいっぽうだった。', back: 'The situation just kept getting worse.' }
+        { front: '状況は悪くなる一方だった。', reading: 'じょうきょうはわるくなるいっぽうだった。', back: 'The situation just kept getting worse.' },
+        { front: 'この仕事は給料がいい一方で、休みが少ない。', reading: 'このしごとはきゅうりょうがいいいっぽうで、やすみがすくない。', back: 'This job pays well, but on the other hand there are few days off.' },
+        { front: '兄は社交的な一方で、弟は内気だ。', reading: 'あにはしゃこうてきないっぽうで、おとうとはうちきだ。', back: 'My older brother is outgoing, while my younger brother is shy.' }
       ]
     },
     {
+      key: 'n2b.03',
       kind: 'grammar',
       title: '～上に — on top of that',
       body: `Plain form / noun-の + 上に（うえに） — stacks a second fact on the first, same polarity (good+good or bad+bad):
@@ -3229,10 +3665,13 @@ The まで in the second clause ("even") is a frequent partner. Don't mix polari
       cards: [
         { front: 'このアパートは狭い上に、家賃が高い。', reading: 'このアパートはせまいうえに、やちんがたかい。', back: 'This apartment is cramped, and the rent is high on top of it.' },
         { front: '道に迷った上に、雨まで降ってきた。', reading: 'みちにまよったうえに、あめまでふってきた。', back: 'We got lost, and then it even started raining.' },
-        { front: '彼は頭がいい上に、優しい。', reading: 'かれはあたまがいいうえに、やさしい。', back: "He's smart, and kind as well." }
+        { front: '彼は頭がいい上に、優しい。', reading: 'かれはあたまがいいうえに、やさしい。', back: "He's smart, and kind as well." },
+        { front: '彼女は料理が上手な上に、掃除も得意だ。', reading: 'かのじょはりょうりがじょうずなうえに、そうじもとくいだ。', back: "She's a good cook, and she's great at cleaning too." },
+        { front: 'この店は値段が安い上に、味もいい。', reading: 'このみせはねだんがやすいうえに、あじもいい。', back: 'This place is cheap, and the food is good too.' }
       ]
     },
     {
+      key: 'n2b.04',
       kind: 'grammar',
       title: '～からといって — just because… doesn\'t mean',
       body: `Plain form + からといって + negative — rejects a lazy inference:
@@ -3244,10 +3683,34 @@ The tail is usually わけではない／とは限らない ("not necessarily").
       cards: [
         { front: '若いからといって、無理をするな。', reading: 'わかいからといって、むりをするな。', back: "Don't overdo it just because you're young." },
         { front: '有名だからといって、いい人とは限らない。', reading: 'ゆうめいだからといって、いいひととはかぎらない。', back: 'Being famous doesn\'t necessarily make someone a good person.' },
-        { front: '子供だからって馬鹿にするな！', reading: 'こどもだからってばかにするな！', back: "Don't look down on me just because I'm a kid!" }
+        { front: '子供だからって馬鹿にするな！', reading: 'こどもだからってばかにするな！', back: "Don't look down on me just because I'm a kid!" },
+        { front: '好きだからといって、毎日食べていいわけではない。', reading: 'すきだからといって、まいにちたべていいわけではない。', back: "Just because you like it doesn't mean you can eat it every day." },
+        { front: '一度失敗したからといって、諦めることはない。', reading: 'いちどしっぱいしたからといって、あきらめることはない。', back: 'Failing once is no reason to give up.' }
+      ]
+    },
+    // Moved from JLPT N1 Grammar I on 2026-10-16 (ものの is an N2 point); its
+    // frozen key keeps the name it shipped with, and the content sync moves the
+    // existing lesson row, review progress included.
+    {
+      key: 'n1a.01',
+      kind: 'grammar',
+      title: '～ものの — although',
+      body: `Plain form + ものの — a written "although"; the second clause undercuts the first:
+
+引き受けたものの、自信がない。 — "I took the job on — though I have no confidence."
+免許は持っているものの、運転したことがない。 — "I have a license, but I've never actually driven."
+
+Same family as けど/のに but bookish; the classic frame is "did the thing, but the follow-through is shaky". とはいうものの as a sentence opener = "that said, …".`,
+      cards: [
+        { front: '引き受けたものの、自信がない。', reading: 'ひきうけたものの、じしんがない。', back: 'I took it on, though I have no confidence.' },
+        { front: '免許は持っているものの、運転したことがない。', reading: 'めんきょはもっているものの、うんてんしたことがない。', back: "I have a license, but I've never driven." },
+        { front: 'とはいうものの、心配だ。', reading: 'とはいうものの、しんぱいだ。', back: 'That said, I\'m worried.' },
+        { front: '新しいパソコンを買ったものの、使い方が分からない。', reading: 'あたらしいパソコンをかったものの、つかいかたがわからない。', back: "I bought a new computer, but I don't know how to use it." },
+        { front: '頭では分かっているものの、なかなかやめられない。', reading: 'あたまではわかっているものの、なかなかやめられない。', back: "I understand it in my head, but I just can't quit." }
       ]
     },
     {
+      key: 'n2b.05',
       kind: 'grammar',
       title: '～とは限らない・～ないことはない — hedged truths',
       body: `Two logic hedges:
@@ -3255,14 +3718,20 @@ The tail is usually わけではない／とは限らない ("not necessarily").
 ・とは限らない（かぎらない） — "not necessarily": 高いものがいいとは限らない。 "Expensive doesn't always mean good."
 ・ないことはない — double negative, grudging "well, it's not impossible": 食べられないことはないけど…。 "I CAN eat it, but…"
 
-ないことはない is the polite way to say "yes-ish, reluctantly" — read hesitation into it every time. Its cousin ないこともない is identical.`,
+ないことはない is the polite way to say "yes-ish, reluctantly" — read hesitation into it every time. Its cousin ないこともない is identical.
+
+必ずしも ("necessarily") often opens the sentence and makes the hedge explicit: 必ずしも正しいとは限らない — "It isn't necessarily right."`,
       cards: [
         { front: '高いものがいいとは限らない。', reading: 'たかいものがいいとはかぎらない。', back: "Expensive doesn't necessarily mean good." },
         { front: '食べられないことはないけど…。', reading: 'たべられないことはないけど…。', back: "It's not that I can't eat it, but…" },
-        { front: '行けないことはないよ。', reading: 'いけないことはないよ。', back: 'I could go, I suppose.' }
+        { front: '行けないことはないよ。', reading: 'いけないことはないよ。', back: 'I could go, I suppose.' },
+        { front: '天才が必ず成功するとは限らない。', reading: 'てんさいがかならずせいこうするとはかぎらない。', back: "Geniuses don't necessarily succeed." },
+        { front: '急げば間に合わないことはない。', reading: 'いそげばまにあわないことはない。', back: 'If we hurry, we can probably make it.' },
+        { front: '有名な店が必ずしも美味しいとは限らない。', reading: 'ゆうめいなみせがかならずしもおいしいとはかぎらない。', back: "A famous restaurant isn't necessarily a good one." }
       ]
     },
     {
+      key: 'n2b.06',
       kind: 'grammar',
       title: '～ようがない — no way to do it',
       body: `ます-stem + ようがない — the means simply don't exist:
@@ -3274,10 +3743,13 @@ Set phrase: どうしようもない — "hopeless / nothing can be done" (also 
       cards: [
         { front: '連絡先が分からないから、知らせようがない。', reading: 'れんらくさきがわからないから、しらせようがない。', back: "There's no way to contact them — I don't have their info." },
         { front: 'これはもう直しようがない。', reading: 'これはもうなおしようがない。', back: "This is beyond fixing." },
-        { front: 'どうしようもないな、お前は。', reading: 'どうしようもないな、おまえは。', back: "You're hopeless, you know that?" }
+        { front: 'どうしようもないな、お前は。', reading: 'どうしようもないな、おまえは。', back: "You're hopeless, you know that?" },
+        { front: '彼の気持ちは、本人に聞かなければ確かめようがない。', reading: 'かれのきもちは、ほんにんにきかなければたしかめようがない。', back: "There's no way to know how he feels without asking him." },
+        { front: '何も知らないから、答えようがない。', reading: 'なにもしらないから、こたえようがない。', back: "I don't know anything, so I can't possibly answer." }
       ]
     },
     {
+      key: 'n2b.07',
       kind: 'grammar',
       title: '～かねない・～かねる — might (bad) / can\'t quite',
       body: `Same stem, opposite signs:
@@ -3289,10 +3761,13 @@ Set phrase: どうしようもない — "hopeless / nothing can be done" (also 
       cards: [
         { front: 'あいつなら、やりかねない。', reading: 'あいつなら、やりかねない。', back: 'Knowing him, he might actually do it.' },
         { front: 'その質問にはお答えしかねます。', reading: 'そのしつもんにはおこたえしかねます。', back: "I'm afraid I cannot answer that question." },
-        { front: '事故になりかねないよ。', reading: 'じこになりかねないよ。', back: 'That could well end in an accident.' }
+        { front: '事故になりかねないよ。', reading: 'じこになりかねないよ。', back: 'That could well end in an accident.' },
+        { front: '無理をすると、体を壊しかねない。', reading: 'むりをすると、からだをこわしかねない。', back: 'If you overdo it, you could ruin your health.' },
+        { front: 'あの人の考えは理解しかねる。', reading: 'あのひとのかんがえはりかいしかねる。', back: "I can't quite understand that person's thinking." }
       ]
     },
     {
+      key: 'n2b.08',
       kind: 'grammar',
       title: '～おそれがある — risk of (news style)',
       body: `Plain form / noun-の + おそれがある（恐れがある） — "there is a danger of":
@@ -3304,10 +3779,13 @@ Pure broadcast/announcement register — in fiction it appears on TVs in the bac
       cards: [
         { front: '台風が上陸するおそれがある。', reading: 'たいふうがじょうりくするおそれがある。', back: 'The typhoon may make landfall.' },
         { front: '津波のおそれがあります。', reading: 'つなみのおそれがあります。', back: 'There is a risk of a tsunami.' },
-        { front: '計画は失敗するおそれがある。', reading: 'けいかくはしっぱいするおそれがある。', back: 'The plan risks failure.' }
+        { front: '計画は失敗するおそれがある。', reading: 'けいかくはしっぱいするおそれがある。', back: 'The plan risks failure.' },
+        { front: 'この薬は眠くなるおそれがあります。', reading: 'このくすりはねむくなるおそれがあります。', back: 'This medicine may cause drowsiness.' },
+        { front: 'このままでは、この鳥は絶滅するおそれがある。', reading: 'このままでは、このとりはぜつめつするおそれがある。', back: 'At this rate, this bird is at risk of extinction.' }
       ]
     },
     {
+      key: 'n2b.09',
       kind: 'grammar',
       title: '～に限る・～に限らず — nothing beats / not only',
       body: `限る（かぎる） "to limit" in two set shapes:
@@ -3315,14 +3793,20 @@ Pure broadcast/announcement register — in fiction it appears on TVs in the bac
 ・に限る — "nothing beats": 夏はビールに限る。 "In summer, nothing beats a beer." (dictionary-form verbs too: 疲れたら寝るに限る)
 ・に限らず — "not limited to": 子供に限らず、大人も楽しめる。 "Not just kids — adults enjoy it too."
 
-Bonus: に限って — "of all people/times": うちの子に限って、そんなことはしない。 "MY child would never…" (famous last words in every drama).`,
+Bonus: に限って — "of all people/times": うちの子に限って、そんなことはしない。 "MY child would never…" (famous last words in every drama).
+
+に限り is a formal "only, limited to", common on notices and offers: 本日に限り、全品半額 — "Today only, everything is half price."`,
       cards: [
         { front: '夏はビールに限る。', reading: 'なつはビールにかぎる。', back: 'In summer, nothing beats a beer.' },
         { front: '子供に限らず、大人も楽しめる。', reading: 'こどもにかぎらず、おとなもたのしめる。', back: 'Not just children — adults can enjoy it too.' },
-        { front: 'うちの子に限って、そんなことはしません。', reading: 'うちのこにかぎって、そんなことはしません。', back: 'MY child would never do such a thing.' }
+        { front: 'うちの子に限って、そんなことはしません。', reading: 'うちのこにかぎって、そんなことはしません。', back: 'MY child would never do such a thing.' },
+        { front: '疲れた時は寝るに限る。', reading: 'つかれたときはねるにかぎる。', back: "When you're tired, nothing beats sleep." },
+        { front: 'この店は週末に限らず、いつも混んでいる。', reading: 'このみせはしゅうまつにかぎらず、いつもこんでいる。', back: 'This shop is always crowded, not just on weekends.' },
+        { front: '先着百名に限り、入場無料です。', reading: 'せんちゃくひゃくめいにかぎり、にゅうじょうむりょうです。', back: 'Entry is free, limited to the first hundred people.' }
       ]
     },
     {
+      key: 'n2b.10',
       kind: 'grammar',
       title: '～きる・～きれない — completely / can\'t fully',
       body: `ます-stem + きる — do to completion; きれない — beyond capacity:
@@ -3335,10 +3819,13 @@ Extensions: 疲れきっている "utterly exhausted", 信じきっている "tr
       cards: [
         { front: '多すぎて食べきれないよ。', reading: 'おおすぎてたべきれないよ。', back: "It's too much — I can't finish it." },
         { front: '数えきれないほどの星が見えた。', reading: 'かぞえきれないほどのほしがみえた。', back: 'We could see more stars than you could count.' },
-        { front: '彼は疲れきっていた。', reading: 'かれはつかれきっていた。', back: 'He was utterly exhausted.' }
+        { front: '彼は疲れきっていた。', reading: 'かれはつかれきっていた。', back: 'He was utterly exhausted.' },
+        { front: '一晩で小説を読みきった。', reading: 'ひとばんでしょうせつをよみきった。', back: 'I read the whole novel in one night.' },
+        { front: '感謝してもしきれない。', reading: 'かんしゃしてもしきれない。', back: 'I can never thank you enough.' }
       ]
     },
     {
+      key: 'n2b.11',
       kind: 'grammar',
       title: '～ぬく — to see it through',
       body: `ます-stem + 抜く（ぬく） — push through to the very end despite hardship:
@@ -3351,10 +3838,13 @@ Extensions: 疲れきっている "utterly exhausted", 信じきっている "tr
       cards: [
         { front: '最後まで走り抜いた。', reading: 'さいごまではしりぬいた。', back: 'I ran it through to the very end.' },
         { front: '考え抜いた末の決断です。', reading: 'かんがえぬいたすえのけつだんです。', back: 'It\'s a decision I reached after thinking it through completely.' },
-        { front: 'この時代を生き抜くんだ。', reading: 'このじだいをいきぬくんだ。', back: "We're going to survive this era." }
+        { front: 'この時代を生き抜くんだ。', reading: 'このじだいをいきぬくんだ。', back: "We're going to survive this era." },
+        { front: 'どんなに辛くても、最後までやり抜くつもりだ。', reading: 'どんなにつらくても、さいごまでやりぬくつもりだ。', back: 'However hard it gets, I intend to see it through.' },
+        { front: '彼は仲間を守り抜いた。', reading: 'かれはなかまをまもりぬいた。', back: 'He protected his comrades to the very end.' }
       ]
     },
     {
+      key: 'n2b.12',
       kind: 'grammar',
       title: '～げ — looking (sad/happy/meaningful)',
       body: `Adjective stem + げ — turns a feeling into someone's visible air; conjugates as な-adjective:
@@ -3367,10 +3857,13 @@ Narration-only flavor: dialogue would say 悲しそう. When VN prose describes 
       cards: [
         { front: '彼女は悲しげな顔をした。', reading: 'かのじょはかなしげなかおをした。', back: 'She made a sorrowful face.' },
         { front: '不安げに空を見上げた。', reading: 'ふあんげにそらをみあげた。', back: 'He looked up at the sky uneasily.' },
-        { front: '彼は意味ありげに笑った。', reading: 'かれはいみありげにわらった。', back: 'He smiled meaningfully.' }
+        { front: '彼は意味ありげに笑った。', reading: 'かれはいみありげにわらった。', back: 'He smiled meaningfully.' },
+        { front: '子供たちは楽しげに遊んでいる。', reading: 'こどもたちはたのしげにあそんでいる。', back: 'The children are playing happily.' },
+        { front: '彼は何か言いたげな顔をしていた。', reading: 'かれはなにかいいたげなかおをしていた。', back: 'He looked like he wanted to say something.' }
       ]
     },
     {
+      key: 'n2b.13',
       kind: 'grammar',
       title: '～まい — never again / probably not',
       body: `Dictionary form + まい — a literary negative with two faces:
@@ -3380,14 +3873,20 @@ Narration-only flavor: dialogue would say 悲しそう. When VN prose describes 
 
 Set frame: ～まいと思っていた "had sworn not to…". And the reflexive combo あるまいし: 子供じゃあるまいし "you're not a child, are you" — scolding classic.
 
-Old-fashioned in speech, alive and well in narration and dramatic monologue.`,
+Old-fashioned in speech, alive and well in narration and dramatic monologue.
+
+With a noun, ではあるまいし (じゃあるまいし) means "it's not as if (X), so…", followed by a reproach: 子供ではあるまいし、一人でできるだろう — "You're not a child; surely you can do it yourself."`,
       cards: [
         { front: 'あんな店、二度と行くまい。', reading: 'あんなみせ、にどといくまい。', back: 'I shall never go to that place again.' },
         { front: '泣くまいと決めていたのに。', reading: 'なくまいときめていたのに。', back: "And I'd sworn I wouldn't cry…" },
-        { front: '子供じゃあるまいし。', reading: 'こどもじゃあるまいし。', back: "You're not a child, you know." }
+        { front: '子供じゃあるまいし。', reading: 'こどもじゃあるまいし。', back: "You're not a child, you know." },
+        { front: 'この雨では、彼はもう来るまい。', reading: 'このあめでは、かれはもうくるまい。', back: "In this rain, he probably won't come now." },
+        { front: 'あの人は、そんな嘘はつくまい。', reading: 'あのひとは、そんなうそはつくまい。', back: 'That person surely would not tell such a lie.' },
+        { front: '神様じゃあるまいし、未来のことなんか分からないよ。', reading: 'かみさまじゃあるまいし、みらいのことなんかわからないよ。', back: "I'm not God — how would I know the future?" }
       ]
     },
     {
+      key: 'n2b.14',
       kind: 'grammar',
       title: '～て以来・～てからでないと — since / not until',
       body: `Two time anchors:
@@ -3399,10 +3898,13 @@ Old-fashioned in speech, alive and well in narration and dramatic monologue.`,
       cards: [
         { front: '卒業して以来、彼に会っていない。', reading: 'そつぎょうしていらい、かれにあっていない。', back: "I haven't seen him since graduation." },
         { front: 'あの日以来、全てが変わった。', reading: 'あのひいらい、すべてがかわった。', back: 'Since that day, everything changed.' },
-        { front: '許可をもらってからでないと入れない。', reading: 'きょかをもらってからでないとはいれない。', back: "You can't go in until you get permission." }
+        { front: '許可をもらってからでないと入れない。', reading: 'きょかをもらってからでないとはいれない。', back: "You can't go in until you get permission." },
+        { front: '日本に来て以来、ずっとこの町に住んでいる。', reading: 'にほんにきていらい、ずっとこのまちにすんでいる。', back: "I've lived in this town ever since I came to Japan." },
+        { front: 'よく考えてからでないと、返事はできない。', reading: 'よくかんがえてからでないと、へんじはできない。', back: "I can't give you an answer until I've thought it over carefully." }
       ]
     },
     {
+      key: 'n2b.15',
       kind: 'grammar',
       title: '～たとたん（に） — the instant that',
       body: `た-form + とたん（に）（途端） — Y happened the moment X did; Y is sudden and usually unexpected:
@@ -3414,36 +3916,23 @@ Only for observed events — not your own planned actions (no 家に着いたと
       cards: [
         { front: 'ドアを開けたとたん、猫が飛び出した。', reading: 'ドアをあけたとたん、ねこがとびだした。', back: 'The instant I opened the door, the cat shot out.' },
         { front: '顔を見たとたん、泣き出した。', reading: 'かおをみたとたん、なきだした。', back: 'The moment she saw his face, she burst into tears.' },
-        { front: '立ち上がったとたん、めまいがした。', reading: 'たちあがったとたん、めまいがした。', back: 'The second I stood up, I felt dizzy.' }
+        { front: '立ち上がったとたん、めまいがした。', reading: 'たちあがったとたん、めまいがした。', back: 'The second I stood up, I felt dizzy.' },
+        { front: '家を出たとたん、雨が降り出した。', reading: 'いえをでたとたん、あめがふりだした。', back: 'The moment I left the house, it started to rain.' },
+        { front: '名前を呼ばれたとたん、急に緊張した。', reading: 'なまえをよばれたとたん、きゅうにきんちょうした。', back: 'The instant my name was called, I suddenly got nervous.' }
       ]
     }
   ]
 }
 
-const N1A_COURSE: SeedCourse = {
+const N1A_COURSE: SeedCourseDef = {
   title: 'JLPT N1 Grammar I',
   description:
     'Advanced patterns chosen for fiction first: the literary, dramatic and archaic ' +
     'grammar that fantasy manga, period pieces and VN narration are written in.',
   level: 'N1',
-  difficulty: 23,
   lessons: [
     {
-      kind: 'grammar',
-      title: '～ものの — although',
-      body: `Plain form + ものの — a written "although"; the second clause undercuts the first:
-
-引き受けたものの、自信がない。 — "I took the job on — though I have no confidence."
-免許は持っているものの、運転したことがない。 — "I have a license, but I've never actually driven."
-
-Same family as けど/のに but bookish; the classic frame is "did the thing, but the follow-through is shaky". とはいうものの as a sentence opener = "that said, …".`,
-      cards: [
-        { front: '引き受けたものの、自信がない。', reading: 'ひきうけたものの、じしんがない。', back: 'I took it on, though I have no confidence.' },
-        { front: '免許は持っているものの、運転したことがない。', reading: 'めんきょはもっているものの、うんてんしたことがない。', back: "I have a license, but I've never driven." },
-        { front: 'とはいうものの、心配だ。', reading: 'とはいうものの、しんぱいだ。', back: 'That said, I\'m worried.' }
-      ]
-    },
-    {
+      key: 'n1a.02',
       kind: 'grammar',
       title: '～とはいえ — that said',
       body: `X とはいえ Y — concede X, then push back with Y; more formal than でも:
@@ -3455,10 +3944,13 @@ Reads as "admittedly X, but". As an opener: とはいえ、… "even so, …". N
       cards: [
         { front: '春とはいえ、まだ寒い。', reading: 'はるとはいえ、まださむい。', back: "It may be spring, but it's still cold." },
         { front: '子供とはいえ、許されないことだ。', reading: 'こどもとはいえ、ゆるされないことだ。', back: 'Child or not, that cannot be forgiven.' },
-        { front: 'とはいえ、他に方法がない。', reading: 'とはいえ、ほかにほうほうがない。', back: "Even so, there's no other way." }
+        { front: 'とはいえ、他に方法がない。', reading: 'とはいえ、ほかにほうほうがない。', back: "Even so, there's no other way." },
+        { front: '安いとはいえ、毎日外食するのは高くつく。', reading: 'やすいとはいえ、まいにちがいしょくするのはたかくつく。', back: 'It may be cheap, but eating out every day adds up.' },
+        { front: '冗談とはいえ、言っていいことと悪いことがある。', reading: 'じょうだんとはいえ、いっていいこととわるいことがある。', back: "Joke or not, some things just shouldn't be said." }
       ]
     },
     {
+      key: 'n1a.03',
       kind: 'grammar',
       title: '～ときたら — when it comes to (exasperated)',
       body: `Noun + ときたら — raises a topic you're about to complain about, usually someone close:
@@ -3470,10 +3962,13 @@ Strictly conversational and emotional — the fed-up parent/roommate/teammate pa
       cards: [
         { front: 'うちの息子ときたら、ゲームばかりしている。', reading: 'うちのむすこときたら、ゲームばかりしている。', back: 'That son of mine — nothing but games.' },
         { front: '最近の天気ときたら…。', reading: 'さいきんのてんきときたら…。', back: 'This weather lately, honestly…' },
-        { front: 'あいつときたら、また遅刻だ。', reading: 'あいつときたら、またちこくだ。', back: 'That guy — late AGAIN.' }
+        { front: 'あいつときたら、また遅刻だ。', reading: 'あいつときたら、またちこくだ。', back: 'That guy — late AGAIN.' },
+        { front: 'うちの犬ときたら、誰にでも吠える。', reading: 'うちのいぬときたら、だれにでもほえる。', back: 'That dog of ours — it barks at absolutely everyone.' },
+        { front: 'このパソコンときたら、すぐに固まる。', reading: 'このパソコンときたら、すぐにかたまる。', back: 'This computer, honestly — it freezes at the drop of a hat.' }
       ]
     },
     {
+      key: 'n1a.04',
       kind: 'grammar',
       title: '～たところで — even if (it\'s futile)',
       body: `た-form + ところで + negative — "even if you did, it wouldn't help":
@@ -3485,10 +3980,13 @@ Built-in pessimism — the villain's taunt and the cynic's shrug: 逃げたと�
       cards: [
         { front: '今さら謝ったところで、遅い。', reading: 'いまさらあやまったところで、おそい。', back: "It's too late to apologize now." },
         { front: '逃げたところで無駄だ。', reading: 'にげたところでむだだ。', back: 'Running is pointless.' },
-        { front: '急いだところで、間に合わないよ。', reading: 'いそいだところで、まにあわないよ。', back: "Even if we hurry, we won't make it." }
+        { front: '急いだところで、間に合わないよ。', reading: 'いそいだところで、まにあわないよ。', back: "Even if we hurry, we won't make it." },
+        { front: 'いくら説明したところで、彼は信じないだろう。', reading: 'いくらせつめいしたところで、かれはしんじないだろう。', back: "However much I explain, he probably won't believe it." },
+        { front: '今から勉強したところで、合格は無理だ。', reading: 'いまからべんきょうしたところで、ごうかくはむりだ。', back: 'Even if I start studying now, passing is out of reach.' }
       ]
     },
     {
+      key: 'n1a.05',
       kind: 'grammar',
       title: '～んばかり — as if about to',
       body: `ない-stem + んばかり(に/の) — on the very verge, visibly:
@@ -3497,14 +3995,20 @@ Built-in pessimism — the villain's taunt and the cynic's shrug: 逃げたと�
 今にも殴りかからんばかりだった。 — "looked ready to throw a punch any second"
 する → せんばかり.
 
-Pure narration — it paints the held moment before an action that (usually) doesn't come. VN prose about faces and atmosphere leans on it; think of it as そう(appearance) with the intensity dial at maximum.`,
+Pure narration — it paints the held moment before an action that (usually) doesn't come. VN prose about faces and atmosphere leans on it; think of it as そう(appearance) with the intensity dial at maximum.
+
+After a quotation, と言わんばかりに / と言わんばかりの means "as if to say": 帰れと言わんばかりに時計を見た — "They looked at the clock as if to say 'Go home.'"`,
       cards: [
         { front: '彼女は泣かんばかりの顔をしていた。', reading: 'かのじょはなかんばかりのかおをしていた。', back: 'Her face looked ready to burst into tears.' },
         { front: '今にも殴りかからんばかりだった。', reading: 'いまにもなぐりかからんばかりだった。', back: 'He looked about to throw a punch any second.' },
-        { front: '溢れんばかりの拍手が起こった。', reading: 'あふれんばかりのはくしゅがおこった。', back: 'Overflowing applause broke out.' }
+        { front: '溢れんばかりの拍手が起こった。', reading: 'あふれんばかりのはくしゅがおこった。', back: 'Overflowing applause broke out.' },
+        { front: '店員は帰れと言わんばかりの態度だった。', reading: 'てんいんはかえれといわんばかりのたいどだった。', back: "The clerk's attitude all but told us to leave." },
+        { front: '彼は飛び上がらんばかりに喜んだ。', reading: 'かれはとびあがらんばかりによろこんだ。', back: 'He was so happy he practically leapt into the air.' },
+        { front: '彼は「当然だ」と言わんばかりの顔をした。', reading: 'かれは「とうぜんだ」といわんばかりのかおをした。', back: "He made a face as if to say, 'Of course.'" }
       ]
     },
     {
+      key: 'n1a.06',
       kind: 'grammar',
       title: '～かのように — as if',
       body: `Plain form + かのように — describes something in terms of what it ISN'T (but resembles):
@@ -3516,10 +4020,13 @@ Before nouns: かのような + noun. The narrator's favorite simile machine —
       cards: [
         { front: '何事もなかったかのように、彼は笑った。', reading: 'なにごともなかったかのように、かれはわらった。', back: 'He smiled as if nothing had happened.' },
         { front: '時間が止まったかのようだった。', reading: 'じかんがとまったかのようだった。', back: 'It was as though time had stopped.' },
-        { front: '夢の中にいるかのような気分だ。', reading: 'ゆめのなかにいるかのようなきぶんだ。', back: 'I feel as if I were inside a dream.' }
+        { front: '夢の中にいるかのような気分だ。', reading: 'ゆめのなかにいるかのようなきぶんだ。', back: 'I feel as if I were inside a dream.' },
+        { front: '彼はすべてを知っているかのように話す。', reading: 'かれはすべてをしっているかのようにはなす。', back: 'He talks as if he knows everything.' },
+        { front: 'まるで春が来たかのような暖かさだ。', reading: 'まるではるがきたかのようなあたたかさだ。', back: "It's so warm, it's as if spring had come." }
       ]
     },
     {
+      key: 'n1a.07',
       kind: 'grammar',
       title: '～まみれ・～だらけ・～ずくめ — covered in',
       body: `Three "full of" suffixes with different textures:
@@ -3532,10 +4039,13 @@ Battle-manga triage: 傷だらけ (scraped up) < 血まみれ (bloodbath). 黒�
       cards: [
         { front: '彼は血まみれで立っていた。', reading: 'かれはちまみれでたっていた。', back: 'He stood there covered in blood.' },
         { front: 'この答案は間違いだらけだ。', reading: 'このとうあんはまちがいだらけだ。', back: 'This answer sheet is riddled with mistakes.' },
-        { front: '黒ずくめの男が現れた。', reading: 'くろずくめのおとこがあらわれた。', back: 'A man dressed all in black appeared.' }
+        { front: '黒ずくめの男が現れた。', reading: 'くろずくめのおとこがあらわれた。', back: 'A man dressed all in black appeared.' },
+        { front: '子供たちは泥まみれになって遊んだ。', reading: 'こどもたちはどろまみれになってあそんだ。', back: 'The kids played until they were covered in mud.' },
+        { front: '今年はいいことずくめだった。', reading: 'ことしはいいことずくめだった。', back: 'This year was nothing but good things.' }
       ]
     },
     {
+      key: 'n1a.08',
       kind: 'grammar',
       title: '～めく — tinged with',
       body: `Noun + めく — takes on the air of; conjugates as a Group-1 verb, usually seen as めいた/めいて:
@@ -3548,10 +4058,13 @@ Small productive set (春・謎・皮肉・冗談・脅し…), but 謎めいた
       cards: [
         { front: '彼女は謎めいた微笑を浮かべた。', reading: 'かのじょはなぞめいたびしょうをうかべた。', back: 'She wore an enigmatic smile.' },
         { front: 'だいぶ春めいてきたね。', reading: 'だいぶはるめいてきたね。', back: "It's really starting to feel like spring." },
-        { front: '脅しめいた手紙が届いた。', reading: 'おどしめいたてがみがとどいた。', back: 'A threatening-sounding letter arrived.' }
+        { front: '脅しめいた手紙が届いた。', reading: 'おどしめいたてがみがとどいた。', back: 'A threatening-sounding letter arrived.' },
+        { front: '彼の言葉には皮肉めいた響きがあった。', reading: 'かれのことばにはひにくめいたひびきがあった。', back: 'His words had a ring of sarcasm to them.' },
+        { front: '言い訳めいたことは言いたくない。', reading: 'いいわけめいたことはいいたくない。', back: "I don't want to say anything that sounds like an excuse." }
       ]
     },
     {
+      key: 'n1a.09',
       kind: 'grammar',
       title: '～たる者 — one who would be…',
       body: `Noun + たる者（もの） — "anyone worthy of being called X" — sets a standard, then demands conduct:
@@ -3563,10 +4076,13 @@ Small productive set (春・謎・皮肉・冗談・脅し…), but 謎めいた
       cards: [
         { front: '王たる者、民を守らねばならない。', reading: 'おうたるもの、たみをまもらねばならない。', back: 'A king worthy of the name must protect his people.' },
         { front: 'プロたる者、言い訳をするな。', reading: 'プロたるもの、いいわけをするな。', back: 'One who calls himself a pro makes no excuses.' },
-        { front: '騎士たる者の務めだ。', reading: 'きしたるもののつとめだ。', back: 'It is the duty of a knight.' }
+        { front: '騎士たる者の務めだ。', reading: 'きしたるもののつとめだ。', back: 'It is the duty of a knight.' },
+        { front: '教師たる者、生徒の手本でなければならない。', reading: 'きょうしたるもの、せいとのてほんでなければならない。', back: 'A teacher worthy of the name must set an example for the students.' },
+        { front: '医者たる者、患者の命を第一に考えるべきだ。', reading: 'いしゃたるもの、かんじゃのいのちをだいいちにかんがえるべきだ。', back: "A doctor worthy of the name should put the patient's life first." }
       ]
     },
     {
+      key: 'n1a.10',
       kind: 'grammar',
       title: '～べく・～べからず — in order to / thou shalt not',
       body: `Classical べし survives in three fossils:
@@ -3575,14 +4091,20 @@ Small productive set (春・謎・皮肉・冗談・脅し…), but 謎めいた
 ・べからず — prohibition on signs: 立入るべからず "No Entry", 忘るべからず "never forget".
 ・べからざる + noun: 許すべからざる行為 "an unforgivable act".
 
-する → すべく. You'll meet べく in chapter openers and quest narration; べからず on old signs, dojo walls and anywhere the art wants to look antique.`,
+する → すべく. You'll meet べく in chapter openers and quest narration; べからず on old signs, dojo walls and anywhere the art wants to look antique.
+
+べくもない means "there's no way to, it's out of the question": 知るべくもない — "there's no way of knowing", 望むべくもない — "too much to hope for".`,
       cards: [
         { front: '敵を倒すべく、彼は旅に出た。', reading: 'てきをたおすべく、かれはたびにでた。', back: 'He set out on a journey to defeat the enemy.' },
         { front: '立入るべからず。', reading: 'たちいるべからず。', back: 'No entry. (archaic sign)' },
-        { front: 'それは許すべからざる行為だ。', reading: 'それはゆるすべからざるこういだ。', back: 'That is an unforgivable act.' }
+        { front: 'それは許すべからざる行為だ。', reading: 'それはゆるすべからざるこういだ。', back: 'That is an unforgivable act.' },
+        { front: '夢を叶えるべく、毎日努力している。', reading: 'ゆめをかなえるべく、まいにちどりょくしている。', back: 'I work hard every day in order to make my dream come true.' },
+        { front: '人の悪口を言うべからず。', reading: 'ひとのわるぐちをいうべからず。', back: 'Thou shalt not speak ill of others. (maxim)' },
+        { front: '私の腕前はプロの選手とは比べるべくもない。', reading: 'わたしのうでまえはプロのせんしゅとはくらべるべくもない。', back: "There's no comparing my skill with a professional player's." }
       ]
     },
     {
+      key: 'n1a.11',
       kind: 'grammar',
       title: '～まじき — unbecoming of',
       body: `Classical negative of べし: あるまじき — "that must not be":
@@ -3594,10 +4116,13 @@ Pattern: noun + に + あるまじき + noun. Rare in real life, standard in fic
       cards: [
         { front: '教師にあるまじき行為だ。', reading: 'きょうしにあるまじきこういだ。', back: 'Conduct unbecoming of a teacher.' },
         { front: '許すまじ！', reading: 'ゆるすまじ！', back: 'Unforgivable! (archaic)' },
-        { front: '騎士にあるまじき振る舞いだぞ。', reading: 'きしにあるまじきふるまいだぞ。', back: 'Behavior unbecoming of a knight!' }
+        { front: '騎士にあるまじき振る舞いだぞ。', reading: 'きしにあるまじきふるまいだぞ。', back: 'Behavior unbecoming of a knight!' },
+        { front: '政治家にあるまじき発言だ。', reading: 'せいじかにあるまじきはつげんだ。', back: 'A remark unbecoming of a politician.' },
+        { front: '約束を破るなど、武士にあるまじきことだ。', reading: 'やくそくをやぶるなど、ぶしにあるまじきことだ。', back: 'Breaking a promise is unbecoming of a samurai.' }
       ]
     },
     {
+      key: 'n1a.12',
       kind: 'grammar',
       title: '～(よ)うが・～(よ)うと — no matter what',
       body: `Volitional + が/と — "whether/no matter": the defiance conjugation:
@@ -3606,14 +4131,21 @@ Pattern: noun + に + あるまじき + noun. Rare in real life, standard in fic
 何があろうと、君を守る。 — "Whatever happens, I'll protect you."
 雨が降ろうが槍が降ろうが — "come rain or spears" (set idiom)
 
-Paired opposites: 泣こうが笑おうが "cry or laugh, (it changes nothing)". This is THE dramatic-vow construction — climax dialogue guaranteed.`,
+Paired opposites: 泣こうが笑おうが "cry or laugh, (it changes nothing)". This is THE dramatic-vow construction — climax dialogue guaranteed.
+
+Paired with its own negative it covers both cases: 行こうが行くまいが — "whether you go or not", 雨だろうとなかろうと — "rain or no rain". With どんなに: どんなに反対されようが — "however much they oppose it".`,
       cards: [
         { front: '誰が何と言おうと、俺は行く。', reading: 'だれがなんといおうと、おれはいく。', back: "No matter what anyone says, I'm going." },
         { front: '何があろうと、君を守る。', reading: 'なにがあろうと、きみをまもる。', back: "Whatever happens, I'll protect you." },
-        { front: '雨が降ろうが槍が降ろうが、行くぞ。', reading: 'あめがふろうがやりがふろうが、いくぞ。', back: "Come rain or spears, we're going." }
+        { front: '雨が降ろうが槍が降ろうが、行くぞ。', reading: 'あめがふろうがやりがふろうが、いくぞ。', back: "Come rain or spears, we're going." },
+        { front: 'どんなに疲れていようと、毎日走る。', reading: 'どんなにつかれていようと、まいにちはしる。', back: 'However tired I am, I run every day.' },
+        { front: '人に笑われようが、気にしない。', reading: 'ひとにわらわれようが、きにしない。', back: "Even if people laugh at me, I don't care." },
+        { front: '雨が降ろうが降るまいが、試合は行われる。', reading: 'あめがふろうがふるまいが、しあいはおこなわれる。', back: 'Whether it rains or not, the match will go ahead.' },
+        { front: '社長だろうとなかろうと、ルールは守るべきだ。', reading: 'しゃちょうだろうとなかろうと、ルールはまもるべきだ。', back: 'President or not, everyone should follow the rules.' }
       ]
     },
     {
+      key: 'n1a.13',
       kind: 'grammar',
       title: '～ぬ・～ん・～ねばならぬ — the archaic negative',
       body: `Classical ぬ = ない, alive in fiction:
@@ -3626,10 +4158,13 @@ Character decoder: ぬ = samurai, nobles, dragons; ん = Kansai folk and gruff o
       cards: [
         { front: 'そんなことは知らぬ。', reading: 'そんなことはしらぬ。', back: 'I know nothing of that. (archaic)' },
         { front: 'わしにも分からん。', reading: 'わしにもわからん。', back: "Beats me either. (old man / Kansai)" },
-        { front: '行かねばならぬ。', reading: 'いかねばならぬ。', back: 'I must go. (archaic)' }
+        { front: '行かねばならぬ。', reading: 'いかねばならぬ。', back: 'I must go. (archaic)' },
+        { front: '見知らぬ人に声をかけられた。', reading: 'みしらぬひとにこえをかけられた。', back: 'A stranger spoke to me. (見知らぬ keeps the old ぬ)' },
+        { front: 'そうはさせん！', reading: 'そうはさせん！', back: "I won't let you! (archaic ん negative)" }
       ]
     },
     {
+      key: 'n1a.14',
       kind: 'grammar',
       title: '～ごとき・～ごとく — the likes of / like (classical)',
       body: `Classical ようだ. Two very different jobs:
@@ -3641,10 +4176,13 @@ Villain arrogance and epic narration in one classical package — you cannot rea
       cards: [
         { front: 'お前ごときが俺に勝てるか！', reading: 'おまえごときがおれにかてるか！', back: 'You think the likes of YOU can beat me?!' },
         { front: '矢のごとく飛んで行った。', reading: 'やのごとくとんでいった。', back: 'It flew off like an arrow.' },
-        { front: '私ごときがお役に立てるなら。', reading: 'わたしごときがおやくにたてるなら。', back: 'If someone as humble as I can be of use…' }
+        { front: '私ごときがお役に立てるなら。', reading: 'わたしごときがおやくにたてるなら。', back: 'If someone as humble as I can be of use…' },
+        { front: '彼は風のごとく去っていった。', reading: 'かれはかぜのごとくさっていった。', back: 'He left like the wind.' },
+        { front: '前述のごとく、計画は変更された。', reading: 'ぜんじゅつのごとく、けいかくはへんこうされた。', back: 'As stated above, the plan has been changed.' }
       ]
     },
     {
+      key: 'n1a.15',
       kind: 'grammar',
       title: '～なり — the moment / or something',
       body: `Two useful なり:
@@ -3656,21 +4194,23 @@ Bonus fossil: 大なり小なり "to a greater or lesser degree". The "instant" 
       cards: [
         { front: '家に帰るなり、寝てしまった。', reading: 'いえにかえるなり、ねてしまった。', back: 'The moment he got home, he crashed.' },
         { front: '電話するなりメールするなり、連絡して。', reading: 'でんわするなりメールするなり、れんらくして。', back: 'Call or text or whatever — just get in touch.' },
-        { front: '顔を見るなり、泣き出した。', reading: 'かおをみるなり、なきだした。', back: 'The instant she saw his face, she burst into tears.' }
+        { front: '顔を見るなり、泣き出した。', reading: 'かおをみるなり、なきだした。', back: 'The instant she saw his face, she burst into tears.' },
+        { front: '彼は部屋に入るなり、窓を開けた。', reading: 'かれはへやにはいるなり、まどをあけた。', back: 'The moment he entered the room, he opened the window.' },
+        { front: '分からなければ、先生に聞くなり辞書で調べるなりしなさい。', reading: 'わからなければ、せんせいにきくなりじしょでしらべるなりしなさい。', back: "If you don't understand, ask the teacher or look it up in a dictionary." }
       ]
     }
   ]
 }
 
-const N1B_COURSE: SeedCourse = {
+const N1B_COURSE: SeedCourseDef = {
   title: 'JLPT N1 Grammar II',
   description:
     'The last stretch: emphasis, extremity and formality — はおろか, 極まりない, ' +
     'ならでは and friends. Finish this and no grammar in a manga or VN should stop you.',
   level: 'N1',
-  difficulty: 24,
   lessons: [
     {
+      key: 'n1b.01',
       kind: 'grammar',
       title: '～ばこそ — precisely because',
       body: `ば-form + こそ — flips a burden into devotion: the reason is exactly the positive one:
@@ -3682,10 +4222,13 @@ Formal/emotional; the sentence often ends in んだ. This is the stern-mentor an
       cards: [
         { front: '君のためを思えばこそ、厳しくするんだ。', reading: 'きみのためをおもえばこそ、きびしくするんだ。', back: "It's precisely because I care about you that I'm strict." },
         { front: '愛していればこそ、別れを選んだ。', reading: 'あいしていればこそ、わかれをえらんだ。', back: 'Precisely because I loved her, I chose to part.' },
-        { front: '信じていればこそ、待てるんだ。', reading: 'しんじていればこそ、まてるんだ。', back: "It's because I believe in him that I can wait." }
+        { front: '信じていればこそ、待てるんだ。', reading: 'しんじていればこそ、まてるんだ。', back: "It's because I believe in him that I can wait." },
+        { front: '健康であればこそ、好きなことができる。', reading: 'けんこうであればこそ、すきなことができる。', back: "It's precisely because you're healthy that you can do what you love." },
+        { front: '仲間がいればこそ、ここまで来られた。', reading: 'なかまがいればこそ、ここまでこられた。', back: 'It was only because I had friends that I made it this far.' }
       ]
     },
     {
+      key: 'n1b.02',
       kind: 'grammar',
       title: '～すら・～だに — even (literary)',
       body: `Two literary escalations of さえ/も:
@@ -3693,14 +4236,20 @@ Formal/emotional; the sentence often ends in んだ. This is the stern-mentor an
 ・すら — "even": 名前すら知らない。 "I don't even know their name." 子供ですら分かる。 "Even a child gets it."
 ・だに — "even (to merely)": frozen pairs — 想像するだに恐ろしい "terrifying even to imagine"; 微動だにしない "doesn't budge an inch"; 一顧だにしない "doesn't spare a glance".
 
-すら is productive; だに lives in those set phrases. 微動だにしない is the stock description of an unbeatable opponent standing still.`,
+すら is productive; だに lives in those set phrases. 微動だにしない is the stock description of an unbeatable opponent standing still.
+
+With a particle, すら follows it: 子供にすら分かる — "even a child can understand it", ここですら — "even here".`,
       cards: [
         { front: '彼の名前すら知らない。', reading: 'かれのなまえすらしらない。', back: "I don't even know his name." },
         { front: '想像するだに恐ろしい。', reading: 'そうぞうするだにおそろしい。', back: 'Terrifying even to imagine.' },
-        { front: '彼は微動だにしなかった。', reading: 'かれはびどうだにしなかった。', back: "He didn't budge an inch." }
+        { front: '彼は微動だにしなかった。', reading: 'かれはびどうだにしなかった。', back: "He didn't budge an inch." },
+        { front: '疲れて、立つことすらできなかった。', reading: 'つかれて、たつことすらできなかった。', back: "I was so tired I couldn't even stand." },
+        { front: 'そんな結果は予想だにしなかった。', reading: 'そんなけっかはよそうだにしなかった。', back: 'I never even imagined such a result.' },
+        { front: 'そんな簡単なことは、小学生にすら分かる。', reading: 'そんなかんたんなことは、しょうがくせいにすらわかる。', back: 'Even an elementary school student understands something that simple.' }
       ]
     },
     {
+      key: 'n1b.03',
       kind: 'grammar',
       title: '～いかんによって（は） — depending on',
       body: `Noun(+の) + いかん — "the how/what of it" (formal 如何):
@@ -3713,10 +4262,13 @@ Bureaucrat and commander register — briefing rooms, terms of service, military
       cards: [
         { front: '結果いかんによっては、計画を変更する。', reading: 'けっかいかんによっては、けいかくをへんこうする。', back: 'Depending on the results, we may change the plan.' },
         { front: '理由のいかんを問わず、遅刻は遅刻だ。', reading: 'りゆうのいかんをとわず、ちこくはちこくだ。', back: 'Regardless of the reason, late is late.' },
-        { front: '合否は努力いかんだ。', reading: 'ごうひはどりょくいかんだ。', back: 'Pass or fail depends on your effort.' }
+        { front: '合否は努力いかんだ。', reading: 'ごうひはどりょくいかんだ。', back: 'Pass or fail depends on your effort.' },
+        { front: '今後の対応いかんでは、契約を解除する。', reading: 'こんごのたいおういかんでは、けいやくをかいじょする。', back: 'Depending on how you respond from here, we may cancel the contract.' },
+        { front: '天候のいかんにかかわらず、試合は行われる。', reading: 'てんこうのいかんにかかわらず、しあいはおこなわれる。', back: 'The match will be held regardless of the weather.' }
       ]
     },
     {
+      key: 'n1b.04',
       kind: 'grammar',
       title: '～ならでは — unique to',
       body: `Noun + ならでは(の) — a quality ONLY that thing could produce; always positive:
@@ -3729,10 +4281,13 @@ Advertising and praise language. In fiction it's the compliment pattern: 職人�
       cards: [
         { front: 'これは京都ならではの風景だ。', reading: 'これはきょうとならではのふうけいだ。', back: "This is scenery you'll only find in Kyoto." },
         { front: '手作りならではの温かさがある。', reading: 'てづくりならではのあたたかさがある。', back: 'It has a warmth only handmade things have.' },
-        { front: '彼ならではの発想だ。', reading: 'かれならではのはっそうだ。', back: 'An idea only he could have come up with.' }
+        { front: '彼ならではの発想だ。', reading: 'かれならではのはっそうだ。', back: 'An idea only he could have come up with.' },
+        { front: '地元の人ならではの情報を教えてもらった。', reading: 'じもとのひとならではのじょうほうをおしえてもらった。', back: 'I got tips only a local could give.' },
+        { front: 'この祭りは、この町ならではの伝統だ。', reading: 'このまつりは、このまちならではのでんとうだ。', back: 'This festival is a tradition unique to this town.' }
       ]
     },
     {
+      key: 'n1b.05',
       kind: 'grammar',
       title: '～をもって — by means of / as of (formal)',
       body: `Noun + をもって（を以て） — formal instrument or cutoff:
@@ -3744,10 +4299,13 @@ Advertising and praise language. In fiction it's the compliment pattern: 職人�
       cards: [
         { front: '実力をもって証明してみせる。', reading: 'じつりょくをもってしょうめいしてみせる。', back: "I'll prove it with my own strength." },
         { front: '本日をもって閉店いたします。', reading: 'ほんじつをもってへいてんいたします。', back: 'As of today, this store is closing.' },
-        { front: 'その痛みなら身をもって知っている。', reading: 'そのいたみならみをもってしっている。', back: 'I know that pain firsthand.' }
+        { front: 'その痛みなら身をもって知っている。', reading: 'そのいたみならみをもってしっている。', back: 'I know that pain firsthand.' },
+        { front: '以上をもって、本日の会議を終わります。', reading: 'いじょうをもって、ほんじつのかいぎをおわります。', back: "With that, today's meeting is concluded." },
+        { front: '書面をもってご連絡いたします。', reading: 'しょめんをもってごれんらくいたします。', back: 'We will notify you in writing.' }
       ]
     },
     {
+      key: 'n1b.06',
       kind: 'grammar',
       title: '～に至って（は） — when it comes to / to the point of',
       body: `至る（いたる） "to reach" builds several "arrival at an extreme" patterns:
@@ -3756,14 +4314,20 @@ Advertising and praise language. In fiction it's the compliment pattern: 職人�
 ・に至るまで — "down to the last": 髪の色に至るまで同じだ "identical down to hair color".
 ・(verb)に至った — formally "came to the point of": 閉店に至った "ended in closure".
 
-The escalation ladder of formal complaint — each variant walks further down the list of grievances.`,
+The escalation ladder of formal complaint — each variant walks further down the list of grievances.
+
+から～に至るまで means "from X all the way to Y", stressing how wide the range is: 子供から老人に至るまで — "everyone, from children to the elderly".`,
       cards: [
         { front: '弟に至っては、挨拶さえしない。', reading: 'おとうとにいたっては、あいさつさえしない。', back: "As for my little brother, he doesn't even say hello." },
         { front: '髪の色に至るまで同じだった。', reading: 'かみのいろにいたるまでおなじだった。', back: 'They were identical, down to their hair color.' },
-        { front: '店は閉店に至った。', reading: 'みせはへいてんにいたった。', back: 'The store ended up closing.' }
+        { front: '店は閉店に至った。', reading: 'みせはへいてんにいたった。', back: 'The store ended up closing.' },
+        { front: '事態がここに至っては、もう隠せない。', reading: 'じたいがここにいたっては、もうかくせない。', back: "Now that things have come to this, it can't be hidden any longer." },
+        { front: '最悪の事態に至る前に、手を打つべきだ。', reading: 'さいあくのじたいにいたるまえに、てをうつべきだ。', back: 'We should act before it comes to the worst.' },
+        { front: 'この店は、食料品から家具に至るまで何でも売っている。', reading: 'このみせは、しょくりょうひんからかぐにいたるまでなんでもうっている。', back: 'This shop sells everything from groceries to furniture.' }
       ]
     },
     {
+      key: 'n1b.07',
       kind: 'grammar',
       title: '～極まりない・～の極み — extremely / the height of',
       body: `極（きょく/きわ） "extreme" in two exclamation molds:
@@ -3775,10 +4339,13 @@ High-register indignation — the offended noble's vocabulary.`,
       cards: [
         { front: '失礼極まりない態度だ！', reading: 'しつれいきわまりないたいどだ！', back: 'The height of rudeness!' },
         { front: 'それは危険極まりない行為だ。', reading: 'それはきけんきわまりないこういだ。', back: 'That is an extremely dangerous act.' },
-        { front: '感極まって泣いてしまった。', reading: 'かんきわまってないてしまった。', back: 'Overcome with emotion, I cried.' }
+        { front: '感極まって泣いてしまった。', reading: 'かんきわまってないてしまった。', back: 'Overcome with emotion, I cried.' },
+        { front: '夜中に電話してくるなんて、迷惑極まりない。', reading: 'よなかにでんわしてくるなんて、めいわくきわまりない。', back: 'Calling in the middle of the night is utterly inconsiderate.' },
+        { front: 'このような賞をいただき、光栄の極みです。', reading: 'このようなしょうをいただき、こうえいのきわみです。', back: 'Receiving such an award is the greatest of honors.' }
       ]
     },
     {
+      key: 'n1b.08',
       kind: 'grammar',
       title: '～てからというもの — ever since (and everything changed)',
       body: `て-form + からというもの — "ever since X, (a continuing change)":
@@ -3790,10 +4357,13 @@ Heavier than て以来: it insists the change persists to now. First-line-of-a-c
       cards: [
         { front: '彼女に出会ってからというもの、毎日が楽しい。', reading: 'かのじょにであってからというもの、まいにちがたのしい。', back: 'Ever since I met her, every day has been fun.' },
         { front: 'あの日からというもの、眠れない夜が続いている。', reading: 'あのひからというもの、ねむれないよるがつづいている。', back: 'Ever since that day, the sleepless nights have continued.' },
-        { front: '引っ越してからというもの、体の調子がいい。', reading: 'ひっこしてからというもの、からだのちょうしがいい。', back: 'Ever since moving, I\'ve felt great.' }
+        { front: '引っ越してからというもの、体の調子がいい。', reading: 'ひっこしてからというもの、からだのちょうしがいい。', back: 'Ever since moving, I\'ve felt great.' },
+        { front: '猫を飼い始めてからというもの、家に帰るのが楽しみになった。', reading: 'ねこをかいはじめてからというもの、いえにかえるのがたのしみになった。', back: "Ever since I got a cat, I've looked forward to coming home." },
+        { front: '彼は事故に遭ってからというもの、車を運転しなくなった。', reading: 'かれはじこにあってからというもの、くるまをうんてんしなくなった。', back: "Ever since his accident, he hasn't driven." }
       ]
     },
     {
+      key: 'n1b.09',
       kind: 'grammar',
       title: '～ともなると — when you get to (that level)',
       body: `Noun + ともなると／ともなれば — "once it's a matter of (that scale), things differ":
@@ -3805,10 +4375,13 @@ Sets a threshold and remarks on what naturally follows at it. Sports commentary,
       cards: [
         { front: 'プロともなると、練習量が違う。', reading: 'プロともなると、れんしゅうりょうがちがう。', back: 'At the pro level, the amount of practice is something else.' },
         { front: '大晦日ともなると、街も静かになる。', reading: 'おおみそかともなると、まちもしずかになる。', back: "Come New Year's Eve, the town goes quiet." },
-        { front: '決勝ともなれば、緊張もする。', reading: 'けっしょうともなれば、きんちょうもする。', back: "When it's the finals, of course you get nervous." }
+        { front: '決勝ともなれば、緊張もする。', reading: 'けっしょうともなれば、きんちょうもする。', back: "When it's the finals, of course you get nervous." },
+        { front: '社長ともなると、自由な時間はほとんどない。', reading: 'しゃちょうともなると、じゆうなじかんはほとんどない。', back: "Once you're the company president, you have hardly any free time." },
+        { front: '十二月ともなると、街はクリスマス一色になる。', reading: 'じゅうにがつともなると、まちはクリスマスいっしょくになる。', back: 'Come December, the whole town turns to Christmas.' }
       ]
     },
     {
+      key: 'n1b.10',
       kind: 'grammar',
       title: '～はおろか — let alone',
       body: `X はおろか Y さえ/も + negative — "never mind X, not even Y":
@@ -3816,14 +4389,20 @@ Sets a threshold and remarks on what naturally follows at it. Sports commentary,
 漢字はおろか、ひらがなも読めなかった。 — "He couldn't read hiragana, let alone kanji."
 貯金はおろか、家賃も払えない。 — "Rent is beyond me, never mind savings."
 
-Order: the harder thing first, the easier thing second, both failed. The despair-inventory pattern — rock-bottom narration compresses beautifully into it.`,
+Order: the harder thing first, the easier thing second, both failed. The despair-inventory pattern — rock-bottom narration compresses beautifully into it.
+
+The second half often carries すら or まで to stress the extreme: 名前はおろか、顔すら覚えていない — "I don't even remember the face, let alone the name." With まで the sentence can be positive: 車はおろか、家まで売った — "They sold not just the car but even the house."`,
       cards: [
         { front: '漢字はおろか、ひらがなも読めなかった。', reading: 'かんじはおろか、ひらがなもよめなかった。', back: "He couldn't even read hiragana, let alone kanji." },
         { front: '貯金はおろか、家賃も払えない。', reading: 'ちょきんはおろか、やちんもはらえない。', back: "I can't even pay rent, never mind save money." },
-        { front: '歩くことはおろか、立つことさえできない。', reading: 'あるくことはおろか、たつことさえできない。', back: "He can't even stand, let alone walk." }
+        { front: '歩くことはおろか、立つことさえできない。', reading: 'あるくことはおろか、たつことさえできない。', back: "He can't even stand, let alone walk." },
+        { front: '彼は海外はおろか、隣の県にも行ったことがない。', reading: 'かれはかいがいはおろか、となりのけんにもいったことがない。', back: "He's never even been to the next prefecture, let alone abroad." },
+        { front: '忙しくて、休日はおろか、寝る時間もない。', reading: 'いそがしくて、きゅうじつはおろか、ねるじかんもない。', back: "I'm so busy I don't even have time to sleep, let alone days off." },
+        { front: '彼は財産はおろか、家族まで失った。', reading: 'かれはざいさんはおろか、かぞくまでうしなった。', back: 'He lost not just his fortune but even his family.' }
       ]
     },
     {
+      key: 'n1b.11',
       kind: 'grammar',
       title: '～つ～つ — back and forth (literary)',
       body: `ます-stem + つ, twice — two actions alternating; a small set of fixed pairs:
@@ -3837,10 +4416,13 @@ Purely literary; you'll meet it in narration and chapter titles. 抜きつ抜か
       cards: [
         { front: '彼は部屋を行きつ戻りつしていた。', reading: 'かれはへやをいきつもどりつしていた。', back: 'He paced back and forth in the room.' },
         { front: '抜きつ抜かれつの接戦だった。', reading: 'ぬきつぬかれつのせっせんだった。', back: 'It was a neck-and-neck race.' },
-        { front: '世の中は持ちつ持たれつだ。', reading: 'よのなかはもちつもたれつだ。', back: 'The world runs on give and take.' }
+        { front: '世の中は持ちつ持たれつだ。', reading: 'よのなかはもちつもたれつだ。', back: 'The world runs on give and take.' },
+        { front: '二人は差しつ差されつ酒を飲んだ。', reading: 'ふたりはさしつさされつさけをのんだ。', back: 'The two drank sake, pouring for each other in turn.' },
+        { front: '彼は浮きつ沈みつしながら流されていった。', reading: 'かれはうきつしずみつしながらながされていった。', back: 'He was swept away, bobbing up and down.' }
       ]
     },
     {
+      key: 'n1b.12',
       kind: 'grammar',
       title: '～んがため — for the sake of (archaic purpose)',
       body: `ない-stem + んがため(に) — classical ために, deadly serious:
@@ -3853,10 +4435,13 @@ The stakes-raising purpose form: where ために states a goal, んがため imp
       cards: [
         { front: '生きんがために、彼は何でもした。', reading: 'いきんがために、かれはなんでもした。', back: 'To survive, he did whatever it took.' },
         { front: '勝たんがための犠牲だった。', reading: 'かたんがためのぎせいだった。', back: 'They were sacrifices for the sake of victory.' },
-        { front: '真実を知らんがため、ここに来た。', reading: 'しんじつをしらんがため、ここにきた。', back: 'I came here to learn the truth.' }
+        { front: '真実を知らんがため、ここに来た。', reading: 'しんじつをしらんがため、ここにきた。', back: 'I came here to learn the truth.' },
+        { front: '夢を実現せんがため、彼は故郷を離れた。', reading: 'ゆめをじつげんせんがため、かれはこきょうをはなれた。', back: 'In order to realize his dream, he left his hometown.' },
+        { front: '合格せんがために、寝る間も惜しんで勉強した。', reading: 'ごうかくせんがために、ねるまもおしんでべんきょうした。', back: 'To pass, he studied so hard he begrudged even the time to sleep.' }
       ]
     },
     {
+      key: 'n1b.13',
       kind: 'grammar',
       title: '～ん(ばかり)・～う(ものなら) — if you dare',
       body: `ものなら — two dares built on it:
@@ -3868,10 +4453,13 @@ The first is taunt grammar (villains); the second is dread grammar (strict house
       cards: [
         { front: '逃げられるものなら、逃げてみろ。', reading: 'にげられるものなら、にげてみろ。', back: 'Escape — if you can.' },
         { front: '遅れようものなら、大目玉だ。', reading: 'おくれようものなら、おおめだまだ。', back: "Be late even once and there'll be hell to pay." },
-        { front: 'できるものなら、やり直したい。', reading: 'できるものなら、やりなおしたい。', back: 'If only I could, I\'d do it all over.' }
+        { front: 'できるものなら、やり直したい。', reading: 'できるものなら、やりなおしたい。', back: 'If only I could, I\'d do it all over.' },
+        { front: '母に嘘をつこうものなら、すぐにばれる。', reading: 'ははにうそをつこうものなら、すぐにばれる。', back: "Try lying to my mother and she'll see through it instantly." },
+        { front: 'あの先生の授業で寝ようものなら、廊下に立たされる。', reading: 'あのせんせいのじゅぎょうでねようものなら、ろうかにたたされる。', back: "Fall asleep in that teacher's class and you'll be made to stand in the hall." }
       ]
     },
     {
+      key: 'n1b.14',
       kind: 'grammar',
       title: '～ところを — right when (interrupted)',
       body: `Plain form + ところを — catches someone mid-state, usually to interrupt:
@@ -3884,10 +4472,13 @@ The を marks the scene itself as the object of what follows. Set opener + actio
       cards: [
         { front: 'お忙しいところをすみません。', reading: 'おいそがしいところをすみません。', back: "Sorry to bother you when you're busy." },
         { front: '逃げようとしたところを捕まった。', reading: 'にげようとしたところをつかまった。', back: 'He was caught just as he tried to run.' },
-        { front: '危ないところを助けてもらった。', reading: 'あぶないところをたすけてもらった。', back: 'I was saved in the nick of time.' }
+        { front: '危ないところを助けてもらった。', reading: 'あぶないところをたすけてもらった。', back: 'I was saved in the nick of time.' },
+        { front: 'お休みのところを申し訳ありません。', reading: 'おやすみのところをもうしわけありません。', back: "I'm sorry to disturb you while you're resting." },
+        { front: '寝ているところを起こされた。', reading: 'ねているところをおこされた。', back: 'I was woken up right in the middle of my sleep.' }
       ]
     },
     {
+      key: 'n1b.15',
       kind: 'grammar',
       title: '～と思いきや — or so I thought',
       body: `Plain form + と思いきや（おもいきや） — sets up an expectation, then yanks it away:
@@ -3899,7 +4490,9 @@ Comedy timing in grammar form: the panel-to-panel bait-and-switch. Congratulatio
       cards: [
         { front: '勝ったと思いきや、逆転された。', reading: 'かったとおもいきや、ぎゃくてんされた。', back: "I thought we'd won — then they flipped it." },
         { front: '静かだと思いきや、大騒ぎだった。', reading: 'しずかだとおもいきや、おおさわぎだった。', back: 'Quiet? It was total chaos.' },
-        { front: '晴れると思いきや、大雨になった。', reading: 'はれるとおもいきや、おおあめになった。', back: 'I expected it to clear up — instead it poured.' }
+        { front: '晴れると思いきや、大雨になった。', reading: 'はれるとおもいきや、おおあめになった。', back: 'I expected it to clear up — instead it poured.' },
+        { front: '簡単な試験だと思いきや、全然解けなかった。', reading: 'かんたんなしけんだとおもいきや、ぜんぜんとけなかった。', back: "I thought the exam would be easy, but I couldn't solve a thing." },
+        { front: '彼が犯人かと思いきや、真犯人は別にいた。', reading: 'かれがはんにんかとおもいきや、しんはんにんはべつにいた。', back: 'We thought he was the culprit, but the real one was someone else.' }
       ]
     }
   ]
@@ -3908,54 +4501,12 @@ Comedy timing in grammar form: the panel-to-panel bait-and-switch. Congratulatio
 // Inserts one pack's course if its flag is absent. Flags live in settings
 // rather than on the course row, so deleting or renaming a course never
 // re-seeds it.
-function seedPack(sqlite: Database.Database, flag: string, course: SeedCourse): void {
-  const seeded = sqlite.prepare('SELECT value FROM settings WHERE key = ?').get(flag)
+function seedPack(sqlite: Database.Database, pack: SeedPack): void {
+  const seeded = sqlite.prepare('SELECT value FROM settings WHERE key = ?').get(pack.flag)
   if (seeded) return
-
-  const insertCourse = sqlite.prepare(
-    'INSERT INTO jp_course (title, description, level, difficulty, sort_order) VALUES (?, ?, ?, ?, ?)'
-  )
-  const insertLesson = sqlite.prepare(
-    'INSERT INTO jp_lesson (course_id, kind, title, body, sort_order) VALUES (?, ?, ?, ?, ?)'
-  )
-  const insertCard = sqlite.prepare(
-    `INSERT INTO jp_card (lesson_id, sort_order, front, reading, back, pos, notes,
-                          onyomi, kunyomi, example_jp, example_reading, example_en)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  )
-
   const tx = sqlite.transaction(() => {
-    const next = (
-      sqlite.prepare('SELECT COALESCE(MAX(sort_order), -1) + 1 AS next FROM jp_course').get() as {
-        next: number
-      }
-    ).next
-    const courseId = Number(
-      insertCourse.run(course.title, course.description, course.level, course.difficulty, next)
-        .lastInsertRowid
-    )
-    course.lessons.forEach((lesson, li) => {
-      const lessonId = Number(
-        insertLesson.run(courseId, lesson.kind, lesson.title, lesson.body ?? null, li).lastInsertRowid
-      )
-      lesson.cards.forEach((card, ci) => {
-        insertCard.run(
-          lessonId,
-          ci,
-          card.front,
-          card.reading ?? null,
-          card.back,
-          card.pos ?? null,
-          card.notes ?? null,
-          card.onyomi ?? null,
-          card.kunyomi ?? null,
-          card.exampleJp ?? null,
-          card.exampleReading ?? null,
-          card.exampleEn ?? null
-        )
-      })
-    })
-    sqlite.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run(flag, '1')
+    insertSeedCourse(sqlite, pack)
+    sqlite.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run(pack.flag, '1')
   })
   tx()
 }
@@ -3978,37 +4529,49 @@ function backfillLevels(sqlite: Database.Database): void {
   tx()
 }
 
-// Study-path order (difficulty = step). The 2026-07-05 wave (radicals,
-// counters, SFX, speech styles, idioms) slotted INTO the existing path, so the
-// original packs were renumbered — reorderSteps() migrates live DBs.
-const ALL_PACKS: { flag: string; course: SeedCourse }[] = [
-  { flag: 'japanese.seeded', course: N5_COURSE }, // 1
-  { flag: 'japanese.seeded.radicals', course: RADICALS_COURSE }, // 2
-  { flag: 'japanese.seeded.kanji', course: N5_KANJI_COURSE }, // 3
-  { flag: 'japanese.seeded.casual', course: CASUAL_COURSE }, // 4
-  { flag: 'japanese.seeded.setphrases', course: SET_PHRASES_COURSE }, // 5
-  { flag: 'japanese.seeded.counters', course: COUNTERS_COURSE }, // 6
-  { flag: 'japanese.seeded.n4', course: N4_COURSE }, // 7
-  { flag: 'japanese.seeded.n4vocab', course: N4_VOCAB_COURSE }, // 8
-  { flag: 'japanese.seeded.n4kanji', course: N4_KANJI_COURSE }, // 9
-  { flag: 'japanese.seeded.sfx', course: SFX_COURSE }, // 10
-  { flag: 'japanese.seeded.casual2', course: CASUAL2_COURSE }, // 11
-  { flag: 'japanese.seeded.vnslang', course: VN_SLANG_COURSE }, // 12
-  { flag: 'japanese.seeded.n3', course: N3_COURSE }, // 13
-  { flag: 'japanese.seeded.n3b', course: N3B_COURSE }, // 14
-  { flag: 'japanese.seeded.n3vocab', course: N3_VOCAB_COURSE }, // 15
-  { flag: 'japanese.seeded.n3kanji', course: N3_KANJI_COURSE }, // 16
-  { flag: 'japanese.seeded.speech', course: SPEECH_COURSE }, // 17
-  { flag: 'japanese.seeded.n2a', course: N2A_COURSE }, // 18
-  { flag: 'japanese.seeded.n2b', course: N2B_COURSE }, // 19
-  { flag: 'japanese.seeded.n2vocab', course: N2_VOCAB_COURSE }, // 20
-  { flag: 'japanese.seeded.n2kanji', course: N2_KANJI_COURSE }, // 21
-  { flag: 'japanese.seeded.idioms', course: IDIOMS_COURSE }, // 22
-  { flag: 'japanese.seeded.n1a', course: N1A_COURSE }, // 23
-  { flag: 'japanese.seeded.n1b', course: N1B_COURSE }, // 24
-  { flag: 'japanese.seeded.n1vocab', course: N1_VOCAB_COURSE }, // 25
-  { flag: 'japanese.seeded.n1kanji', course: N1_KANJI_COURSE } // 26
+// Study-path order: a course's step (difficulty) is its position here. The
+// 2026-07-05 wave (radicals, counters, SFX, speech styles, idioms) slotted
+// INTO the existing path and reorderSteps() migrated live DBs; since the seed
+// sync (2026-10-16) a renumbering reaches unedited courses on its own.
+const PACK_ORDER: (Omit<SeedPack, 'course'> & { course: SeedCourseDef })[] = [
+  { flag: 'japanese.seeded', key: 'n5', course: N5_COURSE },
+  { flag: 'japanese.seeded.radicals', key: 'radicals', course: RADICALS_COURSE },
+  { flag: 'japanese.seeded.kanji', key: 'kanji', course: N5_KANJI_COURSE },
+  { flag: 'japanese.seeded.casual', key: 'casual', course: CASUAL_COURSE },
+  { flag: 'japanese.seeded.setphrases', key: 'setphrases', course: SET_PHRASES_COURSE },
+  { flag: 'japanese.seeded.counters', key: 'counters', course: COUNTERS_COURSE },
+  { flag: 'japanese.seeded.n4', key: 'n4', course: N4_COURSE },
+  { flag: 'japanese.seeded.n4b', key: 'n4b', course: N4B_COURSE },
+  { flag: 'japanese.seeded.n4vocab', key: 'n4vocab', course: N4_VOCAB_COURSE },
+  { flag: 'japanese.seeded.n4kanji', key: 'n4kanji', course: N4_KANJI_COURSE },
+  { flag: 'japanese.seeded.sfx', key: 'sfx', course: SFX_COURSE },
+  { flag: 'japanese.seeded.casual2', key: 'casual2', course: CASUAL2_COURSE },
+  { flag: 'japanese.seeded.vnslang', key: 'vnslang', course: VN_SLANG_COURSE },
+  { flag: 'japanese.seeded.n3', key: 'n3', course: N3_COURSE },
+  { flag: 'japanese.seeded.n3b', key: 'n3b', course: N3B_COURSE },
+  { flag: 'japanese.seeded.n3c', key: 'n3c', course: N3C_COURSE },
+  { flag: 'japanese.seeded.n3vocab', key: 'n3vocab', course: N3_VOCAB_COURSE },
+  { flag: 'japanese.seeded.n3kanji', key: 'n3kanji', course: N3_KANJI_COURSE },
+  { flag: 'japanese.seeded.speech', key: 'speech', course: SPEECH_COURSE },
+  { flag: 'japanese.seeded.n2a', key: 'n2a', course: N2A_COURSE },
+  { flag: 'japanese.seeded.n2b', key: 'n2b', course: N2B_COURSE },
+  { flag: 'japanese.seeded.n2c', key: 'n2c', course: N2C_COURSE },
+  { flag: 'japanese.seeded.n2d', key: 'n2d', course: N2D_COURSE },
+  { flag: 'japanese.seeded.n2vocab', key: 'n2vocab', course: N2_VOCAB_COURSE },
+  { flag: 'japanese.seeded.n2kanji', key: 'n2kanji', course: N2_KANJI_COURSE },
+  { flag: 'japanese.seeded.idioms', key: 'idioms', course: IDIOMS_COURSE },
+  { flag: 'japanese.seeded.n1a', key: 'n1a', course: N1A_COURSE },
+  { flag: 'japanese.seeded.n1b', key: 'n1b', course: N1B_COURSE },
+  { flag: 'japanese.seeded.n1c', key: 'n1c', course: N1C_COURSE },
+  { flag: 'japanese.seeded.n1d', key: 'n1d', course: N1D_COURSE },
+  { flag: 'japanese.seeded.n1vocab', key: 'n1vocab', course: N1_VOCAB_COURSE },
+  { flag: 'japanese.seeded.n1kanji', key: 'n1kanji', course: N1_KANJI_COURSE }
 ]
+
+const ALL_PACKS: SeedPack[] = PACK_ORDER.map((p, i) => ({
+  ...p,
+  course: { ...p.course, difficulty: i + 1 }
+}))
 
 // The 2026-07-05 renumbering, applied once to DBs seeded under the old 1–15
 // layout. Matched by ORIGINAL title + OLD step so renamed or user-re-numbered
@@ -4132,5 +4695,13 @@ export function seedJapanese(sqlite: Database.Database): void {
   reorderSteps(sqlite)
   reorderSteps2(sqlite)
   reorderSteps3(sqlite)
-  for (const p of ALL_PACKS) seedPack(sqlite, p.flag, p.course)
+  for (const p of ALL_PACKS) seedPack(sqlite, p)
+  // Then bring every already-seeded pack up to date (japaneseSeedSync.ts).
+  // The backfill runs once; the sync only when the seed changed.
+  backfillSeedKeys(sqlite, ALL_PACKS)
+  syncSeedContent(sqlite, ALL_PACKS, SEED_VERSION)
 }
+
+// Exposed for tests/japaneseSeedSync.test.ts, which pins SEED_VERSION to the
+// content hash and checks the keys lock.
+export const SEED_PACKS: readonly SeedPack[] = ALL_PACKS

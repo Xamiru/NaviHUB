@@ -18,7 +18,7 @@ export default defineInterpretation({
       url: 'https://www.iranicaonline.org/articles/jangali-movement'
     }
   },
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'red-revolution-declaration',
@@ -129,7 +129,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q6',
-          text: 'were not territorially separatist, but aimed to establish stable yet accountable political arrangements that would redress local grievances about an unfair distribution of power between central government and local authorities throughout Iran.',
+          text: 'The regional campaigns of Kuchek Khan Jangali (1880-1921) in Gilan, of Sheikh Mohammad Khiyabani (1880-1920) in Azerbaijan, and of Colonel Mohammad Taqi Khan Pesyan (1892-1921) in Khorasan were not territorially separatist, but aimed to establish stable yet accountable political arrangements that would redress local grievances about an unfair distribution of power between central government and local authorities throughout Iran.',
           lang: 'en',
           cite: {
             source: 'eo1418-atabaki-persia-iran',
@@ -137,7 +137,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://encyclopedia.1914-1918-online.net/article/persiairan/'
           }
         }

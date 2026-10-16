@@ -20,12 +20,13 @@ const KINDS = ['detail', 'main-idea', 'inference', 'vocab']
 
 describe('graded reading passages', () => {
   it('has a substantial N5–N1 library with unique level-prefixed keys', () => {
-    expect(JP_PASSAGES.length).toBeGreaterThanOrEqual(42)
+    expect(JP_PASSAGES.length).toBeGreaterThanOrEqual(90)
     const keys = JP_PASSAGES.map((p) => p.key)
     expect(new Set(keys).size).toBe(keys.length)
     for (const l of LEVELS) {
       const at = JP_PASSAGES.filter((p) => p.level === l)
-      expect(at.length, l).toBeGreaterThanOrEqual(6)
+      // N4–N2 carry the bulk: that is where a reading learner spends longest.
+      expect(at.length, l).toBeGreaterThanOrEqual(l === 'N5' || l === 'N1' ? 6 : 25)
       for (const p of at) expect(p.key, p.key).toMatch(new RegExp(`^${l.toLowerCase()}-\\d{2}-[a-z0-9-]+$`))
     }
   })

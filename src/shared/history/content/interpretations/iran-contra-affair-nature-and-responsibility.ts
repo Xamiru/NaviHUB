@@ -79,7 +79,7 @@ export default defineInterpretation({
         },
         {
           id: 'q14',
-          text: 'However, the abductions also sparked a strong personal reaction on the part of President Ronald Reagan, who despite public vows never to negotiate with terrorists, made clear to his aides that he intended to liberate the hostages regardless of the political consequences (Walsh, Final Report, vol. 1, p. 410; Reagan, pp. 490-92).',
+          text: 'However, the abductions also sparked a strong personal reaction on the part of President Ronald Reagan, who despite public vows never to negotiate with terrorists, made clear to his aides that he intended to liberate the hostages regardless of the political consequences',
           lang: 'en',
           cite: {
             source: 'iranica-byrne-iran-contra-affairs',
@@ -87,7 +87,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-09',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/iran-contra-affairs'
           }
         }
@@ -176,7 +176,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q7',
-          text: 'the Iran operations were carried out with the knowledge of, among others, President Ronald Reagan, Vice President George Bush, Secretary of State George P. Shultz, Secretary of Defense Caspar W. Weinberger, Director of Central Intelligence William J. Casey, and national security advisers Robert C. McFarlane and John M. Poindexter; of these officials, only Weinberger and Shultz dissented from the policy decision, and Weinberger eventually acquiesced by ordering the Department of Defense to provide the necessary arms',
+          text: '-- the Iran operations were carried out with the knowledge of, among others, President Ronald Reagan, Vice President George Bush, Secretary of State George P. Shultz, Secretary of Defense Caspar W. Weinberger, Director of Central Intelligence William J. Casey, and national security advisers Robert C. McFarlane and John M. Poindexter; of these officials, only Weinberger and Shultz dissented from the policy decision, and Weinberger eventually acquiesced by ordering the Department of Defense to provide the necessary arms',
           lang: 'en',
           cite: {
             source: 'walsh-1993-final-report-iran-contra-executive-summary',
@@ -184,13 +184,13 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-16',
             url: 'https://irp.fas.org/offdocs/walsh/execsum.htm'
           }
         },
         {
           id: 'q8',
-          text: 'following the revelation of these operations in October and November 1986, Reagan Administration officials deliberately deceived the Congress and the public about the level and extent of official knowledge of and support for these operations.',
+          text: '-- following the revelation of these operations in October and November 1986, Reagan Administration officials deliberately deceived the Congress and the public about the level and extent of official knowledge of and support for these operations.',
           lang: 'en',
           cite: {
             source: 'walsh-1993-final-report-iran-contra-executive-summary',
@@ -198,7 +198,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-16',
             url: 'https://irp.fas.org/offdocs/walsh/execsum.htm'
           }
         }
@@ -242,5 +242,5 @@ export default defineInterpretation({
       ]
     }
   ],
-  researched: '2026-10-09'
+  researched: '2026-10-16'
 })

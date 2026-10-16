@@ -887,5 +887,31 @@ export default defineEvent({
       bytes: 988429140,
       durationSec: 9477
     }
+  ],
+  places: [
+    {
+      ref: 'place:tehran',
+      cites: [
+        {
+          source: 'iranica-therme-russia-iii-russo-iranian-relations-in-the-post-soviet-era',
+          loc: {
+            section: 'RUSSIA iii. Russo-Iranian Relations in the Post-Soviet Era (1991-present)',
+            para: '6'
+          }
+        }
+      ]
+    },
+    {
+      ref: 'place:natanz',
+      cites: [
+        {
+          source: 'acronym-2003-11-10-iaea-report-on-iran-gov-2003-75',
+          loc: {
+            section: 'Implementation of the NPT Safeguards Agreement in the Islamic Republic of Iran (GOV/2003/75)',
+            para: '173'
+          }
+        }
+      ]
+    }
   ]
 })

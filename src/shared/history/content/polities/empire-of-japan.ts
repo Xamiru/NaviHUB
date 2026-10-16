@@ -13,7 +13,7 @@ export default definePolity({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   polityType: 'empire',
   start: {
     alts: [
@@ -72,6 +72,16 @@ export default definePolity({
       kind: 'overview',
       quotes: [
         {
+          id: 'q4',
+          text: 'The new constitution specified a form of government that was still authoritarian in character, with the emperor holding the ultimate power and only minimal concessions made to popular rights and parliamentary mechanisms.',
+          lang: 'en',
+          cite: {
+            source: 'loc-japan-country-study-1994',
+            loc: { section: 'The Development of Representative Government', para: '7' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/japan/25.htm' }
+        },
+        {
           id: 'q1',
           text: 'JAPAN, an empire of eastern Asia, and one of the great powers of the world.',
           lang: 'en',
@@ -106,16 +116,6 @@ export default definePolity({
             loc: { section: 'THE EMERGENCE OF MODERN JAPAN: The Meiji Restoration', para: '3' }
           },
           provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/japan/22.htm' }
-        },
-        {
-          id: 'q4',
-          text: 'The new constitution specified a form of government that was still authoritarian in character, with the emperor holding the ultimate power and only minimal concessions made to popular rights and parliamentary mechanisms.',
-          lang: 'en',
-          cite: {
-            source: 'loc-japan-country-study-1994',
-            loc: { section: 'The Development of Representative Government', para: '7' }
-          },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/japan/25.htm' }
         }
       ]
     },

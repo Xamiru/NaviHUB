@@ -106,6 +106,8 @@ describe('video source', () => {
     expect(src.decode.verdict).toBe('ok')
     expect(src.prev).toEqual({ fileId: first, title: 'Episode 1' })
     expect(src.next?.title).toBe('Episode 3')
+    // Every episode of a title shares one subtitle delay.
+    expect(src.offsetKey).toBe(`media:${mediaId}`)
   })
 
   it('refuses an undecodable episode before any <video> mounts', async () => {
@@ -159,9 +161,36 @@ describe('video source', () => {
     const src = await video.source({ kind: 'clip', clipId })
     expect(src.url).toBe('navimg://wrestling/clips/promo.mp4')
     expect(src.backPath).toBe('/wrestling/clips')
+    expect(src.offsetKey).toBe(`clip:${clipId}`)
     expect(src.prev).toBeNull()
     // No probe data: decodable is unknown, so the renderer's watchdog decides.
     expect(src.decode.verdict).toBe('uncertain')
+  })
+
+  it('shares one subtitle delay across an event and keeps a loose file to itself', async () => {
+    const eventId = Number(
+      db
+        .prepare(`INSERT INTO wrestling_event (promotion, name) VALUES ('wwe', 'WrestleMania')`)
+        .run().lastInsertRowid
+    )
+    const addFile = (event: number | null, path: string): number => {
+      touch(`wrestling/${path}`)
+      return Number(
+        db
+          .prepare(
+            `INSERT INTO wrestling_video (event_id, file_path, title, sort_order) VALUES (?, ?, ?, 0)`
+          )
+          .run(event, path, path).lastInsertRowid
+      )
+    }
+    const part = addFile(eventId, 'WM/part1.mkv')
+    const loose = addFile(null, 'loose/match.mkv')
+    expect((await video.source({ kind: 'wrestling', fileId: part })).offsetKey).toBe(
+      `event:${eventId}`
+    )
+    expect((await video.source({ kind: 'wrestling', fileId: loose })).offsetKey).toBe(
+      `wfile:${loose}`
+    )
   })
 
   it('opens a Football media item through the Football root', async () => {
@@ -174,6 +203,7 @@ describe('video source', () => {
     const src = await video.source({ kind: 'football', mediaId: id })
     expect(src.url).toBe('navimg://football/2005/final.mp4')
     expect(src.backPath).toBe('/football/media')
+    expect(src.offsetKey).toBe(`football:${id}`)
   })
 
   it('opens clips and Football files externally through the same resolver as the player', async () => {

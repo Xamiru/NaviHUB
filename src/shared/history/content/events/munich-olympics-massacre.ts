@@ -145,49 +145,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'Armed with automatic rifles, members of the Black September Organization (named after Jordan’s suppression of the fedayeen uprising two years earlier) invaded the Olympic Village at the Munich games and broke into the quarters of the Israeli team early in the morning on September 5.',
-          lang: 'en',
-          cite: { source: 'frus1969-76v23-doc-307', loc: { section: 'Document 307' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-09',
-            url: 'https://history.state.gov/historicaldocuments/frus1969-76v23/d307'
-          }
-        }
-      ]
-    },
-    {
-      kind: 'course',
-      quotes: [
-        {
-          id: 'q2',
-          text: 'German authorities spent hours negotiating with the guerrillas, who demanded the release of 200 Arab commandos imprisoned in Israel, before eventually providing them with helicopters to take them and their Israeli captives to an airport at Furstenfeldbruck, where a Boeing 707 airplane bound for Cairo was awaiting their arrival. The 23-hour affair ended at 1 a.m. on September 6.',
-          lang: 'en',
-          cite: { source: 'frus1969-76v23-doc-307', loc: { section: 'Document 307' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-09',
-            url: 'https://history.state.gov/historicaldocuments/frus1969-76v23/d307'
-          }
-        },
-        {
-          id: 'q3',
-          text: 'In an attempt to rescue the hostages, hidden German sharpshooters exchanged fire with two of the guerrillas as they moved between the helicopter and the plane. All nine of the remaining Israeli athletes as well as four of their captors died.',
-          lang: 'en',
-          cite: { source: 'frus1969-76v23-doc-307', loc: { section: 'Document 307' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-09',
-            url: 'https://history.state.gov/historicaldocuments/frus1969-76v23/d307'
-          }
-        }
-      ]
-    },
-    {
-      kind: 'casualties',
-      quotes: [
-        {
           id: 'q4',
           text: 'The President, his Assistant for National Security Affairs Kissinger, Secretary of State Rogers, and Haig discussed how to respond to the deaths of 11 Israeli athletes in Munich.',
           lang: 'en',
@@ -257,32 +214,58 @@ export default defineEvent({
           }
         }
       ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q1',
+          text: 'Armed with automatic rifles, members of the Black September Organization (named after Jordan’s suppression of the fedayeen uprising two years earlier) invaded the Olympic Village at the Munich games and broke into the quarters of the Israeli team early in the morning on September 5.',
+          lang: 'en',
+          cite: { source: 'frus1969-76v23-doc-307', loc: { section: 'Document 307' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/historicaldocuments/frus1969-76v23/d307'
+          }
+        },
+        {
+          id: 'q2',
+          text: 'German authorities spent hours negotiating with the guerrillas, who demanded the release of 200 Arab commandos imprisoned in Israel, before eventually providing them with helicopters to take them and their Israeli captives to an airport at Furstenfeldbruck, where a Boeing 707 airplane bound for Cairo was awaiting their arrival. The 23-hour affair ended at 1 a.m. on September 6.',
+          lang: 'en',
+          cite: { source: 'frus1969-76v23-doc-307', loc: { section: 'Document 307' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/historicaldocuments/frus1969-76v23/d307'
+          }
+        },
+        {
+          id: 'q3',
+          text: 'In an attempt to rescue the hostages, hidden German sharpshooters exchanged fire with two of the guerrillas as they moved between the helicopter and the plane. All nine of the remaining Israeli athletes as well as four of their captors died.',
+          lang: 'en',
+          cite: { source: 'frus1969-76v23-doc-307', loc: { section: 'Document 307' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/historicaldocuments/frus1969-76v23/d307'
+          }
+        },
+        {
+          id: 'q8',
+          text: 'Two of the Israeli athletes were killed immediately, and nine others were taken hostage.',
+          lang: 'en',
+          cite: { source: 'frus1969-76v23-doc-307', loc: { section: 'Document 307' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/historicaldocuments/frus1969-76v23/d307'
+          }
+        }
+      ]
     }
   ],
   course: [
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1972-09-05' },
-            cites: [
-              { source: 'frus1969-76v23-doc-307', loc: { section: 'Document 307' } }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q8',
-        text: 'Two of the Israeli athletes were killed immediately, and nine others were taken hostage.',
-        lang: 'en',
-        cite: { source: 'frus1969-76v23-doc-307', loc: { section: 'Document 307' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-09',
-          url: 'https://history.state.gov/historicaldocuments/frus1969-76v23/d307'
-        }
-      }
-    },
     {
       date: {
         alts: [

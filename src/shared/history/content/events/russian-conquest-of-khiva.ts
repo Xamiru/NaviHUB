@@ -126,7 +126,7 @@ export default defineEvent({
         },
         {
           id: 'q5',
-          text: 'During the Russian military actions in Central Asia, however, Iran supported the Russian army with supplies of food and forage (Kulagina and Dunaeva, pp. 58-59; Rawlinson, pp. 169-71, 313-15; Eʿtemād-al-Salṭana, III, pp. 1939 ff., 1951).',
+          text: 'During the Russian military actions in Central Asia, however, Iran supported the Russian army with supplies of food and forage',
           lang: 'en',
           cite: {
             source: 'iranica-andreeva-russia-relations',
@@ -137,7 +137,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/russia-i-relations/'
           }
         },

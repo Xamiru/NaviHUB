@@ -134,39 +134,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.difp.ie/timeline-of-events-1919-69/'
           }
-        },
-        {
-          id: 'q1',
-          text: '1. Ireland shall have the same constitutional status in the Community of Nations known as the British Empire as the Dominion of Canada, the Commonwealth of Australia, the Dominion of New Zealand, and the Union of South Africa with a Parliament having powers to make laws for the peace, order and good government of Ireland and an Executive responsible to that Parliament, and shall be styled and known as the Irish Free State.',
-          lang: 'en',
-          cite: {
-            source: 'difp-1921-12-06-articles-of-agreement',
-            loc: { section: 'No. 214', para: '1' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.difp.ie/volume-1/1921/anglo-irish-treaty/214/'
-          }
-        }
-      ]
-    },
-    {
-      kind: 'background',
-      quotes: [
-        {
-          id: 'q3',
-          text: 'Six months ago there was in Ireland a peace that was not a peace and a war that was not a war.',
-          lang: 'en',
-          cite: {
-            source: 'hansard-commons-1921-12-14-debate-on-the-address',
-            loc: { section: 'HC Deb 14 December 1921 vol 149 cc6-26', para: '9' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://api.parliament.uk/historic-hansard/commons/1921/dec/14/debate-on-the-address'
-          }
         }
       ]
     },
@@ -202,38 +169,56 @@ export default defineEvent({
           }
         }
       ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q1',
+          text: '1. Ireland shall have the same constitutional status in the Community of Nations known as the British Empire as the Dominion of Canada, the Commonwealth of Australia, the Dominion of New Zealand, and the Union of South Africa with a Parliament having powers to make laws for the peace, order and good government of Ireland and an Executive responsible to that Parliament, and shall be styled and known as the Irish Free State.',
+          lang: 'en',
+          cite: {
+            source: 'difp-1921-12-06-articles-of-agreement',
+            loc: { section: 'No. 214', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.difp.ie/volume-1/1921/anglo-irish-treaty/214/'
+          }
+        },
+        {
+          id: 'q3',
+          text: 'Six months ago there was in Ireland a peace that was not a peace and a war that was not a war.',
+          lang: 'en',
+          cite: {
+            source: 'hansard-commons-1921-12-14-debate-on-the-address',
+            loc: { section: 'HC Deb 14 December 1921 vol 149 cc6-26', para: '9' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1921/dec/14/debate-on-the-address'
+          }
+        },
+        {
+          id: 'q6',
+          text: 'My Lords and Members of the House of Commons, I have summoned you to meet at this unusual time in order that the Articles of Agreement which have been signed by My Ministers and the Irish Delegation may be at once submitted for your approval.',
+          lang: 'en',
+          cite: {
+            source: 'hansard-commons-1921-12-14-irish-free-state',
+            loc: { section: 'HC Deb 14 December 1921 vol 149 c5', para: '3' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1921/dec/14/irish-free-state'
+          }
+        }
+      ]
     }
   ],
   course: [
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1921-12-14' },
-            cites: [
-              {
-                source: 'hansard-commons-1921-12-14-irish-free-state',
-                loc: { section: 'HC Deb 14 December 1921 vol 149 c5', para: '0' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q6',
-        text: 'My Lords and Members of the House of Commons, I have summoned you to meet at this unusual time in order that the Articles of Agreement which have been signed by My Ministers and the Irish Delegation may be at once submitted for your approval.',
-        lang: 'en',
-        cite: {
-          source: 'hansard-commons-1921-12-14-irish-free-state',
-          loc: { section: 'HC Deb 14 December 1921 vol 149 c5', para: '3' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://api.parliament.uk/historic-hansard/commons/1921/dec/14/irish-free-state'
-        }
-      }
-    },
     {
       date: {
         alts: [

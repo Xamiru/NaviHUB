@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Theodor Herzl', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -32,7 +32,7 @@ export default definePerson({
   roles: ['journalist', 'writer', 'activist'],
   sections: [
     {
-      kind: 'early-life',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',
@@ -43,7 +43,12 @@ export default definePerson({
             loc: { section: 'Political Zionism', para: '3' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/israel/9.htm' }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'early-life',
+      quotes: [
         {
           id: 'q2',
           text: 'Born in Budapest on May 2, 1860, Herzl grew up in an environment of assimilation.',
@@ -112,5 +117,18 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Herzl_on_a_balcony_full.jpg',
     credit: { institution: 'Center for Jewish History', creator: 'Ephraim Moses Lilien' },
     license: { id: 'public-domain' }
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1904-07-03' },
+        cites: [
+          {
+            source: 'loc-name-authority-theodor-herzl',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
   }
 })

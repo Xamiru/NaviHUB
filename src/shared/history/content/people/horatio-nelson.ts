@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Horatio Nelson', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -36,7 +36,7 @@ export default definePerson({
   roles: ['military'],
   sections: [
     {
-      kind: 'early-life',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',

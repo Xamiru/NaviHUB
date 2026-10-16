@@ -559,5 +559,16 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Anthony_van_Dyck_-_Charles_I_(1600-49)_with_M._de_St_Antoine_-_Google_Art_Project.jpg',
     credit: { institution: 'Royal Collection', creator: 'Anthony van Dyck' },
     license: { id: 'public-domain' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:london',
+      cites: [
+        {
+          source: 'britannica-1911-great-rebellion',
+          loc: { section: 'Great Rebellion', para: '77' }
+        }
+      ]
+    }
+  ]
 })

@@ -1,19 +1,14 @@
+import { useState } from 'react'
 import type { AchievementProvider, AchievementRarity, AchievementRow } from '@shared/types'
 import { mediaUrl } from '@shared/mediaUrl'
 import { Field } from './Field'
-import { formatProgress, trophyDisplayDecision } from '../lib/achievementDisplay'
+import { formatProgress, rarityText, trophyDisplayDecision } from '../lib/achievementDisplay'
 
-const RARITY_LABEL: Record<AchievementRarity, string> = {
-  common: 'Common',
-  uncommon: 'Uncommon',
-  rare: 'Rare',
-  'ultra-rare': 'Ultra rare'
-}
-
-const RARITY_CLASS: Record<AchievementRarity, string> = {
+// Semantic roles, so every theme keeps the four tiers apart.
+export const RARITY_CLASS: Record<AchievementRarity, string> = {
   common: 'text-gray-400',
-  uncommon: 'text-gray-300',
-  rare: 'text-gray-200',
+  uncommon: 'text-signal-affirmative',
+  rare: 'text-signal-link',
   'ultra-rare': 'text-accent'
 }
 
@@ -63,13 +58,11 @@ export function TrophyProgress({
 
 export function TrophyRow({
   achievement,
-  provider,
   busy,
   onToggle,
   selection
 }: {
   achievement: AchievementRow
-  provider: AchievementProvider
   busy: boolean
   onToggle: (unlocked: boolean) => void
   // Present on every row while picking several to mark earned at once; earned
@@ -78,9 +71,10 @@ export function TrophyRow({
 }) {
   const a = achievement
   const display = trophyDisplayDecision(a)
-  const meta: string[] = [providerLabel(provider)]
-  if (a.globalPct != null) meta.push(`${a.globalPct.toFixed(1)}% rarity`)
-  else if (a.rarity) meta.push(RARITY_LABEL[a.rarity])
+  const [revealed, setRevealed] = useState(false)
+  const meta: string[] = []
+  const rarity = rarityText(a.globalPct, a.rarity)
+  if (rarity) meta.push(rarity)
   if (a.points != null) meta.push(`${a.points} points`)
   if (display.unlocked && a.unlockedAt) meta.push(`Unlocked ${formatAchievementDate(a.unlockedAt)}`)
   if (display.unlocked && a.unlockSource === 'manual') meta.push('marked by hand')
@@ -88,7 +82,7 @@ export function TrophyRow({
 
   return (
     <li
-      className={`grid min-w-0 items-center gap-4 border-t px-3 py-4 first:border-t-0 sm:px-5 ${
+      className={`group grid min-w-0 items-center gap-4 border-t px-3 py-4 first:border-t-0 sm:px-5 ${
         selection
           ? 'grid-cols-[auto_64px_minmax(0,1fr)] sm:grid-cols-[auto_64px_minmax(0,1fr)_auto]'
           : 'grid-cols-[64px_minmax(0,1fr)] sm:grid-cols-[64px_minmax(0,1fr)_auto]'
@@ -117,21 +111,29 @@ export function TrophyRow({
         <span className="h-16 w-16 rounded-lg bg-base-700" />
       )}
       <div className="min-w-0">
-        <div className="flex min-w-0 items-center gap-2">
-          <p className={`truncate text-sm font-semibold ${display.unlocked ? 'text-white' : 'text-gray-300'}`}>
-            {a.name}
-          </p>
-          <span className="chip shrink-0">{display.unlocked ? 'Earned' : 'Locked'}</span>
-        </div>
-        {display.description && (
-          <p
-            className={`mt-1 line-clamp-2 text-xs leading-relaxed ${
-              display.protectsHiddenDescription ? 'italic text-gray-500' : 'text-gray-400'
-            }`}
-            title={display.description}
+        <p className={`truncate text-sm font-semibold ${display.unlocked ? 'text-white' : 'text-gray-300'}`}>
+          {a.name}
+          <span className="sr-only">{display.unlocked ? ', earned' : ', locked'}</span>
+        </p>
+        {display.hiddenDescription != null && !revealed ? (
+          <button
+            type="button"
+            className="mt-1 text-left text-xs italic text-gray-500 hover:text-gray-300"
+            onClick={() => setRevealed(true)}
           >
-            {display.description}
-          </p>
+            Hidden achievement. Show description
+          </button>
+        ) : (
+          display.description && (
+            <p
+              className={`mt-1 line-clamp-2 text-xs leading-relaxed ${
+                display.protectsHiddenDescription && !revealed ? 'italic text-gray-500' : 'text-gray-400'
+              }`}
+              title={revealed ? (display.hiddenDescription ?? undefined) : display.description}
+            >
+              {revealed && display.hiddenDescription != null ? display.hiddenDescription : display.description}
+            </p>
+          )
         )}
         {progress && (
           <div className="mt-2 flex max-w-xs items-center gap-2">
@@ -149,12 +151,17 @@ export function TrophyRow({
             <span className="shrink-0 text-xs text-gray-400">{progress.label}</span>
           </div>
         )}
-        <p className={`mt-2 truncate text-[11px] ${a.rarity ? RARITY_CLASS[a.rarity] : 'text-gray-400'}`}>
-          {meta.join(' / ')}
-        </p>
+        {meta.length > 0 && (
+          <p className={`mt-2 truncate text-xs ${a.rarity ? RARITY_CLASS[a.rarity] : 'text-gray-400'}`}>
+            {meta.join(' / ')}
+          </p>
+        )}
       </div>
+      {/* The manual toggle is the floor for untracked games, not the row's
+          main action: it shows on hover or keyboard focus, and always at
+          narrow widths where there is no hover. */}
       <button
-        className={`btn-ghost shrink-0 justify-self-end text-xs ${
+        className={`btn-ghost shrink-0 justify-self-end text-xs sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 ${
           selection ? 'col-span-3 sm:col-span-1' : 'col-span-2 sm:col-span-1'
         }`}
         disabled={busy}

@@ -441,7 +441,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q11',
-        text: 'They thus came to terms with the British and signed an agreement with them on 12 August 1918 (Fakhraii, pp. 153-57).',
+        text: 'They thus came to terms with the British and signed an agreement with them on 12 August 1918',
         lang: 'en',
         cite: {
           source: 'iranica-dailami-jangali-movement',
@@ -449,7 +449,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/jangali-movement'
         }
       }
@@ -557,7 +557,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q15',
-        text: 'A combination of external political pressure, internal party conflict, and military persecution led, at the end of October 1921, to final defeat of the Jangalīs by a superior force supported by both Britain and the Soviet Union (Chaqueri, 1983, pp. 69-85).',
+        text: 'A combination of external political pressure, internal party conflict, and military persecution led, at the end of October 1921, to final defeat of the Jangalīs by a superior force supported by both Britain and the Soviet Union',
         lang: 'en',
         cite: {
           source: 'iranica-chaqueri-communism-i',
@@ -565,7 +565,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/communism-i'
         }
       }

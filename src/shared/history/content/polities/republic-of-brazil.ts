@@ -13,7 +13,7 @@ export default definePolity({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   polityType: 'republic',
   start: {
     alts: [
@@ -90,6 +90,16 @@ export default definePolity({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'The history of the republic has been a search for a viable form of government to replace the monarchy. That search has lurched back and forth between state autonomy and centralization.',
+          lang: 'en',
+          cite: {
+            source: 'loc-brazil-country-study-1997',
+            loc: { section: 'The Republican Era, 1889-1985', para: '1' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/brazil/14.htm' }
+        },
+        {
           id: 'q1',
           text: 'The overthrow of the monarchy by a military revolt in Rio de Janeiro on 15th November 1889, resulted in the creation of a federal republic under the name of United States of Brazil (Estados Unidos do Brazil).',
           lang: 'en',
@@ -99,16 +109,6 @@ export default definePolity({
             at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Brazil'
           }
-        },
-        {
-          id: 'q2',
-          text: 'The history of the republic has been a search for a viable form of government to replace the monarchy. That search has lurched back and forth between state autonomy and centralization.',
-          lang: 'en',
-          cite: {
-            source: 'loc-brazil-country-study-1997',
-            loc: { section: 'The Republican Era, 1889-1985', para: '1' }
-          },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/brazil/14.htm' }
         }
       ]
     },

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
+import JapaneseHubTabs from '../components/japanese/JapaneseHubTabs'
 import QuizRecord from '../components/QuizRecord'
 import McDrill, { type McQuestion } from '../components/japanese/McDrill'
 import { Group, Pill } from '../components/PillGroup'
@@ -66,6 +67,7 @@ export default function JapaneseLoanwordsPage() {
 
   return (
     <div className="p-6 max-w-[1320px] mx-auto">
+      <JapaneseHubTabs />
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Loanwords"

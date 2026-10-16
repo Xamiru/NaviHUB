@@ -103,7 +103,7 @@ export const MONOGATARI: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '20593' }],
       year: 2014,
       releaseDate: '2014-08-16',
-      chrono: 8,
+      chrono: 12,
       route: 5,
       mc: 78,
       note: 'Suruga Kanbaru’s story, the spring after Koyomi graduates, told without him as narrator'
@@ -230,7 +230,7 @@ export const MONOGATARI: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '173533' }],
       year: 2024,
       releaseDate: '2024-07-06',
-      chrono: 12,
+      chrono: 13,
       route: 15,
       mc: 86,
       note: 'Jumps forward to an adult Koyomi, catching up with the cast years after high school'
@@ -243,7 +243,7 @@ export const MONOGATARI: FranchiseCfg = {
       aliases: ['Monogatari Series: Off & Monster Season - Zankoku Douwa: Utsukushi-hime'],
       year: 2024,
       releaseDate: '2024-08-17',
-      chrono: 12,
+      chrono: 13,
       route: 16,
       optional: true,
       mc: 78,

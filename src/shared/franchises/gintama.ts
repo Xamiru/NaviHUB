@@ -89,7 +89,7 @@ export const GINTAMA: FranchiseCfg = {
       route: 3,
       adaptation: true,
       mc: 89,
-      note: 'Gintama’: the series returns after a two-year break'
+      note: 'Gintama’: the series returns after a year off the air'
     },
     {
       id: 'gintama-enchousen',

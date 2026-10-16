@@ -202,7 +202,7 @@ export default defineEvent({
         },
         {
           id: 'q8',
-          text: 'The Shah of Iran was shaken, fearing a similar fate for himself and viewing the upheaval in Baghdad as a “clear and imminent” source of threats to regional stability (Ramazani, 1975, p. 281).',
+          text: 'The Shah of Iran was shaken, fearing a similar fate for himself and viewing the upheaval in Baghdad as a “clear and imminent” source of threats to regional stability',
           lang: 'en',
           cite: {
             source: 'iranica-kechichian-baghdad-pact',
@@ -210,7 +210,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/baghdad-pact/'
           }
         },

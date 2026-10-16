@@ -134,7 +134,7 @@ export const DEVILMAN: FranchiseCfg = {
         'devilman-film-2004',
         'devilman-crybaby'
       ],
-      blurb: 'A kind-hearted student who takes a demon\'s body and power while keeping his human heart.'
+      blurb: 'A timid boy who cries for other people, fused with the demon Amon at Ryo’s sabbath and left with a demon’s body and his own human heart.'
     },
     {
       id: 'devilman-ryo',
@@ -149,7 +149,7 @@ export const DEVILMAN: FranchiseCfg = {
         'devilman-film-2004',
         'devilman-crybaby'
       ],
-      blurb: 'Akira\'s clever friend, who knows about demons before anyone else and urges him to take the fight to them.'
+      blurb: 'Akira’s brilliant, cold best friend, who knows the demons are waking and makes Akira into Devilman to fight them — and who is, the story finally reveals, Satan himself.'
     },
     {
       id: 'devilman-miki',
@@ -165,7 +165,7 @@ export const DEVILMAN: FranchiseCfg = {
         'devilman-film-2004',
         'devilman-crybaby'
       ],
-      blurb: 'A schoolmate whose friendship keeps Akira connected to the human world he is defending.'
+      blurb: 'The girl whose family takes Akira in. Brave, ordinary and loyal to him when the world turns on anyone suspected of being a demon: the human heart Akira is fighting to keep.'
     },
     {
       id: 'devilman-amon',
@@ -173,7 +173,7 @@ export const DEVILMAN: FranchiseCfg = {
       role: 'The demon',
       portraitUrl: `${AL}/character/large/b7972-ro7f4Rjp7Bll.png`,
       appearsIn: ['devilman-manga', 'devilman-amon', 'devilman-crybaby'],
-      blurb: 'The demon warrior whose body Akira takes; the 2000 OVA is named for him.'
+      blurb: 'The Lord of War, one of the strongest demons, whose body Akira takes over at the sabbath. Akira’s will wins; Amon never quite stops pushing from inside.'
     },
     {
       id: 'devilman-sirene',
@@ -181,7 +181,7 @@ export const DEVILMAN: FranchiseCfg = {
       role: 'Demon bird',
       portraitUrl: `${AL}/character/large/b18590-uSU2YjJWxWgJ.jpg`,
       appearsIn: ['devilman-manga', 'devilman-tv-1972', 'devilman-demon-bird', 'devilman-crybaby'],
-      blurb: 'A demon bird who gives The Demon Bird OVA its subtitle and returns as an enemy in other versions.'
+      blurb: 'A winged demon who hunts Akira for betraying her kind and fights on past the point her body can take — the series’ most famous battle, and the heart of The Demon Bird.'
     },
     {
       id: 'devilman-tare',
@@ -195,7 +195,7 @@ export const DEVILMAN: FranchiseCfg = {
         'devilman-amon',
         'devilman-crybaby'
       ],
-      blurb: 'Miki\'s younger brother, who appears alongside the Makimura family across the versions.'
+      blurb: 'Miki’s little brother, who idolises Akira and pulls him into his own small adventures — one of the ordinary lives the story makes you care about before the end comes.'
     }
   ]
 }

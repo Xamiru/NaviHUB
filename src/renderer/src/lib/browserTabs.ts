@@ -10,6 +10,7 @@ import {
 import { useLocation } from 'react-router-dom'
 import { archiveContextForPath } from './adaptiveNav'
 import { confirmDialog } from './confirm'
+import { copyEntryState } from './navState'
 import { TabHistory } from './tabHistory'
 import { toast } from './toast'
 
@@ -19,7 +20,7 @@ import { toast } from './toast'
 // back on return because navState keys them by `location.key`, which the stack
 // keeps. Tabs are not saved across launches.
 
-export const MAX_TABS = 5
+export const MAX_TABS = 8
 const MAX_CLOSED = 10
 
 export interface BrowserTab {
@@ -31,6 +32,8 @@ export interface BrowserTab {
 export interface BrowserTabsSnapshot {
   readonly tabs: readonly BrowserTab[]
   readonly activeId: string
+  // Counts tab switches, so a reader (which hides the strip) can show a cue.
+  readonly switchSeq: number
 }
 
 interface ClosedTab {
@@ -60,7 +63,7 @@ function startPath(): string {
 }
 
 const firstTab = createTab(startPath())
-let snapshot: BrowserTabsSnapshot = { tabs: [firstTab], activeId: firstTab.id }
+let snapshot: BrowserTabsSnapshot = { tabs: [firstTab], activeId: firstTab.id, switchSeq: 0 }
 
 function commit(next: BrowserTabsSnapshot): void {
   snapshot = next
@@ -173,7 +176,7 @@ async function bringToFront(
   if (id !== snapshot.activeId && !(await mayLeaveActiveTab())) return false
   const tabs = build(snapshot.tabs)
   tabs.find((tab) => tab.id === id)?.history.markRestored()
-  commit({ tabs, activeId: id })
+  commit({ tabs, activeId: id, switchSeq: snapshot.switchSeq + 1 })
   return true
 }
 
@@ -210,7 +213,44 @@ export async function closeTab(id: string): Promise<void> {
     commit({ ...snapshot, tabs: without(snapshot.tabs) })
   }
   guards.delete(id)
+  titleOverrides.delete(id)
   closed = [{ tab, position }, ...closed].slice(0, MAX_CLOSED)
+}
+
+// The tab menu's bulk closes. `keepId` stays; when the active tab is among the
+// closed ones, `keepId` comes to the front through the leave guard first. They
+// go on the closed stack leftmost first, so repeated Ctrl+Shift+T puts each
+// back in its old place.
+async function closeAllBut(keepId: string, doomed: readonly BrowserTab[]): Promise<void> {
+  if (doomed.length === 0) return
+  const ids = new Set(doomed.map((tab) => tab.id))
+  const positions = new Map(snapshot.tabs.map((tab, i) => [tab.id, i]))
+  const without = (tabs: readonly BrowserTab[]) => tabs.filter((t) => !ids.has(t.id))
+  if (ids.has(snapshot.activeId)) {
+    if (!(await bringToFront(keepId, without))) return
+  } else {
+    commit({ ...snapshot, tabs: without(snapshot.tabs) })
+  }
+  for (const id of ids) {
+    guards.delete(id)
+    titleOverrides.delete(id)
+  }
+  closed = [...doomed.map((tab) => ({ tab, position: positions.get(tab.id) ?? 0 })), ...closed].slice(0, MAX_CLOSED)
+}
+
+export async function closeOtherTabs(id: string): Promise<void> {
+  if (!snapshot.tabs.some((tab) => tab.id === id)) return
+  await closeAllBut(id, snapshot.tabs.filter((tab) => tab.id !== id))
+}
+
+export async function closeTabsToRight(id: string): Promise<void> {
+  const at = snapshot.tabs.findIndex((tab) => tab.id === id)
+  if (at < 0) return
+  await closeAllBut(id, snapshot.tabs.slice(at + 1))
+}
+
+export function hasClosedTabs(): boolean {
+  return closed.length > 0
 }
 
 // Ctrl+Shift+T: the most recently closed tab, with its whole history.
@@ -224,6 +264,22 @@ export async function reopenClosedTab(): Promise<void> {
   if (!(await bringToFront(last.tab.id, restore))) commit({ ...snapshot, tabs: restore(snapshot.tabs) })
 }
 
+// Ctrl+Shift+K: a copy of the tab after it, with its whole history and every
+// entry's persisted state and scroll, under fresh keys.
+export async function duplicateTab(id = snapshot.activeId): Promise<boolean> {
+  const source = snapshot.tabs.find((tab) => tab.id === id)
+  if (!source || limitReached()) return false
+  const copyId = `tab-${nextId++}`
+  // Cloned only once the leave guard has answered, so a declined duplicate
+  // copies no state.
+  return bringToFront(copyId, (tabs) => {
+    const { history, keyMap } = source.history.clone()
+    copyEntryState(keyMap)
+    const title = tabs.find((t) => t.id === id)?.title ?? source.title
+    return insertAt(tabs, tabs.findIndex((t) => t.id === id) + 1, { id: copyId, history, title })
+  })
+}
+
 export async function activateTab(id: string): Promise<void> {
   if (id === snapshot.activeId || !snapshot.tabs.some((tab) => tab.id === id)) return
   await bringToFront(id)
@@ -235,10 +291,26 @@ export async function cycleTab(delta: number): Promise<void> {
   await activateTab(tabs[(at + delta + tabs.length) % tabs.length].id)
 }
 
-// Ctrl+1..5, 1-based like a browser.
+// Ctrl+1..8, 1-based like a browser.
 export async function jumpToTab(position: number): Promise<void> {
   const tab = snapshot.tabs[position - 1]
   if (tab) await activateTab(tab.id)
+}
+
+// A click on an in-app destination, link or menu item alike: Ctrl/Cmd opens it
+// in a background tab (Ctrl+Shift switches to it), anything else navigates the
+// active tab's own history, so no Router is needed.
+export function followInternalLink(
+  path: string,
+  e: { ctrlKey: boolean; metaKey: boolean; shiftKey: boolean }
+): void {
+  if (e.ctrlKey || e.metaKey) void openTab(path, { activate: e.shiftKey })
+  else activeTab().history.push(path)
+}
+
+// Ctrl+9, like a browser: the last tab whatever the count.
+export async function jumpToLastTab(): Promise<void> {
+  await activateTab(snapshot.tabs[snapshot.tabs.length - 1].id)
 }
 
 export function setTabTitle(id: string, title: string): void {
@@ -247,6 +319,23 @@ export function setTabTitle(id: string, title: string): void {
     ...snapshot,
     tabs: snapshot.tabs.map((tab) => (tab.id === id ? { ...tab, title } : tab))
   })
+}
+
+// A page with no heading to read (the readers and the video player) names its
+// tab directly. The override beats the heading and lasts while the page is
+// mounted; effects run child-first, so App's useTabTitle already sees it.
+const titleOverrides = new Map<string, string>()
+
+export function useTabTitleOverride(title: string | null | undefined): void {
+  const tabId = useContext(TabIdContext)
+  useEffect(() => {
+    if (!tabId || !title) return
+    titleOverrides.set(tabId, title)
+    setTabTitle(tabId, title)
+    return () => {
+      if (titleOverrides.get(tabId) === title) titleOverrides.delete(tabId)
+    }
+  }, [tabId, title])
 }
 
 // Keeps the active tab's title in step with its page heading (the first h1 in
@@ -263,7 +352,8 @@ export function useTabTitle(containerRef: RefObject<HTMLElement | null>, fallbac
     const read = (): void => {
       frame = 0
       const heading = pathname === '/' ? null : containerRef.current?.querySelector('h1')?.textContent
-      setTabTitle(tabId, heading?.replace(/\s+/g, ' ').trim() || fallback)
+      const override = titleOverrides.get(tabId)
+      setTabTitle(tabId, override ?? (heading?.replace(/\s+/g, ' ').trim() || fallback))
     }
     read()
     const el = containerRef.current
@@ -284,5 +374,6 @@ export function resetBrowserTabs(path = '/'): void {
   const tab = createTab(path)
   closed = []
   guards.clear()
-  commit({ tabs: [tab], activeId: tab.id })
+  titleOverrides.clear()
+  commit({ tabs: [tab], activeId: tab.id, switchSeq: 0 })
 }

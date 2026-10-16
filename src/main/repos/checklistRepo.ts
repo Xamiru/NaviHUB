@@ -858,7 +858,8 @@ interface DetectSpec {
 }
 
 const DETECT: Record<ChecklistDetectSource, DetectSpec> = {
-  jpReviews: { table: 'jp_review_log', at: 'reviewed_at', value: 'COUNT(DISTINCT card_id)' },
+  // Each review direction of a card is its own card (as introducedToday counts).
+  jpReviews: { table: 'jp_review_log', at: 'reviewed_at', value: "COUNT(DISTINCT card_id || ':' || direction)" },
   jpLesson: {
     table: 'jp_lesson',
     at: 'learned_at',

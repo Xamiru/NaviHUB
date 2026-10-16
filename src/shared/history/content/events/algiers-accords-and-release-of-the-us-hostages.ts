@@ -453,6 +453,28 @@ export default defineEvent({
           }
         }
       ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q17',
+          text: 'The Iran-United States Claims Tribunal, established at The Hague pursuant to the Claims Settlement Agreement of January 19, 1981 (the ``Algiers Accords\'\'), continues to make progress in arbitrating the claims before it.',
+          lang: 'en',
+          cite: {
+            source: 'reagan-1985-message-to-congress-national-emergency-iran',
+            loc: {
+              section: 'Message to the Congress Reporting on the National Emergency With Respect to Iran',
+              para: '2'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.reaganlibrary.gov/archives/speech/message-congress-reporting-national-emergency-respect-iran'
+          }
+        }
+      ]
     }
   ],
   course: [
@@ -511,41 +533,6 @@ export default defineEvent({
           via: 'web',
           at: '2026-10-08',
           url: 'https://www.iranicaonline.org/articles/hostage-crisis/'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1981-01-19' },
-            cites: [
-              {
-                source: 'reagan-1985-message-to-congress-national-emergency-iran',
-                loc: {
-                  section: 'Message to the Congress Reporting on the National Emergency With Respect to Iran',
-                  para: '2'
-                }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q17',
-        text: 'The Iran-United States Claims Tribunal, established at The Hague pursuant to the Claims Settlement Agreement of January 19, 1981 (the ``Algiers Accords\'\'), continues to make progress in arbitrating the claims before it.',
-        lang: 'en',
-        cite: {
-          source: 'reagan-1985-message-to-congress-national-emergency-iran',
-          loc: {
-            section: 'Message to the Congress Reporting on the National Emergency With Respect to Iran',
-            para: '2'
-          }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-08',
-          url: 'https://www.reaganlibrary.gov/archives/speech/message-congress-reporting-national-emergency-respect-iran'
         }
       }
     },

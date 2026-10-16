@@ -119,16 +119,6 @@ export default defineEvent({
             at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/baghdad-pact/'
           }
-        },
-        {
-          id: 'q2',
-          text: 'In 0ctober 1955, Iran joined the Baghdad Pact, which brought together the "northern tier" countries of Iraq, Turkey, and Pakistan in an alliance that included Britain, with the United States serving as a supporter of the pact but not a full member. (The pact was renamed the Central Treaty Organization--CENTO--after Iraq\'s withdrawal in 1958.)',
-          lang: 'en',
-          cite: {
-            source: 'loc-iran-country-study-1987',
-            loc: { section: 'THE SHAH\'S WHITE REVOLUTION', para: '1' }
-          },
-          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/iran/18.htm' }
         }
       ]
     },
@@ -137,7 +127,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'At the height of the Cold War, the Middle East, with strategic bases bordering the Soviet Union, vital communications links, and significant oil wealth, represented a valuable region for Western interests. Initial attempts to align the emerging states in the area to Britain and the United States having failed (Anglo-Egyptian Treaty of 1936 and Anglo-Iraqi Treaty of 1930), London and Washington initiated a sequence of well-known agreements, including the treaty of “friendship and cooperation for security” between Turkey and Pakistan (2 April 1954); the “military assistance” understanding between Iraq and the U.S. (21 April 1954); the Turkish-Iraqi “mutual cooperation pact” (24 February 1955); the special agreement between Iraq and Britain (5 April 1955) which amalgamated the political-military bloc of pro-Western regimes into the Baghdad Pact (Khadduri, pp. 309-24).',
+          text: 'At the height of the Cold War, the Middle East, with strategic bases bordering the Soviet Union, vital communications links, and significant oil wealth, represented a valuable region for Western interests. Initial attempts to align the emerging states in the area to Britain and the United States having failed (Anglo-Egyptian Treaty of 1936 and Anglo-Iraqi Treaty of 1930), London and Washington initiated a sequence of well-known agreements, including the treaty of “friendship and cooperation for security” between Turkey and Pakistan (2 April 1954); the “military assistance” understanding between Iraq and the U.S. (21 April 1954); the Turkish-Iraqi “mutual cooperation pact” (24 February 1955); the special agreement between Iraq and Britain (5 April 1955) which amalgamated the political-military bloc of pro-Western regimes into the Baghdad Pact',
           lang: 'en',
           cite: {
             source: 'iranica-kechichian-baghdad-pact',
@@ -145,7 +135,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/baghdad-pact/'
           }
         },

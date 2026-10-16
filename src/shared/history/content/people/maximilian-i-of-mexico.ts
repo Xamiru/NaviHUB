@@ -16,7 +16,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   died: {
     alts: [
       {
@@ -82,6 +82,25 @@ export default definePerson({
   ],
   sections: [
     {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q5',
+          text: 'MAXIMILIAN (1832–1867), emperor of Mexico, second son of the archduke Francis Charles of Austria, was born in the palace of Schönbrunn, on the 6th of July 1832.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-maximilian-emperor-of-mexico',
+            loc: { section: 'MAXIMILIAN', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Maximilian,_emperor_of_Mexico'
+          }
+        }
+      ]
+    },
+    {
       kind: 'career',
       quotes: [
         {
@@ -141,5 +160,18 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Maximilian_I_of_Mexico_portrait_standing.jpg',
     credit: { institution: 'Library of Congress', creator: 'Ludwig Angerer' },
     license: { id: 'public-domain' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1832-07-06' },
+        cites: [
+          {
+            source: 'loc-name-authority-maximilian-i-of-mexico',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
   }
 })

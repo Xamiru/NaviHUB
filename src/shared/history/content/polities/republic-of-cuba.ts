@@ -5,7 +5,7 @@ export default definePolity({
   names: [
     { text: 'Republic of Cuba', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   polityType: 'republic',
   start: {
     alts: [
@@ -41,6 +41,13 @@ export default definePolity({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'After Spain’s defeat by U.S. and Cuban forces during the War of 1898, Spain relinquished sovereignty over Cuba. Following the war, U.S. forces occupied Cuba until 1902, when the United States allowed a new Cuban government to take full control of the state’s affairs. As a condition of independence, the United States forced Cuba to grant a continuing U.S. right to intervene on the island in accordance with the Platt Amendment.',
+          lang: 'en',
+          cite: { source: 'state-dept-countries-cuba', loc: { section: 'Cuba', para: '1' } },
+          provenance: { via: 'web', at: '2026-10-08', url: 'https://history.state.gov/countries/cuba' }
+        },
+        {
           id: 'q1',
           text: 'CUBA (the aboriginal name), a republic, the largest and most populous of the West India Islands',
           lang: 'en',
@@ -50,13 +57,6 @@ export default definePolity({
             at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Cuba'
           }
-        },
-        {
-          id: 'q2',
-          text: 'After Spain’s defeat by U.S. and Cuban forces during the War of 1898, Spain relinquished sovereignty over Cuba. Following the war, U.S. forces occupied Cuba until 1902, when the United States allowed a new Cuban government to take full control of the state’s affairs. As a condition of independence, the United States forced Cuba to grant a continuing U.S. right to intervene on the island in accordance with the Platt Amendment.',
-          lang: 'en',
-          cite: { source: 'state-dept-countries-cuba', loc: { section: 'Cuba', para: '1' } },
-          provenance: { via: 'web', at: '2026-10-08', url: 'https://history.state.gov/countries/cuba' }
         }
       ]
     },

@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { followInternalLink, openTab } from '../lib/browserTabs'
 
 // The app's right-click menu — drawn in the renderer, not by the OS. Electron
 // ships no context menu of its own (main/index.ts only adds cut/copy/paste for
@@ -14,12 +15,19 @@ import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
 // Escape is handled in the CAPTURE phase on purpose: the Lightbox's useDialog
 // listens for Escape too, and without capture one press would close both.
 
-export interface ContextMenuItem {
+interface ContextMenuItemBase {
   label: string
-  onSelect: () => void | Promise<void>
   disabled?: boolean
   danger?: boolean
+  // Starts a new group: a separator is drawn above it.
+  separatorBefore?: boolean
 }
+
+// An action, or a destination. A destination behaves like a link: a click opens
+// it here, Ctrl+click and middle-click open it in a background tab
+// (Ctrl+Shift+click switches to it), as TabInput does for real links.
+export type ContextMenuItem = ContextMenuItemBase &
+  ({ onSelect: () => void | Promise<void>; to?: never } | { to: string; onSelect?: never })
 
 export default function ContextMenu({
   x,
@@ -118,18 +126,27 @@ export default function ContextMenu({
       {items.map((item, i) => (
         <Fragment key={item.label}>
           {/* Destructive items sit behind a separator, as in ActionMenu. */}
-          {item.danger && i > 0 && !items[i - 1].danger && (
+          {i > 0 && (item.separatorBefore || (item.danger && !items[i - 1].danger)) && (
             <div role="separator" className="my-1 border-t border-base-600" />
           )}
           <button
             role="menuitem"
-            className={`w-full rounded px-2 py-1.5 text-left text-sm transition-colors hover:bg-base-700 disabled:cursor-not-allowed disabled:opacity-50 ${
+            // block, not the inline-block default: inline items would sit on one
+            // line when the fixed menu sizes itself, making it as wide as all of them.
+            className={`block w-full rounded px-2 py-1.5 text-left text-sm transition-colors hover:bg-base-700 disabled:cursor-not-allowed disabled:opacity-50 ${
               item.danger ? 'text-red-400' : 'text-gray-200'
             }`}
             disabled={item.disabled}
-            onClick={() => {
+            onClick={(e) => {
               onClose()
-              void item.onSelect()
+              if (item.to == null) void item.onSelect()
+              else followInternalLink(item.to, e)
+            }}
+            onAuxClick={(e) => {
+              if (e.button !== 1 || item.to == null) return
+              e.preventDefault()
+              onClose()
+              void openTab(item.to, { activate: false })
             }}
           >
             {item.label}

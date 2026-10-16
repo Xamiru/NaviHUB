@@ -25,7 +25,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['iran', 'mena'],
   roles: ['diplomat', 'politician'],
   offices: [
@@ -185,7 +185,7 @@ export default definePerson({
   ],
   sections: [
     {
-      kind: 'career',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',
@@ -200,7 +200,12 @@ export default definePerson({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/freemasonry-ii-in-the-qajar-period'
           }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'career',
+      quotes: [
         {
           id: 'q2',
           text: 'Alarmed at the revival of Babi activity under Bahāʾ-Allāh’s de facto leadership, and at the easy access to Iranians enjoyed by the Babi leaders situated so near the Shiʿite shrine cities, Mīrzā Ḥosayn Khan Mošīr-al-Dawla (q.v.), the Iranian consul in Istanbul who at that point considered the Babis subversive, pressured the Ottomans to exile Bahāʾ-Allāh farther from Iran.',
@@ -239,7 +244,7 @@ export default definePerson({
         },
         {
           id: 'q5',
-          text: 'Later, with the political restructuring of the 1870s and the promotion of the spirit of reform that was encouraged by Mirzā Ḥosayn Khan Mošir-al-Dawla during his tenure as grand vizier (ṣadr-e aʿẓam; December 1870-September 1873) and his subsequent positions as Minister of Foreign Affairs (wazir-e omur-e ḵāreja; 1873-80) and Minister of War (wazir-e jang; 1874-80), some change was introduced in the journalistic culture (Ādamiyat, p. 386).',
+          text: 'Later, with the political restructuring of the 1870s and the promotion of the spirit of reform that was encouraged by Mirzā Ḥosayn Khan Mošir-al-Dawla during his tenure as grand vizier (ṣadr-e aʿẓam; December 1870-September 1873) and his subsequent positions as Minister of Foreign Affairs (wazir-e omur-e ḵāreja; 1873-80) and Minister of War (wazir-e jang; 1874-80), some change was introduced in the journalistic culture',
           lang: 'en',
           cite: {
             source: 'iranica-nabavi-journalism-qajar',
@@ -247,7 +252,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/journalism-i-qajar-period/'
           }
         },
@@ -287,5 +292,33 @@ export default definePerson({
   furtherReading: [
     { source: 'adamiyat-1973-andisheh-ye-taraqqi', perspective: 'iranian' },
     { source: 'sasani-1960-siyasatgaran-e-dowreh-ye-qajar', perspective: 'iranian' }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1827' },
+        cites: [
+          {
+            source: 'loc-name-authority-mirza-hosayn-khan-moshir-al-dowla',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ],
+        heldBy: [
+          { kind: 'organization', name: 'Library of Congress Name Authority File' }
+        ]
+      },
+      {
+        value: { d: '1828' },
+        cites: [
+          {
+            source: 'loc-name-authority-mirza-hosayn-khan-moshir-al-dowla',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ],
+        heldBy: [
+          { kind: 'organization', name: 'Library of Congress Name Authority File' }
+        ]
+      }
+    ]
+  }
 })

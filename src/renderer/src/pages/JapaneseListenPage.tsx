@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
+import JapaneseHubTabs from '../components/japanese/JapaneseHubTabs'
 import EmptyState from '../components/EmptyState'
 import QuizRecord from '../components/QuizRecord'
 import Tabs, { TabPanel } from '../components/Tabs'
@@ -30,6 +31,7 @@ export default function JapaneseListenPage() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
+      <JapaneseHubTabs />
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Listening"

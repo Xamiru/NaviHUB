@@ -31,7 +31,7 @@ export default defineInterpretation({
         },
         {
           id: 'q1',
-          text: 'Khomeini, the spiritual and temporal father of the Coalition had been approached and asked for his approval, yet he had refused to issue a fatwa or condone the assassination (ʿErāqi, pp. 228-29; Aḥmadi, p. 336; Ḵal-ḵāli, p. 163; SAVAK sources as reported by Moqaddam, pp. 366, 373).',
+          text: 'Khomeini, the spiritual and temporal father of the Coalition had been approached and asked for his approval, yet he had refused to issue a fatwa or condone the assassination',
           lang: 'en',
           cite: {
             source: 'iranica-rahnema-jamiyat-e-motalefa-ye-eslami',
@@ -42,13 +42,13 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://web.archive.org/web/20260407183707/https://www.iranicaonline.org/articles/jamiyat-e-motalefa-i/'
           }
         },
         {
           id: 'q2',
-          text: 'Milāni is reported to have said, “If someone can do this, this would be an obligation and should be done with a minimum of collateral damage” (Moqaddam, p. 246). The Armed Branch of the Coalition construed Milāni’s verbal statement as a valid permission to assassinate the Shah or Manṣur (Moqaddam, pp. 366, 374).',
+          text: 'Milāni is reported to have said, “If someone can do this, this would be an obligation and should be done with a minimum of collateral damage” (Moqaddam, p. 246). The Armed Branch of the Coalition construed Milāni’s verbal statement as a valid permission to assassinate the Shah or Manṣur',
           lang: 'en',
           cite: {
             source: 'iranica-rahnema-jamiyat-e-motalefa-ye-eslami',
@@ -59,7 +59,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://web.archive.org/web/20260407183707/https://www.iranicaonline.org/articles/jamiyat-e-motalefa-i/'
           }
         }
@@ -122,5 +122,5 @@ export default defineInterpretation({
       ]
     }
   ],
-  researched: '2026-10-07'
+  researched: '2026-10-16'
 })

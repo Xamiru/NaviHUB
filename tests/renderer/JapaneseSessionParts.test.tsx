@@ -87,10 +87,15 @@ it('offers the guided session as the next step while one is running', () => {
   expect(celebrate).not.toHaveBeenCalled()
 })
 
-it('lists every tool by goal, marks suggestions and filters by search', async () => {
+it('leads with the six hubs, marks suggestions and filters by search', async () => {
   const { container } = wrap(<JapaneseToolsPage />)
-  expect(screen.getByRole('heading', { name: 'Read' })).toBeInTheDocument()
-  expect(screen.getByRole('link', { name: /Sentence feed.*Suggested for you/ })).toBeInTheDocument()
+  for (const hub of ['Reading', 'Sound and listening', 'Speaking and writing', 'Kanji', 'Word and grammar drills', 'Games']) {
+    expect(screen.getByRole('link', { name: hub })).toBeInTheDocument()
+  }
+  const feed = screen.getByRole('link', { name: 'Sentence feed' })
+  expect(feed.closest('li')).toHaveTextContent('Suggested for you')
+  // Standalone tools stay listed by goal.
+  expect(screen.getByRole('heading', { name: 'Look up' })).toBeInTheDocument()
   expect(screen.getByRole('link', { name: /^Dictionary/ })).not.toHaveTextContent('Suggested')
   await expectNoAxeViolations(container)
 

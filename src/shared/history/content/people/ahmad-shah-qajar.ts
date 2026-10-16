@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Ahmad Shah Qajar', lang: 'en', role: 'primary' },
     { text: 'احمدشاه قاجار', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['iran'],
   roles: ['monarch'],
   offices: [
@@ -108,5 +108,31 @@ export default definePerson({
   furtherReading: [
     { source: 'sheikholeslami-1989-sima-ye-ahmad-shah-qajar', perspective: 'iranian' },
     { source: 'makki-1983-tarikh-e-bist-saleh-ye-iran', perspective: 'iranian' }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1897' },
+        cites: [
+          {
+            source: 'loc-name-authority-ahmad-shah-qajar',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1929' },
+        cites: [
+          {
+            source: 'loc-name-authority-ahmad-shah-qajar',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
+  }
 })

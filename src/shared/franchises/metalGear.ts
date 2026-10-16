@@ -40,7 +40,7 @@ export const METAL_GEAR: FranchiseCfg = {
       aliases: ['Metal Gear - Master Collection Version', 'Metal Gear & Metal Gear 2: Solid Snake'],
       externalIds: [{ source: 'steam', id: '2131680' }],
       year: 1987,
-      chrono: 6,
+      chrono: 5,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2131680/library_hero.jpg',
       note: 'MSX2 — where Outer Heaven fell'
     },
@@ -50,7 +50,7 @@ export const METAL_GEAR: FranchiseCfg = {
       aliases: ['Metal Gear 2 Solid Snake - Master Collection Version'],
       externalIds: [{ source: 'steam', id: '2131680' }],
       year: 1990,
-      chrono: 7,
+      chrono: 6,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2131680/library_hero.jpg',
       note: 'MSX2 — Zanzibar Land'
     },
@@ -64,7 +64,7 @@ export const METAL_GEAR: FranchiseCfg = {
       ],
       externalIds: [{ source: 'steam', id: '2131630' }],
       year: 1998,
-      chrono: 8,
+      chrono: 7,
       mc: 94,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2131630/library_hero.jpg',
       note: 'Shadow Moses'
@@ -78,7 +78,7 @@ export const METAL_GEAR: FranchiseCfg = {
       ],
       externalIds: [{ source: 'steam', id: '2131640' }],
       year: 2001,
-      chrono: 9,
+      chrono: 8,
       mc: 96,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2131640/library_hero.jpg',
       note: 'Big Shell'
@@ -102,7 +102,7 @@ export const METAL_GEAR: FranchiseCfg = {
       id: 'mg-mgs4',
       title: 'Metal Gear Solid 4: Guns of the Patriots',
       year: 2008,
-      chrono: 10,
+      chrono: 9,
       mc: 94,
       bgUrl: 'https://static.wikia.nocookie.net/metalgear/images/9/92/Metal_gear_solid4_12.jpg',
       note: 'PS3 only — Old Snake'
@@ -112,7 +112,7 @@ export const METAL_GEAR: FranchiseCfg = {
       title: 'Metal Gear Solid: Peace Walker',
       aliases: ['Metal Gear Solid: Peace Walker HD Edition'],
       year: 2010,
-      chrono: 3,
+      chrono: 2,
       mc: 89,
       bgUrl: 'https://static.wikia.nocookie.net/metalgear/images/9/92/PW.jpg',
       note: 'Costa Rica, 1974'
@@ -122,7 +122,7 @@ export const METAL_GEAR: FranchiseCfg = {
       title: 'Metal Gear Rising: Revengeance',
       externalIds: [{ source: 'steam', id: '235460' }],
       year: 2013,
-      chrono: 11,
+      chrono: 10,
       mc: 83,
       spinOff: true,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/235460/library_hero.jpg',
@@ -133,7 +133,7 @@ export const METAL_GEAR: FranchiseCfg = {
       title: 'Metal Gear Solid V: Ground Zeroes',
       externalIds: [{ source: 'steam', id: '311340' }],
       year: 2014,
-      chrono: 4,
+      chrono: 3,
       mc: 75,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/311340/page_bg_generated_v6b.jpg',
       note: 'Prologue to The Phantom Pain'
@@ -143,7 +143,7 @@ export const METAL_GEAR: FranchiseCfg = {
       title: 'Metal Gear Solid V: The Phantom Pain',
       externalIds: [{ source: 'steam', id: '287700' }],
       year: 2015,
-      chrono: 5,
+      chrono: 4,
       mc: 93,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/287700/library_hero.jpg',
       note: "Kojima's last ride"
@@ -154,7 +154,7 @@ export const METAL_GEAR: FranchiseCfg = {
       aliases: ['Metal Gear Solid Δ: Snake Eater'],
       externalIds: [{ source: 'steam', id: '2417610' }],
       year: 2025,
-      chrono: 2,
+      chrono: 1,
       mc: 75,
       remake: true,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2417610/library_hero.jpg',

@@ -106,6 +106,20 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q4',
+          text: 'The Second Article of the Saadabad (Saʿdābād) Pact, signed in Tehran between Persia, Turkey, Iraq, and Afghanistan on 17 Tīr 1316 Š./8 July 1937, stipulated that the inviolability of Persian frontiers must be respected',
+          lang: 'en',
+          cite: {
+            source: 'iranica-schofield-boundaries-turkey',
+            loc: { section: 'BOUNDARIES v. With Turkey' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.iranicaonline.org/articles/boundaries-v/'
+          }
+        },
+        {
           id: 'q1',
           text: 'This in turn removed a main obstacle in the way of finalizing a more general and broader non-aggression agreement on 8 July 1937, known is the Saʿdābād Pact, between Iran, Afghanistan, Iraq, and Turkey.',
           lang: 'en',
@@ -150,25 +164,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-08',
             url: 'https://www.iranicaonline.org/articles/iraq-vi-pahlavi-period-1921-79/'
-          }
-        }
-      ]
-    },
-    {
-      kind: 'course',
-      quotes: [
-        {
-          id: 'q4',
-          text: 'The Second Article of the Saadabad (Saʿdābād) Pact, signed in Tehran between Persia, Turkey, Iraq, and Afghanistan on 17 Tīr 1316 Š./8 July 1937, stipulated that the inviolability of Persian frontiers must be respected',
-          lang: 'en',
-          cite: {
-            source: 'iranica-schofield-boundaries-turkey',
-            loc: { section: 'BOUNDARIES v. With Turkey' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://www.iranicaonline.org/articles/boundaries-v/'
           }
         }
       ]

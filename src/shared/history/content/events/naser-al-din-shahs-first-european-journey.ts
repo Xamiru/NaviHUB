@@ -209,7 +209,7 @@ export default defineEvent({
         },
         {
           id: 'q6',
-          text: 'The most important item on foreign policy in the 1873 treaty was Article XVIII, which declared amongst other things that if “Persia becomes involved in a dispute with another power, the German Government declares itself ready to use, at the request of the Shah’s Government, its good offices to aid in adjusting the dispute” (Martin, p. 22).',
+          text: 'The most important item on foreign policy in the 1873 treaty was Article XVIII, which declared amongst other things that if “Persia becomes involved in a dispute with another power, the German Government declares itself ready to use, at the request of the Shah’s Government, its good offices to aid in adjusting the dispute”',
           lang: 'en',
           cite: {
             source: 'iranica-bast-germany-diplomatic-relations',
@@ -217,7 +217,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/germany-i'
           }
         },

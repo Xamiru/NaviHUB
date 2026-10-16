@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'spanish-american-war-causes',
   about: ['event:spanish-american-war'],
   topic: 'causes',
-  researched: '2026-10-09',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'yellow-press-climate-not-sole-cause',
@@ -227,7 +227,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q11',
-          text: 'ya estoy todos los días en peligro de dar mi vida por mi país, y por mi deber- puesto que lo entiendo y tengo ánimos con que realizarlo-de impedir a tiempo con la independencia de Cuba que se extiendan por las Antillas los Estados Unidos y caigan, con esa fuerza más, sobre nuestras tierras de América.',
+          text: 'de impedir a tiempo con la independencia de Cuba que se extiendan por las Antillas los Estados Unidos y caigan, con esa fuerza más, sobre nuestras tierras de América.',
           lang: 'es',
           cite: {
             source: 'marti-1895-carta-a-manuel-mercado',
@@ -235,7 +235,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-16',
             url: 'https://es.wikisource.org/wiki/Carta_a_Manuel_Mercado'
           }
         },

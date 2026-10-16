@@ -5,10 +5,29 @@ export default definePerson({
   names: [
     { text: 'Theodore Roosevelt', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   regions: ['north-america'],
   roles: ['politician'],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q4',
+          text: 'ROOSEVELT, THEODORE (1858–), twenty-sixth president of the United States, was born in New York City on the 27th of October 1858.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-roosevelt-theodore',
+            loc: { section: 'ROOSEVELT, THEODORE', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Roosevelt,_Theodore'
+          }
+        }
+      ]
+    },
     {
       kind: 'career',
       quotes: [
@@ -65,5 +84,31 @@ export default definePerson({
     title: 'President Theodore Roosevelt, 1904',
     credit: { institution: 'Library of Congress', creator: 'Pach Brothers' },
     license: { id: 'public-domain' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1858-10-27' },
+        cites: [
+          {
+            source: 'loc-name-authority-theodore-roosevelt',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1919-01-06' },
+        cites: [
+          {
+            source: 'loc-name-authority-theodore-roosevelt',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
   }
 })

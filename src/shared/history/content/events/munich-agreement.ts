@@ -211,16 +211,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'http://countrystudies.us/czech-republic/28.htm'
           }
-        },
-        {
-          id: 'q5',
-          text: 'GERMANY, the United Kingdom, France and Italy, taking into consideration the agreement, which has been already reached in principle for the cession to Germany of the Sudeten German territory, have agreed on the following terms and conditions governing the said cession and the measures consequent thereon',
-          lang: 'en',
-          cite: {
-            source: 'avalon-munich-agreement-1938',
-            loc: { section: 'Agreement concluded at Munich, September 29, 1938' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'https://avalon.law.yale.edu/imt/munich1.asp' }
         }
       ]
     },
@@ -250,6 +240,21 @@ export default defineEvent({
             loc: { section: 'The Third Reich: Foreign Policy', para: '5' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/40.htm' }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q5',
+          text: 'GERMANY, the United Kingdom, France and Italy, taking into consideration the agreement, which has been already reached in principle for the cession to Germany of the Sudeten German territory, have agreed on the following terms and conditions governing the said cession and the measures consequent thereon',
+          lang: 'en',
+          cite: {
+            source: 'avalon-munich-agreement-1938',
+            loc: { section: 'Agreement concluded at Munich, September 29, 1938' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'https://avalon.law.yale.edu/imt/munich1.asp' }
         }
       ]
     }

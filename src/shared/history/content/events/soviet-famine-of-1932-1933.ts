@@ -115,6 +115,24 @@ export default defineEvent({
           loc: { section: 'Famine-Genocide of 1932–3', para: '1' }
         }
       ]
+    },
+    {
+      ref: 'place:kyiv',
+      cites: [
+        {
+          source: 'ieu-klid-makuch-famine-genocide-of-1932-3',
+          loc: { section: 'Famine-Genocide of 1932–3', para: '112' }
+        }
+      ]
+    },
+    {
+      ref: 'place:moscow',
+      cites: [
+        {
+          source: 'ieu-klid-makuch-famine-genocide-of-1932-3',
+          loc: { section: 'Famine-Genocide of 1932–3', para: '22' }
+        }
+      ]
     }
   ],
   partOf: [

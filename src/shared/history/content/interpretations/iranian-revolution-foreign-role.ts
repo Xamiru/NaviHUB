@@ -147,7 +147,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q6',
-          text: 'these riots took place during a steady campaign of biased anti-Shah news reports by the BBC, almost a reprise of the attacks made on my father a few decades earlier.',
+          text: 'For example, Princess Ashraf (A. Pahlavi, pp. 199-200) declared that “these riots took place during a steady campaign of biased anti-Shah news reports by the BBC, almost a reprise of the attacks made on my father a few decades earlier.”',
           lang: 'en',
           cite: {
             source: 'iranica-ashraf-conspiracy-theories',
@@ -155,7 +155,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-09',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/conspiracy-theories/'
           }
         }
@@ -200,7 +200,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q9',
-          text: 'Two sharply opposed assessments emerged within the administration regarding the nature of the revolutionary forces and the significance of the revolution for American strategic interests. One view, associated with officials in the Department of State, was that the revolution was essentially an internal manifestation of dissatisfaction with the royal autocratic rule and not connected closely with any external forces (Sick, 1985a, pp. 68-70).',
+          text: 'Two sharply opposed assessments emerged within the administration regarding the nature of the revolutionary forces and the significance of the revolution for American strategic interests. One view, associated with officials in the Department of State, was that the revolution was essentially an internal manifestation of dissatisfaction with the royal autocratic rule and not connected closely with any external forces',
           lang: 'en',
           cite: {
             source: 'iranica-cottam-carter-administration',
@@ -208,7 +208,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-09',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/carter-administration-1977-81-policy-toward-persia/'
           }
         }
@@ -263,5 +263,5 @@ export default defineInterpretation({
       ]
     }
   ],
-  researched: '2026-10-09'
+  researched: '2026-10-16'
 })

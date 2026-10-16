@@ -158,7 +158,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'A major example of the state’s role in the economy can be observed in the construction of the Trans-Iranian Railway (1927-38), a project which cost β30,000,000, a sum nearly equal to the oil revenues for a decade.',
+          text: 'A major example of the state’s role in the economy can be observed in the construction of the Trans-Iranian Railway (1927-38), a project which cost […] a sum nearly equal to the oil revenues for a decade.',
           lang: 'en',
           cite: {
             source: 'iranica-sheikholeslami-administration-pahlavi',
@@ -166,7 +166,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/administration-vii-pahlavi/'
           }
         },

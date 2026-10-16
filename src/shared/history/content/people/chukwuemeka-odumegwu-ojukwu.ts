@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Chukwuemeka Odumegwu Ojukwu', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-16',
   regions: ['subsaharan-africa'],
   roles: ['military', 'politician'],
   offices: [
@@ -79,5 +79,31 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1933-11-04' },
+        cites: [
+          {
+            source: 'loc-name-authority-chukwuemeka-odumegwu-ojukwu',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '2011-11-26' },
+        cites: [
+          {
+            source: 'loc-name-authority-chukwuemeka-odumegwu-ojukwu',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
+  }
 })

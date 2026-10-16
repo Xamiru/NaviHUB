@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Usman dan Fodio', lang: 'en', role: 'primary' },
     { text: 'عثمان بن فودي', lang: 'ar', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   died: {
     alts: [
       {
@@ -53,5 +53,18 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1754' },
+        cites: [
+          {
+            source: 'loc-name-authority-usman-dan-fodio',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  }
 })

@@ -49,6 +49,9 @@ interface Resolved {
   watchedAt: string | null
   fileId: number | null
   scope: VideoScope | null
+  // Which subtitle offset this file shares: a show's (or event's) episodes
+  // usually come from one release, so a timing fix carries across them.
+  offsetKey: string
 }
 
 function ownerOf(
@@ -125,7 +128,13 @@ function resolve(ref: VideoSourceRef): Resolved {
       resumeSeconds: row.resumeSeconds,
       watchedAt: row.watchedAt,
       fileId: row.id,
-      scope
+      scope,
+      offsetKey:
+        scope.id === 'video'
+          ? `media:${row.ownerId}`
+          : row.ownerId == null
+            ? `wfile:${row.id}`
+            : `event:${row.ownerId}`
     }
   }
   if (ref.kind === 'clip') {
@@ -150,7 +159,8 @@ function resolve(ref: VideoSourceRef): Resolved {
       resumeSeconds: null,
       watchedAt: null,
       fileId: null,
-      scope: null
+      scope: null,
+      offsetKey: `clip:${ref.clipId}`
     }
   }
   const item = footballRepo.getMedia(ref.mediaId)
@@ -178,7 +188,8 @@ function resolve(ref: VideoSourceRef): Resolved {
     resumeSeconds: null,
     watchedAt: null,
     fileId: null,
-    scope: null
+    scope: null,
+    offsetKey: `football:${ref.mediaId}`
   }
 }
 
@@ -226,6 +237,7 @@ export async function source(ref: VideoSourceRef): Promise<VideoSource> {
     durationSeconds: probe?.durationSec ?? r.duration,
     resumeSeconds: r.resumeSeconds,
     watchedAt: r.watchedAt,
+    offsetKey: r.offsetKey,
     audioTracks: audioTracksOf(probe),
     subtitles: subs.listTracks(r.absPath, r.relPath, probe),
     ...neighbours

@@ -3,11 +3,11 @@ import { rmSync } from 'fs'
 import { join } from 'path'
 import Database from 'better-sqlite3'
 import initSql from './init.sql?raw'
-import { seedJapanese } from './japaneseSeed'
 import { CHECKLIST_SEED } from '@shared/checklist'
 import { logInfo } from '../logBus'
 import { rebuildLyricsIndex } from '../musicLyricsIndex'
 import { installSqlite } from './sqliteHandle'
+import { migrateToFsrs } from './fsrsMigration'
 
 let _sqlite: Database.Database | null = null
 
@@ -92,7 +92,7 @@ function dropColumn(sqlite: Database.Database, table: string, column: string): v
 }
 
 // The checklist starts as a working board rather than an empty page. Gated by
-// a settings flag (the seedJapanese pattern) so removing an item in-app sticks
+// a settings flag (the Japanese seed pattern) so removing an item in-app sticks
 // — and wiped on export, so a recipient's board seeds fresh.
 export function seedChecklist(sqlite: Database.Database): void {
   const seeded = sqlite.prepare("SELECT value FROM settings WHERE key = 'checklist.seeded'").get()
@@ -248,7 +248,7 @@ export function runMigrations(sqlite: Database.Database): string[] {
   ensureColumn(sqlite, 'credit', 'importance', 'importance INTEGER')
   ensureColumn(sqlite, 'media_character', 'sort_order', 'sort_order INTEGER')
   // Japanese section: kanji readings + mined-word source (DBs created before
-  // these columns existed in init.sql). Must run before seedJapanese().
+  // these columns existed in init.sql). Must run before the Japanese seed.
   ensureColumn(sqlite, 'jp_card', 'onyomi', 'onyomi TEXT')
   ensureColumn(sqlite, 'jp_card', 'kunyomi', 'kunyomi TEXT')
   ensureColumn(sqlite, 'jp_card', 'source_media_id', 'source_media_id INTEGER')
@@ -258,6 +258,25 @@ export function runMigrations(sqlite: Database.Database): string[] {
   ensureColumn(sqlite, 'jp_card', 'image_path', 'image_path TEXT')
   ensureColumn(sqlite, 'jp_course', 'level', 'level TEXT')
   ensureColumn(sqlite, 'jp_course', 'difficulty', 'difficulty INTEGER')
+  // 2026-10: built-in content sync keys/hashes (japaneseSeedSync.ts). Indexes
+  // here, never in init.sql — init.sql runs before these columns exist.
+  ensureColumn(sqlite, 'jp_course', 'seed_key', 'seed_key TEXT')
+  ensureColumn(sqlite, 'jp_course', 'seed_hash', 'seed_hash TEXT')
+  ensureColumn(sqlite, 'jp_lesson', 'seed_key', 'seed_key TEXT')
+  ensureColumn(sqlite, 'jp_lesson', 'seed_hash', 'seed_hash TEXT')
+  // 2026-10: FSRS memory state + optimizer-ready review logs (src/shared/srs.ts).
+  // Cards answered before carry NULL until db/fsrsMigration.ts replays them.
+  ensureColumn(sqlite, 'jp_card', 'stability', 'stability REAL')
+  ensureColumn(sqlite, 'jp_card', 'fsrs_difficulty', 'fsrs_difficulty REAL')
+  ensureColumn(sqlite, 'jp_review_log', 'state_before', 'state_before TEXT')
+  ensureColumn(sqlite, 'jp_review_log', 'elapsed_days', 'elapsed_days REAL')
+  ensureColumn(sqlite, 'jp_review_log', 'scheduled_days', 'scheduled_days REAL')
+  ensureColumn(sqlite, 'jp_review_log', 'direction', "direction TEXT NOT NULL DEFAULT 'recognition'")
+  ensureColumn(sqlite, 'jp_card', 'seed_key', 'seed_key TEXT')
+  ensureColumn(sqlite, 'jp_card', 'seed_hash', 'seed_hash TEXT')
+  sqlite.exec('CREATE INDEX IF NOT EXISTS idx_jp_course_seed_key ON jp_course(seed_key)')
+  sqlite.exec('CREATE INDEX IF NOT EXISTS idx_jp_lesson_seed_key ON jp_lesson(course_id, seed_key)')
+  sqlite.exec('CREATE INDEX IF NOT EXISTS idx_jp_card_seed_key ON jp_card(lesson_id, seed_key)')
   // Manga reader: series folder attached to a manga entry (written only by
   // src/main/manga.ts — deliberately absent from mediaRepo's column map).
   ensureColumn(sqlite, 'media_item', 'local_dir', 'local_dir TEXT')
@@ -289,6 +308,11 @@ export function runMigrations(sqlite: Database.Database): string[] {
   ensureColumn(sqlite, 'en_word', 'reps', 'reps INTEGER NOT NULL DEFAULT 0')
   ensureColumn(sqlite, 'en_word', 'lapses', 'lapses INTEGER NOT NULL DEFAULT 0')
   ensureColumn(sqlite, 'en_word', 'last_reviewed_at', 'last_reviewed_at TEXT')
+  ensureColumn(sqlite, 'en_word', 'stability', 'stability REAL')
+  ensureColumn(sqlite, 'en_word', 'fsrs_difficulty', 'fsrs_difficulty REAL')
+  ensureColumn(sqlite, 'en_review_log', 'state_before', 'state_before TEXT')
+  ensureColumn(sqlite, 'en_review_log', 'elapsed_days', 'elapsed_days REAL')
+  ensureColumn(sqlite, 'en_review_log', 'scheduled_days', 'scheduled_days REAL')
   // 2026-08-17: the Art tab's "Set background" flag. media_image predates it.
   // No index on this column — an index in init.sql would run BEFORE this ALTER.
   ensureColumn(sqlite, 'media_image', 'is_background', 'is_background INTEGER NOT NULL DEFAULT 0')
@@ -342,6 +366,11 @@ export function runMigrations(sqlite: Database.Database): string[] {
   ensureColumn(sqlite, 'football_match', 'away_manager', 'away_manager TEXT')
   // 2026-10-10: names the user swapped by hand survive non-exact re-fetches.
   ensureColumn(sqlite, 'achievement', 'name_status', "name_status TEXT NOT NULL DEFAULT 'ok'")
+  // 2026-10-16: which source a tracked set's list last came from.
+  ensureColumn(sqlite, 'achievement_game', 'schema_source', 'schema_source TEXT')
+  // 2026-10-16: how each play session was launched (native or an emulator).
+  ensureColumn(sqlite, 'game_session', 'via', 'via TEXT')
+  ensureColumn(sqlite, 'game_session', 'platform', 'platform TEXT')
   dropNotNull(
     sqlite,
     'wrestling_match',
@@ -453,6 +482,10 @@ export function runMigrations(sqlite: Database.Database): string[] {
   // export sanitizer, which no longer references them).
   dropColumn(sqlite, 'media_item', 'started_at')
   dropColumn(sqlite, 'media_item', 'finished_at')
+
+  // SM-2 → FSRS: derive a memory state for every card answered before the
+  // switch, once per deck, from its own review log (fsrsMigration.ts).
+  migrateToFsrs(sqlite)
 
   // Retired features whose downloaded images go with them. Each collects its
   // media/ paths before dropping its schema; a file anything else still
@@ -613,7 +646,7 @@ export function initDatabase(): Database.Database {
     for (const [k, v] of rows) seed.run(k, v)
   })
   seedMany(Object.entries(DEFAULT_SETTINGS))
-  seedJapanese(sqlite)
+  // The built-in Japanese courses seed lazily: japaneseSeedLoader.ts.
   seedChecklist(sqlite)
   removeRetiredMediaFiles(sqlite, retiredFiles)
 

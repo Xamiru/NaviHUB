@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
+import JapaneseHubTabs from '../components/japanese/JapaneseHubTabs'
 import EmptyState from '../components/EmptyState'
 import PageStatus from '../components/PageStatus'
 import { Group, Pill } from '../components/PillGroup'
@@ -59,6 +60,7 @@ export default function JapaneseFeedPage() {
   if (!bankLoading && !bank) {
     return (
       <EditorialDetailFrame width="wide">
+        <JapaneseHubTabs />
         <PageHeader back={{ to: '/japanese', label: 'Japanese' }} title="Sentence Feed" />
         <EmptyState
           title="Sentence bank not installed"
@@ -85,6 +87,7 @@ export default function JapaneseFeedPage() {
         </ContextPanel>
       }
     >
+      <JapaneseHubTabs />
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Sentence Feed"

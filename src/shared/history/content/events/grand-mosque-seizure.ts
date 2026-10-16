@@ -120,7 +120,23 @@ export default defineEvent({
       ]
     },
     {
-      kind: 'background',
+      kind: 'consequences',
+      quotes: [
+        {
+          id: 'q8',
+          text: 'A searching reassessment and re-evaluation of all SAG policy, foreign and domestic, has been triggered by the Mecca affair. The results of this inward and outward look will be reflected in the SAG’s relationship with the United States during 1980.',
+          lang: 'en',
+          cite: { source: 'frus1977-80v18-doc-206', loc: { section: 'Document 206' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/historicaldocuments/frus1977-80v18/d206'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
       quotes: [
         {
           id: 'q2',
@@ -143,12 +159,7 @@ export default defineEvent({
             at: '2026-10-09',
             url: 'https://history.state.gov/historicaldocuments/frus1977-80v18/d201'
           }
-        }
-      ]
-    },
-    {
-      kind: 'course',
-      quotes: [
+        },
         {
           id: 'q4',
           text: 'Following morning prayers on Nov 20, he appeared at the Grand Mosque and told the imam that he was the Mahdi. His followers then seized control putting two guards at each of the 26 doors into the Mosque. Previously, they had been able to bring in trucks loaded with arms and dates for food. In this seizure, armed sentries were sent to the roof of the Mosque and into the minarets.',
@@ -192,50 +203,22 @@ export default defineEvent({
             at: '2026-10-09',
             url: 'https://history.state.gov/historicaldocuments/frus1977-80v18/d204'
           }
-        }
-      ]
-    },
-    {
-      kind: 'consequences',
-      quotes: [
+        },
         {
-          id: 'q8',
-          text: 'A searching reassessment and re-evaluation of all SAG policy, foreign and domestic, has been triggered by the Mecca affair. The results of this inward and outward look will be reflected in the SAG’s relationship with the United States during 1980.',
+          id: 'q9',
+          text: 'The Minister said that just after morning prayers, a young man named Muhammad Abdallah along with some followers variously estimated to number from a minimum of 200 to a maximum of 500 seized the holy Mosque.',
           lang: 'en',
-          cite: { source: 'frus1977-80v18-doc-206', loc: { section: 'Document 206' } },
+          cite: { source: 'frus1977-80v18-doc-201', loc: { section: 'Document 201' } },
           provenance: {
             via: 'web',
             at: '2026-10-09',
-            url: 'https://history.state.gov/historicaldocuments/frus1977-80v18/d206'
+            url: 'https://history.state.gov/historicaldocuments/frus1977-80v18/d201'
           }
         }
       ]
     }
   ],
   course: [
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1979-11-20' },
-            cites: [
-              { source: 'frus1977-80v18-doc-201', loc: { section: 'Document 201' } }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q9',
-        text: 'The Minister said that just after morning prayers, a young man named Muhammad Abdallah along with some followers variously estimated to number from a minimum of 200 to a maximum of 500 seized the holy Mosque.',
-        lang: 'en',
-        cite: { source: 'frus1977-80v18-doc-201', loc: { section: 'Document 201' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-09',
-          url: 'https://history.state.gov/historicaldocuments/frus1977-80v18/d201'
-        }
-      }
-    },
     {
       date: {
         alts: [

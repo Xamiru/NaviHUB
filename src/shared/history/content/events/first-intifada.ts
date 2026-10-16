@@ -58,6 +58,15 @@ export default defineEvent({
           loc: { section: 'Civilian Administration in the West Bank and the Gaza Strip', para: '1' }
         }
       ]
+    },
+    {
+      ref: 'place:jerusalem',
+      cites: [
+        {
+          source: 'hrw-1990-the-israeli-army-and-the-intifada-introduction',
+          loc: { section: 'Introduction', para: '45' }
+        }
+      ]
     }
   ],
   partOf: [

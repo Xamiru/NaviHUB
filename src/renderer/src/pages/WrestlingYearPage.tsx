@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link, useParams, useNavigate } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import PageHeader from '../components/PageHeader'
@@ -45,7 +45,6 @@ function EventRow({ event }: { event: WrestlingEvent }): JSX.Element {
 
 export default function WrestlingYearPage(): JSX.Element {
   const { year = '' } = useParams()
-  const navigate = useNavigate()
   const y = Number(year)
 
   const filter = { yearFrom: y, yearTo: y, sort: 'dateAsc' as const }
@@ -91,20 +90,24 @@ export default function WrestlingYearPage(): JSX.Element {
         }
         actions={
           <>
-            <button
-              className="btn"
-              disabled={prevYear == null}
-              onClick={() => prevYear != null && navigate(`/wrestling/year/${prevYear}`)}
-            >
-              ← {prevYear ?? 'Earlier'}
-            </button>
-            <button
-              className="btn"
-              disabled={nextYear == null}
-              onClick={() => nextYear != null && navigate(`/wrestling/year/${nextYear}`)}
-            >
-              {nextYear ?? 'Later'} →
-            </button>
+            {prevYear != null ? (
+              <Link className="btn" to={`/wrestling/year/${prevYear}`}>
+                ← {prevYear}
+              </Link>
+            ) : (
+              <button className="btn" disabled>
+                ← Earlier
+              </button>
+            )}
+            {nextYear != null ? (
+              <Link className="btn" to={`/wrestling/year/${nextYear}`}>
+                {nextYear} →
+              </Link>
+            ) : (
+              <button className="btn" disabled>
+                Later →
+              </button>
+            )}
           </>
         }
       />

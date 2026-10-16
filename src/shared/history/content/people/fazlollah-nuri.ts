@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Fazlollah Nuri', lang: 'en', role: 'primary' },
     { text: 'فضل‌الله نوری', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -47,12 +47,12 @@ export default definePerson({
       quotes: [
         {
           id: 'q1',
-          text: 'a prominent jurist who campaigned in the Constitutional Revolution of 1906-1909 for constitutionalism according to the šariʿa (canonical laws of Islam), and in its default, preferred absolutism to secularism.',
+          text: 'Tehran, Rajab 13, 1327/July 7, 1909), a prominent jurist who campaigned in the Constitutional Revolution of 1906-1909 for constitutionalism according to the šariʿa (canonical laws of Islam), and in its default, preferred absolutism to secularism.',
           lang: 'en',
           cite: { source: 'iranica-martin-nuri', loc: { section: 'NURI, FAŻL-ALLĀH', para: '1' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/nuri-fazl-allah/'
           }
         }

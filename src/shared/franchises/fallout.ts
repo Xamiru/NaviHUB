@@ -144,7 +144,7 @@ export const FALLOUT: FranchiseCfg = {
       role: 'Vault dweller',
       portraitUrl: `${TM}/w300_and_h450_face/jqrYg35GHuMGwGqEVUthqTLQnay.jpg`,
       appearsIn: ['fallout-tv'],
-      blurb: 'An optimistic Vault 33 resident played by Ella Purnell, who goes to the surface to find her father.'
+      blurb: 'An overseer’s daughter from Vault 33, raised on manners and optimism, who goes topside to rescue her kidnapped father and finds the wasteland punishes both. Ella Purnell plays her.'
     },
     {
       id: 'fallout-maximus',
@@ -152,7 +152,7 @@ export const FALLOUT: FranchiseCfg = {
       role: 'Brotherhood of Steel squire',
       portraitUrl: `${TM}/w300_and_h450_face/h2CJjnDEy2nCbCy6dWzXLmZ4p47.jpg`,
       appearsIn: ['fallout-tv'],
-      blurb: 'A Brotherhood of Steel squire played by Aaron Moten.'
+      blurb: 'A Brotherhood of Steel squire who has wanted a suit of power armor since the day his town was destroyed, and lies his way into one. Aaron Moten plays him.'
     },
     {
       id: 'fallout-ghoul',
@@ -160,7 +160,7 @@ export const FALLOUT: FranchiseCfg = {
       role: 'Bounty hunter',
       portraitUrl: `${TM}/w300_and_h450_face/5lcVMJbWrNDFiWa1WxK4oR8zwev.jpg`,
       appearsIn: ['fallout-tv'],
-      blurb: 'A centuries-old, noseless bounty hunter played by Walton Goggins, who was once a Hollywood actor named Cooper Howard.'
+      blurb: 'Cooper Howard: a Hollywood cowboy star in 2077 and a two-hundred-year-old irradiated bounty hunter in 2296, who knows exactly who profited from the bombs. Walton Goggins plays him.'
     },
     {
       id: 'fallout-norm',
@@ -168,7 +168,7 @@ export const FALLOUT: FranchiseCfg = {
       role: 'Vault dweller',
       portraitUrl: `${TM}/w300_and_h450_face/fc7krDmEA4VkIY4KOJjpMXGdsfg.jpg`,
       appearsIn: ['fallout-tv'],
-      blurb: 'Lucy\'s brother in Vault 33, played by Moises Arias.'
+      blurb: 'Lucy’s sceptical brother, who stays below and goes digging through the vaults’ secrets while everyone else is on the surface. Moises Arias plays him.'
     },
     {
       id: 'fallout-hank',
@@ -176,7 +176,7 @@ export const FALLOUT: FranchiseCfg = {
       role: 'Overseer of Vault 33',
       portraitUrl: `${TM}/w300_and_h450_face/7gNyx8fYAUdOp2jpCEH3dyFbeV.jpg`,
       appearsIn: ['fallout-tv'],
-      blurb: 'Lucy and Norm\'s father and the overseer of Vault 33, played by Kyle MacLachlan.'
+      blurb: 'Vault 33’s beloved overseer, whose kidnapping starts the series — and whose life before the vault is the reason he was taken. Kyle MacLachlan plays him.'
     },
     {
       id: 'fallout-betty',
@@ -184,7 +184,7 @@ export const FALLOUT: FranchiseCfg = {
       role: 'Vault 33 resident',
       portraitUrl: `${TM}/w300_and_h450_face/8zQO5GNWQwJG4we5AYfjopblRFe.jpg`,
       appearsIn: ['fallout-tv'],
-      blurb: 'A Vault 33 resident played by Leslie Uggams.'
+      blurb: 'Vault 33’s genteel council elder, whose pleasantries hide how much she knows about Vault-Tec’s plans for the vaults. Leslie Uggams plays her.'
     }
   ]
 }

@@ -439,5 +439,16 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Barack_Obama_Rally_in_Grant_Park_November_4,_2008_(3005067639).jpg',
     credit: { creator: 'Wendy Piersall' },
     license: { id: 'cc-by', version: '2.0', url: 'https://creativecommons.org/licenses/by/2.0' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:washington-dc',
+      cites: [
+        {
+          source: 'millercenter-nelson-obama-campaigns-and-elections',
+          loc: { section: 'Barack Obama: Campaigns and Elections', para: '6' }
+        }
+      ]
+    }
+  ]
 })

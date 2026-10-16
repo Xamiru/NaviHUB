@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { alignFurigana, furiganaProblems, parseFurigana, stripFurigana } from '../src/shared/japanese/furigana'
+import { alignFurigana, furiganaProblems, furiganaReading, parseFurigana, stripFurigana } from '../src/shared/japanese/furigana'
 
 describe('parseFurigana', () => {
   it('attaches a reading to the maximal preceding kanji run', () => {
@@ -87,5 +87,25 @@ describe('alignFurigana', () => {
     expect(alignFurigana('今日は', 'きょうわ')).toEqual([{ text: '今日は', ruby: null }])
     // An all-kanji word still carries an irregular reading whole.
     expect(alignFurigana('大人', 'おとな')).toEqual([{ text: '大人', ruby: 'おとな' }])
+  })
+
+  it('aligns a full sentence over each kanji run', () => {
+    expect(show('日本に来て初めて、四季の美しさを知った。', 'にほんにきてはじめて、しきのうつくしさをしった。')).toBe(
+      '日本[にほん]に来[き]て初[はじ]めて、四季[しき]の美[うつく]しさを知[し]った。'
+    )
+  })
+
+  it('refuses a split the kana anchors leave ambiguous', () => {
+    // は could close 母 (はは|は) or open 料理 (は|はりょうり); the text cannot say which.
+    expect(alignFurigana('母は料理が上手です。', 'はははりょうりがじょうずです。')).toEqual([
+      { text: '母は料理が上手です。', ruby: null }
+    ])
+    expect(show('見る見る', 'みるみる')).toBe('見[み]る見[み]る')
+  })
+})
+
+describe('furiganaReading', () => {
+  it('replaces each annotated kanji run with its reading', () => {
+    expect(furiganaReading('今日[きょう]は雨[あめ]が降[ふ]る。')).toBe('きょうはあめがふる。')
   })
 })

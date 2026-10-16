@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Cecil Rhodes', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -50,6 +50,25 @@ export default definePerson({
     }
   ],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q5',
+          text: 'RHODES, CECIL JOHN (1853–1902), British colonial and Imperial statesman, was born on the 5th of July 1853, at Bishop Stortford, in Hertfordshire.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-rhodes-cecil-john',
+            loc: { section: 'RHODES, CECIL JOHN', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Rhodes,_Cecil_John'
+          }
+        }
+      ]
+    },
     {
       kind: 'career',
       quotes: [

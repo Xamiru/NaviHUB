@@ -8,8 +8,10 @@ import { toast, toastError } from '../lib/toast'
 import { usePersistedState } from '../lib/navState'
 import { localInputDate } from '../lib/hobbyForms'
 import {
+  schemaSourceInfo,
   selectTrophies,
   summarizeTrophies,
+  type TrophySummary,
   type TrophyFilter,
   type TrophySort
 } from '../lib/achievementDisplay'
@@ -19,14 +21,30 @@ import AchievementNameDialog from './AchievementNameDialog'
 import { Field } from './Field'
 import EmptyState from './EmptyState'
 import ActionMenu from './ActionMenu'
-import { TrophyProgress, TrophyRow, providerLabel } from './TrophyDisplay'
+import { TrophyProgress, TrophyRow, formatAchievementDate, providerLabel } from './TrophyDisplay'
 
-const FILTERS: { key: TrophyFilter; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'earned', label: 'Earned' },
-  { key: 'locked', label: 'Locked' },
-  { key: 'ultra-rare', label: 'Ultra rare' }
+// `always`: shown even at zero. The rest appear only when the set has any, so
+// a plain Steam set is not crowded with empty filters. `empty` titles the
+// empty state.
+const FILTERS: { key: TrophyFilter; label: string; empty: string; always?: boolean }[] = [
+  { key: 'all', label: 'All', empty: 'No achievements', always: true },
+  { key: 'earned', label: 'Earned', empty: 'No earned achievements', always: true },
+  { key: 'locked', label: 'Locked', empty: 'No locked achievements', always: true },
+  { key: 'in-progress', label: 'In progress', empty: 'No achievements in progress' },
+  { key: 'ultra-rare', label: 'Ultra rare', empty: 'No ultra rare achievements' },
+  { key: 'hidden', label: 'Hidden', empty: 'No hidden achievements' },
+  { key: 'manual', label: 'Marked by hand', empty: 'No achievements marked by hand' }
 ]
+
+function countFor(counts: TrophySummary, key: TrophyFilter): number {
+  if (key === 'earned') return counts.earned
+  if (key === 'locked') return counts.locked
+  if (key === 'ultra-rare') return counts.ultraRare
+  if (key === 'in-progress') return counts.inProgress
+  if (key === 'hidden') return counts.hidden
+  if (key === 'manual') return counts.manual
+  return counts.total
+}
 
 // Local noon of the picked day, so no timezone pushes it onto a neighbour.
 function dateInputToMs(value: string): number | null {
@@ -43,6 +61,7 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
   const [busy, setBusy] = useState(false)
   const [filter, setFilter] = usePersistedState<TrophyFilter>('trophyFilter', 'all')
   const [sort, setSort] = usePersistedState<TrophySort>('trophySort', 'default')
+  const [search, setSearch] = usePersistedState('trophySearch', '')
   const [nameDialogOpen, setNameDialogOpen] = useState(false)
   // Picking several locked achievements to mark earned with one date.
   // Selection shows only locked achievements as a VIEW, never by rewriting
@@ -138,13 +157,18 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
   const { summary, achievements, tracking } = data
   const counts = summarizeTrophies(achievements)
   const shownFilter: TrophyFilter = selecting ? 'locked' : filter
-  const selected = selectTrophies(achievements, shownFilter, sort)
-  const countFor = (key: TrophyFilter): number => {
-    if (key === 'earned') return counts.earned
-    if (key === 'locked') return counts.locked
-    if (key === 'ultra-rare') return counts.ultraRare
-    return counts.total
-  }
+  const selected = selectTrophies(achievements, shownFilter, sort, search)
+  const filters = FILTERS.filter(
+    (item) => item.always || item.key === shownFilter || countFor(counts, item.key) > 0
+  )
+  const source = schemaSourceInfo(tracking)
+  const sourceLine = [
+    providerLabel(tracking.provider),
+    source.label,
+    tracking.schemaFetchedAt ? `fetched ${formatAchievementDate(tracking.schemaFetchedAt)}` : null
+  ]
+    .filter(Boolean)
+    .join(' / ')
 
   function stopSelecting(): void {
     setSelecting(false)
@@ -186,9 +210,13 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
           <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="text-xl font-semibold text-white">{m.title} trophy set</h2>
-              <p className="mt-1 text-xs text-gray-400">
-                {providerLabel(tracking.provider)} / provider rarity and artwork
-              </p>
+              <p className="mt-1 text-xs text-gray-400">{sourceLine}</p>
+              {source.suggestRefetch && (
+                <p className="mt-2 max-w-xl text-xs leading-relaxed text-signal-caution">
+                  Re-fetch the list to replace it with Steam’s exact one: names line up with
+                  their achievements and hidden descriptions are filled in. Unlocks are kept.
+                </p>
+              )}
             </div>
             {counts.ultraRare > 0 && <span className="chip">{counts.ultraRare} ultra rare</span>}
           </div>
@@ -296,7 +324,7 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
           )}
 
           <div className="mb-5 flex flex-wrap items-center gap-2">
-            {FILTERS.map((item) => (
+            {filters.map((item) => (
               <button
                 key={item.key}
                 className={`pill ${shownFilter === item.key ? 'pill-active' : ''}`}
@@ -304,10 +332,19 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
                 disabled={selecting}
                 onClick={() => setFilter(item.key)}
               >
-                {item.label} <span className={shownFilter === item.key ? 'opacity-75' : 'text-gray-500'}>{countFor(item.key)}</span>
+                {item.label} <span className={shownFilter === item.key ? 'opacity-75' : 'text-gray-500'}>{countFor(counts, item.key)}</span>
               </button>
             ))}
-            <label className="ml-auto flex items-center gap-2 text-xs text-gray-400">
+            <Field label="Search achievements" hiddenLabel className="contents">
+              <input
+                type="search"
+                className="input h-9 w-full sm:ml-auto sm:w-56"
+                placeholder="Search names and descriptions"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </Field>
+            <label className="flex items-center gap-2 text-xs text-gray-400">
               Sort
               <select className="input h-9 w-44" value={sort} onChange={(event) => setSort(event.target.value as TrophySort)}>
                 <option value="default">Default</option>
@@ -324,7 +361,6 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
                 <TrophyRow
                   key={achievement.id}
                   achievement={achievement}
-                  provider={tracking.provider}
                   busy={busy}
                   selection={
                     selecting
@@ -351,9 +387,27 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
             </ul>
           ) : (
             <EmptyState
-              title={`No ${FILTERS.find((item) => item.key === shownFilter)?.label.toLowerCase()} achievements`}
-              body="Choose another trophy filter to return to the full set."
-              action={<button className="btn-primary" onClick={() => setFilter('all')}>Show all achievements</button>}
+              title={
+                search.trim()
+                  ? `No achievements match "${search.trim()}"`
+                  : (FILTERS.find((item) => item.key === shownFilter)?.empty ?? 'No achievements')
+              }
+              body={
+                search.trim()
+                  ? 'Search covers names and the descriptions shown on each row.'
+                  : 'Choose another trophy filter to return to the full set.'
+              }
+              action={
+                <button
+                  className="btn-primary"
+                  onClick={() => {
+                    setSearch('')
+                    if (!selecting) setFilter('all')
+                  }}
+                >
+                  Show all achievements
+                </button>
+              }
             />
           )}
         </>

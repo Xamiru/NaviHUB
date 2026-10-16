@@ -75,6 +75,30 @@ export default defineEvent({
           }
         }
       ]
+    },
+    {
+      ref: 'place:honolulu',
+      cites: [
+        {
+          source: 'nara-milestone-joint-resolution-annexing-hawaii',
+          loc: {
+            section: 'Joint Resolution to Provide for Annexing the Hawaiian Islands to the United States (1898)',
+            para: '17'
+          }
+        }
+      ]
+    },
+    {
+      ref: 'place:washington-dc',
+      cites: [
+        {
+          source: 'nara-milestone-joint-resolution-annexing-hawaii',
+          loc: {
+            section: 'Joint Resolution to Provide for Annexing the Hawaiian Islands to the United States (1898)',
+            para: '12'
+          }
+        }
+      ]
     }
   ],
   polities: [

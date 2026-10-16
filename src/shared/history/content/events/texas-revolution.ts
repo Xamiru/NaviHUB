@@ -281,38 +281,28 @@ export default defineEvent({
           }
         }
       ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q11',
+          text: 'We, therefore, the delegates with plenary powers of the people of Texas, in solemn convention assembled, appealing to a candid world for the necessities of our condition, do hereby resolve and declare, that our political connection with the Mexican nation has forever ended, and that the people of Texas do now constitute a free, Sovereign, and independent republic, and are fully invested with all the rights and attributes which properly belong to independent nations; and, conscious of the rectitude of our intentions, we fearlessly and confidently commit the issue to the decision of the Supreme arbiter of the destinies of nations.',
+          lang: 'en',
+          cite: {
+            source: 'tslac-texas-declaration-of-independence-1836',
+            loc: { section: 'Declaration of Independence of Texas, 1836', para: '25' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.tsl.texas.gov/treasures/republic/declaration.html'
+          }
+        }
+      ]
     }
   ],
   course: [
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1836-03-02' },
-            cites: [
-              {
-                source: 'tslac-texas-declaration-of-independence-1836',
-                loc: { section: 'Declaration of Independence of Texas, 1836', para: '1' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q11',
-        text: 'We, therefore, the delegates with plenary powers of the people of Texas, in solemn convention assembled, appealing to a candid world for the necessities of our condition, do hereby resolve and declare, that our political connection with the Mexican nation has forever ended, and that the people of Texas do now constitute a free, Sovereign, and independent republic, and are fully invested with all the rights and attributes which properly belong to independent nations; and, conscious of the rectitude of our intentions, we fearlessly and confidently commit the issue to the decision of the Supreme arbiter of the destinies of nations.',
-        lang: 'en',
-        cite: {
-          source: 'tslac-texas-declaration-of-independence-1836',
-          loc: { section: 'Declaration of Independence of Texas, 1836', para: '25' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://www.tsl.texas.gov/treasures/republic/declaration.html'
-        }
-      }
-    },
     {
       date: {
         alts: [

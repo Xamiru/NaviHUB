@@ -135,5 +135,16 @@ export default defineEvent({
   ],
   furtherReading: [
     { source: 'hasanli-2006-at-the-dawn-of-the-cold-war', perspective: 'central-asian' }
+  ],
+  places: [
+    {
+      ref: 'place:tehran',
+      cites: [
+        {
+          source: 'iranica-kuniholm-azerbaijan-1941-1947',
+          loc: { section: 'AZERBAIJAN v. History from 1941 to 1947', para: '3' }
+        }
+      ]
+    }
   ]
 })

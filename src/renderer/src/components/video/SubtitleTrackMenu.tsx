@@ -51,12 +51,12 @@ export default function SubtitleTrackMenu({
   primaryId,
   secondaryId,
   dialogueOnly,
-  subOffsetSec,
+  subDelaySec,
   extracting,
   trackError,
   onPick,
   onDialogueOnly,
-  onSubOffset
+  onSubDelay
 }: {
   id: string
   panelRef: RefObject<HTMLDivElement>
@@ -64,12 +64,12 @@ export default function SubtitleTrackMenu({
   primaryId: string | null
   secondaryId: string | null
   dialogueOnly: boolean
-  subOffsetSec: number
+  subDelaySec: number
   extracting: boolean
   trackError: string | null
   onPick: (slot: 'primary' | 'secondary', id: string | null) => void
   onDialogueOnly: (on: boolean) => void
-  onSubOffset: (delta: number) => void
+  onSubDelay: (delta: number) => void
 }): JSX.Element {
   return (
     <div
@@ -139,19 +139,19 @@ export default function SubtitleTrackMenu({
             type="button"
             className="btn-ghost px-2 py-0.5 text-xs"
             aria-label="Subtitles half a second earlier"
-            onClick={() => onSubOffset(-0.5)}
+            onClick={() => onSubDelay(-0.5)}
           >
             −0.5s
           </button>
           <span className="w-12 text-center text-xs tabular-nums text-gray-400" aria-live="polite">
-            {subOffsetSec > 0 ? '+' : ''}
-            {subOffsetSec.toFixed(1)}s
+            {subDelaySec > 0 ? '+' : ''}
+            {subDelaySec.toFixed(1)}s
           </span>
           <button
             type="button"
             className="btn-ghost px-2 py-0.5 text-xs"
             aria-label="Subtitles half a second later"
-            onClick={() => onSubOffset(0.5)}
+            onClick={() => onSubDelay(0.5)}
           >
             +0.5s
           </button>

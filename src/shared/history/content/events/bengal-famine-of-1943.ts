@@ -167,12 +167,12 @@ export default defineEvent({
         },
         {
           id: 'q5',
-          text: 'we are of the opinion that the number of deaths in excess of the average in 1943 was of the order of one million— that is, some 40 per cent, in excess of the officially recorded mortality. We have found no valid reason for accepting estimates in excess of this figure.',
+          text: 'After due […] consideration of the available facts we are of the opinion that the number of deaths in excess of the average in 1943 was of the order of one million— that is, some 40 per cent, in excess of the officially recorded mortality. We have found no valid reason for accepting estimates in excess of this figure.',
           lang: 'en',
           cite: { source: 'famine-inquiry-commission-1945-report-on-bengal', loc: { page: '110' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://archive.org/download/dli.ernet.26318/26318-Famine%20Inquiry%20Commission%20Report%20On%20Bengal_djvu.txt'
           }
         }

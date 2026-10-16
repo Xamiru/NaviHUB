@@ -42,7 +42,12 @@ export default defineEvent({
             at: '2026-10-07',
             url: 'https://www.archives.gov/research/african-americans/slave-ship-manifests.html'
           }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
         {
           id: 'q1',
           text: 'That from and after the first day of January, one thousand eight hundred and eight, it shall not be lawful to import or bring into the United States or the territories thereof from any foreign kingdom, place, or country, any negro, mulatto, or person of colour, with intent to hold, sell, or dispose of such negro, mulatto, or person of colour, as a slave, or to be held to service or labour.',

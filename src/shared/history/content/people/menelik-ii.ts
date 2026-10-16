@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Menelik II', lang: 'en', role: 'primary' },
     { text: 'ምኒልክ ፪ኛ', lang: 'am', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -69,7 +69,7 @@ export default definePerson({
   ],
   sections: [
     {
-      kind: 'career',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',
@@ -80,7 +80,12 @@ export default definePerson({
             loc: { section: 'Diplomacy and State Building in Imperial Ethiopia', para: '1' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/ethiopia/135.htm' }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'career',
+      quotes: [
         {
           id: 'q2',
           text: 'By 1900 Menelik had succeeded in establishing control over much of present-day Ethiopia and had, in part at least, gained recognition from the European colonial powers of the boundaries of his empire.',

@@ -76,6 +76,9 @@ export default function VideoTimeline({
           // then drags); range-thumb alone passes the track's clicks through.
           className="range-thumb timeline-range"
           aria-label="Position"
+          // The player's own keys stay live while the timeline has focus:
+          // Space pauses and the arrows seek 5 s, not the native 0.1 s step.
+          data-player-keys=""
           min={0}
           max={span || 1}
           step={0.1}

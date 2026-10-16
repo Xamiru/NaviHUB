@@ -414,6 +414,15 @@ describe('cross-game views', () => {
     expect(feed[0].mediaTitle).toBe('Feed Game')
   })
 
+  it('clamps the feed limit instead of trusting the caller', () => {
+    const id = addGame()
+    repo.upsertSchema(id, 'steam', '1', [ach('A'), ach('B')])
+    repo.insertUnlocks(id, [{ apiName: 'A', unlockedAtMs: null }, { apiName: 'B', unlockedAtMs: null }], 'emu', Date.now())
+    expect(repo.recentUnlocks(0)).toHaveLength(1)
+    expect(repo.recentUnlocks(Number.NaN)).toHaveLength(2)
+    expect(repo.recentUnlocks(1e9)).toHaveLength(2)
+  })
+
   it('ranks the rarest unlocks and never counts an unfetched percentage as rare', () => {
     const id = addGame()
     repo.upsertSchema(id, 'steam', '1', [
@@ -434,6 +443,7 @@ describe('cross-game views', () => {
     const { rarest, totals } = repo.overview()
     expect(rarest.map((r) => r.name)).toEqual(['rare', 'common'])
     expect(rarest[0].rarity).toBe('ultra-rare')
+    expect(rarest[0].globalPct).toBe(1.2)
     expect(totals).toEqual({ unlocked: 3, total: 3, games: 1 })
   })
 
@@ -445,6 +455,18 @@ describe('cross-game views', () => {
     repo.insertUnlocks(a, [{ apiName: 'X', unlockedAtMs: null }], 'emu', Date.now())
     repo.insertUnlocks(b, [{ apiName: 'X', unlockedAtMs: null }], 'emu', Date.now())
     expect(repo.overview().games.map((g) => g.title)).toEqual(['Full', 'Half'])
+  })
+
+  it('carries each set’s newest unlock, and none for a set with nothing earned', () => {
+    const a = addGame('Played')
+    const b = addGame('Untouched')
+    repo.upsertSchema(a, 'steam', '1', [ach('X'), ach('Y')])
+    repo.upsertSchema(b, 'steam', '2', [ach('X')])
+    repo.insertUnlocks(a, [{ apiName: 'X', unlockedAtMs: 1600000000000 }], 'emu', Date.now())
+    repo.insertUnlocks(a, [{ apiName: 'Y', unlockedAtMs: 1700000000000 }], 'emu', Date.now())
+    const games = repo.overview().games
+    expect(games.find((g) => g.title === 'Played')?.lastUnlockedAt).toBe('2023-11-14 22:13:20')
+    expect(games.find((g) => g.title === 'Untouched')?.lastUnlockedAt).toBeNull()
   })
 
   it('keeps a tracked game in the overview even before its set is fetched', () => {

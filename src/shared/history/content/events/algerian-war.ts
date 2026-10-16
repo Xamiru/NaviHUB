@@ -312,13 +312,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'During 1956 and 1957, the ALN successfully applied hit-and- run tactics according to the classic canons of guerrilla warfare.',
+          text: 'Specializing in ambushes and night raids and avoiding direct contact with superior French firepower, the internal forces targeted army patrols, military encampments, police posts, and colon farms, mines, and factories, as well as transportation and communications facilities.',
           lang: 'en',
           cite: {
             source: 'loc-algeria-country-study-1994',
             loc: { section: 'Conduct of the War', para: '2' }
           },
-          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/algeria/31.htm' }
+          provenance: { via: 'web', at: '2026-10-16', url: 'http://countrystudies.us/algeria/31.htm' }
         },
         {
           id: 'q6',

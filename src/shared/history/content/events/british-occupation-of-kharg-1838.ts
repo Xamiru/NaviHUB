@@ -123,7 +123,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'A British force occupied Kharg briefly in 1837 as part of a strategy to force the Persians to withdraw from Herat (English, 1971, p. 23; Perry, 1973, p. 95).',
+          text: 'A British force occupied Kharg briefly in 1837 as part of a strategy to force the Persians to withdraw from Herat',
           lang: 'en',
           cite: {
             source: 'iranica-potts-kharg-island-ii',
@@ -131,7 +131,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/kharg-island-02'
           }
         },
@@ -170,7 +170,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'The naval engagement in the Persian Gulf and the temporary occupation of Ḵārk Island forced Persia to abandon the Herat expedition (Kelly, pp. 290-301).',
+          text: 'The naval engagement in the Persian Gulf and the temporary occupation of Ḵārk Island forced Persia to abandon the Herat expedition',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-great-britain-ii',
@@ -181,7 +181,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
           }
         },

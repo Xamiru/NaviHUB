@@ -8,7 +8,7 @@ export default definePerson({
     { text: 'Moḥammad-ʿAli Bārforuši', lang: 'en', role: 'alternative' },
     { text: 'Quddus', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -104,12 +104,12 @@ export default definePerson({
         },
         {
           id: 'q5',
-          text: 'Qoddus’s tragic and public death at Bārforuš took place on 23 Jomādā II 1265/16 May 1849 (Zarandi, p. 408; Amanat, p. 188).',
+          text: 'Qoddus’s tragic and public death at Bārforuš took place on 23 Jomādā II 1265/16 May 1849',
           lang: 'en',
           cite: { source: 'iranica-mohammad-hosseini-qoddus', loc: { section: 'QODDUS', para: '8' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/qoddus-mohammad-ali-barforusi'
           }
         }
@@ -120,12 +120,12 @@ export default definePerson({
       quotes: [
         {
           id: 'q6',
-          text: 'As Šariʿatmadār relates (Māzandarāni, 1944, p. 438), the writings of Qoddus have received little attention compared to studies of other prominent Bābis, owing to the fact that, as ʿAbd-al-Bahāʾ testifies, Quddus’s handwriting was somewhat illegible (Ḵāvari, pp. 128-29). However, because of his piety, virtuous life, and unique understanding of the Bābi religion, Qoddus has been accorded the highest spiritual station in the Bābi community and recognized as second only to the Bāb himself (Shoghi Effendi, p. 49; Māzandarāni, 1944, pp. 419-21, 423-24).',
+          text: 'As Šariʿatmadār relates (Māzandarāni, 1944, p. 438), the writings of Qoddus have received little attention compared to studies of other prominent Bābis, owing to the fact that, as ʿAbd-al-Bahāʾ testifies, Quddus’s handwriting was somewhat illegible (Ḵāvari, pp. 128-29). However, because of his piety, virtuous life, and unique understanding of the Bābi religion, Qoddus has been accorded the highest spiritual station in the Bābi community and recognized as second only to the Bāb himself',
           lang: 'en',
           cite: { source: 'iranica-mohammad-hosseini-qoddus', loc: { section: 'QODDUS', para: '9' } },
           provenance: {
             via: 'web',
-            at: '2026-10-09',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/qoddus-mohammad-ali-barforusi'
           }
         }

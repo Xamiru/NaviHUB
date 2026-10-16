@@ -426,7 +426,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q18',
-        text: 'the Congress of People’s Deputies elected Gorbachev President of the USSR on March 15, 1990.',
+        text: '[…] the Congress of People’s Deputies elected Gorbachev President of the USSR on March 15, 1990.',
         lang: 'en',
         cite: {
           source: 'gorbachev-foundation-biography-of-mikhail-gorbachev',

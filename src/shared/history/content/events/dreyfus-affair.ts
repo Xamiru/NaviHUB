@@ -137,6 +137,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'The trial and later exoneration sharply divided French society and unleashed widespread anti-Semitic demonstrations and riots throughout France.',
+          lang: 'en',
+          cite: {
+            source: 'loc-israel-country-study-1988',
+            loc: { section: 'Political Zionism', para: '5' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/israel/9.htm' }
+        },
+        {
           id: 'q13',
           text: 'The Dreyfus Case registers the climax not only of French, but of European anti-Semitism. It was the most ambitious and most unscrupulous attempt yet made to prove the nationalist hypothesis of the anti-Semites, and in its failure it afforded the most striking illustration of the dangers of the whole movement by bringing France to the verge of revolution.',
           lang: 'en',
@@ -159,16 +169,6 @@ export default defineEvent({
             loc: { section: 'Political Zionism', para: '5' }
           },
           provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/israel/9.htm' }
-        },
-        {
-          id: 'q2',
-          text: 'The trial and later exoneration sharply divided French society and unleashed widespread anti-Semitic demonstrations and riots throughout France.',
-          lang: 'en',
-          cite: {
-            source: 'loc-israel-country-study-1988',
-            loc: { section: 'Political Zionism', para: '5' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/israel/9.htm' }
         }
       ]
     },

@@ -56,20 +56,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q6',
-          text: 'The Manifesto was published as the platform of the Communist League, a working men’ s association, first exclusively German, later on international, and under the political conditions of the Continent before 1848, unavoidably a secret society. At a Congress of the League, held in November 1847, Marx and Engels were commissioned to prepare a complete theoretical and practical party programme.',
-          lang: 'en',
-          cite: {
-            source: 'engels-1888-preface-communist-manifesto',
-            loc: { section: 'The 1888 English Edition', para: '1' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-07',
-            url: 'https://www.marxists.org/archive/marx/works/1848/communist-manifesto/preface.htm'
-          }
-        },
-        {
           id: 'q7',
           text: 'Drawn up in German, in January 1848, the manuscript was sent to the printer in London a few weeks before the French Revolution of February 24.',
           lang: 'en',
@@ -112,6 +98,25 @@ export default defineEvent({
             loc: { section: 'Karl Marx 1818-1883', para: '35' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'https://www.dhm.de/lemo/biografie/karl-marx' }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q6',
+          text: 'The Manifesto was published as the platform of the Communist League, a working men’ s association, first exclusively German, later on international, and under the political conditions of the Continent before 1848, unavoidably a secret society. At a Congress of the League, held in November 1847, Marx and Engels were commissioned to prepare a complete theoretical and practical party programme.',
+          lang: 'en',
+          cite: {
+            source: 'engels-1888-preface-communist-manifesto',
+            loc: { section: 'The 1888 English Edition', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.marxists.org/archive/marx/works/1848/communist-manifesto/preface.htm'
+          }
         }
       ]
     }

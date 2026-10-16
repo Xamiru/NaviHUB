@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { archiveContextForPath, bestArchiveRoute } from '../lib/adaptiveNav'
+import { archiveContextForPath, contextTabForPath } from '../lib/adaptiveNav'
 import { useSettings } from '../lib/hooks'
 import { SIDEBAR_HIDDEN_SETTING, parseHiddenSections } from '../lib/sidebarSections'
 import GameSessionIndicator from './GameSessionIndicator'
@@ -30,7 +30,7 @@ export default function Topbar() {
     (item) => !item.visibilityKey || !hidden.has(item.visibilityKey)
   )
   const tabRoutes = contextItems.map((item) => item.to).join('|')
-  const activeRoute = bestArchiveRoute(
+  const activeRoute = contextTabForPath(
     location.pathname,
     contextItems.map((item) => item.to)
   )

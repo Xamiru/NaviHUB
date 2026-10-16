@@ -5,7 +5,7 @@ export default definePeriod({
   names: [
     { text: 'Reign of Mozaffar al-Din Shah', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   periodType: 'reign',
   start: {
     alts: [
@@ -116,7 +116,7 @@ export default definePeriod({
       quotes: [
         {
           id: 'q3',
-          text: 'Taking advantage of widespread dissatisfaction with the pro-Russian course adopted by the Iranian government since 1892, the British legation in Tehran began to cultivate disaffected officials, publishers of newspapers, and most of all, prominent moǰtaheds, some of whom allegedly received large gifts of money if they assumed an anti-Russian position (M. S. Ivanov, Iranskaya revolyutsiya 1905-1911 godov, Moscow, 1957, p. 202).',
+          text: 'Taking advantage of widespread dissatisfaction with the pro-Russian course adopted by the Iranian government since 1892, the British legation in Tehran began to cultivate disaffected officials, publishers of newspapers, and most of all, prominent moǰtaheds, some of whom allegedly received large gifts of money if they assumed an anti-Russian position',
           lang: 'en',
           cite: {
             source: 'iranica-kazemzadeh-anglo-iranian-relations-qajar',
@@ -124,7 +124,7 @@ export default definePeriod({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/anglo-iranian-relations-ii/'
           }
         },

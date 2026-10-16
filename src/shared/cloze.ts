@@ -4,8 +4,7 @@ import type { JpCard, JpLessonKind } from './types'
 // Typed answers for reviews (the Bunpro idea): instead of flipping a card and
 // self-grading, type the missing piece and be told whether you got it.
 //
-// Reviews stay SM-2: this only *suggests* a grade, and the four grade buttons
-// still decide. Cards that can't produce a good prompt return null and fall
+// This only *suggests* a grade, and the four grade buttons still decide. Cards that can't produce a good prompt return null and fall
 // back to the normal flip — precision over coverage, because a wrong blank is
 // worse than no blank.
 
@@ -16,6 +15,7 @@ export interface TypedPrompt {
   hint: string | null // shown under the prompt (translation or meaning)
   reveal: string // the expected answer, shown after checking
   accept(input: string): boolean
+  placeholder?: string // the answer box's hint, when the default does not fit
 }
 
 // Grammar cards store the example sentence in `front`; the grammar POINT lives
@@ -121,4 +121,40 @@ export function buildTypedPrompt(
   // Kanji cards already have a typed-reading drill of their own on the kana
   // page; duplicating it inside reviews adds nothing.
   return null
+}
+
+// The prompt for an extra review direction (@shared/japanese/reviewDirections).
+// Production shows the meaning and takes the word in kanji, kana or romaji
+// (typing its reading counts — the point is recalling the word, not the IME);
+// reading shows the word alone and takes its reading. Always typed, with the
+// usual "Reveal instead" escape for self-grading.
+export function buildDirectionPrompt(
+  card: Pick<JpCard, 'front' | 'reading' | 'back' | 'pos'>,
+  direction: 'production' | 'reading'
+): TypedPrompt | null {
+  if (direction === 'production') {
+    const answers = [card.front, card.reading].filter((x): x is string => !!x)
+    return {
+      display: card.back,
+      hint: card.pos,
+      reveal: card.front,
+      placeholder: 'Type the Japanese word — kanji, kana or romaji',
+      accept: (input) => {
+        const t = input.trim()
+        return !!t && (answers.includes(t) || readingMatches(t, answers))
+      }
+    }
+  }
+  if (!card.reading) return null
+  const reading = card.reading
+  return {
+    display: card.front,
+    hint: null,
+    reveal: reading,
+    placeholder: 'Type the reading — kana or romaji',
+    accept: (input) => {
+      const t = input.trim()
+      return !!t && (t === reading || readingMatches(t, [reading]))
+    }
+  }
 }

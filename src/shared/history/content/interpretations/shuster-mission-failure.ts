@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'shuster-mission-failure',
   about: ['event:shuster-mission'],
   topic: 'responsibility',
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'russian-pressure-with-british-complicity',
@@ -89,7 +89,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q5',
-          text: 'The Baḵtiāri leaders did not consider Shuster worthy of a military showdown with Russia, particularly the Baḵ-tiāri prime minsiter, ṢamsÂām-al-Salṭana, who resented Shuster’s collusion with the Majles in denying the cabinet full control over the country’s finances (Klein, 1980, pp. 66-67).',
+          text: 'The Baḵtiāri leaders did not consider Shuster worthy of a military showdown with Russia, particularly the Baḵ-tiāri prime minsiter, ṢamsÂām-al-Salṭana, who resented Shuster’s collusion with the Majles in denying the cabinet full control over the country’s finances',
           lang: 'en',
           cite: {
             source: 'iranica-bonakdarian-great-britain-iii',
@@ -97,7 +97,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/great-britain-iii'
           }
         }

@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Jean-Jacques Dessalines', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   regions: ['latin-america'],
   roles: ['monarch', 'revolutionary', 'military'],
   sections: [
@@ -80,5 +80,31 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Jean-Jaques_Dessalines_(Fondateur_de_l%27Independance_d%27Haiti).jpg',
     credit: { institution: 'British Library' },
     license: { id: 'public-domain' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1758-09-20' },
+        cites: [
+          {
+            source: 'loc-name-authority-jean-jacques-dessalines',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1806-10-17' },
+        cites: [
+          {
+            source: 'loc-name-authority-jean-jacques-dessalines',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
   }
 })

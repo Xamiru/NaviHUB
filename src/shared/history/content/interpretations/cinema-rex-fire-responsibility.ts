@@ -21,7 +21,7 @@ export default defineInterpretation({
             source: 'loc-iran-country-study-1987',
             loc: { section: 'The Coming of the Revolution', para: '9' }
           },
-          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/iran/21.htm' }
+          provenance: { via: 'web', at: '2026-10-16', url: 'http://countrystudies.us/iran/21.htm' }
         }
       ]
     },
@@ -115,5 +115,5 @@ export default defineInterpretation({
       ]
     }
   ],
-  researched: '2026-10-09'
+  researched: '2026-10-16'
 })

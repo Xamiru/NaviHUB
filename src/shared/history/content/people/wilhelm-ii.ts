@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Wilhelm II', lang: 'en', role: 'primary' },
     { text: 'Wilhelm II.', lang: 'de', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -80,7 +80,7 @@ export default definePerson({
   ],
   sections: [
     {
-      kind: 'career',
+      kind: 'overview',
       quotes: [
         {
           id: 'q5',
@@ -95,7 +95,12 @@ export default definePerson({
             at: '2026-10-07',
             url: 'https://encyclopedia.1914-1918-online.net/article/wilhelm-ii-german-emperor/'
           }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'career',
+      quotes: [
         {
           id: 'q6',
           text: 'He abandoned Otto von Bismarck’s (1815-1898) policy of “satiation” in favour of Weltmachtpolitik and he supported Admiral Alfred von Tirpitz’s (1849-1930) battlefleet building programme, placing Germany on a collision course with Britain.',

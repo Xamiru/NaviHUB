@@ -184,5 +184,16 @@ export default defineEvent({
       license: { id: 'public-domain' },
       bytes: 4271095
     }
+  ],
+  places: [
+    {
+      ref: 'place:washington-dc',
+      cites: [
+        {
+          source: 'house-history-demise-of-reconstruction',
+          loc: { section: 'The Demise of Reconstruction', para: '22' }
+        }
+      ]
+    }
   ]
 })

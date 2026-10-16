@@ -171,5 +171,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Reynolds%27s_Political_Map_of_the_United_States_1856.jpg',
     credit: { institution: 'Library of Congress', creator: 'Wm. C. Reynolds and J. C. Jones' },
     license: { id: 'public-domain' }
-  }
+  },
+  places: [
+    { ref: 'place:washington-dc' }
+  ]
 })

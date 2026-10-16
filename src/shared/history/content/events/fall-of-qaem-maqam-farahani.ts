@@ -107,7 +107,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q7',
-          text: '1835 Murder of Abu’l-Qāsem Qāʾemmaqām by order of the shah and the appointment of Hājj Mirzā Āḡāsi as grand vizier.',
+          text: 'Murder of Abu’l-Qāsem Qāʾemmaqām by order of the shah and the appointment of Hājj Mirzā Āḡāsi as grand vizier.',
           lang: 'en',
           cite: {
             source: 'iranica-yarshater-chronology-part-2',
@@ -115,13 +115,13 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
           }
         },
         {
           id: 'q3',
-          text: 'Victim of slanderous accusations, he was arrested and murdered on the shah’s order on 29 Ṣafar 1251/26 June 1835 (Ḵormuji, p. 25; Eʿteżād-al-Salṭana, p. 398, 437-38; Fasāʾi, ed. Rasgār, p. 767; Solṭān-Aḥmad Mirzā, editor’s note, pp. 253-64).',
+          text: 'Victim of slanderous accusations, he was arrested and murdered on the shah’s order on 29 Ṣafar 1251/26 June 1835',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-mohammad-shah',
@@ -129,7 +129,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
         },
@@ -189,5 +189,13 @@ export default defineEvent({
   furtherReading: [
     { source: 'nateq-1988-iran-dar-rahyabi-ye-farhangi', perspective: 'iranian' },
     { source: 'bamdad-1968-sharh-e-hal-e-rejal-e-iran', perspective: 'iranian' }
+  ],
+  places: [
+    {
+      ref: 'place:tehran',
+      cites: [
+        { source: 'iranica-amanat-aqasi', loc: { section: 'ĀQĀSĪ, ḤĀJJĪ MĪRZĀ', para: '14' } }
+      ]
+    }
   ]
 })

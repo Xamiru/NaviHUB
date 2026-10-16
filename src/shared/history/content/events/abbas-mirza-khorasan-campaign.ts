@@ -157,7 +157,7 @@ export default defineEvent({
         },
         {
           id: 'q3',
-          text: 'ʿAbbās Mīrzā departed at once for the east and, in the summer and autumn of 1832, conquered the territory east and northeast of Mašhad—Ḵabūšān, Saraḵs, and Torbat-e Haydarī (Hedāyat, X, pp. 52, 55).',
+          text: 'ʿAbbās Mīrzā departed at once for the east and, in the summer and autumn of 1832, conquered the territory east and northeast of Mašhad—Ḵabūšān, Saraḵs, and Torbat-e Haydarī',
           lang: 'en',
           cite: {
             source: 'iranica-busse-abbas-mirza',
@@ -165,7 +165,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/abbas-mirza'
           }
         },
@@ -232,7 +232,7 @@ export default defineEvent({
         },
         {
           id: 'q7',
-          text: 'The relieved Kāmrān Mirzā agreed only to pay an annual tribute to Tehran (Hedāyat, X, pp. 30-31, 56-61).',
+          text: 'The relieved Kāmrān Mirzā agreed only to pay an annual tribute to Tehran',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-herat-vi',
@@ -240,7 +240,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/herat-vi'
           }
         }

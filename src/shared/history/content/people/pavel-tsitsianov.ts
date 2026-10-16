@@ -19,7 +19,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-16',
   regions: ['russia-central-asia', 'iran'],
   roles: ['military'],
   sections: [
@@ -68,5 +68,31 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Pavel_Dmitrievich_Tsitsianov-a.JPG',
     credit: { institution: 'Russkie portrety XVIII i XIX stoletii (1905-1909)' },
     license: { id: 'public-domain' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1754' },
+        cites: [
+          {
+            source: 'loc-name-authority-pavel-tsitsianov',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1806' },
+        cites: [
+          {
+            source: 'loc-name-authority-pavel-tsitsianov',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
   }
 })

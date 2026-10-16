@@ -105,34 +105,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1921-1936/kellogg'
           }
-        },
-        {
-          id: 'q2',
-          text: 'The High Contracting Parties solemly declare in the names of their respective peoples that they condemn recourse to war for the solution of international controversies, and renounce it, as an instrument of national policy in their relations with one another.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-kellogg-briand-pact',
-            loc: { section: 'Kellogg-Briand Pact 1929' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://avalon.law.yale.edu/20th_century/kbpact.asp'
-          }
-        },
-        {
-          id: 'q3',
-          text: 'The High Contracting Parties agree that the settlement or solution of all disputes or conflicts of whatever nature or of whatever origin they may be, which may arise among them, shall never be sought except by pacific means.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-kellogg-briand-pact',
-            loc: { section: 'Kellogg-Briand Pact 1929' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://avalon.law.yale.edu/20th_century/kbpact.asp'
-          }
         }
       ]
     },
@@ -201,62 +173,70 @@ export default defineEvent({
           }
         }
       ]
-    }
-  ],
-  course: [
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1929-07-02' },
-            cites: [
-              {
-                source: 'avalon-kellogg-briand-pact',
-                loc: { section: 'Kellogg-Briand Pact 1929' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q8',
-        text: 'Additional adhesions deposited subsequent to July 24, 1929. Persia, July 2, 1929;',
-        lang: 'en',
-        cite: { source: 'avalon-kellogg-briand-pact', loc: { section: 'Kellogg-Briand Pact 1929' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://avalon.law.yale.edu/20th_century/kbpact.asp'
-        }
-      }
     },
     {
-      date: {
-        alts: [
-          {
-            value: { d: '1929-07-24' },
-            cites: [
-              {
-                source: 'avalon-kellogg-briand-pact',
-                loc: { section: 'Kellogg-Briand Pact 1929' }
-              }
-            ]
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q2',
+          text: 'The High Contracting Parties solemly declare in the names of their respective peoples that they condemn recourse to war for the solution of international controversies, and renounce it, as an instrument of national policy in their relations with one another.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-kellogg-briand-pact',
+            loc: { section: 'Kellogg-Briand Pact 1929' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://avalon.law.yale.edu/20th_century/kbpact.asp'
           }
-        ]
-      },
-      quote: {
-        id: 'q9',
-        text: 'AND WHEREAS the said Treaty has been duly ratified on the parts of all the High Contracting Parties and their several instruments of ratification have been deposited with the Government of the United States of America, the last on July 24, 1929;',
-        lang: 'en',
-        cite: { source: 'avalon-kellogg-briand-pact', loc: { section: 'Kellogg-Briand Pact 1929' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://avalon.law.yale.edu/20th_century/kbpact.asp'
+        },
+        {
+          id: 'q3',
+          text: 'The High Contracting Parties agree that the settlement or solution of all disputes or conflicts of whatever nature or of whatever origin they may be, which may arise among them, shall never be sought except by pacific means.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-kellogg-briand-pact',
+            loc: { section: 'Kellogg-Briand Pact 1929' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://avalon.law.yale.edu/20th_century/kbpact.asp'
+          }
+        },
+        {
+          id: 'q8',
+          text: 'Additional adhesions deposited subsequent to July 24, 1929. Persia, July 2, 1929;',
+          lang: 'en',
+          cite: {
+            source: 'avalon-kellogg-briand-pact',
+            loc: { section: 'Kellogg-Briand Pact 1929' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://avalon.law.yale.edu/20th_century/kbpact.asp'
+          }
+        },
+        {
+          id: 'q9',
+          text: 'AND WHEREAS the said Treaty has been duly ratified on the parts of all the High Contracting Parties and their several instruments of ratification have been deposited with the Government of the United States of America, the last on July 24, 1929;',
+          lang: 'en',
+          cite: {
+            source: 'avalon-kellogg-briand-pact',
+            loc: { section: 'Kellogg-Briand Pact 1929' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://avalon.law.yale.edu/20th_century/kbpact.asp'
+          }
         }
-      }
+      ]
     }
   ],
+  course: [],
   hero: {
     url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/dc/Kellogg%E2%80%93Briand_Pact_%281928%29.jpg/1280px-Kellogg%E2%80%93Briand_Pact_%281928%29.jpg',
     page: 'https://commons.wikimedia.org/wiki/File:Kellogg%E2%80%93Briand_Pact_(1928).jpg',

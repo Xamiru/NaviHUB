@@ -344,7 +344,12 @@ export default defineEvent({
             at: '2026-10-08',
             url: 'https://www.iranicaonline.org/articles/iraq-vii-iran-iraq-war'
           }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
         {
           id: 'q10',
           text: 'Under the terms of the settlement, no money will be paid to the Government of Iran.',
@@ -361,81 +366,45 @@ export default defineEvent({
             at: '2026-10-08',
             url: 'https://clintonwhitehouse6.archives.gov/1996/11/1996-11-14-president-letter-on-national-emergency-wrt-iran.html'
           }
+        },
+        {
+          id: 'q11',
+          text: 'I am saddened to report that it appears that in a proper defensive action by the U.S.S. Vincennes this morning in the Persian Gulf an Iranian airliner was shot down over the Strait of Hormuz.',
+          lang: 'en',
+          cite: {
+            source: 'reagan-library-1988-07-03-statement-destruction-of-iranian-jetliner',
+            loc: {
+              section: 'Statement on the Destruction of an Iranian Jetliner by the United States Navy Over the Persian Gulf',
+              para: '2'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.reaganlibrary.gov/archives/speech/statement-destruction-iranian-jetliner-united-states-navy-over-persian-gulf'
+          }
+        },
+        {
+          id: 'q12',
+          text: 'The President has been briefed on the results of the investigation into the circumstances surrounding the downing of Iran Air flight 655 and concurs in the actions taken by Secretary [of Defense] Carlucci.',
+          lang: 'en',
+          cite: {
+            source: 'reagan-library-1988-08-19-fitzwater-statement-iran-air-investigation',
+            loc: {
+              section: 'Statement by Assistant to the President for Press Relations Fitzwater on the Investigation of the Accidental Attack on an Iranian Airliner',
+              para: '2'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.reaganlibrary.gov/archives/speech/statement-assistant-president-press-relations-fitzwater-investigation-accidental'
+          }
         }
       ]
     }
   ],
   course: [
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1988-07-03' },
-            cites: [
-              {
-                source: 'reagan-library-1988-07-03-statement-destruction-of-iranian-jetliner',
-                loc: {
-                  section: 'Statement on the Destruction of an Iranian Jetliner by the United States Navy Over the Persian Gulf',
-                  para: '2'
-                }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q11',
-        text: 'I am saddened to report that it appears that in a proper defensive action by the U.S.S. Vincennes this morning in the Persian Gulf an Iranian airliner was shot down over the Strait of Hormuz.',
-        lang: 'en',
-        cite: {
-          source: 'reagan-library-1988-07-03-statement-destruction-of-iranian-jetliner',
-          loc: {
-            section: 'Statement on the Destruction of an Iranian Jetliner by the United States Navy Over the Persian Gulf',
-            para: '2'
-          }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-08',
-          url: 'https://www.reaganlibrary.gov/archives/speech/statement-destruction-iranian-jetliner-united-states-navy-over-persian-gulf'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1988-08-19' },
-            cites: [
-              {
-                source: 'reagan-library-1988-08-19-fitzwater-statement-iran-air-investigation',
-                loc: {
-                  section: 'Statement by Assistant to the President for Press Relations Fitzwater on the Investigation of the Accidental Attack on an Iranian Airliner',
-                  para: '1'
-                }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q12',
-        text: 'The President has been briefed on the results of the investigation into the circumstances surrounding the downing of Iran Air flight 655 and concurs in the actions taken by Secretary [of Defense] Carlucci.',
-        lang: 'en',
-        cite: {
-          source: 'reagan-library-1988-08-19-fitzwater-statement-iran-air-investigation',
-          loc: {
-            section: 'Statement by Assistant to the President for Press Relations Fitzwater on the Investigation of the Accidental Attack on an Iranian Airliner',
-            para: '2'
-          }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-08',
-          url: 'https://www.reaganlibrary.gov/archives/speech/statement-assistant-president-press-relations-fitzwater-investigation-accidental'
-        }
-      }
-    },
     {
       date: {
         alts: [

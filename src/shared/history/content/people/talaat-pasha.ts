@@ -14,7 +14,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -138,7 +138,10 @@ export default definePerson({
           id: 'q5',
           text: 'An experienced minister of the interior, Talat presented his opinions to the government as those of the Central Committee, and his decisions to the committee as conditioned by the constraints of the government, in order to push through his will.',
           lang: 'en',
-          cite: { source: 'eo1418-kieser-talat', loc: { section: 'Armenian Genocide', para: '-4' } },
+          cite: {
+            source: 'eo1418-kieser-talat',
+            loc: { section: 'Concentration of Power', para: '1' }
+          },
           provenance: {
             via: 'web',
             at: '2026-10-09',

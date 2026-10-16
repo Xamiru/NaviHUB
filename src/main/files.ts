@@ -168,6 +168,13 @@ export function jpAudioDir(): string {
   return join(app.getPath('userData'), 'jpaudio')
 }
 
+// Japanese voice clips (Open JTalk, src/main/tts/), content-addressed and
+// regenerable on demand — kept apart from jpaudio/, whose mined clips are
+// personal and ride library backups, so the cache never bloats a backup.
+export function ttsCacheDir(): string {
+  return join(app.getPath('userData'), 'ttscache')
+}
+
 // Local video library root (settings key `video.dir`, bootstrapped from the
 // first folder attach like manga.dir). DB rows and navimg URLs use a virtual
 // "video/" prefix, mirroring the manga/ scheme above.
@@ -303,13 +310,14 @@ export function absoluteMediaPath(relPath: string): string {
   if (norm.startsWith('history/')) {
     return join(historyRootDir(), norm.slice('history/'.length))
   }
-  // "jpaudio/" and "videocache/" would resolve identically through the default
+  // "jpaudio/", "videocache/" and "ttscache/" would resolve identically through the default
   // branch (both live under userData) — the explicit lines document the prefix
   // contract.
   if (norm.startsWith('jpaudio/')) return join(jpAudioDir(), norm.slice('jpaudio/'.length))
   if (norm.startsWith('videocache/')) {
     return join(videoCacheDir(), norm.slice('videocache/'.length))
   }
+  if (norm.startsWith('ttscache/')) return join(ttsCacheDir(), norm.slice('ttscache/'.length))
   // The one stateful branch: a session token, not a path. See registerOpenedFile.
   if (norm.startsWith('open/')) return openedFilePath(norm.slice('open/'.length))
   return join(app.getPath('userData'), norm)

@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Alexander II of Russia', lang: 'en', role: 'primary' },
     { text: 'Александр II', lang: 'ru', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   died: {
     alts: [
       {
@@ -62,7 +62,7 @@ export default definePerson({
   ],
   sections: [
     {
-      kind: 'career',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',
@@ -73,7 +73,12 @@ export default definePerson({
             loc: { section: 'Transformation of Russia in the Nineteenth Century', para: '6' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/6.htm' }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'career',
+      quotes: [
         {
           id: 'q2',
           text: 'In 1861 he proclaimed the emancipation of about 20 million privately held serfs.',
@@ -107,5 +112,18 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:AlexanderII1860.jpg',
     credit: { creator: 'Sergey Levitsky' },
     license: { id: 'public-domain' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1818' },
+        cites: [
+          {
+            source: 'loc-name-authority-alexander-ii-of-russia',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
   }
 })

@@ -5,7 +5,7 @@ export default definePeriod({
   names: [
     { text: 'Reign of Naser al-Din Shah Qajar', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   periodType: 'reign',
   start: {
     alts: [
@@ -60,7 +60,7 @@ export default definePeriod({
         },
         {
           id: 'q2',
-          text: 'With the accession of Nāṣer-al-Din Shah in 1264/1848, his prime minister, Mirzā Taqi Khan Amir Kabir (q.v.), faced two immediate problems in Khorasan: the revolt of Ḥasan Khan Sālār and the disobedience of the governors of Herat (Noelle-Karimi, pp. 228-30).',
+          text: 'With the accession of Nāṣer-al-Din Shah in 1264/1848, his prime minister, Mirzā Taqi Khan Amir Kabir (q.v.), faced two immediate problems in Khorasan: the revolt of Ḥasan Khan Sālār and the disobedience of the governors of Herat',
           lang: 'en',
           cite: {
             source: 'iranica-motavalli-haghighi-khorasan-qajar-pahlavi',
@@ -68,7 +68,7 @@ export default definePeriod({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/khorasan-xi-history-in-the-qajar-and-pahlavi-periods'
           }
         }

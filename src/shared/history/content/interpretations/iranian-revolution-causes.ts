@@ -305,7 +305,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q13',
-          text: 'to the manifest dismay and astonishment of the United States and other outside powers, not to mention most Western scholars claiming expertise on Iran.',
+          text: 'At the age of seventy-six, and after close to fifteen years in exile, Khomeini had returned to Iran to lead the revolution to triumph, to the manifest dismay and astonishment of the United States and other outside powers, not to mention most Western scholars claiming expertise on Iran.',
           lang: 'en',
           cite: {
             source: 'iranica-algar-khomeini-life',
@@ -313,12 +313,12 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-09',
+            at: '2026-10-16',
             url: 'https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/'
           }
         }
       ]
     }
   ],
-  researched: '2026-10-09'
+  researched: '2026-10-16'
 })

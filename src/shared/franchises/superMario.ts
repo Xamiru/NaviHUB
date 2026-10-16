@@ -86,11 +86,25 @@ export const SUPER_MARIO: FranchiseCfg = {
       note: 'The world map, the raccoon suit, and eight Koopaling-held kingdoms'
     },
     {
+      id: 'mario-land',
+      title: 'Super Mario Land',
+      year: 1989,
+      releaseDate: '1989-04-21',
+      note: 'Game Boy launch: Sarasaland, Princess Daisy’s debut, and shoot-em-up stages'
+    },
+    {
       id: 'mario-smw',
       title: 'Super Mario World',
       year: 1990,
       releaseDate: '1990-11-21',
       note: 'Yoshi\'s debut and the SNES launch game that built Dinosaur Land'
+    },
+    {
+      id: 'mario-land-2',
+      title: 'Super Mario Land 2: 6 Golden Coins',
+      year: 1992,
+      releaseDate: '1992-10-21',
+      note: 'Mario takes back his own castle from Wario, who debuts here'
     },
     {
       id: 'mario-film-1993',

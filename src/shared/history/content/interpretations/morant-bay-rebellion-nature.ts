@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'morant-bay-rebellion-nature',
   about: ['event:morant-bay-rebellion'],
   topic: 'nature',
-  researched: '2026-10-09',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'rebellion-against-whites',
@@ -15,7 +15,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q1',
-          text: 'was surprised that during this debate he had heard no sympathy expressed on the opposite Benches for the whites who were the first victims of this rebellion.',
+          text: 'It should also be borne in mind that there were 500,000 of blacks in Jamaica and only 15,000 whites, and what would have been the position of Governor Eyre if he bad not used the most energetic measures, and if there had been a general massacre of the whites?',
           lang: 'en',
           cite: {
             source: 'hansard-commons-1866-07-31-disturbances-in-jamaica',
@@ -23,7 +23,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://api.parliament.uk/historic-hansard/commons/1866/jul/31/resolution'
           }
         }

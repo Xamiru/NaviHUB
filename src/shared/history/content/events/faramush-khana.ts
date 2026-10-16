@@ -109,7 +109,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'It was one of the first batch of initiates to Sincère Amitié, Mīrzā Malkom Khan (d. 1326/1908), who established the earliest farāmūš-ḵāna on Persian soil; it must, however, be regarded as a pseudo-Masonic institution given its lack of affiliation to any of the European obediences.',
+          text: 'Mīrzā Malkom Khan (d. 1326/1908), who established the earliest farāmūš-ḵāna on Persian soil; it must, however, be regarded as a pseudo-Masonic institution given its lack of affiliation to any of the European obediences.',
           lang: 'en',
           cite: {
             source: 'iranica-algar-freemasonry-qajar',
@@ -117,7 +117,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/freemasonry-ii-in-the-qajar-period'
           }
         },
@@ -241,7 +241,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q8',
-          text: 'The second such organization, the Jāmeʿ-e Ādamīyat (Society of Humanity), founded by ʿAbbāsqolī Khan Qazvīnī in 1904, can be characterized as a latter-day reincarnation of Malkom Khan’s original farāmūš-ḵāna; its immediate predecessor was, indeed, the Majmaʿ-e Ādamīyat (League of Humanity), a group of uncertain membership and influence organized by Malkom during the years he was publishing Qānūn (Algar, 1973, pp. 228-37).',
+          text: 'The second such organization, the Jāmeʿ-e Ādamīyat (Society of Humanity), founded by ʿAbbāsqolī Khan Qazvīnī in 1904, can be characterized as a latter-day reincarnation of Malkom Khan’s original farāmūš-ḵāna; its immediate predecessor was, indeed, the Majmaʿ-e Ādamīyat (League of Humanity), a group of uncertain membership and influence organized by Malkom during the years he was publishing Qānūn',
           lang: 'en',
           cite: {
             source: 'iranica-algar-freemasonry-qajar',
@@ -249,7 +249,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/freemasonry-ii-in-the-qajar-period'
           }
         }
@@ -273,7 +273,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q9',
-        text: 'The seven initiated into the lodge Sincère Amitié at the Paris headquarters of the Grand Orient on 10 December 1857, consisted of Ḡaffārī himself, Mīrzā Malkom Khan, Mīrzā Zamān Khan, Narīmān Khan, Moḥammad-ʿAlī Āqā, Mīrzā Reżā, and ʿAlī-Naqī (Algar, 1970, p. 28).',
+        text: 'The seven initiated into the lodge Sincère Amitié at the Paris headquarters of the Grand Orient on 10 December 1857, consisted of Ḡaffārī himself, Mīrzā Malkom Khan, Mīrzā Zamān Khan, Narīmān Khan, Moḥammad-ʿAlī Āqā, Mīrzā Reżā, and ʿAlī-Naqī',
         lang: 'en',
         cite: {
           source: 'iranica-algar-freemasonry-qajar',
@@ -281,7 +281,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/freemasonry-ii-in-the-qajar-period'
         }
       }
@@ -331,7 +331,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q11',
-        text: 'Although Nāṣer-al-Dīn Shah had undoubtedly known of the existence of the farāmūš-ḵāna despite the secrecy surrounding it and may even have approved of what he imagined to be its goals, the life of the institution was brought to an end by royal decree in October 1861; anyone who so much as uttered the word farāmūš-ḵāna was threatened with condign punishment (Eʿtemād-al-Salṭana, p. 118).',
+        text: 'Although Nāṣer-al-Dīn Shah had undoubtedly known of the existence of the farāmūš-ḵāna despite the secrecy surrounding it and may even have approved of what he imagined to be its goals, the life of the institution was brought to an end by royal decree in October 1861; anyone who so much as uttered the word farāmūš-ḵāna was threatened with condign punishment',
         lang: 'en',
         cite: {
           source: 'iranica-algar-freemasonry-qajar',
@@ -339,16 +339,10 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/freemasonry-ii-in-the-qajar-period'
         }
       }
     }
-  ],
-  hero: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/b/b0/Mirza_Malkam_Khan.jpg',
-    page: 'https://commons.wikimedia.org/wiki/File:Mirza_Malkam_Khan.jpg',
-    credit: { institution: 'E. G. Browne, The Press and Poetry of Modern Persia (1914)' },
-    license: { id: 'public-domain' }
-  }
+  ]
 })

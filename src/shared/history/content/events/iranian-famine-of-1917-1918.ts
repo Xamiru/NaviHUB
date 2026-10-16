@@ -100,7 +100,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'Not only the political scene looked gloomy in Iran during those years. For most of Iran’s working poor, the First World War brought nothing but misery.',
+          text: 'For most of Iran’s working poor, the First World War brought nothing but misery.',
           lang: 'en',
           cite: {
             source: 'eo1418-atabaki-persia-iran',
@@ -108,7 +108,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://encyclopedia.1914-1918-online.net/article/persiairan/'
           }
         },
@@ -194,7 +194,7 @@ export default defineEvent({
         },
         {
           id: 'q7',
-          text: 'Although there is no accurate report on casualties among the people of Khorasan during the period of World War I, it was, according to some estimates, one of the deadliest eras in Iran and in the history of Khorasan in the modern period (Majd, 2008, pp. 59-67, tr. pp. 85-91).',
+          text: 'Although there is no accurate report on casualties among the people of Khorasan during the period of World War I, it was, according to some estimates, one of the deadliest eras in Iran and in the history of Khorasan in the modern period',
           lang: 'en',
           cite: {
             source: 'iranica-motavalli-haghighi-khorasan-qajar-pahlavi',
@@ -202,7 +202,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/khorasan-xi-history-in-the-qajar-and-pahlavi-periods'
           }
         }

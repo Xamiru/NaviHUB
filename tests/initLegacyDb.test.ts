@@ -14,6 +14,7 @@ import Database from 'better-sqlite3'
 vi.mock('electron', () => ({ app: { getPath: () => '/tmp' } }))
 
 import { migrateFootballCoverageUniqueness, runMigrations } from '../src/main/db/connection'
+import { seedJapanese } from '../src/main/db/japaneseSeed'
 
 const read = (rel: string): string =>
   readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8')
@@ -21,6 +22,71 @@ const read = (rel: string): string =>
 const initSql = read('../src/main/db/init.sql')
 
 describe('a live DB that predates newer columns', () => {
+  it('moves reviewed cards on a pre-FSRS library to FSRS without touching their schedule', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    db.exec(initSql)
+    db.exec(`
+      ALTER TABLE jp_card DROP COLUMN stability; ALTER TABLE jp_card DROP COLUMN fsrs_difficulty;
+      ALTER TABLE jp_review_log DROP COLUMN state_before; ALTER TABLE jp_review_log DROP COLUMN elapsed_days;
+      ALTER TABLE jp_review_log DROP COLUMN scheduled_days;
+      ALTER TABLE en_word DROP COLUMN stability; ALTER TABLE en_word DROP COLUMN fsrs_difficulty;
+      ALTER TABLE en_review_log DROP COLUMN state_before; ALTER TABLE en_review_log DROP COLUMN elapsed_days;
+      ALTER TABLE en_review_log DROP COLUMN scheduled_days;
+      INSERT INTO jp_course (id, title) VALUES (1, 'Mine');
+      INSERT INTO jp_lesson (id, course_id, kind, title) VALUES (1, 1, 'vocab', 'L');
+      INSERT INTO jp_card (id, lesson_id, front, back, status, reps, interval_days, due_at)
+        VALUES (1, 1, '猫', 'cat', 'review', 2, 3, '2026-10-20 00:00:00');
+      INSERT INTO jp_review_log (card_id, grade, reviewed_at, interval_days, ease)
+        VALUES (1, 'good', '2026-10-10 00:00:00', 1, 2.5), (1, 'good', '2026-10-11 00:00:00', 3, 2.5);
+      INSERT INTO en_word (id, word, meaning, status, reps, interval_days) VALUES (1, 'w', 'm', 'review', 1, 4);`)
+    db.exec(initSql)
+    runMigrations(db)
+    const card = db.prepare('SELECT stability, fsrs_difficulty, interval_days, due_at FROM jp_card').get() as Record<string, unknown>
+    expect(card.stability).toBeGreaterThan(0)
+    expect(card.fsrs_difficulty).toBeGreaterThan(0)
+    expect(card).toMatchObject({ interval_days: 3, due_at: '2026-10-20 00:00:00' })
+    // No log for the English word: stability falls back to its interval.
+    expect(db.prepare('SELECT stability FROM en_word').get()).toEqual({ stability: 4 })
+    expect(db.prepare('SELECT state_before FROM jp_review_log LIMIT 1').get()).toEqual({ state_before: null })
+    expect(db.pragma('integrity_check', { simple: true })).toBe('ok')
+    db.close()
+  })
+
+  it('keys built-in Japanese courses seeded before the content sync existed', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    db.exec(initSql)
+    // The pre-sync shape: no seed columns, the N5 pack seeded under its flag.
+    db.exec(`
+      DROP TABLE jp_seed_tombstone;
+      ALTER TABLE jp_card DROP COLUMN seed_key; ALTER TABLE jp_card DROP COLUMN seed_hash;
+      ALTER TABLE jp_lesson DROP COLUMN seed_key; ALTER TABLE jp_lesson DROP COLUMN seed_hash;
+      ALTER TABLE jp_course DROP COLUMN seed_key; ALTER TABLE jp_course DROP COLUMN seed_hash;
+      INSERT INTO jp_course (id, title, description, level, difficulty) VALUES (1, 'JLPT N5 Foundations', 'old text', 'N5', 1);
+      INSERT INTO jp_lesson (id, course_id, kind, title) VALUES (1, 1, 'vocab', 'Greetings & set phrases');
+      INSERT INTO jp_card (lesson_id, front, back, status, reps, interval_days) VALUES (1, 'こんにちは', 'hello / good afternoon', 'review', 3, 6);
+      INSERT INTO settings (key, value) VALUES ('japanese.seeded', '1');`)
+    db.exec(initSql)
+    runMigrations(db)
+    seedJapanese(db)
+    expect(db.prepare('SELECT seed_key, seed_hash IS NULL AS detached FROM jp_course WHERE id = 1').get()).toEqual({
+      seed_key: 'n5',
+      detached: 1 // its description differs from the seed: never auto-touched
+    })
+    expect(db.prepare("SELECT seed_key, reps, interval_days FROM jp_card WHERE front = 'こんにちは'").get()).toEqual({
+      seed_key: 'n5.01/こんにちは',
+      reps: 3,
+      interval_days: 6
+    })
+    const plan = db
+      .prepare('EXPLAIN QUERY PLAN SELECT id FROM jp_card WHERE lesson_id = ? AND seed_key = ?')
+      .all(1, 'x') as { detail: string }[]
+    expect(plan.map((p) => p.detail).join(' ')).toContain('idx_jp_card_seed_key')
+    expect(db.pragma('integrity_check', { simple: true })).toBe('ok')
+    db.close()
+  })
+
   it('gives existing credits an origin and links games without touching their rows', () => {
     const db = new Database(':memory:')
     db.pragma('foreign_keys = ON')
@@ -47,6 +113,37 @@ describe('a live DB that predates newer columns', () => {
       .all('手入力') as { detail: string }[]
     expect(plan.map((p) => p.detail).join(' ')).toContain('idx_person_native_key')
     expect(db.pragma('integrity_check', { simple: true })).toBe('ok')
+    db.close()
+  })
+
+  it('adds the launch method to pre-emulation game sessions and creates the emulation tables', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    const legacy = initSql.replace(
+      /duration   INTEGER NOT NULL, -- seconds of wall-clock process lifetime[\s\S]*?platform   TEXT[^\n]*\n\);/,
+      'duration   INTEGER NOT NULL\n);'
+    )
+    expect(legacy).not.toBe(initSql)
+    db.exec(legacy.slice(0, legacy.indexOf('-- ---- Emulation ----')))
+    db.exec(`INSERT INTO media_item(id,media_type,title) VALUES(1,'game','Old game');
+      INSERT INTO game_session(id,media_id,started_at,ended_at,duration) VALUES(3,1,'2026-09-01','2026-09-01',600);`)
+    db.exec(initSql)
+    runMigrations(db)
+    db.exec(initSql)
+    runMigrations(db)
+    expect(db.prepare('SELECT via, platform, duration FROM game_session WHERE id=3').get()).toEqual({
+      via: null,
+      platform: null,
+      duration: 600
+    })
+    db.exec(`INSERT INTO emulator(id,preset_key,name,exe_path) VALUES(1,'pcsx2','PCSX2','C:\\PCSX2\\pcsx2-qt.exe');
+      INSERT INTO emulator_default(platform,emulator_id) VALUES('ps2',1);
+      INSERT INTO game_rom(media_id,rom_path,platform,emulator_id) VALUES(1,'D:\\ROMs\\game.iso','ps2',1);
+      INSERT INTO game_session(media_id,started_at,ended_at,duration,via,platform) VALUES(1,'2026-10-16','2026-10-16',900,'emu:pcsx2','ps2');`)
+    db.exec('DELETE FROM emulator WHERE id=1')
+    expect(db.prepare('SELECT emulator_id FROM game_rom').get()).toEqual({ emulator_id: null })
+    expect(db.prepare('SELECT COUNT(*) AS n FROM emulator_default').get()).toEqual({ n: 0 })
+    expect(db.pragma('foreign_key_check')).toEqual([])
     db.close()
   })
 
@@ -581,7 +678,7 @@ describe('a live DB that predates newer columns', () => {
     expect(db.prepare('SELECT title FROM media_item').get()).toEqual({ title: 'Old Save' })
   })
 
-  it('adds achievement.name_status to a set tracked before name checks existed', () => {
+  it('adds achievement.name_status and achievement_game.schema_source to an older tracked set', () => {
     const db = new Database(':memory:')
     db.pragma('foreign_keys = ON')
     // A 2026-09 library: the achievement table without name_status, one
@@ -617,7 +714,13 @@ describe('a live DB that predates newer columns', () => {
     CREATE TABLE achievement_unlock (
       achievement_id INTEGER PRIMARY KEY REFERENCES achievement(id) ON DELETE CASCADE,
       unlocked_at TEXT NOT NULL, source TEXT NOT NULL);
+    CREATE TABLE achievement_game (
+      media_id INTEGER PRIMARY KEY REFERENCES media_item(id) ON DELETE CASCADE,
+      provider TEXT NOT NULL, provider_game_id TEXT NOT NULL, schema_fetched_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')));
     INSERT INTO media_item (media_type, title) VALUES ('game', 'Death Stranding 2');
+    INSERT INTO achievement_game (media_id, provider, provider_game_id, schema_fetched_at)
+      VALUES (1, 'steam', '3280350', '2026-09-16 19:00:00');
     INSERT INTO achievement (media_id, api_name, name) VALUES (1, 'trophy_001', 'Lou?');
     INSERT INTO achievement_unlock VALUES (1, '2026-09-16 19:07:46', 'emu');`)
 
@@ -639,6 +742,21 @@ describe('a live DB that predates newer columns', () => {
       name_status: 'ok',
       unlocked_at: '2026-09-16 19:07:46',
       progress_current: null
+    })
+    // achievement_game gains schema_source (2026-10-16); a set fetched before
+    // it reads as "source unknown" through the repo's own tracking query.
+    expect(
+      db
+        .prepare(
+          `SELECT provider, provider_game_id, schema_fetched_at, schema_source
+             FROM achievement_game WHERE media_id = ?`
+        )
+        .get(1)
+    ).toEqual({
+      provider: 'steam',
+      provider_game_id: '3280350',
+      schema_fetched_at: '2026-09-16 19:00:00',
+      schema_source: null
     })
   })
 

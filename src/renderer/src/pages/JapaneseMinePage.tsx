@@ -10,7 +10,7 @@ import UniversalPicker, { type PickedEntity } from '../components/UniversalPicke
 import CoverImage from '../components/CoverImage'
 import DictResultRow from '../components/japanese/DictResultRow'
 import EditorialDetailFrame from '../components/EditorialDetailFrame'
-import ContextPanel, { ContextFact } from '../components/ContextPanel'
+import ContextPanel from '../components/ContextPanel'
 import QuietWorkspace from '../components/QuietWorkspace'
 
 export default function JapaneseMinePage() {
@@ -42,6 +42,14 @@ export default function JapaneseMinePage() {
   })
   const { draft, setDraft, targets, targetLessonId, setLessonId, canSave, saving } = mining
 
+  // The deck the next card goes into, newest cards first: what was just saved.
+  const { data: targetLesson } = useQuery({
+    queryKey: qk.japanese.lesson(targetLessonId ?? 0),
+    queryFn: () => api.japanese.getLesson(targetLessonId!),
+    enabled: targetLessonId != null
+  })
+  const recent = (targetLesson?.cards ?? []).slice(-6).reverse()
+
   function search() {
     const q = term.trim()
     if (!q) return
@@ -52,13 +60,37 @@ export default function JapaneseMinePage() {
     <EditorialDetailFrame
       width="wide"
       aside={
-        <ContextPanel title="Card evidence" identity={source?.entityId ?? (draft.front || 'new-card')}>
-          <ContextFact label="Source">{source?.name ?? 'No source linked'}</ContextFact>
-          <ContextFact label="Target">
-            {targets?.lessons.find((lesson) => lesson.lessonId === targetLessonId)?.label ??
-              'Mined words inbox'}
-          </ContextFact>
-          <ContextFact label="Review state">New cards enter the offline review queue.</ContextFact>
+        <ContextPanel
+          title="Recently saved"
+          identity={targetLessonId ?? 'mine'}
+          subtitle={
+            targets?.lessons.find((lesson) => lesson.lessonId === targetLessonId)?.label ?? 'Mined words inbox'
+          }
+        >
+          {recent.length === 0 ? (
+            <p className="text-sm text-gray-400">Nothing saved here yet. Words you save appear here.</p>
+          ) : (
+            <ul className="space-y-2.5">
+              {recent.map((c) => (
+                <li key={c.id}>
+                  <span lang="ja" className="text-base text-gray-200">
+                    {c.front}
+                  </span>
+                  {c.reading && c.reading !== c.front && (
+                    <span lang="ja" className="ml-2 text-sm text-gray-500">
+                      {c.reading}
+                    </span>
+                  )}
+                  <span className="block truncate text-xs text-gray-500">{c.back}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {targetLessonId != null && (
+            <Link to={`/japanese/lessons/${targetLessonId}`} className="mt-4 inline-block text-sm text-signal-link hover:underline">
+              Open this deck
+            </Link>
+          )}
         </ContextPanel>
       }
     >

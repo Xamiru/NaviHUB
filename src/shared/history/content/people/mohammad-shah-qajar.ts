@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -221,7 +221,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q8',
-          text: 'Compared to Fatḥ-ʿAli Shah’s prestigious appearance, Moḥammad Shah’s semi-Europeanized dress and short beard clearly denoted a change in the Qajar royal image (Amanat, 1997, p. 18).',
+          text: 'Compared to Fatḥ-ʿAli Shah’s prestigious appearance, Moḥammad Shah’s semi-Europeanized dress and short beard clearly denoted a change in the Qajar royal image',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-mohammad-shah',
@@ -229,7 +229,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
         },

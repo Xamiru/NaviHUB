@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
+import JapaneseHubTabs from '../components/japanese/JapaneseHubTabs'
 import Tabs, { TabPanel } from '../components/Tabs'
 import QuizRecord from '../components/QuizRecord'
 import PitchAccent from '../components/japanese/PitchAccent'
@@ -34,6 +35,7 @@ export default function JapanesePitchPage() {
 
   return (
     <div className="p-6 max-w-[1320px] mx-auto">
+      <JapaneseHubTabs />
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Pitch Accent"

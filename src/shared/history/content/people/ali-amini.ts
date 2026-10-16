@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Ali Amini', lang: 'en', role: 'primary' },
     { text: 'علی امینی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['iran'],
   roles: ['politician'],
   offices: [
@@ -106,5 +106,31 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1905-09-12' },
+        cites: [
+          {
+            source: 'loc-name-authority-ali-amini',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1992-12-12' },
+        cites: [
+          {
+            source: 'loc-name-authority-ali-amini',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
+  }
 })

@@ -33,7 +33,7 @@ export const SHIN_MEGAMI_TENSEI: FranchiseCfg = {
     },
     {
       title: 'Law, Chaos, and no good answer',
-      body: 'Nearly every mainline game resolves around a Law/Chaos/Neutral alignment system: Law sides with an oppressive divine order, Chaos sides with demonic freedom that curdles into anarchy, and Neutral rejects both in favor of human self-determination. None of the three endings is written as simply correct, and the series has kept returning to this structure since the first game.'
+      body: 'Nearly every mainline game revolves around a Law/Chaos/Neutral alignment system: Law sides with an oppressive divine order, Chaos sides with demonic freedom that curdles into anarchy, and Neutral rejects both in favor of human self-determination. None of the three endings is written as simply correct, and the series has kept returning to this structure since the first game.'
     },
     {
       title: 'Tokyo, destroyed on a schedule',

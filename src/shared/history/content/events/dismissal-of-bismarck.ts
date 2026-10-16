@@ -249,5 +249,16 @@ export default defineEvent({
   },
   furtherReading: [
     { source: 'gall-1995-bismarck', perspective: 'european' }
+  ],
+  places: [
+    {
+      ref: 'place:berlin',
+      cites: [
+        {
+          source: 'britannica-1911-germany-history',
+          loc: { section: 'GERMANY: History', para: '421' }
+        }
+      ]
+    }
   ]
 })

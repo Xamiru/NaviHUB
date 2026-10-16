@@ -124,12 +124,12 @@ export default defineEvent({
         },
         {
           id: 'q3',
-          text: 'Falling within the battle zone between imperial Russia and Persia, Ganja was stormed in 1804 by a Russian army led by the Georgian Prince Zizishvili, and was definitively ceded to Russia in 1813 under the terms of the Golestān Treaty (q.v.).',
+          text: 'Falling within the battle zone between imperial Russia and Persia, Ganja was stormed in 1804 by a Russian army led by the Georgian Prince Zizishvili, and was definitively ceded to Russia in 1813 under the terms of the Golestān Treaty',
           lang: 'en',
           cite: { source: 'iranica-bosworth-ganja', loc: { section: 'GANJA', para: '7' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/ganja/'
           }
         }

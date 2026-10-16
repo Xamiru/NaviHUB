@@ -1,4 +1,5 @@
-// Mega Man — classic 1-11, X 1-8, Zero 1-4, ZX, Legends 1-2, and Battle
+// Mega Man — classic 1-11, X 1-8, Zero 1-4, ZX, ZX Advent (its own row since
+// 2026-10-17; the Zero/ZX Legacy Collection id stays on Zero 1), Legends 1-2, and Battle
 // Network 1 (the only Battle Network row, per the task brief — the other
 // five numbered entries are not included, only folded in as Legacy
 // Collection aliases on this one). Each sub-series' many enhanced
@@ -65,8 +66,8 @@ export const MEGA_MAN: FranchiseCfg = {
     { id: 'mm-x3', title: 'Mega Man X3', year: 1995, releaseDate: '1995-12-01', chrono: 14, note: 'Doppler\'s rebellion and the first playable Zero sections' },
     { id: 'mm-8', title: 'Mega Man 8', year: 1996, releaseDate: '1996-12-17', chrono: 8, note: 'Full voice acting and anime cutscenes on the PlayStation/Saturn' },
     { id: 'mm-x4', title: 'Mega Man X4', year: 1997, releaseDate: '1997-08-01', chrono: 15, note: 'Zero becomes fully playable; the Repliforce civil war' },
-    { id: 'mm-legends1', title: 'Mega Man Legends', aliases: ['Rockman DASH'], year: 1997, releaseDate: '1997-12-18', chrono: 25, note: '3D adventure in the ruin-diving far future, as Mega Man Volnutt' },
-    { id: 'mm-legends2', title: 'Mega Man Legends 2', aliases: ['Rockman DASH 2'], year: 2000, releaseDate: '2000-04-20', chrono: 26, note: 'Volnutt and Roll Caskett chase the Mother Lode treasure' },
+    { id: 'mm-legends1', title: 'Mega Man Legends', aliases: ['Rockman DASH'], year: 1997, releaseDate: '1997-12-18', chrono: 26, note: '3D adventure in the ruin-diving far future, as Mega Man Volnutt' },
+    { id: 'mm-legends2', title: 'Mega Man Legends 2', aliases: ['Rockman DASH 2'], year: 2000, releaseDate: '2000-04-20', chrono: 27, note: 'Volnutt and Roll Caskett chase the Mother Lode treasure' },
     { id: 'mm-x5', title: 'Mega Man X5', aliases: ['Mega Man X Legacy Collection 2'], externalIds: [{ source: 'steam', id: '743900' }], year: 2000, releaseDate: '2000-11-30', chrono: 16, note: 'Originally planned as the X series finale; Zero\'s infection by the Sigma Virus (X Legacy Collection 2 also bundles X6-8)' },
     { id: 'mm-bn1', title: 'Mega Man Battle Network', aliases: ['Battle Network Rockman.EXE', 'Mega Man Battle Network Legacy Collection Vol. 1'], externalIds: [{ source: 'steam', id: '1798010' }], year: 2001, releaseDate: '2001-03-21', spinOff: true, note: 'Separate "net society" continuity: Lan Hikari and his NetNavi, MegaMan.EXE' },
     { id: 'mm-x6', title: 'Mega Man X6', year: 2001, releaseDate: '2001-11-29', chrono: 17, note: 'X alone confronts the Zero Nightmare phenomenon' },
@@ -78,6 +79,7 @@ export const MEGA_MAN: FranchiseCfg = {
     { id: 'mm-x8', title: 'Mega Man X8', year: 2004, releaseDate: '2004-12-07', chrono: 19, note: 'X, Zero and Axl together against a new Sigma scheme on the moon' },
     { id: 'mm-zero4', title: 'Mega Man Zero 4', year: 2005, releaseDate: '2005-04-21', chrono: 23, note: 'Series finale: Zero\'s last stand against Dr. Weil\'s Ragnarok' },
     { id: 'mm-zx', title: 'Mega Man ZX', year: 2006, releaseDate: '2006-07-06', chrono: 24, note: 'Generations later: Vent or Aile merge with Biometal to become Model Zero or Model X' },
+    { id: 'mm-zx-advent', title: 'Mega Man ZX Advent', aliases: ['Rockman ZX Advent'], year: 2007, releaseDate: '2007-07-12', chrono: 25, note: 'Grey or Ashe copy defeated foes with Biometal Model A (Zero/ZX Legacy Collection)' },
     { id: 'mm-9', title: 'Mega Man 9', year: 2008, releaseDate: '2008-09-22', chrono: 9, note: 'Deliberate throwback to NES-era graphics and difficulty' },
     { id: 'mm-10', title: 'Mega Man 10', year: 2010, releaseDate: '2010-03-01', chrono: 10, note: 'Roll becomes playable for the first time in the mainline series' },
     { id: 'mm-11', title: 'Mega Man 11', externalIds: [{ source: 'steam', id: '742300' }], year: 2018, releaseDate: '2018-10-02', chrono: 11, note: 'First HD mainline entry, introducing the Double Gear system' }

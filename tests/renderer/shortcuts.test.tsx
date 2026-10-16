@@ -21,7 +21,7 @@ describe('shortcut reference', () => {
     expect(codes.length).toBeGreaterThan(5)
     const listed = `${keysOf('Browser tabs')} ${keysOf('Navigation')}`
     for (const code of codes) {
-      const shown = ARROWS[code] ?? code.replace(/^Key/, '')
+      const shown = ARROWS[code] ?? code.replace(/^(Key|Digit)/, '')
       expect(listed, code).toContain(shown)
     }
     expect(listed).toContain('Ctrl+1')

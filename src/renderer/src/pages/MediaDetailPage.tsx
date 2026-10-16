@@ -36,6 +36,7 @@ import TvSeasonsSection from '../components/TvSeasonsSection'
 import GameLaunchSection from '../components/GameLaunchSection'
 import GameLinksPanel from '../components/GameLinksPanel'
 import AchievementsSection from '../components/AchievementsSection'
+import ModsSection from '../components/ModsSection'
 import GameLaunchButton, { useHasLaunchTarget } from '../components/GameLaunchButton'
 import { PlayIcon, PauseIcon } from '../components/PlayerIcons'
 import VideoEpisodesSection from '../components/VideoEpisodesSection'
@@ -70,7 +71,7 @@ import QuoteDialog from '../components/quotes/QuoteDialog'
 import LinkedMusicSection, { useMusicLinks } from '../components/music/LinkedMusicSection'
 import { musicTrackToPlayerTrack } from '../lib/musicTracks'
 
-type DetailTab = 'overview' | 'cast' | 'video' | 'media' | 'achievements' | 'music' | 'quotes' | 'art'
+type DetailTab = 'overview' | 'cast' | 'video' | 'media' | 'achievements' | 'mods' | 'music' | 'quotes' | 'art'
 
 export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const { id } = useParams()
@@ -105,6 +106,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
       : []),
     ...(cfg.mediaTabLabel ? [{ key: 'media' as DetailTab, label: cfg.mediaTabLabel }] : []),
     ...(cfg.hasAchievements ? [{ key: 'achievements' as DetailTab, label: 'Achievements' }] : []),
+    ...(cfg.hasMods ? [{ key: 'mods' as DetailTab, label: 'Mods' }] : []),
     { key: 'music', label: 'Music' },
     ...(titleQuotes.length ? [{ key: 'quotes' as DetailTab, label: 'Quotes' }] : []),
     { key: 'art', label: 'Art' }
@@ -383,6 +385,8 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
         )}
 
         {tab === 'achievements' && <AchievementsSection m={m} />}
+
+        {tab === 'mods' && <ModsSection m={m} />}
 
         {tab === 'music' && (
           <LinkedMusicSection owner={{ mediaId: m.id }} ownerTitle={m.title} themes={m.themes} />

@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Yakubu Gowon', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-16',
   regions: ['subsaharan-africa'],
   roles: ['military', 'head-of-state'],
   offices: [
@@ -75,5 +75,18 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1934-10-19' },
+        cites: [
+          {
+            source: 'loc-name-authority-yakubu-gowon',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  }
 })

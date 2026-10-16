@@ -170,7 +170,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'In 1947, for instance, the taxes paid by the company to the British government were more than double the total sum received by the Persian government from the company in that year (Elm, p. 37).',
+          text: 'In 1947, for instance, the taxes paid by the company to the British government were more than double the total sum received by the Persian government from the company in that year',
           lang: 'en',
           cite: {
             source: 'iranica-azimi-great-britain-v',
@@ -178,7 +178,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/great-britain-v/'
           }
         },
@@ -194,7 +194,7 @@ export default defineEvent({
         },
         {
           id: 'q5',
-          text: 'On 12 December 1950 Iranian newspapers published Kāšāni’s fatwa. In his edict, “the great leader of Muslims” established “the religious and patriotic duty of the Islamic people of Iran” (Šāhed-e kešāvarzān, 13 December 1950). Kāšāni ruled that “all Iranians should demand the nationalization of Iran’s oil industry throughout the entire geographical expanse of the country” (ibid.).',
+          text: 'On 12 December 1950 Iranian newspapers published Kāšāni’s fatwa. In his edict, “the great leader of Muslims” established “the religious and patriotic duty of the Islamic people of Iran” (Šāhed-e kešāvarzān, 13 December 1950). Kāšāni ruled that “all Iranians should demand the nationalization of Iran’s oil industry throughout the entire geographical expanse of the country”',
           lang: 'en',
           cite: {
             source: 'iranica-rahnema-kashani',
@@ -202,7 +202,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/kasani-abul-qasem/'
           }
         }
@@ -246,7 +246,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q8',
-          text: 'The nine-points law provided for the implementation of nationalization, covering, inter alia, provisions for expropriation of the assets of the Anglo-Iranian Oil Company, the settlement of claims and counter claims of the two parties, the establishment of the National Iranian Oil Company for the operation of the Iranian oil industry, and arrangements for the uninterrupted sale of oil to the former customers of AIOC (Elm, pp. 91-93).',
+          text: 'The nine-points law provided for the implementation of nationalization, covering, inter alia, provisions for expropriation of the assets of the Anglo-Iranian Oil Company, the settlement of claims and counter claims of the two parties, the establishment of the National Iranian Oil Company for the operation of the Iranian oil industry, and arrangements for the uninterrupted sale of oil to the former customers of AIOC',
           lang: 'en',
           cite: {
             source: 'iranica-mina-oil-agreements',
@@ -254,7 +254,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/oil-agreements-in-iran/'
           }
         },
@@ -270,7 +270,7 @@ export default defineEvent({
         },
         {
           id: 'q10',
-          text: 'By 1952, Iranian production had plummeted to just 20,000 barrels per day, compared to 664,000 in 1950, while total world production had risen from 10.9 million barrels per day in 1950 to 13.0 million in 1952, an increase more than three times greater than Iran’s total output in 1950 (Yergin, p. 464).',
+          text: 'By 1952, Iranian production had plummeted to just 20,000 barrels per day, compared to 664,000 in 1950, while total world production had risen from 10.9 million barrels per day in 1950 to 13.0 million in 1952, an increase more than three times greater than Iran’s total output in 1950',
           lang: 'en',
           cite: {
             source: 'iranica-mina-oil-agreements',
@@ -278,7 +278,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/oil-agreements-in-iran/'
           }
         },
@@ -407,7 +407,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q15',
-        text: 'The Jackson Mission. On 19 June 1951, the British delegation headed by Basil Jackson the AIOC Director offered, on behalf of the AIOC, to advance the Iranian government 10 million Pounds and, in addition, to make monthly advances of 3 million Pounds Sterling while discussions were proceeding and as for arrangements which would maintain efficient operations while being consistent with the principle of nationalization, proposed that Iranian assets of the AIOC would be vested in National Iranian Oil Company (NIOC) which would grant the use of the assets to a new subsidiary to be established by AIOC. The new subsidiary would have Iranian directors on its board and would, in effect, operate the Iranian oil industry using the assets owned by NIOC. The AIOC’s distribution business in Iran would be transferred to NIOC (Bamberg, pp. 422-30).',
+        text: 'The Jackson Mission. On 19 June 1951, the British delegation headed by Basil Jackson the AIOC Director offered, on behalf of the AIOC, to advance the Iranian government 10 million Pounds and, in addition, to make monthly advances of 3 million Pounds Sterling while discussions were proceeding and as for arrangements which would maintain efficient operations while being consistent with the principle of nationalization, proposed that Iranian assets of the AIOC would be vested in National Iranian Oil Company (NIOC) which would grant the use of the assets to a new subsidiary to be established by AIOC. The new subsidiary would have Iranian directors on its board and would, in effect, operate the Iranian oil industry using the assets owned by NIOC. The AIOC’s distribution business in Iran would be transferred to NIOC',
         lang: 'en',
         cite: {
           source: 'iranica-mina-oil-agreements',
@@ -415,7 +415,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-07',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/oil-agreements-in-iran/'
         }
       }

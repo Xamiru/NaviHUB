@@ -71,6 +71,25 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://api.parliament.uk/historic-hansard/lords/1837/jun/20/demise-of-his-majesty-king-william-the'
           }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q3',
+          text: 'The Speaker proceeded to the Council at eleven o\'clock, and at a quarter to one entered the House. Standing before the chair, the right hon. Gentleman took the oaths of allegiance and supremacy to her Majesty Queen Victoria.',
+          lang: 'en',
+          cite: {
+            source: 'hansard-commons-1837-06-20-proceedings-on-the-kings-death',
+            loc: { section: 'HC Deb 20 June 1837 vol 38 c1546' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1837/jun/20/proceedings-on-the-kings-death'
+          }
         },
         {
           id: 'q2',
@@ -84,20 +103,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://api.parliament.uk/historic-hansard/lords/1837/jun/20/demise-of-his-majesty-king-william-the'
-          }
-        },
-        {
-          id: 'q3',
-          text: 'The Speaker proceeded to the Council at eleven o\'clock, and at a quarter to one entered the House. Standing before the chair, the right hon. Gentleman took the oaths of allegiance and supremacy to her Majesty Queen Victoria.',
-          lang: 'en',
-          cite: {
-            source: 'hansard-commons-1837-06-20-proceedings-on-the-kings-death',
-            loc: { section: 'HC Deb 20 June 1837 vol 38 c1546' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://api.parliament.uk/historic-hansard/commons/1837/jun/20/proceedings-on-the-kings-death'
           }
         }
       ]

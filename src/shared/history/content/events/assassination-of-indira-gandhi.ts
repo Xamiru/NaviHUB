@@ -98,23 +98,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'Prime Minister Gandhi was shot outside her home by two members of her security guard and died a short time later in the All-India Institute of Medical Sciences.',
-          lang: 'en',
-          cite: {
-            source: 'reagan-lib-1984-10-31-statement-on-assassination-of-indira-gandhi',
-            loc: {
-              section: 'Statement on the Assassination of Prime Minister Indira Gandhi of India',
-              para: '4'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://www.reaganlibrary.gov/archives/speech/statement-assassination-prime-minister-indira-gandhi-india'
-          }
-        },
-        {
           id: 'q2',
           text: 'The news of Indira Gandhi\'s assassination plunged New Delhi and other parts of India into anti-Sikh riots for three days; several thousand Sikhs were killed.',
           lang: 'en',
@@ -163,6 +146,43 @@ export default defineEvent({
             loc: { section: 'Rajiv Gandhi', para: '1' }
           },
           provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/india/25.htm' }
+        }
+      ]
+    },
+    {
+      kind: 'consequences',
+      quotes: [
+        {
+          id: 'q7',
+          text: 'Rajiv Gandhi attempted to put an end to the crisis by signing an agreement with Akali Dal moderate Harchand Singh Longowal in August 1985.',
+          lang: 'en',
+          cite: {
+            source: 'loc-india-country-study-1995',
+            loc: { section: 'Punjab and Jammu and Kashmir', para: '4' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/india/117.htm' }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q1',
+          text: 'Prime Minister Gandhi was shot outside her home by two members of her security guard and died a short time later in the All-India Institute of Medical Sciences.',
+          lang: 'en',
+          cite: {
+            source: 'reagan-lib-1984-10-31-statement-on-assassination-of-indira-gandhi',
+            loc: {
+              section: 'Statement on the Assassination of Prime Minister Indira Gandhi of India',
+              para: '4'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.reaganlibrary.gov/archives/speech/statement-assassination-prime-minister-indira-gandhi-india'
+          }
         },
         {
           id: 'q6',
@@ -180,21 +200,6 @@ export default defineEvent({
             at: '2026-10-08',
             url: 'https://www.reaganlibrary.gov/archives/speech/statement-assassination-prime-minister-indira-gandhi-india'
           }
-        }
-      ]
-    },
-    {
-      kind: 'consequences',
-      quotes: [
-        {
-          id: 'q7',
-          text: 'Rajiv Gandhi attempted to put an end to the crisis by signing an agreement with Akali Dal moderate Harchand Singh Longowal in August 1985.',
-          lang: 'en',
-          cite: {
-            source: 'loc-india-country-study-1995',
-            loc: { section: 'Punjab and Jammu and Kashmir', para: '4' }
-          },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/india/117.htm' }
         }
       ]
     }

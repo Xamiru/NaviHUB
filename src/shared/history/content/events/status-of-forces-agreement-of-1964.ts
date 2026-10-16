@@ -131,7 +131,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'The Status of Forces Agreement, known to Iranians as the Capitulations Agreement “provided American military personnel and their dependents stationed in Iran with full diplomatic immunity” (Bill, p. 156).',
+          text: 'The Status of Forces Agreement, known to Iranians as the Capitulations Agreement “provided American military personnel and their dependents stationed in Iran with full diplomatic immunity”',
           lang: 'en',
           cite: {
             source: 'iranica-rahnema-jamiyat-e-motalefa-ye-eslami',
@@ -142,7 +142,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://web.archive.org/web/20260407183707/https://www.iranicaonline.org/articles/jamiyat-e-motalefa-i/'
           }
         },
@@ -212,7 +212,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q6',
-          text: 'In a highly charged and moving speech, Khomeini said, “They have sold out all of us and our independence and still celebrate by illuminating and adorning the streets [reference to the official festivities on the Shah’s birthday] the Majles and the government have shamelessly reduced the Iranian people to a status lower than American dogs. This Agreement has made us a colonized country, it has presented the Muslim people of Iran to the world as lower than savages. If the clergy had any influence they would not allow a puppet of the Americans to commit such foulness, they would kick him out. If our country is occupied by the Americans, tell us and deport us from this country. All our problems are because of this USA. All our problems are because of Israel. Israel belongs to the US, these members of the parliament belong to the US, these ministers [in the government] belong to the US and are appointed by them, if they are not why do they not stand up and shout down the Agreement? . . . May God destroy all those who betray this land, this country and betray Islam and the Qurʾān” (Moqaddam, pp. 200-207).',
+          text: 'In a highly charged and moving speech, Khomeini said, “They have sold out all of us and our independence and still celebrate by illuminating and adorning the streets [reference to the official festivities on the Shah’s birthday] the Majles and the government have shamelessly reduced the Iranian people to a status lower than American dogs. This Agreement has made us a colonized country, it has presented the Muslim people of Iran to the world as lower than savages. If the clergy had any influence they would not allow a puppet of the Americans to commit such foulness, they would kick him out. If our country is occupied by the Americans, tell us and deport us from this country. All our problems are because of this USA. All our problems are because of Israel. Israel belongs to the US, these members of the parliament belong to the US, these ministers [in the government] belong to the US and are appointed by them, if they are not why do they not stand up and shout down the Agreement? . . . May God destroy all those who betray this land, this country and betray Islam and the Qurʾān”',
           lang: 'en',
           cite: {
             source: 'iranica-rahnema-jamiyat-e-motalefa-ye-eslami',
@@ -223,7 +223,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://web.archive.org/web/20260407183707/https://www.iranicaonline.org/articles/jamiyat-e-motalefa-i/'
           }
         }

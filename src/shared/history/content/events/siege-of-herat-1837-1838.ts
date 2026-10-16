@@ -249,7 +249,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q19',
-          text: '1837 The siege of Herat over British objections (it ends in failure in 1838).',
+          text: 'The siege of Herat over British objections (it ends in failure in 1838).',
           lang: 'en',
           cite: {
             source: 'iranica-yarshater-chronology-part-2',
@@ -257,7 +257,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
           }
         },
@@ -305,7 +305,7 @@ export default defineEvent({
         },
         {
           id: 'q7',
-          text: 'He pressed upon the Shah to raise the siege, and secretly sent funds to Lieutenant Eldred Pottinger, who organized Herat’s defence for Kāmrān Khan Sadōzay (Pottinger was at odds with Kāmrān’s influential vizier Yār-Moḥammad Khan, see Yapp, p. 365).',
+          text: 'He pressed upon the Shah to raise the siege, and secretly sent funds to Lieutenant Eldred Pottinger, who organized Herat’s defence for Kāmrān Khan Sadōzay',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-mohammad-shah',
@@ -313,7 +313,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
         },
@@ -338,7 +338,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q9',
-          text: 'Moreover, as a direct result of the Qajar campaign, Herat and its environs sustained enormous agricultural, commercial, and material damage (Kelly, pp. 290-301, 306-20; Etteḥādiya, pp. 79-116).',
+          text: 'Moreover, as a direct result of the Qajar campaign, Herat and its environs sustained enormous agricultural, commercial, and material damage',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-herat-vi',
@@ -346,7 +346,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/herat-vi'
           }
         },
@@ -453,7 +453,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q14',
-        text: 'The new British envoy, John McNeill, lacking support from London (in control of the Persian mission from 1835) and Calcutta, set out for Herat and joined the shah’s camp nearby (March 1838; Watson, pp. 303-4;Yapp, pp.145 ff.; Elgood, pp. 484-85).',
+        text: 'The new British envoy, John McNeill, lacking support from London (in control of the Persian mission from 1835) and Calcutta, set out for Herat and joined the shah’s camp nearby',
         lang: 'en',
         cite: {
           source: 'iranica-calmard-mohammad-shah',
@@ -461,7 +461,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/mohammad-shah'
         }
       }
@@ -569,7 +569,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q18',
-        text: 'On receiving the news that British warships and troops had occupied Ḵārg Island, the shah lifted the siege on 9 September 1838 (Eʿteżād-al-Salṭana, pp. 454 ff.; Wright, 1977, pp. 58-59; see HERAT VI. THE HERAT QUESTION).',
+        text: 'On receiving the news that British warships and troops had occupied Ḵārg Island, the shah lifted the siege on 9 September 1838',
         lang: 'en',
         cite: {
           source: 'iranica-calmard-mohammad-shah',
@@ -577,7 +577,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/mohammad-shah'
         }
       }

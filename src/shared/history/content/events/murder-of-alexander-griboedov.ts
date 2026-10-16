@@ -158,7 +158,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'Anti-Russian feeling was tragically demonstrated in the murder of Russian ambassador Alexander Griboedov (Figure 1) and his whole embassy (with one exception).',
+          text: 'Anti-Russian feeling was tragically demonstrated in the murder of Russian ambassador Alexander Griboedov […] and his whole embassy (with one exception).',
           lang: 'en',
           cite: {
             source: 'iranica-andreeva-russia-relations',
@@ -169,7 +169,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/russia-i-relations/'
           }
         },

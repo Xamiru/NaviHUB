@@ -290,7 +290,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'The Allied forces demanded right of passage through Persia in order to transport food and ammunition to the Soviet Union. They also demanded the expulsion from Persia of the Germans, some of whom were engaged in anti-Alliedactivities. Reza Shah, proud of his position and insisting on the neutrality of the country, refused.',
+          text: 'The Allied forces demanded right of passage through Persia in order to transport food and ammunition to the Soviet Union.',
           lang: 'en',
           cite: {
             source: 'iranica-yarshater-iranian-history-islamic-period-6',
@@ -300,7 +300,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/iran-ii2-islamic-period-page-6/'
           }
         },
@@ -388,7 +388,7 @@ export default defineEvent({
         },
         {
           id: 'q9',
-          text: 'The censorship having been lifted overnight with Reza Shah’s departure, the country was exposed to a torrent of ideas and ideologies, including communism (q.v.).',
+          text: 'The censorship having been lifted overnight with Reza Shah’s departure, the country was exposed to a torrent of ideas and ideologies, including communism',
           lang: 'en',
           cite: {
             source: 'iranica-yarshater-iranian-history-islamic-period-6',
@@ -398,7 +398,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/iran-ii2-islamic-period-page-6/'
           }
         }

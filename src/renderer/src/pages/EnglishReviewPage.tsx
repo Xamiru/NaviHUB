@@ -5,7 +5,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
-import { gradeCard, LEECH_LAPSES, overdueDays, previewIntervals, type SrsState } from '@shared/srs'
+import { LEECH_LAPSES, previewIntervals, srsStateOf, type SrsState } from '@shared/srs'
+import { elapsedSinceAnswer, useRetention } from '../lib/srsPreview'
 import type { EnWord, SrsGrade } from '@shared/types'
 import StudySessionFrame from '../components/StudySessionFrame'
 
@@ -19,20 +20,12 @@ type Phase = 'setup' | 'review' | 'done'
 interface SessionItem {
   word: EnWord
   srs: SrsState
+  // See JapaneseReviewPage: answered earlier this session (a requeued step).
+  answered?: boolean
 }
 
 function toItem(word: EnWord): SessionItem {
-  return {
-    word,
-    srs: {
-      status: word.status,
-      learningStep: word.learningStep,
-      intervalDays: word.intervalDays,
-      ease: word.ease,
-      reps: word.reps,
-      lapses: word.lapses
-    }
-  }
+  return { word, srs: srsStateOf(word) }
 }
 
 const GRADE_KEYS: Record<string, SrsGrade> = { '1': 'again', '2': 'hard', '3': 'good', '4': 'easy' }
@@ -67,6 +60,7 @@ export default function EnglishReviewPage() {
   const [grading, setGrading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const retention = useRetention()
 
   const current = queue[0] ?? null
 
@@ -97,8 +91,7 @@ export default function EnglishReviewPage() {
       if (!current || grading) return
       setGrading(true)
       try {
-        await api.english.submitReview(current.word.id, g)
-        const next = gradeCard(current.srs, g)
+        const { state: next } = await api.english.submitReview(current.word.id, g)
         setReviewed((n) => n + 1)
         if (g === 'again') setMisses((n) => n + 1)
         setRevealed(false)
@@ -106,7 +99,9 @@ export default function EnglishReviewPage() {
           const rest = q.slice(1)
           // Cards still in a learning step come back later this session
           // (Anki-style); graduated/rescheduled cards leave it.
-          return next.status === 'learning' ? [...rest, { word: current.word, srs: next }] : rest
+          return next.status === 'learning'
+            ? [...rest, { word: current.word, srs: next, answered: true }]
+            : rest
         })
       } finally {
         setGrading(false)
@@ -218,9 +213,13 @@ export default function EnglishReviewPage() {
 
   if (!current) return null
   const { word, srs } = current
-  // See JapaneseReviewPage: the preview must carry the overdue gap that
-  // submitReview will feed to gradeCard.
-  const previews = previewIntervals(srs, overdueDays(word.dueAt))
+  // See JapaneseReviewPage: the preview must carry the same gap and
+  // retention submitReview schedules with.
+  const previews = previewIntervals(
+    srs,
+    elapsedSinceAnswer(!!current.answered, word.lastReviewedAt),
+    retention
+  )
 
   return (
     <StudySessionFrame

@@ -7,7 +7,7 @@ export default definePerson({
     { text: 'میرزا ابوالحسن خان ایلچی', lang: 'fa', role: 'native' },
     { text: 'Mīrzā Abu’l-Ḥasan Khan Īlčī Šīrāzī', lang: 'fa-Latn', role: 'alternative' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -174,7 +174,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q7',
-          text: 'In 1239/1823 he was appointed minister of foreign affairs, the second foreign minister of Iran after Mīrzā ʿAbd-al-Wahhāb Moʿtamad-al-dawla Našāṭ (q.v.).',
+          text: 'In 1239/1823 he was appointed minister of foreign affairs, the second foreign minister of Iran after Mīrzā ʿAbd-al-Wahhāb Moʿtamad-al-dawla Našāṭ',
           lang: 'en',
           cite: {
             source: 'iranica-javadi-abul-hasan-khan-ilci',
@@ -182,7 +182,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/abul-hasan-khan-ilci/'
           }
         },

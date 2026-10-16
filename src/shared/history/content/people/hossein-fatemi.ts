@@ -7,7 +7,7 @@ export default definePerson({
     { text: 'حسین فاطمی', lang: 'fa', role: 'native' },
     { text: 'Ḥosayn Fāṭemī', lang: 'fa-Latn', role: 'alternative' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -98,7 +98,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'Fāṭemī broached the issue of protesting against the government rigging of the elections for the Sixteenth Majles with Moṣaddeq (Moṣaddeq, pp. 245-46), helped to mobilize support, and in Mehr 1928 Š./October 1949 was one of a delegation selected to accompany Moṣaddeq in a sit-in (bast) at the royal palace protesting the conduct of the elections. On Faṭemī’s suggestion, this group came to formalize itself as Jabha-ye mellī(National Front, Malekī, p. 56). Bāḵtar-e emrūz became its chief vehicle, promoting objectives such as electoral and press freedom, opposition to martial law or to the government of Ḥājī-ʿAlī Razmārā and, eventually, the nationalization of the oil industry, an initiative proposed by Fāṭemī to Moṣaddeq and the National Front (Moṣaddeq, pp. 229-30).',
+          text: 'Fāṭemī broached the issue of protesting against the government rigging of the elections for the Sixteenth Majles with Moṣaddeq (Moṣaddeq, pp. 245-46), helped to mobilize support, and in Mehr 1928 Š./October 1949 was one of a delegation selected to accompany Moṣaddeq in a sit-in (bast) at the royal palace protesting the conduct of the elections. On Faṭemī’s suggestion, this group came to formalize itself as Jabha-ye mellī(National Front, Malekī, p. 56). Bāḵtar-e emrūz became its chief vehicle, promoting objectives such as electoral and press freedom, opposition to martial law or to the government of Ḥājī-ʿAlī Razmārā and, eventually, the nationalization of the oil industry, an initiative proposed by Fāṭemī to Moṣaddeq and the National Front',
           lang: 'en',
           cite: {
             source: 'iranica-azimi-fatemi-hosayn',
@@ -106,13 +106,13 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-09',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/fatemi/'
           }
         },
         {
           id: 'q3',
-          text: 'An admirer of the controversial, anti-establishment journalist Moḥammad Masʿūd, Fāṭemī narrowly escaped an attempt on his life carried out by a member of the Fedāʾīān-e Eslām (q.v.), while attending the fourth anniversary commemoration of Masʿūd’s assassination (5 Bahman 1330 Š./15 February 1952). The Fedāʾīān blamed the firmness of Moṣaddeq’s government towards them on Fāṭemī and his “resolute and uncompromising” stand (ʿErāqī, pp. 116-20).',
+          text: 'An admirer of the controversial, anti-establishment journalist Moḥammad Masʿūd, Fāṭemī narrowly escaped an attempt on his life carried out by a member of the Fedāʾīān-e Eslām (q.v.), while attending the fourth anniversary commemoration of Masʿūd’s assassination (5 Bahman 1330 Š./15 February 1952). The Fedāʾīān blamed the firmness of Moṣaddeq’s government towards them on Fāṭemī and his “resolute and uncompromising” stand',
           lang: 'en',
           cite: {
             source: 'iranica-azimi-fatemi-hosayn',
@@ -120,7 +120,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/fatemi/'
           }
         },
@@ -164,7 +164,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q6',
-          text: 'Fāṭemī was a skilled and bold journalist (Šīfta, pp. 43-44); as a colleague he was praised by Moṣaddeq and others for his “loyalty and sincerity,” his “bravery and bluntness,” and his “crucial” role in the national movement (Bozorgmehr, 1984, II, p. 289; idem, 1986, p. 594; Moṣaddeq, p. 289; Sanjābī, pp. 172-73; Amīr ʿAlāʾī, pp. 151-54).',
+          text: 'Fāṭemī was a skilled and bold journalist (Šīfta, pp. 43-44); as a colleague he was praised by Moṣaddeq and others for his “loyalty and sincerity,” his “bravery and bluntness,” and his “crucial” role in the national movement',
           lang: 'en',
           cite: {
             source: 'iranica-azimi-fatemi-hosayn',
@@ -172,7 +172,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/fatemi/'
           }
         }

@@ -18,7 +18,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -209,7 +209,7 @@ export default definePerson({
         },
         {
           id: 'q6',
-          text: 'Yet in office, Amir Kabir tilted towards an independent course of foreign policy, especially after the departure of his supporter, the British charge d’affaires Colonel Francis Farrant (Amanat, 1997, pp. 38-39, 105-114).',
+          text: 'Yet in office, Amir Kabir tilted towards an independent course of foreign policy, especially after the departure of his supporter, the British charge d’affaires Colonel Francis Farrant',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-great-britain-ii',
@@ -220,7 +220,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
           }
         }

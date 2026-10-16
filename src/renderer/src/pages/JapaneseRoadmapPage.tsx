@@ -1,3 +1,4 @@
+import { Fragment, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import { useQuery } from '@tanstack/react-query'
@@ -7,8 +8,11 @@ import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
 import RoadmapMilestones from '../components/japanese/RoadmapMilestones'
 import JlptLadder from '../components/japanese/JlptLadder'
-import type { JpRoadmapCourse } from '@shared/types'
+import type { JpPathTrack, JpRoadmapCourse } from '@shared/types'
 import EditorialDetailFrame from '../components/EditorialDetailFrame'
+import CoreDeckDialog from '../components/japanese/CoreDeckDialog'
+import KanjiDeckDialog from '../components/japanese/KanjiDeckDialog'
+import { checkpointSpan, PATH_TRACKS, type PathTrackId } from '@shared/japanese/pathTracks'
 
 // The study path, start to finish. Seeded courses carry a step number and lay
 // out in order; everything the user or the app generated (mining inbox, prep
@@ -39,19 +43,21 @@ export default function JapaneseRoadmapPage() {
             <div className="relative space-y-3 before:absolute before:bottom-5 before:left-[27px] before:top-5 before:w-px before:bg-accent/20">
               <KanaStepRow />
               {roadmap.steps.map((course, i) => (
-                <StepRow
-                  key={course.id}
-                  course={course}
-                  state={
-                    course.id === roadmap.frontierCourseId
-                      ? 'current'
-                      : frontierIndex >= 0 && i > frontierIndex
-                        ? 'upcoming'
-                        : course.lessonCount > 0 && course.learnedLessonCount >= course.lessonCount
-                          ? 'cleared'
-                          : 'started'
-                  }
-                />
+                <Fragment key={course.id}>
+                  <StepRow
+                    course={course}
+                    state={
+                      course.id === roadmap.frontierCourseId
+                        ? 'current'
+                        : frontierIndex >= 0 && i > frontierIndex
+                          ? 'upcoming'
+                          : course.lessonCount > 0 && course.learnedLessonCount >= course.lessonCount
+                            ? 'cleared'
+                            : 'started'
+                    }
+                  />
+                  {course.seedKey && <TrackStepRow seedKey={course.seedKey} tracks={roadmap.tracks} />}
+                </Fragment>
               ))}
             </div>
           </Section>
@@ -110,6 +116,76 @@ function KanaStepRow() {
         course; everything after assumes it.
       </p>
     </Link>
+  )
+}
+
+// The deck tracks on the path (@shared/japanese/pathTracks.ts): the curated
+// courses teach about 600 words and 715 kanji, and reading needs about 10,000
+// and 2,000. After a checkpoint course this row says how much of each track
+// should be built by then, offers the next deck and links its next lesson. It
+// reads the decks from the roadmap's tracks, never a seeded course.
+const TRACK_TEXT: Record<PathTrackId, { label: string; unit: string; body: string }> = {
+  words: {
+    label: 'Core words',
+    unit: 'words',
+    body: 'The most frequent words you do not have yet, with example sentences.'
+  },
+  kanji: {
+    label: 'More kanji',
+    unit: 'kanji',
+    body: 'Kanji no course covers yet: the ones in your own words first, then the most common.'
+  }
+}
+
+function TrackStepRow({ seedKey, tracks }: { seedKey: string; tracks: Record<PathTrackId, JpPathTrack> }) {
+  const [open, setOpen] = useState<PathTrackId | null>(null)
+  const lines = (['words', 'kanji'] as const).flatMap((id) => {
+    const span = checkpointSpan(id, seedKey)
+    return span ? [{ id, span, track: tracks[id] }] : []
+  })
+  if (lines.length === 0) return null
+  return (
+    <div className="card relative z-[1] space-y-3 border-l-2 border-l-base-700 p-4">
+      {lines.map(({ id, span, track }) => {
+        const text = TRACK_TEXT[id]
+        const done = track.built >= span.to
+        // The Build button and the next deck lesson sit on the track's first
+        // unfinished checkpoint (or its last one once everything is built).
+        const list = PATH_TRACKS[id]
+        const active = (list.find((cp) => cp.target > track.built) ?? list[list.length - 1]).seedKey === seedKey
+        return (
+          <div key={id}>
+            <div className="flex items-baseline gap-2">
+              <span className="font-mono text-[11px] uppercase tracking-widest text-gray-500">{text.label}</span>
+              {done && <span className="chip bg-signal-affirmative/20 text-signal-affirmative">Built</span>}
+            </div>
+            <p className="mt-1 font-medium">
+              {span.from === 0 ? 'The first' : `Up to`} {span.to.toLocaleString()} {text.unit}
+              {span.from > 0 && (
+                <span className="font-normal text-gray-400"> (+{(span.to - span.from).toLocaleString()})</span>
+              )}
+            </p>
+            <p className="mt-1 text-xs text-gray-500">
+              {text.body} {Math.min(track.built, span.to).toLocaleString()} of {span.to.toLocaleString()} built.
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              {!done && active && (
+                <button type="button" className="btn-ghost text-sm" onClick={() => setOpen(id)}>
+                  Build the next {id === 'words' ? 'word' : 'kanji'} deck
+                </button>
+              )}
+              {active && track.nextLesson && (
+                <Link to={`/japanese/lessons/${track.nextLesson.id}`} className="text-sm text-signal-link hover:underline">
+                  Next: {track.nextLesson.courseTitle} · {track.nextLesson.title}
+                </Link>
+              )}
+            </div>
+          </div>
+        )
+      })}
+      {open === 'words' && <CoreDeckDialog onClose={() => setOpen(null)} />}
+      {open === 'kanji' && <KanjiDeckDialog onClose={() => setOpen(null)} />}
+    </div>
   )
 }
 

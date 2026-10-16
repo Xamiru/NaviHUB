@@ -288,5 +288,16 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Isa_Khan,_Qurchibashi_of_Shah_%27Abbas_I._Ascribed_to_Bishn_Das,_Agra,_India,_dated_1618.jpg',
     credit: { creator: 'Bishandas' },
     license: { id: 'public-domain' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:isfahan',
+      cites: [
+        {
+          source: 'iranica-matthee-safavid-dynasty',
+          loc: { section: 'SAFAVID DYNASTY', para: '38' }
+        }
+      ]
+    }
+  ]
 })

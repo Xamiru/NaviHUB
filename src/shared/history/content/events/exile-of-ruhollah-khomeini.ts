@@ -165,7 +165,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q6',
-          text: 'The banishment of its most forceful leader, Ruḥ-Allāh Khomeini, to Iraq did not weaken the movement, contrary to the Persian government’s expectations. It was, in fact, strengthened by the increasing involvement of the government with the United States and the purchase of enormous amount of armament from that country, which the shah’s opponents construed as hisbeing a stooge of the United States.',
+          text: 'The banishment of its most forceful leader, Ruḥ-Allāh Khomeini, to Iraq did not weaken the movement, contrary to the Persian government’s expectations.',
           lang: 'en',
           cite: {
             source: 'iranica-yarshater-iranian-history-islamic-period-6',
@@ -175,7 +175,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/iran-ii2-islamic-period-page-6/'
           }
         }

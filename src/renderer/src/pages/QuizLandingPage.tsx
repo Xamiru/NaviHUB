@@ -9,6 +9,7 @@ import type { QuizAvailability, QuizKind } from '@shared/types'
 import { quizScorePolicy, quizSessionCorrect } from '@shared/quizCore'
 import { usePersistedState } from '../lib/navState'
 import { parseSavedTournament } from '@shared/tournamentSave'
+import { HISTORY_QUIZ_GAMES } from '../lib/historyQuiz'
 
 interface GameCard {
   to: string
@@ -23,6 +24,8 @@ interface GameCard {
   footballAvailability?: keyof QuizAvailability['football']
   minimum?: number
   availabilityLabel?: (count: number) => string
+  /** Shown for a game with no availability count. */
+  note?: string
 }
 
 const GROUPS: Array<{ title: string; games: GameCard[] }> = [
@@ -72,6 +75,10 @@ const GROUPS: Array<{ title: string; games: GameCard[] }> = [
       { to: '/football/quiz/lineup', kinds: ['footballLineup'], title: 'Name the XI', body: 'Type a famous match\'s starting eleven, laid out by formation.', footballAvailability: 'lineup', minimum: 1, availabilityLabel: (count) => `${count} matches with lineups` },
       { to: '/football/quiz/transfers', kinds: ['footballTransfer'], title: 'Transfer Higher or Lower', body: 'Did this move cost more or less than the last one?', footballAvailability: 'transfer', minimum: 2, availabilityLabel: (count) => `${count} priced transfers` }
     ]
+  },
+  {
+    title: 'History',
+    games: HISTORY_QUIZ_GAMES.map((g) => ({ to: `/history/quiz/${g.slug}`, kinds: [g.kind], title: `History ${g.title}`, body: g.body, note: 'Dealt from your History pages' }))
   },
   {
     title: 'Tournament',
@@ -180,7 +187,7 @@ export default function QuizLandingPage() {
                     <p className="mt-3 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs">
                       <span className="text-gray-500">
                         {count == null
-                          ? 'Uses your selected contender source'
+                          ? game.note ?? 'Uses your selected contender source'
                           : ready
                             ? game.availabilityLabel?.(count) ?? `${count} eligible sources`
                             : `Needs at least ${game.minimum}; ${count} eligible`}

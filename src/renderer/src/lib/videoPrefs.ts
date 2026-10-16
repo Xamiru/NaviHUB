@@ -7,7 +7,8 @@ import type { SubLang } from '@shared/subtitles'
 // Deliberately NOT here: the mining panel's open state (session-only, like the
 // manga reader), the selected track IDs (re-derived per file by
 // pickDefaultTracks — a track id from one release means nothing in the next),
-// and the playback position (that's DB state, not a preference).
+// the playback position (that's DB state, not a preference), and the subtitle
+// offset, which belongs to a show rather than to every video (loadSubOffset).
 
 const KEY = 'video.playerPrefs'
 
@@ -35,7 +36,6 @@ export interface VideoPrefs extends SubtitleLook {
   subsOn: boolean
   dualSubs: boolean
   styledSubs: boolean // render ASS tracks as authored while playing
-  subOffsetSec: number
   primaryLang: SubLang
   secondaryLang: SubLang
   dialogueOnly: boolean
@@ -62,7 +62,6 @@ export const DEFAULT_VIDEO_PREFS: VideoPrefs = {
   subsOn: true,
   dualSubs: true,
   styledSubs: true,
-  subOffsetSec: 0,
   primaryLang: 'ja',
   secondaryLang: 'en',
   dialogueOnly: true,
@@ -97,9 +96,17 @@ export function normalizeVideoPrefs(raw: unknown): VideoPrefs {
   const stored = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
   const d = DEFAULT_VIDEO_PREFS
   // The first player's subFontScale/subBackdrop are read below, never kept.
-  const { subFontScale: _legacyScale, subBackdrop: _legacyBackdrop, ...rest } = stored
+  // The old global subOffsetSec is dropped: one release's timing fix used to
+  // shift every other video.
+  const {
+    subFontScale: _legacyScale,
+    subBackdrop: _legacyBackdrop,
+    subOffsetSec: _legacyOffset,
+    ...rest
+  } = stored
   void _legacyScale
   void _legacyBackdrop
+  void _legacyOffset
   const merged = { ...d, ...rest } as VideoPrefs
   const legacyScale = stored.scale == null ? stored.subFontScale : stored.scale
   const legacyBackground =
@@ -147,6 +154,42 @@ export function lookOf(prefs: VideoPrefs): SubtitleLook {
     boxOpacity: prefs.boxOpacity,
     position: prefs.position,
     secondaryScale: prefs.secondaryScale
+  }
+}
+
+// Subtitle offsets, one per VideoSource.offsetKey (a show, an event or a single
+// file). Zero is the default and is never stored; the map keeps the most
+// recently changed keys only.
+const OFFSETS_KEY = 'video.subOffsets'
+const MAX_OFFSETS = 500
+
+function readOffsets(): Record<string, number> {
+  try {
+    const raw = JSON.parse(localStorage.getItem(OFFSETS_KEY) ?? '{}') as unknown
+    return raw && typeof raw === 'object' && !Array.isArray(raw)
+      ? (raw as Record<string, number>)
+      : {}
+  } catch {
+    return {}
+  }
+}
+
+export function loadSubOffset(key: string): number {
+  const n = readOffsets()[key]
+  return typeof n === 'number' && Number.isFinite(n) ? n : 0
+}
+
+export function saveSubOffset(key: string, seconds: number): void {
+  try {
+    const map = readOffsets()
+    delete map[key]
+    // Insertion order is recency: the changed key goes last, the oldest first.
+    if (seconds !== 0) map[key] = seconds
+    const keys = Object.keys(map)
+    for (const old of keys.slice(0, Math.max(0, keys.length - MAX_OFFSETS))) delete map[old]
+    localStorage.setItem(OFFSETS_KEY, JSON.stringify(map))
+  } catch {
+    // A full or disabled localStorage must never break playback.
   }
 }
 

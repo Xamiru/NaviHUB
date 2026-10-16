@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'badasht-conference-accounts',
   about: ['event:badasht-conference'],
   topic: 'historiography',
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   framing: {
     id: 'q1',
     text: 'Accounts of the proceedings of the conference are not completely in agreement.',
@@ -44,12 +44,12 @@ export default defineInterpretation({
         },
         {
           id: 'q4',
-          text: 'Indeed one source states that this confrontation was pre-arranged in conjunction with Bahāʾ-Allāh so as to prepare the Babis for and mitigate the impact of the break with the Islamic Šarīʿa (see Nabīl, p. 294 n.).',
+          text: 'Indeed one source states that this confrontation was pre-arranged in conjunction with Bahāʾ-Allāh so as to prepare the Babis for and mitigate the impact of the break with the Islamic Šarīʿa',
           lang: 'en',
           cite: { source: 'iranica-momen-badasht', loc: { section: 'BADAŠT', para: '3' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/badast'
           }
         }
@@ -64,12 +64,12 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q5',
-          text: 'Contrary to the prevailing belief among historians, there was no conflict between Qoddus and Ṭāhera Qorrat-al-ʿayn (1814/1817-1852) when she dramatically unveiled herself at that gathering in announcing the abrogation of the Islamic religious law (šariʿa) by the Bābi law, “and Qoddus was in reality in full sympathy with what Ṭāhera did in that assembly” (Moḥammad-Ḥoseyni, pp. 274-75, 286).',
+          text: 'Contrary to the prevailing belief among historians, there was no conflict between Qoddus and Ṭāhera Qorrat-al-ʿayn (1814/1817-1852) when she dramatically unveiled herself at that gathering in announcing the abrogation of the Islamic religious law (šariʿa) by the Bābi law, “and Qoddus was in reality in full sympathy with what Ṭāhera did in that assembly”',
           lang: 'en',
           cite: { source: 'iranica-mohammad-hosseini-qoddus', loc: { section: 'QODDUS', para: '6' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/qoddus-mohammad-ali-barforusi'
           }
         },

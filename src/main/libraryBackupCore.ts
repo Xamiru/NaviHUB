@@ -54,6 +54,7 @@ export const MACHINE_LOCAL_SETTING_KEYS = [
   'mokuro.path',
   'music.ffmpegPath',
   'ytdlp.path',
+  'sevenzip.path',
   'spotdl.cookieFile',
   'vertex.credentials_path',
   'jackett.start_cmd',

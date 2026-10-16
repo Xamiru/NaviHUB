@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'José María Morelos', lang: 'en', role: 'primary' },
     { text: 'José María Morelos y Pavón', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-16',
   died: {
     alts: [
       {
@@ -69,5 +69,18 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Retrato_del_excelent%C3%ADsimo_se%C3%B1or_don_Jos%C3%A9_Mar%C3%ADa_Morelos.png',
     credit: { institution: 'Secretaría de Gobernación (Mexico)' },
     license: { id: 'public-domain' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1765' },
+        cites: [
+          {
+            source: 'loc-name-authority-jose-maria-morelos',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
   }
 })

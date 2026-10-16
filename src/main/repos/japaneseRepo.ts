@@ -1,5 +1,27 @@
 import { getSqlite } from '../db/connection'
-import { GHOST_STEPS, gradeCard, LEECH_AGAINS, LEECH_LAPSES, newCardState } from '@shared/srs'
+import {
+  calendarDaysSince,
+  GHOST_STEPS,
+  gradeCard,
+  LEECH_AGAINS,
+  LEECH_LAPSES,
+  newCardState,
+  reviewLogValues,
+  srsStateOf,
+  START_EASE,
+  type SrsState
+} from '@shared/srs'
+import { desiredRetention } from '../srsSettings'
+import * as settingsRepo from './settingsRepo'
+import {
+  DIRECTION_SETTING,
+  DIRECTION_SPAWN_INTERVAL_DAYS,
+  directionEnabled,
+  eligibleDirections,
+  EXTRA_DIRECTIONS,
+  type JpExtraDirection,
+  type JpReviewDirection
+} from '@shared/japanese/reviewDirections'
 import {
   JLPT_LEVELS,
   PASSED_INTERVAL_DAYS,
@@ -11,6 +33,12 @@ import {
   type JlptLevelProgress
 } from '@shared/jlptLevels'
 import { computeStreaks } from './musicRepo'
+import {
+  CORE_DECK_TITLE,
+  KANJI_DECK_TITLE,
+  trackTarget,
+  type PathTrackId
+} from '@shared/japanese/pathTracks'
 import type {
   JpCard,
   JpCardInput,
@@ -31,6 +59,9 @@ import type {
   JpReviewOutcome,
   JpReviewQueue,
   JpRoadmap,
+  JpPathTrack,
+  JpFrontStatus,
+  JpGrammarIndexEntry,
   JpStats,
   JpStatsDetail,
   JpJlptLadder,
@@ -63,6 +94,7 @@ function mapCourse(r: Record<string, unknown>): JpCourse {
     level: (r.level as string) ?? null,
     difficulty: (r.difficulty as number) ?? null,
     sortOrder: r.sort_order as number,
+    seedKey: (r.seed_key as string | null) ?? null,
     createdAt: r.created_at as string,
     updatedAt: r.updated_at as string
   }
@@ -107,6 +139,8 @@ function mapCard(r: Record<string, unknown>): JpCard {
     dueAt: (r.due_at as string) ?? null,
     intervalDays: r.interval_days as number,
     ease: r.ease as number,
+    stability: (r.stability as number | null) ?? null,
+    difficulty: (r.fsrs_difficulty as number | null) ?? null,
     reps: r.reps as number,
     lapses: r.lapses as number,
     lastReviewedAt: (r.last_reviewed_at as string) ?? null
@@ -264,8 +298,21 @@ export function updateLesson(
     .run(...values, id)
 }
 
+// A deleted built-in lesson or card is remembered by its seed key so the
+// content sync (japaneseSeedSync.ts) never brings it back. Courses need no
+// tombstone: the sync skips a pack whose course row is gone.
+function tombstoneSeed(table: 'jp_lesson' | 'jp_card', id: number): void {
+  getSqlite()
+    .prepare(
+      `INSERT OR IGNORE INTO jp_seed_tombstone (seed_key)
+       SELECT seed_key FROM ${table} WHERE id = ? AND seed_key IS NOT NULL`
+    )
+    .run(id)
+}
+
 export function removeLesson(id: number): void {
   const db = getSqlite()
+  tombstoneSeed('jp_lesson', id)
   db.prepare('DELETE FROM jp_lesson WHERE id = ?').run(id)
   // Card rows cascaded away silently — sweep their ghosts.
   db.prepare('DELETE FROM jp_ghost WHERE card_id NOT IN (SELECT id FROM jp_card)').run()
@@ -359,10 +406,12 @@ export function updateCard(id: number, patch: Partial<JpCardInput>): void {
   getSqlite()
     .prepare(`UPDATE jp_card SET ${sets.join(', ')} WHERE id = ?`)
     .run(...values, id)
+  if (patch.front !== undefined || patch.reading !== undefined) pruneIneligibleDirections(id)
 }
 
 export function removeCard(id: number): void {
   const db = getSqlite()
+  tombstoneSeed('jp_card', id)
   db.prepare('DELETE FROM jp_ghost WHERE card_id = ?').run(id)
   db.prepare('DELETE FROM jp_card WHERE id = ?').run(id)
 }
@@ -378,11 +427,120 @@ function mapReviewCard(r: Record<string, unknown>): JpReviewCard {
   return {
     ...mapCard(r),
     lessonKind: r.lesson_kind as JpLessonKind,
-    lessonTitle: (r.lesson_title as string) ?? ''
+    lessonTitle: (r.lesson_title as string) ?? '',
+    direction: 'recognition'
   }
 }
 
 const LESSON_COLS = 'l.kind AS lesson_kind, l.title AS lesson_title'
+
+// ---- Extra review directions (jp_card_review) ----
+
+// The enabled extra directions as a SQL list for `r.direction IN (...)`.
+// Literals from a frozen set, never user input.
+function enabledDirectionsSql(): string {
+  const on = EXTRA_DIRECTIONS.filter((d) => directionEnabled(settingsRepo.get(DIRECTION_SETTING[d])))
+  return on.length ? on.map((d) => `'${d}'`).join(', ') : "''"
+}
+
+// The one scope every direction read shares — enabled directions of cards in
+// learned lessons — so the queue, the counts and the forecast cannot drift.
+// `join` slots extra joins (the mined-source join) in before the lesson.
+function directionScope(join = ''): string {
+  return `FROM jp_card_review r JOIN jp_card k ON k.id = r.card_id ${join}
+    JOIN jp_lesson l ON l.id = k.lesson_id
+    WHERE l.learned = 1 AND r.direction IN (${enabledDirectionsSql()})`
+}
+
+// A direction row's review card: the card's content with the direction's own
+// schedule in the SRS fields (ease has no meaning there; FSRS ignores it).
+const DIRECTION_COLS = `r.direction AS r_direction, r.status AS r_status,
+  r.learning_step AS r_learning_step, r.due_at AS r_due_at, r.interval_days AS r_interval_days,
+  r.reps AS r_reps, r.lapses AS r_lapses, r.last_reviewed_at AS r_last_reviewed_at,
+  r.stability AS r_stability, r.fsrs_difficulty AS r_fsrs_difficulty`
+
+function mapDirectionCard(r: Record<string, unknown>): JpReviewCard {
+  return {
+    ...mapReviewCard(r),
+    direction: r.r_direction as JpExtraDirection,
+    status: r.r_status as SrsStatus,
+    learningStep: r.r_learning_step as number,
+    dueAt: (r.r_due_at as string) ?? null,
+    intervalDays: r.r_interval_days as number,
+    ease: START_EASE,
+    reps: r.r_reps as number,
+    lapses: r.r_lapses as number,
+    lastReviewedAt: (r.r_last_reviewed_at as string) ?? null,
+    stability: (r.r_stability as number | null) ?? null,
+    difficulty: (r.r_fsrs_difficulty as number | null) ?? null
+  }
+}
+
+// New direction rows waiting at most this many before spawning pauses. Each
+// graduated word can unlock two directions while the queue serves only part
+// of the daily budget to them, so without a ceiling the backlog grows forever.
+// Spawning retries on every later mature review of the word, which is also how
+// words that matured before directions existed (or while one was switched
+// off) get theirs.
+export const DIRECTION_BACKLOG_CAP = 30
+
+// Called from submitReview whenever a recognition answer leaves the card in
+// review at DIRECTION_SPAWN_INTERVAL_DAYS or more: the word is recognised
+// reliably enough to start producing it. Spawned rows are new cards and go
+// through the daily new-card budget. Words marked "Already known" never spawn.
+function spawnDirections(cardId: number): void {
+  const db = getSqlite()
+  const backlog = (
+    db
+      .prepare(`SELECT COUNT(*) AS n ${directionScope()} AND r.status = 'new'`)
+      .get() as { n: number }
+  ).n
+  if (backlog >= DIRECTION_BACKLOG_CAP) return
+  const row = db
+    .prepare(
+      `SELECT k.front, k.reading, l.kind, l.title FROM jp_card k
+       JOIN jp_lesson l ON l.id = k.lesson_id WHERE k.id = ?`
+    )
+    .get(cardId) as { front: string; reading: string | null; kind: string; title: string } | undefined
+  if (!row || row.title === KNOWN_LESSON) return
+  const insert = db.prepare(
+    'INSERT OR IGNORE INTO jp_card_review (card_id, direction) VALUES (?, ?)'
+  )
+  for (const d of eligibleDirections(row, row.kind)) {
+    if (directionEnabled(settingsRepo.get(DIRECTION_SETTING[d]))) insert.run(cardId, d)
+  }
+}
+
+// After a card edit: a direction the card no longer qualifies for (a reading
+// cleared, a front rewritten in kana) is dropped rather than left scheduled
+// against a prompt it cannot form.
+function pruneIneligibleDirections(cardId: number): void {
+  const db = getSqlite()
+  const row = db
+    .prepare(
+      `SELECT k.front, k.reading, l.kind FROM jp_card k
+       JOIN jp_lesson l ON l.id = k.lesson_id WHERE k.id = ?`
+    )
+    .get(cardId) as { front: string; reading: string | null; kind: string } | undefined
+  if (!row) return
+  const keep = eligibleDirections(row, row.kind)
+  for (const d of EXTRA_DIRECTIONS) {
+    if (!keep.includes(d)) {
+      db.prepare('DELETE FROM jp_card_review WHERE card_id = ? AND direction = ?').run(cardId, d)
+    }
+  }
+}
+
+// One schedule per word per session (Anki's sibling burying): seeing 食べる
+// for recognition reveals exactly what its production prompt then asks for.
+// Keeps the first occurrence in the order given.
+function burySiblings(cards: JpReviewCard[], seen: Set<number>): JpReviewCard[] {
+  return cards.filter((c) => {
+    if (seen.has(c.id)) return false
+    seen.add(c.id)
+    return true
+  })
+}
 
 export function reviewQueue(newLimit: number): JpReviewQueue {
   const db = getSqlite()
@@ -401,6 +559,7 @@ export function reviewQueue(newLimit: number): JpReviewQueue {
   // course would park a word you captured tonight behind the new cards of every
   // lesson you have already marked learned: days of waiting, which defeats the
   // point of mining. Matched by title, the same way the inbox is found there.
+  const limit = Math.max(0, newLimit)
   const fresh = (
     db
       .prepare(
@@ -412,13 +571,59 @@ export function reviewQueue(newLimit: number): JpReviewQueue {
                   k.sort_order ASC, k.id ASC
          LIMIT ?`
       )
-      .all(INBOX_COURSE, Math.max(0, newLimit)) as Record<string, unknown>[]
+      .all(INBOX_COURSE, limit) as Record<string, unknown>[]
   ).map(mapReviewCard)
-  return { due, fresh }
+
+  // Extra directions: due ones join the due list in due order; new ones share
+  // the session's new-card budget, taking at most half of it (more only when
+  // there are not enough new words), so freshly unlocked directions never
+  // crowd out new words. Recognition goes first wherever a word has more than
+  // one schedule due, and only one of its schedules is dealt per session.
+  const dueDirections = (
+    db
+      .prepare(
+        `SELECT k.*, ${SOURCE_COLS}, ${LESSON_COLS}, ${DIRECTION_COLS}
+         ${directionScope(SOURCE_JOIN)}
+           AND r.status IN ('learning','review') AND r.due_at <= datetime('now')
+         ORDER BY r.due_at ASC, r.card_id ASC`
+      )
+      .all() as Record<string, unknown>[]
+  ).map(mapDirectionCard)
+  const seen = new Set<number>()
+  const recognitionDue = burySiblings(due, seen)
+  const directionDue = burySiblings(dueDirections, seen)
+  const allDue = [...recognitionDue, ...directionDue].sort(
+    (a, b) => (a.dueAt ?? '').localeCompare(b.dueAt ?? '') || a.id - b.id
+  )
+
+  const words = burySiblings(fresh, seen)
+  // Over-fetch: burying may drop directions of words already in the session.
+  const freshDirections = burySiblings(
+    (
+      db
+        .prepare(
+          `SELECT k.*, ${SOURCE_COLS}, ${LESSON_COLS}, ${DIRECTION_COLS}
+           ${directionScope(SOURCE_JOIN)} AND r.status = 'new'
+           ORDER BY r.created_at ASC, r.card_id ASC, r.direction ASC
+           LIMIT ?`
+        )
+        .all(limit * 3) as Record<string, unknown>[]
+    ).map(mapDirectionCard),
+    seen
+  )
+  const directionShare = Math.min(
+    freshDirections.length,
+    Math.max(limit - words.length, Math.floor(limit / 2))
+  )
+  const keptWords = words.slice(0, limit - directionShare)
+  return {
+    due: allDue,
+    fresh: [...keptWords, ...freshDirections.slice(0, limit - keptWords.length)]
+  }
 }
 
 // ---- Leeches ----
-// Cards that keep lapsing. No new table: jp_card.lapses/ease already carry the
+// Cards that keep lapsing. No new table: jp_card.lapses/difficulty already carry the
 // signal and jp_review_log keeps the history, so leech-ness is a read-time
 // predicate and a reset is just an SRS-state UPDATE.
 
@@ -434,6 +639,7 @@ export function listLeeches(): JpLeech[] {
          SELECT r.card_id, r.grade,
                 ROW_NUMBER() OVER (PARTITION BY r.card_id ORDER BY r.id DESC) AS rn
          FROM jp_review_log r
+         WHERE r.direction = 'recognition' -- reps counts recognition answers only
        ),
        agains AS (
          SELECT ranked.card_id, COUNT(*) AS n
@@ -442,7 +648,7 @@ export function listLeeches(): JpLeech[] {
          WHERE ranked.grade = 'again' AND ranked.rn <= k.reps
          GROUP BY ranked.card_id
        )
-       SELECT k.id, k.front, k.reading, k.back, k.lapses, k.ease, k.status, k.interval_days,
+       SELECT k.id, k.front, k.reading, k.back, k.lapses, k.fsrs_difficulty, k.status, k.interval_days,
               COALESCE(a.n, 0) AS agains,
               l.id AS lesson_id, l.title AS lesson_title, c.id AS course_id, c.title AS course_title
        FROM jp_card k
@@ -450,7 +656,7 @@ export function listLeeches(): JpLeech[] {
        JOIN jp_course c ON c.id = l.course_id
        LEFT JOIN agains a ON a.card_id = k.id
        WHERE k.lapses >= ? OR COALESCE(a.n, 0) >= ?
-       ORDER BY (k.lapses + COALESCE(a.n, 0)) DESC, k.ease ASC, k.id ASC
+       ORDER BY (k.lapses + COALESCE(a.n, 0)) DESC, COALESCE(k.fsrs_difficulty, 0) DESC, k.id ASC
        LIMIT 100`
     )
     .all(LEECH_LAPSES, LEECH_AGAINS) as Record<string, unknown>[]
@@ -461,7 +667,7 @@ export function listLeeches(): JpLeech[] {
     back: r.back as string,
     lapses: r.lapses as number,
     agains: r.agains as number,
-    ease: r.ease as number,
+    difficulty: (r.fsrs_difficulty as number | null) ?? null,
     status: r.status as SrsStatus,
     intervalDays: r.interval_days as number,
     lessonId: r.lesson_id as number,
@@ -478,10 +684,13 @@ export function resetCard(id: number): void {
   const fresh = newCardState()
   const db = getSqlite()
   db.prepare('DELETE FROM jp_ghost WHERE card_id = ?').run(id)
+  // Its extra directions belong to the old run too; they respawn on graduation.
+  db.prepare('DELETE FROM jp_card_review WHERE card_id = ?').run(id)
   db.prepare(
     `UPDATE jp_card
        SET status = ?, learning_step = ?, interval_days = ?, ease = ?, reps = ?, lapses = ?,
-           due_at = NULL, updated_at = datetime('now')
+           stability = NULL, fsrs_difficulty = NULL, due_at = NULL, last_reviewed_at = NULL,
+           updated_at = datetime('now')
        WHERE id = ?`
   ).run(
     fresh.status,
@@ -558,7 +767,9 @@ export function roadmap(): JpRoadmap {
                WHERE l.course_id = c.id AND k.status IN ('learning','review')) AS seen_count,
               (SELECT COUNT(*) FROM jp_card k JOIN jp_lesson l ON l.id = k.lesson_id
                WHERE l.course_id = c.id AND l.learned = 1 AND k.status IN ('learning','review')
-                 AND k.due_at <= datetime('now')) AS due_count
+                 AND k.due_at <= datetime('now'))
+              + (SELECT COUNT(*) ${directionScope()} AND l.course_id = c.id
+                   AND r.status IN ('learning','review') AND r.due_at <= datetime('now')) AS due_count
        FROM jp_course c
        ORDER BY (c.difficulty IS NULL), c.difficulty ASC, c.sort_order ASC, c.id ASC`
     )
@@ -599,37 +810,133 @@ export function roadmap(): JpRoadmap {
     }
   }
 
-  return { steps, unscheduled, frontierCourseId: frontier?.id ?? null, nextLesson }
+  const tracks = {
+    words: pathTrack('words', courses, unscheduled.filter((c) => CORE_DECK_TITLE.test(c.title))),
+    kanji: pathTrack('kanji', courses, unscheduled.filter((c) => KANJI_DECK_TITLE.test(c.title)))
+  }
+
+  return { steps, unscheduled, tracks, frontierCourseId: frontier?.id ?? null, nextLesson }
 }
 
-export function submitReview(cardId: number, grade: SrsGrade): JpReviewOutcome {
+// Which of these words already have a card, and where (the dictionary's "In
+// your decks"). Callers pass one page of results, so the IN list stays small.
+export function cardsForFronts(fronts: string[]): JpFrontStatus[] {
+  const list = [...new Set(fronts.filter((f) => typeof f === 'string' && f.length > 0))].slice(0, 100)
+  if (list.length === 0) return []
+  const rows = getSqlite()
+    .prepare(
+      `SELECT c.front, c.status, l.id AS lesson_id, l.title AS lesson_title, l.learned,
+              co.title AS course_title
+       FROM jp_card c JOIN jp_lesson l ON l.id = c.lesson_id JOIN jp_course co ON co.id = l.course_id
+       WHERE c.front IN (${list.map(() => '?').join(',')})
+       ORDER BY l.learned DESC, c.id ASC`
+    )
+    .all(...list) as {
+    front: string
+    status: string
+    lesson_id: number
+    lesson_title: string
+    learned: number
+    course_title: string
+  }[]
+  const seen = new Set<string>()
+  const out: JpFrontStatus[] = []
+  for (const r of rows) {
+    if (seen.has(r.front)) continue
+    seen.add(r.front)
+    out.push({
+      front: r.front,
+      status: r.status,
+      lessonId: r.lesson_id,
+      lessonTitle: r.lesson_title,
+      courseTitle: r.course_title,
+      learned: r.learned === 1
+    })
+  }
+  return out
+}
+
+export function grammarIndex(): JpGrammarIndexEntry[] {
+  const rows = getSqlite()
+    .prepare(
+      `SELECT l.id, l.title, l.body, l.learned, co.title AS course_title, co.level, co.difficulty,
+              (SELECT COUNT(*) FROM jp_card k WHERE k.lesson_id = l.id) AS card_count
+       FROM jp_lesson l JOIN jp_course co ON co.id = l.course_id
+       WHERE l.kind = 'grammar'
+       ORDER BY (co.difficulty IS NULL), co.difficulty, co.sort_order, co.id, l.sort_order, l.id`
+    )
+    .all() as {
+    id: number
+    title: string
+    body: string | null
+    learned: number
+    course_title: string
+    level: string | null
+    difficulty: number | null
+    card_count: number
+  }[]
+  return rows.map((r) => ({
+    lessonId: r.id,
+    title: r.title,
+    level: r.level,
+    courseTitle: r.course_title,
+    step: r.difficulty,
+    learned: r.learned === 1,
+    cardCount: r.card_count,
+    body: r.body ?? ''
+  }))
+}
+
+function pathTrack(
+  track: PathTrackId,
+  courses: (JpCourseSummary & { cardCount: number })[],
+  decks: (JpCourseSummary & { cardCount: number })[]
+): JpPathTrack {
+  const ordered = [...decks].sort((a, b) => a.id - b.id)
+  let nextLesson: JpPathTrack['nextLesson'] = null
+  const firstOpen = ordered.find((d) => d.learnedLessonCount < d.lessonCount)
+  if (firstOpen) {
+    const row = getSqlite()
+      .prepare(
+        `SELECT id, title FROM jp_lesson WHERE course_id = ? AND learned = 0
+         ORDER BY sort_order ASC, id ASC LIMIT 1`
+      )
+      .get(firstOpen.id) as { id: number; title: string } | undefined
+    if (row) nextLesson = { id: row.id, title: row.title, courseId: firstOpen.id, courseTitle: firstOpen.title }
+  }
+  return {
+    built: ordered.reduce((sum, d) => sum + d.cardCount, 0),
+    target: trackTarget(track, courses),
+    decks: ordered.length,
+    nextLesson
+  }
+}
+
+export function submitReview(
+  cardId: number,
+  grade: SrsGrade,
+  direction: JpReviewDirection = 'recognition'
+): JpReviewOutcome {
+  if (direction !== 'recognition') return submitDirectionReview(cardId, grade, direction)
   const db = getSqlite()
   const tx = db.transaction((): JpReviewOutcome => {
-    // overdue_days rides along so gradeCard can credit a late answer with the
-    // gap it actually survived; NULL (a card that was never scheduled) is 0.
-    const row = db
-      .prepare(
-        `SELECT *, MAX(0, julianday('now') - julianday(due_at)) AS overdue_days
-         FROM jp_card WHERE id = ?`
-      )
-      .get(cardId) as Record<string, unknown> | undefined
+    // FSRS needs the real gap since the previous answer, early or late, in
+    // local calendar days; a card never answered (NULL) has none.
+    const row = db.prepare('SELECT * FROM jp_card WHERE id = ?').get(cardId) as
+      | Record<string, unknown>
+      | undefined
     if (!row) throw new Error(`Card ${cardId} not found`)
     const card = mapCard(row)
-    const next = gradeCard(
-      {
-        status: card.status,
-        learningStep: card.learningStep,
-        intervalDays: card.intervalDays,
-        ease: card.ease,
-        reps: card.reps,
-        lapses: card.lapses
-      },
-      grade,
-      { elapsedDays: Number(row.overdue_days ?? 0) }
-    )
+    const before = srsStateOf(card)
+    const elapsedDays = calendarDaysSince(card.lastReviewedAt)
+    const next = gradeCard(before, grade, {
+      elapsedDays,
+      retention: desiredRetention()
+    })
     db.prepare(
       `UPDATE jp_card
        SET status = ?, learning_step = ?, interval_days = ?, ease = ?, reps = ?, lapses = ?,
+           stability = ?, fsrs_difficulty = ?,
            due_at = datetime('now', '+' || ? || ' minutes'),
            last_reviewed_at = datetime('now'), updated_at = datetime('now')
        WHERE id = ?`
@@ -640,16 +947,19 @@ export function submitReview(cardId: number, grade: SrsGrade): JpReviewOutcome {
       next.ease,
       next.reps,
       next.lapses,
+      next.stability,
+      next.difficulty,
       next.dueInMinutes,
       cardId
     )
     db.prepare(
-      'INSERT INTO jp_review_log (card_id, grade, interval_days, ease) VALUES (?, ?, ?, ?)'
-    ).run(cardId, grade, next.intervalDays, next.ease)
+      `INSERT INTO jp_review_log (card_id, grade, interval_days, ease, state_before, elapsed_days, scheduled_days)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).run(cardId, grade, next.intervalDays, next.ease, ...reviewLogValues(before, elapsedDays))
     // A LAPSE (review-state card graded Again — a miss during learning steps
     // isn't one, matching gradeCard semantics) spawns a ghost: the card must
     // be answered correctly GHOST_STEPS more times in future sessions,
-    // independent of its real SM-2 state. Spawned unconditionally — the
+    // independent of its real FSRS state. Spawned unconditionally — the
     // review page's toggle governs SERVING, so turning it on later works
     // retroactively.
     if (card.status === 'review' && grade === 'again') {
@@ -659,10 +969,68 @@ export function submitReview(cardId: number, grade: SrsGrade): JpReviewOutcome {
                                             created_at = datetime('now')`
       ).run(cardId, GHOST_STEPS)
     }
+    if (next.status === 'review' && next.intervalDays >= DIRECTION_SPAWN_INTERVAL_DAYS) {
+      spawnDirections(cardId)
+    }
     const dueAt = (
       db.prepare('SELECT due_at FROM jp_card WHERE id = ?').get(cardId) as { due_at: string }
     ).due_at
-    return { cardId, status: next.status, intervalDays: next.intervalDays, dueAt }
+    return { cardId, status: next.status, intervalDays: next.intervalDays, dueAt, state: srsStateOf(next) }
+  })
+  return tx()
+}
+
+// An answer on an extra direction: its own schedule in jp_card_review, logged
+// with the direction. No ghosts (those echo recognition lapses) and no spawn.
+function submitDirectionReview(
+  cardId: number,
+  grade: SrsGrade,
+  direction: JpExtraDirection
+): JpReviewOutcome {
+  const db = getSqlite()
+  const tx = db.transaction((): JpReviewOutcome => {
+    const row = db
+      .prepare(
+        `SELECT k.*, ${LESSON_COLS}, ${DIRECTION_COLS}
+         FROM jp_card_review r JOIN jp_card k ON k.id = r.card_id
+         JOIN jp_lesson l ON l.id = k.lesson_id
+         WHERE r.card_id = ? AND r.direction = ?`
+      )
+      .get(cardId, direction) as Record<string, unknown> | undefined
+    if (!row) throw new Error(`No ${direction} review for card ${cardId}`)
+    const card = mapDirectionCard(row)
+    const before = srsStateOf(card)
+    const elapsedDays = calendarDaysSince(card.lastReviewedAt)
+    const next = gradeCard(before, grade, { elapsedDays, retention: desiredRetention() })
+    db.prepare(
+      `UPDATE jp_card_review
+       SET status = ?, learning_step = ?, interval_days = ?, reps = ?, lapses = ?,
+           stability = ?, fsrs_difficulty = ?,
+           due_at = datetime('now', '+' || ? || ' minutes'), last_reviewed_at = datetime('now')
+       WHERE card_id = ? AND direction = ?`
+    ).run(
+      next.status,
+      next.learningStep,
+      next.intervalDays,
+      next.reps,
+      next.lapses,
+      next.stability,
+      next.difficulty,
+      next.dueInMinutes,
+      cardId,
+      direction
+    )
+    db.prepare(
+      `INSERT INTO jp_review_log (card_id, grade, interval_days, ease, state_before, elapsed_days,
+                                  scheduled_days, direction)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(cardId, grade, next.intervalDays, next.ease, ...reviewLogValues(before, elapsedDays), direction)
+    const dueAt = (
+      db
+        .prepare('SELECT due_at FROM jp_card_review WHERE card_id = ? AND direction = ?')
+        .get(cardId, direction) as { due_at: string }
+    ).due_at
+    return { cardId, status: next.status, intervalDays: next.intervalDays, dueAt, state: srsStateOf(next) }
   })
   return tx()
 }
@@ -843,8 +1211,9 @@ export function markWordsKnown(words: { front: string; reading?: string | null }
     // 30-day forecast, while status='review' still scores them tier 3 known.
     const ins = db.prepare(
       `INSERT INTO jp_card (lesson_id, sort_order, front, reading, back, status, interval_days,
-                            reps, due_at, last_reviewed_at)
+                            reps, stability, fsrs_difficulty, due_at, last_reviewed_at)
        VALUES (?, ?, ?, ?, 'Known before this deck', 'review', ${KNOWN_INTERVAL_DAYS}, 1,
+               ${KNOWN_INTERVAL_DAYS}, 1,
                datetime('now', '+${KNOWN_INTERVAL_DAYS} days'), datetime('now'))`
     )
     let added = 0
@@ -939,14 +1308,22 @@ export function stats(): JpStats {
   const db = getSqlite()
   const one = (sql: string): number => (db.prepare(sql).get() as { n: number }).n
   return {
-    dueCount: one(
-      `SELECT COUNT(*) AS n FROM jp_card k JOIN jp_lesson l ON l.id = k.lesson_id
-       WHERE l.learned = 1 AND k.status IN ('learning','review') AND k.due_at <= datetime('now')`
-    ),
+    dueCount:
+      one(
+        `SELECT COUNT(*) AS n FROM jp_card k JOIN jp_lesson l ON l.id = k.lesson_id
+         WHERE l.learned = 1 AND k.status IN ('learning','review') AND k.due_at <= datetime('now')`
+      ) +
+      one(
+        `SELECT COUNT(*) AS n ${directionScope()}
+           AND r.status IN ('learning','review') AND r.due_at <= datetime('now')`
+      ),
+    // New WORDS only: the Tutor and Home hold the next lesson while these wait,
+    // and an unlocked reverse direction of a word already known must not.
     newAvailableCount: one(
       `SELECT COUNT(*) AS n FROM jp_card k JOIN jp_lesson l ON l.id = k.lesson_id
        WHERE l.learned = 1 AND k.status = 'new'`
     ),
+    newDirectionCount: one(`SELECT COUNT(*) AS n ${directionScope()} AND r.status = 'new'`),
     learnedLessons: one('SELECT COUNT(*) AS n FROM jp_lesson WHERE learned = 1'),
     totalLessons: one('SELECT COUNT(*) AS n FROM jp_lesson'),
     totalCards: one('SELECT COUNT(*) AS n FROM jp_card'),
@@ -955,11 +1332,12 @@ export function stats(): JpStats {
        WHERE date(reviewed_at, 'localtime') = date('now', 'localtime')`
     ),
     // newLimit is a per-SESSION renderer pref, so nothing else notices a second
-    // session dealing another batch — this count is the pacing guardrail.
+    // session dealing another batch — this count is the pacing guardrail. Each
+    // direction of a card is its own introduction.
     introducedToday: one(
       `SELECT COUNT(*) AS n FROM (
          SELECT card_id FROM jp_review_log
-         GROUP BY card_id
+         GROUP BY card_id, direction
          HAVING date(MIN(reviewed_at), 'localtime') = date('now', 'localtime')
        )`
     )
@@ -1266,14 +1644,20 @@ export function statsDetail(): JpStatsDetail {
   // same due-card definition as stats()/reviewQueue (learned lesson, not
   // 'new'); anything overdue counts toward today so the first bar reads "what
   // a review session clears now".
+  // Extra review directions are scheduled cards too (jp_card_review).
   const dueForecast = db
     .prepare(
-      `SELECT CASE WHEN k.due_at <= datetime('now') THEN date('now', 'localtime')
-                   ELSE date(k.due_at, 'localtime') END AS day,
+      `SELECT CASE WHEN due_at <= datetime('now') THEN date('now', 'localtime')
+                   ELSE date(due_at, 'localtime') END AS day,
               COUNT(*) AS due
-       FROM jp_card k JOIN jp_lesson l ON l.id = k.lesson_id
-       WHERE l.learned = 1 AND k.status IN ('learning','review') AND k.due_at IS NOT NULL
-         AND date(k.due_at, 'localtime') <= date('now', 'localtime', '+29 days')
+       FROM (
+         SELECT k.due_at FROM jp_card k JOIN jp_lesson l ON l.id = k.lesson_id
+         WHERE l.learned = 1 AND k.status IN ('learning','review') AND k.due_at IS NOT NULL
+         UNION ALL
+         SELECT r.due_at ${directionScope()}
+           AND r.status IN ('learning','review') AND r.due_at IS NOT NULL
+       )
+       WHERE date(due_at, 'localtime') <= date('now', 'localtime', '+29 days')
        GROUP BY day ORDER BY day ASC`
     )
     .all() as { day: string; due: number }[]
@@ -1282,11 +1666,13 @@ export function statsDetail(): JpStatsDetail {
   // (Anki's default framing); strict is Good/Easy only. Mature-only retention
   // is NOT computable honestly — the log doesn't record the card's pre-review
   // status (upgrade path: a flagged column via ensureColumn, not taken now).
+  // Recognition answers only: typed production is harder by nature, and mixing
+  // it in would read as forgetting and make the Tutor throttle new material.
   const retentionRows = db
     .prepare(
       `SELECT CASE WHEN reviewed_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END AS recent,
               grade, COUNT(*) AS n
-       FROM jp_review_log GROUP BY recent, grade`
+       FROM jp_review_log WHERE direction = 'recognition' GROUP BY recent, grade`
     )
     .all() as { recent: number; grade: string; n: number }[]
   const retentionOf = (rows: { grade: string; n: number }[]): {

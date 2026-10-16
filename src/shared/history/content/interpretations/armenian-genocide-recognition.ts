@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'armenian-genocide-recognition',
   about: ['event:armenian-genocide'],
   topic: 'naming',
-  researched: '2026-10-09',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'genocide-scholarly',
@@ -172,12 +172,12 @@ export default defineInterpretation({
         },
         {
           id: 'q5',
-          text: 'but the government of the Turkish state and many of its supporters deny that a genocide took place; rather, they claim that the government acted to suppress an Armenian insurrection and people were killed in the process.',
+          text: 'These events have been called the first major genocide of the 20th century, but the government of the Turkish state and many of its supporters deny that a genocide took place; rather, they claim that the government acted to suppress an Armenian insurrection and people were killed in the process.',
           lang: 'en',
           cite: { source: 'eo1418-suny-armenian-genocide', loc: { section: 'Armenian Genocide' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://encyclopedia.1914-1918-online.net/article/armenian-genocide/'
           }
         },
@@ -254,7 +254,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q11',
-          text: 'there was no Armenian massacre, there was a Turkish-Armenian arrangement. They stabbed us in the back, we stabbed them back.',
+          text: 'Ziya Gökalp, who like so many others saw the genocide as necessary or even forced on the Ottomans, could with confidence write, “there was no Armenian massacre, there was a Turkish-Armenian arrangement. They stabbed us in the back, we stabbed them back.”',
           lang: 'en',
           cite: {
             source: 'eo1418-suny-armenian-genocide',
@@ -262,7 +262,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://encyclopedia.1914-1918-online.net/article/armenian-genocide/'
           }
         }

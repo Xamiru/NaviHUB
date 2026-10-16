@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'anglo-persian-agreement-of-1919-nature',
   about: ['event:anglo-persian-agreement-of-1919'],
   topic: 'nature',
-  researched: '2026-10-09',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'virtual-protectorate',
@@ -66,7 +66,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q4',
-          text: 'reiterates, in the most categorical manner, the understanding which they have repeatedly given in the past to respect absolutely the independence and integrity of Persia.',
+          text: 'It “reiterates, in the most categorical manner, the understanding which they have repeatedly given in the past to respect absolutely the independence and integrity of Persia.”',
           lang: 'en',
           cite: {
             source: 'iranica-fatemi-anglo-persian-agreement-1919',
@@ -74,7 +74,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/anglo-persian-agreement-1919'
           }
         }
@@ -116,7 +116,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
           }
         }
@@ -131,7 +131,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q6',
-          text: 'The British Foreign Office feared that if the Bolsheviks invaded Persia it would be a menace to Mesopotamia and India (Nicholson, Curzon, pp. 139-40).',
+          text: 'The British Foreign Office feared that if the Bolsheviks invaded Persia it would be a menace to Mesopotamia and India',
           lang: 'en',
           cite: {
             source: 'iranica-fatemi-anglo-persian-agreement-1919',
@@ -139,13 +139,13 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/anglo-persian-agreement-1919'
           }
         },
         {
           id: 'q7',
-          text: 'Curzon hoped “to create a chain of vassal states stretching from the Mediterranean to the Pamirs and protecting not the Indian frontiers merely, but our (i.e., the British) communications with our further Empire” (Skrine, World War, p. 56).',
+          text: 'Curzon hoped “to create a chain of vassal states stretching from the Mediterranean to the Pamirs and protecting not the Indian frontiers merely, but our (i.e., the British) communications with our further Empire”',
           lang: 'en',
           cite: {
             source: 'iranica-fatemi-anglo-persian-agreement-1919',
@@ -153,7 +153,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/anglo-persian-agreement-1919'
           }
         }

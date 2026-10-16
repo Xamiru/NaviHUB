@@ -233,13 +233,13 @@ export default defineEvent({
       },
       quote: {
         id: 'q12',
-        text: 'in 1955, approximately 3,000 delegates met on June 25 and June 26 near Soweto in a Congress of the People.',
+        text: 'House arrests, bannings, and other forms of government restriction limited the ability of ANC and SAIC leaders to organize publicly in 1953 and 1954, but in 1955, approximately 3,000 delegates met on June 25 and June 26 near Soweto in a Congress of the People.',
         lang: 'en',
         cite: {
           source: 'loc-south-africa-country-study-1996',
           loc: { section: 'Black Resistance in the 1950s', para: '5' }
         },
-        provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/south-africa/26.htm' }
+        provenance: { via: 'web', at: '2026-10-16', url: 'http://countrystudies.us/south-africa/26.htm' }
       }
     },
     {

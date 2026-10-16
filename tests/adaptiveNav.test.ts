@@ -5,6 +5,7 @@ import {
   archiveAreaForPath,
   archiveContextForPath,
   bestArchiveRoute,
+  contextTabForPath,
   drawerRouteForPath,
   drawerItemsForArea,
   directRouteForArea,
@@ -118,7 +119,7 @@ describe('adaptive archive navigation', () => {
   it('gives History one context across its timeline, articles and sources', () => {
     const ctx = archiveContextForPath('/history/person/mohammad-mosaddegh')
     expect(ctx).toMatchObject({ title: 'History', descriptor: 'World chronicle' })
-    expect(ctx.items.map((i) => i.to)).toEqual(['/history', '/history/map', '/history/themes', '/history/sources', '/history/my', '/history/corrections'])
+    expect(ctx.items.map((i) => i.to)).toEqual(['/history', '/history/map', '/history/themes', '/history/quiz', '/history/sources', '/history/my', '/history/corrections'])
     expect(drawerItemsForArea('archives').map((i) => i.to)).toContain('/history')
     expect(drawerItemsForArea('learn').map((i) => i.to)).not.toContain('/history')
   })
@@ -197,6 +198,15 @@ describe('adaptive archive navigation', () => {
     )
     expect(bestArchiveRoute('/games/42', ['/games', '/games/installed'])).toBe('/games')
     expect(bestArchiveRoute('/search', ['/', '/checklist'])).toBeNull()
+    // Japanese practice tools sit under Tools and courses under Path, not Today.
+    const jp = ['/japanese', '/japanese/roadmap', '/japanese/review', '/japanese/dictionary', '/japanese/tools', '/japanese/stats']
+    expect(contextTabForPath('/japanese/pitch', jp)).toBe('/japanese/tools')
+    expect(contextTabForPath('/japanese/kanji/quiz', jp)).toBe('/japanese/tools')
+    expect(contextTabForPath('/japanese/courses/4', jp)).toBe('/japanese/roadmap')
+    expect(contextTabForPath('/japanese/review', jp)).toBe('/japanese/review')
+    expect(contextTabForPath('/japanese/dictionary', jp)).toBe('/japanese/dictionary')
+    expect(contextTabForPath('/japanese/tutor', jp)).toBe('/japanese')
+    expect(contextTabForPath('/anime/12', ['/anime', '/anime/seasonal'])).toBe('/anime')
   })
 })
 

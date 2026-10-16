@@ -26,6 +26,8 @@ const OCR = [
   /\[\[Page /,
   // Invisible characters copied from the page: soft hyphen, word joiner, zero-width space.
   /[\u00ad\u2060\u200b]/,
+  // C1 control codes: a windows-1252 page read as Latin-1.
+  /[\u0080-\u009f]/,
   /\b[a-z]+ C (?:of|Kurdish)\b/,
   // Apparatus copied with the sentence: figure and table references, numbered recitals.
   /\((?:FIGURE|Figure|TABLE|Table) \d+\)|\bsee (?:Table|Figure) \d+\b/,
@@ -42,6 +44,10 @@ const MIDSTORY = /^(A (few|couple of) (days|weeks|months|years) later|(Some|Two|
 const STATE_OUTLETS = /(^|\.)(khamenei\.ir|imam-khomeini\.ir|leader\.ir|president\.ir|irna\.ir|presstv\.ir|tasnimnews\.com|farsnews\.ir|mehrnews\.com)$/
 const OPENER_LANGS = new Set(['en', 'fa'])
 const TITLED_KINDS = new Set(['event', 'period', 'polity', 'theme'])
+/** An event's narrative: told by historians, never by a side's own primary text. */
+const NARRATIVE_SECTIONS = new Set(['overview', 'background', 'causes', 'course', 'aftermath', 'consequences', 'casualties', 'legacy'])
+/** Openers of lead pages come from scholarship after this year when any exists. */
+const MODERN_FROM = 1950
 const RESULT_SECTIONS = new Set(['consequences', 'aftermath', 'legacy'])
 
 function norm(s: string): string {
@@ -170,6 +176,13 @@ export function lintCatalog(catalog: HistoryCatalog, entities: HistoryEntity[]):
       })
     }
 
+    // Lead pages open on modern scholarship when any exists.
+    const lead = 'prominence' in e && typeof e.prominence === 'number' && e.prominence <= 2
+    if (first && lead && (e.kind === 'event' || e.kind === 'period' || e.kind === 'polity')) {
+      const year = parseInt(catalog.sources.get(first.cite.source)?.date ?? '', 10)
+      if (Number.isFinite(year) && year < MODERN_FROM) add('dated-opener', ref, `the opener comes from a work of ${year}`, first.id)
+    }
+
     if (e.kind !== 'theme' && e.kind !== 'period') {
       if (!first) add('no-overview', ref, 'the page has no overview')
       else {
@@ -216,6 +229,18 @@ export function lintCatalog(catalog: HistoryCatalog, entities: HistoryEntity[]):
     }
 
     if (e.kind === 'event') {
+      // A lead event is pinned on the map.
+      if (e.prominence <= 2 && !(e.places ?? []).some((p) => catalog.places.get(p.ref.split(':')[1])?.coords)) {
+        add('unpinned', ref, 'a leading event with no located place')
+      }
+      // A chronicle, decree, treaty or participant's letter is a side's voice, never narration.
+      const narrative = [
+        ...(sections ?? []).filter((s) => NARRATIVE_SECTIONS.has(s.kind)).flatMap((s) => s.quotes),
+        ...(e.course ?? []).map((c) => c.quote)
+      ]
+      for (const q of narrative) {
+        if (catalog.sources.get(q.cite.source)?.type === 'primary') add('primary-narration', ref, `${q.cite.source} narrates`, q.id)
+      }
       e.participants?.forEach((p, i) => {
         const match = !p.ref && p.name ? personByName.get(norm(p.name)) : undefined
         if (match) add('unlinked-participant', ref, `"${p.name}" has a page (${match})`, `participants[${i}]`)

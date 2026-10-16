@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'german-democratic-republic-legitimacy',
   about: ['polity:german-democratic-republic'],
   topic: 'legitimacy',
-  researched: '2026-10-09',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'one-indivisible-german-republic',
@@ -71,10 +71,10 @@ export default defineInterpretation({
       reception: [
         {
           id: 'q5',
-          text: 'untries in the summer and fall of 1989, particularly through Hungary, was telling evidence that the GDR did not have the support of its citizens',
+          text: 'The massive flow of East Germans to the West through neighboring socialist countries in the summer and fall of 1989, particularly through Hungary, was telling evidence that the GDR did not have the support of its citizens',
           lang: 'en',
           cite: { source: 'loc-germany-country-study-1995', loc: { section: 'History', para: '20' } },
-          provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/germany/3.htm' }
+          provenance: { via: 'web', at: '2026-10-16', url: 'http://countrystudies.us/germany/3.htm' }
         }
       ]
     },

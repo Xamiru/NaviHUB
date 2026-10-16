@@ -7,7 +7,7 @@ export default definePerson({
     { text: 'فضل‌الله زاهدی', lang: 'fa', role: 'native' },
     { text: 'Fażl-Allāh Zāhedi', lang: 'fa-Latn', role: 'alternative' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['iran'],
   roles: ['military', 'politician'],
   offices: [
@@ -185,5 +185,46 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1897' },
+        cites: [
+          {
+            source: 'loc-name-authority-fazlollah-zahedi',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ],
+        heldBy: [
+          { kind: 'organization', name: 'Library of Congress Name Authority File' }
+        ]
+      },
+      {
+        value: { d: '1898' },
+        cites: [
+          {
+            source: 'loc-name-authority-fazlollah-zahedi',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ],
+        heldBy: [
+          { kind: 'organization', name: 'Library of Congress Name Authority File' }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1963' },
+        cites: [
+          {
+            source: 'loc-name-authority-fazlollah-zahedi',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
+  }
 })

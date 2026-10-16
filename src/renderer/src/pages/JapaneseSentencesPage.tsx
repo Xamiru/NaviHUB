@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import PageHeader from '../components/PageHeader'
+import JapaneseHubTabs from '../components/japanese/JapaneseHubTabs'
 import EmptyState from '../components/EmptyState'
 import Tabs, { TabPanel } from '../components/Tabs'
 import ParticleDrill from '../components/japanese/ParticleDrill'
@@ -45,6 +46,7 @@ export default function JapaneseSentencesPage() {
   if (!isLoading && !bank) {
     return (
       <div className="p-6 max-w-[1320px] mx-auto">
+        <JapaneseHubTabs />
         <PageHeader back={{ to: '/japanese', label: 'Japanese' }} title="Sentence games" />
         <EmptyState
           title="Sentence bank not installed"
@@ -61,6 +63,7 @@ export default function JapaneseSentencesPage() {
 
   return (
     <div className="p-6 max-w-[1320px] mx-auto">
+      <JapaneseHubTabs />
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Sentence games"

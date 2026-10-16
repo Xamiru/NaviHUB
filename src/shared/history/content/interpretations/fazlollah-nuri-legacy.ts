@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'fazlollah-nuri-legacy',
   about: ['person:fazlollah-nuri'],
   topic: 'legacy',
-  researched: '2026-10-09',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'islamic-republic',
@@ -53,7 +53,7 @@ export default defineInterpretation({
           cite: { source: 'iranica-martin-nuri', loc: { section: 'NURI, FAŻL-ALLĀH', para: '16' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/nuri-fazl-allah/'
           }
         },

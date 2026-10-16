@@ -28,7 +28,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -135,7 +135,7 @@ export default definePerson({
         },
         {
           id: 'q3',
-          text: 'He also published a letter in The Times denouncing Russian and British policies; the letter was also printed in Tehran in a Persian translation as Maktub-e ruz-nāma (Eng. text, in Shuster, Appendix-C, pp. 359-71; Kazemzadeh, 1968, pp. 613-15, 631).',
+          text: 'He also published a letter in The Times denouncing Russian and British policies; the letter was also printed in Tehran in a Persian translation as Maktub-e ruz-nāma',
           lang: 'en',
           cite: {
             source: 'iranica-andreeva-russia-relations',
@@ -146,7 +146,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/russia-i-relations/'
           }
         }

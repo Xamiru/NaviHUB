@@ -127,7 +127,7 @@ export const TERMINATOR: FranchiseCfg = {
       role: 'Cyborg assassin, later protector',
       portraitUrl: `${TM}/w300_and_h450_face/4jM3vsHIEQVeNFifiTAUDVAmiUo.jpg`,
       appearsIn: ['term-1984', 'term-2', 'term-3', 'term-genisys', 'term-dark-fate'],
-      blurb: 'Arnold Schwarzenegger’s machine is a killer in the first film and a protector in T2.'
+      blurb: 'A Cyberdyne Model 101 sent back to kill Sarah Connor in 1984, then reprogrammed and sent back again to protect her son: the machine that learns why people cry. Arnold Schwarzenegger plays it.'
     },
     {
       id: 'term-sarah',
@@ -135,7 +135,7 @@ export const TERMINATOR: FranchiseCfg = {
       role: 'Mother of the future resistance leader',
       portraitUrl: `${TM}/w300_and_h450_face/7FNn9Z5xkRS9EFbGL2tpmpph9xV.jpg`,
       appearsIn: ['term-1984', 'term-2', 'term-dark-fate'],
-      blurb: 'Linda Hamilton’s Sarah goes from waitress to hardened fighter and returns in Dark Fate.'
+      blurb: 'A waitress told by a stranger from the future that her unborn son will save mankind; by T2 she is an asylum inmate and the hardest soldier of a war that has not started. Linda Hamilton plays her.'
     },
     {
       id: 'term-reese',
@@ -143,7 +143,7 @@ export const TERMINATOR: FranchiseCfg = {
       role: 'Soldier sent back from 2029',
       portraitUrl: `${TM}/w300_and_h450_face/9oFLsADWQm2TvU8XzLIzBbjdMkU.jpg`,
       appearsIn: ['term-1984'],
-      blurb: 'Michael Biehn plays the resistance soldier sent to protect Sarah in the first film.'
+      blurb: 'The resistance soldier who volunteers to go back for Sarah because he fell for her photograph — and becomes John Connor’s father. Michael Biehn plays him.'
     },
     {
       id: 'term-t1000',
@@ -151,7 +151,7 @@ export const TERMINATOR: FranchiseCfg = {
       role: 'Liquid-metal Terminator',
       portraitUrl: `${TM}/w300_and_h450_face/qRv2Es9rZoloullTbzss3I5j1Mp.jpg`,
       appearsIn: ['term-2'],
-      blurb: 'Robert Patrick’s shape-shifting machine hunts John Connor in T2.'
+      blurb: 'Skynet’s liquid-metal prototype, able to become anyone it touches, who hunts John across Los Angeles in a police uniform. Robert Patrick plays it.'
     },
     {
       id: 'term-john',
@@ -159,7 +159,7 @@ export const TERMINATOR: FranchiseCfg = {
       role: 'Future resistance leader',
       portraitUrl: `${TM}/w300_and_h450_face/e221dMIBgb6Lk092GIkHB9ohQF1.jpg`,
       appearsIn: ['term-2'],
-      blurb: 'Edward Furlong plays John as a boy in T2, protected by the T-800.'
+      blurb: 'The future leader of the human resistance, a ten-year-old delinquent in T2 who teaches his machine guardian not to kill. Edward Furlong plays him.'
     },
     {
       id: 'term-grace',
@@ -167,7 +167,7 @@ export const TERMINATOR: FranchiseCfg = {
       role: 'Augmented soldier from the future',
       portraitUrl: `${TM}/w300_and_h450_face/ekQbEIKh26jbz17P0wwLbo6uNs9.jpg`,
       appearsIn: ['term-dark-fate'],
-      blurb: 'Mackenzie Davis plays an enhanced fighter sent to protect Dani in Dark Fate.'
+      blurb: 'An augmented soldier from a future war against Legion, sent back to protect Dani Ramos — who, in this timeline, is the leader humanity needs. Mackenzie Davis plays her.'
     }
   ]
 }

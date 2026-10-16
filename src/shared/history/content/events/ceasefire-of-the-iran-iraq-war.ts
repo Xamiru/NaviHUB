@@ -257,17 +257,6 @@ export default defineEvent({
             at: '2026-10-10',
             url: 'https://www.iranicaonline.org/articles/iraq-vii-iran-iraq-war'
           }
-        },
-        {
-          id: 'q4',
-          text: 'Demands that, as a first step towards a negotiated settlement, Iran and Iraq observe an immediate cease-fire, discontinue all military actions on land, at sea and in the air, and withdraw all forces to the internationally recognized boundaries without delay;',
-          lang: 'en',
-          cite: { source: 'unsc-resolution-598-1987', loc: { section: 'Resolution 598 (1987)' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-10',
-            url: 'https://en.wikisource.org/wiki/United_Nations_Security_Council_Resolution_598'
-          }
         }
       ]
     },
@@ -300,17 +289,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-10',
             url: 'https://www.iranicaonline.org/articles/iraq-vii-iran-iraq-war'
-          }
-        },
-        {
-          id: 'q7',
-          text: 'Requests the Secretary-General to dispatch a team of United Nations Observers to verify, confirm and supervise the cease-fire and withdrawal and further requests the Secretary-General to make the necessary arrangements in consultation with the Parties and to submit a report thereon to the Security Council;',
-          lang: 'en',
-          cite: { source: 'unsc-resolution-598-1987', loc: { section: 'Resolution 598 (1987)' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-10',
-            url: 'https://en.wikisource.org/wiki/United_Nations_Security_Council_Resolution_598'
           }
         }
       ]
@@ -347,32 +325,47 @@ export default defineEvent({
           }
         }
       ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q4',
+          text: 'Demands that, as a first step towards a negotiated settlement, Iran and Iraq observe an immediate cease-fire, discontinue all military actions on land, at sea and in the air, and withdraw all forces to the internationally recognized boundaries without delay;',
+          lang: 'en',
+          cite: { source: 'unsc-resolution-598-1987', loc: { section: 'Resolution 598 (1987)' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-10',
+            url: 'https://en.wikisource.org/wiki/United_Nations_Security_Council_Resolution_598'
+          }
+        },
+        {
+          id: 'q7',
+          text: 'Requests the Secretary-General to dispatch a team of United Nations Observers to verify, confirm and supervise the cease-fire and withdrawal and further requests the Secretary-General to make the necessary arrangements in consultation with the Parties and to submit a report thereon to the Security Council;',
+          lang: 'en',
+          cite: { source: 'unsc-resolution-598-1987', loc: { section: 'Resolution 598 (1987)' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-10',
+            url: 'https://en.wikisource.org/wiki/United_Nations_Security_Council_Resolution_598'
+          }
+        },
+        {
+          id: 'q10',
+          text: 'Adopted unanimously by the Security Council at its 2750th meeting on 20 July 1987',
+          lang: 'en',
+          cite: { source: 'unsc-resolution-598-1987', loc: { section: 'Resolution 598 (1987)' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-10',
+            url: 'https://en.wikisource.org/wiki/United_Nations_Security_Council_Resolution_598'
+          }
+        }
+      ]
     }
   ],
   course: [
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1987-07-20' },
-            cites: [
-              { source: 'unsc-resolution-598-1987', loc: { section: 'Resolution 598 (1987)' } }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q10',
-        text: 'Adopted unanimously by the Security Council at its 2750th meeting on 20 July 1987',
-        lang: 'en',
-        cite: { source: 'unsc-resolution-598-1987', loc: { section: 'Resolution 598 (1987)' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-10',
-          url: 'https://en.wikisource.org/wiki/United_Nations_Security_Council_Resolution_598'
-        }
-      }
-    },
     {
       date: {
         alts: [
@@ -458,5 +451,25 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:VN-secretaris-generaal_Perez_de_Cuellar_,_kop,_Bestanddeelnr_934-3065.jpg',
     credit: { institution: 'Nationaal Archief', creator: 'Rob Croes / Anefo' },
     license: { id: 'cc0' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:new-york-city',
+      cites: [
+        {
+          source: 'iranica-kechichian-boundaries-iraq',
+          loc: { section: 'BOUNDARIES iv. With Iraq', para: '42' }
+        }
+      ]
+    },
+    {
+      ref: 'place:geneva',
+      cites: [
+        {
+          source: 'iranica-gieling-iraq-vii-iran-iraq-war',
+          loc: { section: 'IRAQ vii. IRAN-IRAQ WAR', para: '46' }
+        }
+      ]
+    }
+  ]
 })

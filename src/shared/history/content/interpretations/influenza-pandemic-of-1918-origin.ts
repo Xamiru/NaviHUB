@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'influenza-pandemic-of-1918-origin',
   about: ['event:influenza-pandemic-of-1918'],
   topic: 'causes',
-  researched: '2026-10-09',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'military-camps-and-troop-movements',
@@ -29,7 +29,7 @@ export default defineInterpretation({
         },
         {
           id: 'q2',
-          text: 'what was now a re-assorted, more infectious influenza A virus re-appeared in public in March 1918 in rural Kansas, and soon after this at two jam-packed US military camps, the one nearby at Camp Funston, Fort Riley, and the other at Camp Oglethorpe in Georgia.',
+          text: 'Perhaps having undergone further mutation among the millions of troops on the move during the succeeding months – including those from the USA which had entered the war in April 1917 – what was now a re-assorted, more infectious influenza A virus re-appeared in public in March 1918 in rural Kansas, and soon after this at two jam-packed US military camps, the one nearby at Camp Funston, Fort Riley, and the other at Camp Oglethorpe in Georgia.',
           lang: 'en',
           cite: {
             source: 'eo1418-phillips-influenza-pandemic',
@@ -37,7 +37,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://encyclopedia.1914-1918-online.net/article/influenza-pandemic/'
           }
         }
@@ -75,12 +75,12 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q4',
-          text: 'Ironically, the Russian troops who carried the illness to Ashkhabad had themselves contracted the disease from the American expeditionary force, which had landed infected troops in October at the Baltic port of Archangel (Crosby, pp. 145-46).',
+          text: 'Ironically, the Russian troops who carried the illness to Ashkhabad had themselves contracted the disease from the American expeditionary force, which had landed infected troops in October at the Baltic port of Archangel',
           lang: 'en',
           cite: { source: 'iranica-afkhami-influenza', loc: { section: 'INFLUENZA', para: '9' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/influenza'
           }
         }

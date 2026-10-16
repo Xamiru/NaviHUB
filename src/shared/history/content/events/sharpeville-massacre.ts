@@ -147,25 +147,6 @@ export default defineEvent({
       ]
     },
     {
-      kind: 'course',
-      quotes: [
-        {
-          id: 'q3',
-          text: 'Mr. Tyler strongly denies that the demonstrators were carrying arms, and he says: I never saw any such weapons, yet I looked very closely and with great attention. There were no weapons to be seen in the photographs taken of the tragic places. I merely saw a few shoes, some hats and a few bicycles scattered among the dead.',
-          lang: 'en',
-          cite: {
-            source: 'hansard-commons-1960-04-08-union-of-south-africa-racialist-policies',
-            loc: { section: 'HC Deb 08 April 1960 vol 621 cc774-843' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://api.parliament.uk/historic-hansard/commons/1960/apr/08/union-of-south-africa-racialist-policies'
-          }
-        }
-      ]
-    },
-    {
       kind: 'aftermath',
       quotes: [
         {
@@ -192,6 +173,25 @@ export default defineEvent({
             loc: { section: 'The ANC and the PAC Turn to Violence', para: '1' }
           },
           provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/south-africa/27.htm' }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q3',
+          text: 'Mr. Tyler strongly denies that the demonstrators were carrying arms, and he says: I never saw any such weapons, yet I looked very closely and with great attention. There were no weapons to be seen in the photographs taken of the tragic places. I merely saw a few shoes, some hats and a few bicycles scattered among the dead.',
+          lang: 'en',
+          cite: {
+            source: 'hansard-commons-1960-04-08-union-of-south-africa-racialist-policies',
+            loc: { section: 'HC Deb 08 April 1960 vol 621 cc774-843' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1960/apr/08/union-of-south-africa-racialist-policies'
+          }
         },
         {
           id: 'q6',

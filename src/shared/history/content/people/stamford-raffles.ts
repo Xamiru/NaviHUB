@@ -16,7 +16,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -83,6 +83,25 @@ export default definePerson({
     }
   ],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q4',
+          text: 'RAFFLES, SIR THOMAS STAMFORD (1781–1826), English administrator, founder of Singapore, was born on the 5th of July 1781, on board a merchantman commanded by his father, Benjamin Raffles, when off Port Morant, Jamaica.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-raffles-sir-thomas-stamford',
+            loc: { section: 'RAFFLES, SIR THOMAS STAMFORD', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Raffles,_Sir_Thomas_Stamford'
+          }
+        }
+      ]
+    },
     {
       kind: 'career',
       quotes: [

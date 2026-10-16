@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -48,11 +48,11 @@ export default definePerson({
   roles: ['diplomat', 'writer', 'politician'],
   sections: [
     {
-      kind: 'early-life',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',
-          text: 'Malkom Khan, the famous diplomat and advocate of constitutionalism, was a student in Paris from 1259/1843 to 1267/1851 (Maḥbūbī, Moʾassasāt I, pp. 189-95; Algar, passim; Nashat, p. 27).',
+          text: 'Malkom Khan, the famous diplomat and advocate of constitutionalism, was a student in Paris from 1259/1843 to 1267/1851',
           lang: 'en',
           cite: {
             source: 'iranica-matin-asgari-education-abroad',
@@ -60,7 +60,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/education-xxii-education-abroad-1/'
           }
         }
@@ -71,7 +71,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q2',
-          text: 'In 1851, upon completing his higher education in Paris, he returned to Tehran soon after the foundation of the Dār al-Fonun (‘Polytechnic College’), where he gained employment as both translator and geography teacher (Malkom Khan, 1948, p. 2).',
+          text: 'In 1851, upon completing his higher education in Paris, he returned to Tehran soon after the foundation of the Dār al-Fonun (‘Polytechnic College’), where he gained employment as both translator and geography teacher',
           lang: 'en',
           cite: {
             source: 'iranica-shahvar-telegraph-i',
@@ -79,7 +79,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/telegraph-i-first-telegraph-lines-in-persia/'
           }
         },

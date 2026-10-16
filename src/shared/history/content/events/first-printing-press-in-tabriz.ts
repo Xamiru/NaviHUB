@@ -56,12 +56,12 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'On the other hand, John Malcolm wrote in 1231/1815 that “the art of printing is unknown in Persia” (p. 582),',
+          text: 'On the other hand, John Malcolm wrote in 1231/1815 that “the art of printing is unknown in Persia”',
           lang: 'en',
           cite: { source: 'iranica-floor-cap', loc: { section: 'ČĀP', para: '8' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/cap-print-printing-a-persian-word-probably-derived-from-hindi-chapna/'
           }
         }
@@ -83,7 +83,7 @@ export default defineEvent({
         },
         {
           id: 'q3',
-          text: 'About 1816, Armenians from Istanbul founded a printing house in Tabrīz (Browne, Lit. Hist. Persia IV, p. 155).',
+          text: 'About 1816, Armenians from Istanbul founded a printing house in Tabrīz',
           lang: 'en',
           cite: {
             source: 'iranica-busse-abbas-mirza',
@@ -91,7 +91,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/abbas-mirza'
           }
         },

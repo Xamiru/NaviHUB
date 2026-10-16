@@ -24,19 +24,28 @@ shape of existing files under `src/shared/history/content/`.
 - If the user handed you corrections (the Corrections page copies them), fix those first.
 - Run `npm run test:main -- tests/historyContent.test.ts` to see the current state and warnings.
 
-## The decade flow (2026-10-08)
+## The decade and era flow (2026-10-08, revised 2026-10-16)
 
-1. **List first.** The primary agent drafts the decade's events, people and states (about 25 events,
-   Iran deepest, every region considered) and settles it itself; the user does not need to approve
-   it (user, 2026-10-08), but the list is written down in the work folder before research starts.
-2. **Research delivers specs only.** Two agents research in parallel (Sonnet: judgement work) and
-   write spec files under `~/.cache/navihub-history-work/`; they never write content files.
-3. **One builder.** The primary agent builds each spec with `build_spec.py`; the validator and the
-   lint ratchet must pass. Edits to already committed pages go through one `edit.py` script run by
-   the primary agent, never by two agents at once.
-4. **Independent review.** A separate agent reads every built prominence-1 and Iran page and a
-   sample of the rest with the read-through brief (`~/.cache/navihub-history-work/review/REVIEW.md`)
-   and lists defects; the primary agent fixes them, reruns the gates and checks pages in the app.
+1. **Sources first (eras before 1700).** Before the list, the primary agent writes the era's
+   `SOURCES.md` in the work folder: the allowed modern sources for that period with their terms
+   already checked (Iranica, university encyclopedias, open-access books and journals, museum and
+   library pages, LoC studies). Overviews and lead events open on these; the 1911 Britannica, the
+   Catholic Encyclopedia and other pre-1950 works may carry detail and dates (lint `dated-opener`).
+2. **List next.** The primary agent drafts the decade's or era's events, people and states (Iran
+   deepest, every region considered) and settles it itself; the user does not need to approve it
+   (user, 2026-10-08). It is written down in the work folder before research starts, split into
+   parts of 15 to 20 events so each part finishes inside one agent session.
+3. **Research delivers specs only.** Two agents research in parallel (Sonnet, medium effort, no
+   subagents of their own) and write spec files under `~/.cache/navihub-history-work/`; they
+   never write content files. Before handing back each runs the brief's self-check on five of its
+   own pages.
+4. **Review the draft.** A separate agent reads the draft (the spec's `out.json`) with the
+   read-through brief (`~/.cache/navihub-history-work/review/REVIEW.md`, draft mode) and lists
+   defects; the researcher fixes them in its spec.
+5. **One builder.** The primary agent runs `tools/check_quotes.py`, builds each spec with
+   `build_spec.py`, and keeps the validator and lint ratchet green. Edits to already committed
+   pages go through one `edit.py` script run by the primary agent, never by two agents at once.
+   The primary agent then runs the full gate and checks pages in the app.
 
 ## 1. Candidates (finding aids only)
 
@@ -83,6 +92,15 @@ with `PYTHONPATH=.claude/skills/history-era/tools`. Keep specs, briefs and notes
 `~/.cache/navihub-history-work/`, not the session scratchpad: `/tmp` is wiped, and on 2026-10-07 it
 took every 1800s-1940s spec with it.
 
+- `check_quotes.py [--snapshot]` re-finds every committed quote in its cached page (cache only,
+  never fetched) and compares each page's paragraph count with the recorded snapshot. Run it after
+  any change to `fetch.py`, `lib.py` or `edit.py` and before each build; it must print 0 missing
+  and 0 renumbered.
+- `checks.py repeats SPEC` flags a quote repeated on one page, a passage used on two pages, and a
+  standalone quote (section opener, course item, a position's first statement) that opens
+  mid-story; a spec hands back only when it prints nothing.
+- `locate.py NAME [COUNTRY]` prints candidate coordinates for a place from Natural Earth and
+  GeoNames (alternate names included), so an event's place can be pinned at research time.
 - `fetch.py URL [regex] [--max N]` prints a page's paragraphs numbered as `lib` addresses them.
   Pages are cached in `~/.cache/navihub-history` (override: `NAVIHUB_HISTORY_CACHE`) so every later
   cut reads identical text. Some hosts refuse `curl` but accept this client (Iranica). It refuses

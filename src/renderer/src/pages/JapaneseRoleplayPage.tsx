@@ -6,6 +6,7 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { useTutorSessionState } from '../lib/japaneseTutorSession'
 import PageHeader from '../components/PageHeader'
+import JapaneseHubTabs from '../components/japanese/JapaneseHubTabs'
 import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
 import {
   ROLEPLAY_SCENARIOS,
@@ -119,6 +120,7 @@ export default function JapaneseRoleplayPage() {
     const total = turns.reduce((sum, turn) => sum + turn.total, 0)
     return (
       <div className="mx-auto max-w-4xl p-4 sm:p-6">
+        <JapaneseHubTabs />
         <PageHeader
           back={{ to: '/japanese', label: 'Japanese' }}
           title="Role-play complete"

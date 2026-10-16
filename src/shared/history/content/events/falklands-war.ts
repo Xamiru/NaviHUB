@@ -281,34 +281,6 @@ export default defineEvent({
             at: '2026-10-08',
             url: 'https://history.state.gov/milestones/1981-1988/south-atlantic'
           }
-        },
-        {
-          id: 'q4',
-          text: 'Over the past 15 years, successive British Governments have held a series of meetings with the Argentine Government to discuss the dispute. In many of these meetings elected representatives of the islanders have taken part. We have always made it clear that their wishes were paramount and that there would be no change in sovereignty without their consent and without the approval of the House.',
-          lang: 'en',
-          cite: {
-            source: 'hansard-commons-1982-04-03-falkland-islands',
-            loc: { section: 'Falkland Islands (3 April 1982)', para: '10' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://api.parliament.uk/historic-hansard/commons/1982/apr/03/falkland-islands'
-          }
-        },
-        {
-          id: 'q5',
-          text: 'Two weeks ago—on 19 March—the latest in this series of incidents affecting sovereignty occurred; and the deterioration in relations between the British and Argentine Governments which culminated in yesterday\'s Argentine invasion began. The incident appeared at the start to be relatively minor. But we now know it was the beginning of much more.',
-          lang: 'en',
-          cite: {
-            source: 'hansard-commons-1982-04-03-falkland-islands',
-            loc: { section: 'Falkland Islands (3 April 1982)', para: '13' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://api.parliament.uk/historic-hansard/commons/1982/apr/03/falkland-islands'
-          }
         }
       ]
     },
@@ -347,6 +319,83 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-08',
             url: 'https://history.state.gov/milestones/1981-1988/south-atlantic'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'aftermath',
+      quotes: [
+        {
+          id: 'q11',
+          text: 'Galtieri resigned as Argentine president, the first step in the eventual return of civilian government to Argentina.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-crisis-in-the-south-atlantic',
+            loc: {
+              section: 'Crisis in the South Atlantic: The Reagan Administration and the Anglo-Argentine War of 1982',
+              para: '8'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://history.state.gov/milestones/1981-1988/south-atlantic'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'consequences',
+      quotes: [
+        {
+          id: 'q13',
+          text: 'Indeed, most Latin American countries viewed U.S. support for Britain as a betrayal of the hemispheric solidarity embodied in the 1947 Inter-American Treaty of Reciprocal Assistance (the Rio Treaty).',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-crisis-in-the-south-atlantic',
+            loc: {
+              section: 'Crisis in the South Atlantic: The Reagan Administration and the Anglo-Argentine War of 1982',
+              para: '7'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://history.state.gov/milestones/1981-1988/south-atlantic'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q4',
+          text: 'Over the past 15 years, successive British Governments have held a series of meetings with the Argentine Government to discuss the dispute. In many of these meetings elected representatives of the islanders have taken part. We have always made it clear that their wishes were paramount and that there would be no change in sovereignty without their consent and without the approval of the House.',
+          lang: 'en',
+          cite: {
+            source: 'hansard-commons-1982-04-03-falkland-islands',
+            loc: { section: 'Falkland Islands (3 April 1982)', para: '10' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1982/apr/03/falkland-islands'
+          }
+        },
+        {
+          id: 'q5',
+          text: 'Two weeks ago—on 19 March—the latest in this series of incidents affecting sovereignty occurred; and the deterioration in relations between the British and Argentine Governments which culminated in yesterday\'s Argentine invasion began. The incident appeared at the start to be relatively minor. But we now know it was the beginning of much more.',
+          lang: 'en',
+          cite: {
+            source: 'hansard-commons-1982-04-03-falkland-islands',
+            loc: { section: 'Falkland Islands (3 April 1982)', para: '13' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1982/apr/03/falkland-islands'
           }
         },
         {
@@ -390,28 +439,6 @@ export default defineEvent({
             at: '2026-10-08',
             url: 'https://api.parliament.uk/historic-hansard/commons/1982/jun/15/falkland-islands'
           }
-        }
-      ]
-    },
-    {
-      kind: 'aftermath',
-      quotes: [
-        {
-          id: 'q11',
-          text: 'Galtieri resigned as Argentine president, the first step in the eventual return of civilian government to Argentina.',
-          lang: 'en',
-          cite: {
-            source: 'state-dept-milestones-crisis-in-the-south-atlantic',
-            loc: {
-              section: 'Crisis in the South Atlantic: The Reagan Administration and the Anglo-Argentine War of 1982',
-              para: '8'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-09',
-            url: 'https://history.state.gov/milestones/1981-1988/south-atlantic'
-          }
         },
         {
           id: 'q12',
@@ -426,65 +453,39 @@ export default defineEvent({
             at: '2026-10-08',
             url: 'https://api.parliament.uk/historic-hansard/commons/1982/jun/15/falkland-islands'
           }
-        }
-      ]
-    },
-    {
-      kind: 'consequences',
-      quotes: [
+        },
         {
-          id: 'q13',
-          text: 'Indeed, most Latin American countries viewed U.S. support for Britain as a betrayal of the hemispheric solidarity embodied in the 1947 Inter-American Treaty of Reciprocal Assistance (the Rio Treaty).',
+          id: 'q14',
+          text: 'He told me that the Argentines had landed at approximately 6 am Falkland\'s time, 10 am our time. One party attacked the capital from the landward side and another from the seaward side.',
           lang: 'en',
           cite: {
-            source: 'state-dept-milestones-crisis-in-the-south-atlantic',
-            loc: {
-              section: 'Crisis in the South Atlantic: The Reagan Administration and the Anglo-Argentine War of 1982',
-              para: '7'
-            }
+            source: 'hansard-commons-1982-04-03-falkland-islands',
+            loc: { section: 'Falkland Islands (3 April 1982)', para: '5' }
           },
           provenance: {
             via: 'web',
             at: '2026-10-08',
-            url: 'https://history.state.gov/milestones/1981-1988/south-atlantic'
+            url: 'https://api.parliament.uk/historic-hansard/commons/1982/apr/03/falkland-islands'
+          }
+        },
+        {
+          id: 'q16',
+          text: 'The next day, 2 May, at 8 pm London time, one of our submarines detected the Argentine cruiser, "General Belgrano", escorted by two destroyers.',
+          lang: 'en',
+          cite: {
+            source: 'hansard-commons-1982-05-04-falkland-islands',
+            loc: { section: 'Falkland Islands (4 May 1982)', para: '9' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1982/may/04/falkland-islands-2'
           }
         }
       ]
     }
   ],
   course: [
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1982-04-02' },
-            cites: [
-              {
-                source: 'state-dept-milestones-crisis-in-the-south-atlantic',
-                loc: {
-                  section: 'Crisis in the South Atlantic: The Reagan Administration and the Anglo-Argentine War of 1982',
-                  para: '1'
-                }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q14',
-        text: 'He told me that the Argentines had landed at approximately 6 am Falkland\'s time, 10 am our time. One party attacked the capital from the landward side and another from the seaward side.',
-        lang: 'en',
-        cite: {
-          source: 'hansard-commons-1982-04-03-falkland-islands',
-          loc: { section: 'Falkland Islands (3 April 1982)', para: '5' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-08',
-          url: 'https://api.parliament.uk/historic-hansard/commons/1982/apr/03/falkland-islands'
-        }
-      }
-    },
     {
       date: {
         alts: [
@@ -517,35 +518,6 @@ export default defineEvent({
           via: 'web',
           at: '2026-10-08',
           url: 'https://history.state.gov/milestones/1981-1988/south-atlantic'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1982-05-02' },
-            cites: [
-              {
-                source: 'hansard-commons-1982-05-04-falkland-islands',
-                loc: { section: 'Falkland Islands (4 May 1982)', para: '9' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q16',
-        text: 'The next day, 2 May, at 8 pm London time, one of our submarines detected the Argentine cruiser, "General Belgrano", escorted by two destroyers.',
-        lang: 'en',
-        cite: {
-          source: 'hansard-commons-1982-05-04-falkland-islands',
-          loc: { section: 'Falkland Islands (4 May 1982)', para: '9' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-08',
-          url: 'https://api.parliament.uk/historic-hansard/commons/1982/may/04/falkland-islands-2'
         }
       }
     },

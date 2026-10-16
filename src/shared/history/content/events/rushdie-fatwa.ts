@@ -172,59 +172,12 @@ export default defineEvent({
             at: '2026-10-08',
             url: 'https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/'
           }
-        },
-        {
-          id: 'q4',
-          text: 'In Brussels yesterday, I discussed these death threats with Foreign Ministers of the European Community. All the Governments of the Twelve fully shared our sense of outrage at the incitement to murder.',
-          lang: 'en',
-          cite: { source: 'hansard-commons-1989-02-21-iran', loc: { section: 'Iran', para: '6' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://api.parliament.uk/historic-hansard/commons/1989/feb/21/iran'
-          }
-        },
-        {
-          id: 'q5',
-          text: 'In those circumstances, the Government have concluded that, in our own particular case, it is neither possible nor sensible to conduct a normal relationship with Iran.',
-          lang: 'en',
-          cite: { source: 'hansard-commons-1989-02-21-iran', loc: { section: 'Iran', para: '7' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://api.parliament.uk/historic-hansard/commons/1989/feb/21/iran'
-          }
         }
       ]
     },
     {
       kind: 'consequences',
       quotes: [
-        {
-          id: 'q6',
-          text: 'Following Ayatollah Khomeini\'s original statement, there were clear signs that some in the Iranian Government wished to distance themselves from the threat of violence.',
-          lang: 'en',
-          cite: { source: 'hansard-commons-1989-02-21-iran', loc: { section: 'Iran', para: '4' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://api.parliament.uk/historic-hansard/commons/1989/feb/21/iran'
-          }
-        },
-        {
-          id: 'q7',
-          text: 'The Iranian Government broke diplomatic relations with the United Kingdom on 7 March.',
-          lang: 'en',
-          cite: {
-            source: 'hansard-commons-1989-03-08-iran-diplomatic-relations',
-            loc: { section: 'Iran (Diplomatic Relations)', para: '3' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://api.parliament.uk/historic-hansard/commons/1989/mar/08/iran-diplomatic-relations'
-          }
-        },
         {
           id: 'q8',
           text: 'The 12 European Economic Community (EEC) countries recall their ambassadors from Tehran over the Salman Rushdie affair.',
@@ -251,6 +204,105 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-08',
             url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-4/'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q4',
+          text: 'In Brussels yesterday, I discussed these death threats with Foreign Ministers of the European Community. All the Governments of the Twelve fully shared our sense of outrage at the incitement to murder.',
+          lang: 'en',
+          cite: { source: 'hansard-commons-1989-02-21-iran', loc: { section: 'Iran', para: '6' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1989/feb/21/iran'
+          }
+        },
+        {
+          id: 'q5',
+          text: 'In those circumstances, the Government have concluded that, in our own particular case, it is neither possible nor sensible to conduct a normal relationship with Iran.',
+          lang: 'en',
+          cite: { source: 'hansard-commons-1989-02-21-iran', loc: { section: 'Iran', para: '7' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1989/feb/21/iran'
+          }
+        },
+        {
+          id: 'q6',
+          text: 'Following Ayatollah Khomeini\'s original statement, there were clear signs that some in the Iranian Government wished to distance themselves from the threat of violence.',
+          lang: 'en',
+          cite: { source: 'hansard-commons-1989-02-21-iran', loc: { section: 'Iran', para: '4' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1989/feb/21/iran'
+          }
+        },
+        {
+          id: 'q7',
+          text: 'The Iranian Government broke diplomatic relations with the United Kingdom on 7 March.',
+          lang: 'en',
+          cite: {
+            source: 'hansard-commons-1989-03-08-iran-diplomatic-relations',
+            loc: { section: 'Iran (Diplomatic Relations)', para: '3' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1989/mar/08/iran-diplomatic-relations'
+          }
+        },
+        {
+          id: 'q12',
+          text: 'However, on Sunday last, Ayatollah Khomeini made a further statement, renewing most explicitly the threat to Mr. Rushdie\'s life.',
+          lang: 'en',
+          cite: { source: 'hansard-commons-1989-02-21-iran', loc: { section: 'Iran', para: '5' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1989/feb/21/iran'
+          }
+        },
+        {
+          id: 'q13',
+          text: 'The Twelve Foreign Ministers issued a statement, whose text has been placed in the Library of the House, in which they rejected Khomeini\'s threats as an affront to international standards of behaviour which could not be tolerated. We all reaffirmed our commitment to ensure the protection of the life and property of our citizens. We agreed and announced two immediate steps: suspension of any exchanges of high-level official visits between Iran and our countries and the recall of heads of mission from Tehran.',
+          lang: 'en',
+          cite: { source: 'hansard-commons-1989-02-21-iran', loc: { section: 'Iran', para: '6' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1989/feb/21/iran'
+          }
+        },
+        {
+          id: 'q14',
+          text: 'We have therefore decided to withdraw all the United Kingdom-based staff from our embassy in Tehran.',
+          lang: 'en',
+          cite: { source: 'hansard-commons-1989-02-21-iran', loc: { section: 'Iran', para: '7' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1989/feb/21/iran'
+          }
+        },
+        {
+          id: 'q15',
+          text: 'We have made clear throughout that, as with any other country, normal relations between Britain and Iran must depend on Iran\'s fulfilment of her international obligations, in particular by renouncing the use or threat of violence against our citizens.',
+          lang: 'en',
+          cite: {
+            source: 'hansard-commons-1989-03-08-iran-diplomatic-relations',
+            loc: { section: 'Iran (Diplomatic Relations)', para: '4' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1989/mar/08/iran-diplomatic-relations'
           }
         }
       ]
@@ -313,125 +365,6 @@ export default defineEvent({
           via: 'web',
           at: '2026-10-08',
           url: 'https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1989-02-18' },
-            cites: [
-              {
-                source: 'iranica-algar-khomeini-life',
-                loc: { section: 'KHOMEINI i. Life', para: '104' }
-              }
-            ],
-            heldBy: [
-              { kind: 'scholar', name: 'Hamid Algar' }
-            ]
-          },
-          {
-            value: { d: '1989-02-19' },
-            cites: [
-              {
-                source: 'hansard-commons-1989-02-21-iran',
-                loc: { section: 'Iran', para: '5' }
-              }
-            ],
-            heldBy: [
-              { kind: 'state', name: 'United Kingdom' }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q12',
-        text: 'However, on Sunday last, Ayatollah Khomeini made a further statement, renewing most explicitly the threat to Mr. Rushdie\'s life.',
-        lang: 'en',
-        cite: { source: 'hansard-commons-1989-02-21-iran', loc: { section: 'Iran', para: '5' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-08',
-          url: 'https://api.parliament.uk/historic-hansard/commons/1989/feb/21/iran'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1989-02-20' },
-            cites: [
-              {
-                source: 'hansard-commons-1989-02-21-iran',
-                loc: { section: 'Iran', para: '6' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q13',
-        text: 'The Twelve Foreign Ministers issued a statement, whose text has been placed in the Library of the House, in which they rejected Khomeini\'s threats as an affront to international standards of behaviour which could not be tolerated. We all reaffirmed our commitment to ensure the protection of the life and property of our citizens. We agreed and announced two immediate steps: suspension of any exchanges of high-level official visits between Iran and our countries and the recall of heads of mission from Tehran.',
-        lang: 'en',
-        cite: { source: 'hansard-commons-1989-02-21-iran', loc: { section: 'Iran', para: '6' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-08',
-          url: 'https://api.parliament.uk/historic-hansard/commons/1989/feb/21/iran'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1989-02-21' },
-            cites: [
-              { source: 'hansard-commons-1989-02-21-iran', loc: { section: 'Iran' } }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q14',
-        text: 'We have therefore decided to withdraw all the United Kingdom-based staff from our embassy in Tehran.',
-        lang: 'en',
-        cite: { source: 'hansard-commons-1989-02-21-iran', loc: { section: 'Iran', para: '7' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-08',
-          url: 'https://api.parliament.uk/historic-hansard/commons/1989/feb/21/iran'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1989-03-07' },
-            cites: [
-              {
-                source: 'hansard-commons-1989-03-08-iran-diplomatic-relations',
-                loc: { section: 'Iran (Diplomatic Relations)', para: '3' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q15',
-        text: 'We have made clear throughout that, as with any other country, normal relations between Britain and Iran must depend on Iran\'s fulfilment of her international obligations, in particular by renouncing the use or threat of violence against our citizens.',
-        lang: 'en',
-        cite: {
-          source: 'hansard-commons-1989-03-08-iran-diplomatic-relations',
-          loc: { section: 'Iran (Diplomatic Relations)', para: '4' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-08',
-          url: 'https://api.parliament.uk/historic-hansard/commons/1989/mar/08/iran-diplomatic-relations'
         }
       }
     }

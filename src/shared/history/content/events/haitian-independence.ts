@@ -268,5 +268,16 @@ export default defineEvent({
     { source: 'madiou-1987-histoire-dhaiti', perspective: 'latin-american' },
     { source: 'fouchard-1988-les-marrons-de-la-liberte', perspective: 'latin-american' },
     { source: 'trouillot-1995-silencing-the-past', perspective: 'latin-american' }
+  ],
+  places: [
+    {
+      ref: 'place:gonaives',
+      cites: [
+        {
+          source: 'loc-haiti-country-study-1989',
+          loc: { section: 'Toussaint Louverture', para: '4' }
+        }
+      ]
+    }
   ]
 })

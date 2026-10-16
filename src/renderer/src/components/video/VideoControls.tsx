@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { formatTime, type SubCue } from '@shared/subtitles'
 import type { VideoSubtitleTrack } from '@shared/types'
 import { usePopover } from '../../lib/hooks'
@@ -75,7 +75,7 @@ export interface VideoControlsProps {
   subsOn: boolean
   dualSubs: boolean
   dialogueOnly: boolean
-  subOffsetSec: number
+  subDelaySec: number
   extracting: boolean
   trackError: string | null
   transcriptOpen: boolean
@@ -95,7 +95,7 @@ export interface VideoControlsProps {
   onToggleSubs: () => void
   onToggleDual: () => void
   onDialogueOnly: (on: boolean) => void
-  onSubOffset: (delta: number) => void
+  onSubDelay: (delta: number) => void
   onTranscript: () => void
   onMine: () => void
   onCapture: () => void
@@ -128,6 +128,9 @@ export default function VideoControls(props: VideoControlsProps): JSX.Element {
   })
   const style = usePopover(styleOpen, () => setPanel(null), { initialFocus: 'first' })
   const hasSubs = props.tracks.length > 0
+  // A speed picked with the mouse hands focus back to the player, so Space and
+  // the arrows do not stay captured by the select. Keyboard stepping keeps it.
+  const ratePointer = useRef(false)
 
   return (
     <div
@@ -191,7 +194,17 @@ export default function VideoControls(props: VideoControlsProps): JSX.Element {
             className="input h-7 w-[4.5rem] shrink-0 px-1 py-0 text-xs"
             title="Playback speed ([ and ])"
             value={props.rate}
-            onChange={(e) => props.onRate(Number(e.target.value))}
+            onPointerDown={() => {
+              ratePointer.current = true
+            }}
+            onKeyDown={() => {
+              ratePointer.current = false
+            }}
+            onChange={(e) => {
+              props.onRate(Number(e.target.value))
+              if (ratePointer.current) e.currentTarget.blur()
+              ratePointer.current = false
+            }}
           >
             {PLAYBACK_RATES.map((r) => (
               <option key={r} value={r}>
@@ -211,6 +224,8 @@ export default function VideoControls(props: VideoControlsProps): JSX.Element {
           <input
             type="range"
             className="w-20 shrink-0 cursor-pointer accent-accent"
+            // The player's own keys stay live while this slider has focus.
+            data-player-keys=""
             min={0}
             max={1}
             step={0.01}
@@ -255,12 +270,12 @@ export default function VideoControls(props: VideoControlsProps): JSX.Element {
               primaryId={props.primaryId}
               secondaryId={props.secondaryId}
               dialogueOnly={props.dialogueOnly}
-              subOffsetSec={props.subOffsetSec}
+              subDelaySec={props.subDelaySec}
               extracting={props.extracting}
               trackError={props.trackError}
               onPick={props.onPickTrack}
               onDialogueOnly={props.onDialogueOnly}
-              onSubOffset={props.onSubOffset}
+              onSubDelay={props.onSubDelay}
             />
           )}
           <button

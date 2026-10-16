@@ -112,7 +112,7 @@ export default defineEvent({
         },
         {
           id: 'q2',
-          text: 'On Sunday, 10 Ramadan 1274/24 April 1858, Nāṣer-al-Din Shah was invited to operate the line connecting the Golestān Palace with Bāḡ-e Lālazār for himself. Amazed at the speed and accuracy with which messages were exchanged, the Shah praised the participants of the project and ordered the line to be made permanent—an order which was carried out by Kržiž (Eʿtemād-al-Salṭana, 1877-80, II, p. 219).',
+          text: 'On Sunday, 10 Ramadan 1274/24 April 1858, Nāṣer-al-Din Shah was invited to operate the line connecting the Golestān Palace with Bāḡ-e Lālazār for himself. Amazed at the speed and accuracy with which messages were exchanged, the Shah praised the participants of the project and ordered the line to be made permanent—an order which was carried out by Kržiž',
           lang: 'en',
           cite: {
             source: 'iranica-shahvar-telegraph-i',
@@ -120,13 +120,13 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/telegraph-i-first-telegraph-lines-in-persia/'
           }
         },
         {
           id: 'q3',
-          text: 'In 1274/1857 he laid the first telegraph line from the Arg to the Bāḡ-e Lālazār, linking the shah’s palace and Dār al-fonūn (Polak, I, p. 315).',
+          text: 'In 1274/1857 he laid the first telegraph line from the Arg to the Bāḡ-e Lālazār, linking the shah’s palace and Dār al-fonūn',
           lang: 'en',
           cite: {
             source: 'iranica-gurney-nabavi-dar-al-fonun',
@@ -134,7 +134,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/dar-al-fonun-lit'
           }
         }
@@ -233,11 +233,5 @@ export default defineEvent({
         }
       }
     }
-  ],
-  hero: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/b/b0/Mirza_Malkam_Khan.jpg',
-    page: 'https://commons.wikimedia.org/wiki/File:Mirza_Malkam_Khan.jpg',
-    credit: { institution: 'E. G. Browne, The Press and Poetry of Modern Persia (1914)' },
-    license: { id: 'public-domain' }
-  }
+  ]
 })

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'great-persian-famine-causes',
   about: ['event:great-persian-famine'],
   topic: 'causes',
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'drought-hoarding-and-neglect',
@@ -15,23 +15,23 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q1',
-          text: 'Drought is obviously the most frequent cause of famine, as was the case in several of the famines mentioned by Melville (p. 130).',
+          text: 'Drought is obviously the most frequent cause of famine, as was the case in several of the famines mentioned by Melville',
           lang: 'en',
           cite: { source: 'iranica-de-planhol-famines', loc: { section: 'FAMINES', para: '2' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/famines'
           }
         },
         {
           id: 'q2',
-          text: 'Both factors can also combine, with the succession of a dry summer by a harsh winter especially to be feared, as in the great famine of 1869-72 or Sīstān in 1949-50 (Melville, pp. 147-48).',
+          text: 'Both factors can also combine, with the succession of a dry summer by a harsh winter especially to be feared, as in the great famine of 1869-72 or Sīstān in 1949-50',
           lang: 'en',
           cite: { source: 'iranica-de-planhol-famines', loc: { section: 'FAMINES', para: '2' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/famines'
           }
         },
@@ -70,12 +70,12 @@ export default defineInterpretation({
         },
         {
           id: 'q6',
-          text: 'The embargo on cereal exports, established in 1863, never had any effect since high-ranking government officials did not hesitate to subvert it (Gilbar, p. 136; Chirol, p. 97).',
+          text: 'The embargo on cereal exports, established in 1863, never had any effect since high-ranking government officials did not hesitate to subvert it',
           lang: 'en',
           cite: { source: 'iranica-de-planhol-famines', loc: { section: 'FAMINES', para: '8' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/famines'
           }
         }

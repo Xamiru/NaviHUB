@@ -78,6 +78,16 @@ export function setImportPhase(phase: DictImportStatus['phase'], done = 0, total
   importState.total = total
 }
 
+// For importers whose work is not a dictionary bank (the Japanese voice pack):
+// name the run in the task row and status, and reach the run's cancel signal.
+export function setImportTitle(title: string): void {
+  importState.dictTitle = title
+}
+
+export function currentImportSignal(): AbortSignal | undefined {
+  return activeImportSignal ?? undefined
+}
+
 export function setImportProgress(done: number, total?: number): void {
   importState.done = done
   if (total !== undefined) importState.total = total
@@ -616,7 +626,11 @@ export async function runImport<T>(fn: () => Promise<T>): Promise<T> {
 
 // Streams a pack download to a temp file, reporting bytes through the shared
 // status. `ext` covers the non-zip packs (KanjiVG ships a .xml.gz).
-export async function downloadToTemp(url: string, ext = 'zip'): Promise<string> {
+export async function downloadToTemp(
+  url: string,
+  ext = 'zip',
+  maxBytes = MAX_DICTIONARY_ARCHIVE_BYTES
+): Promise<string> {
   const { app } = await import('electron')
   importState.phase = 'downloading'
   importState.done = 0
@@ -635,7 +649,7 @@ export async function downloadToTemp(url: string, ext = 'zip'): Promise<string> 
   )
   await streamResponseToFile(res, tmp, {
     label: 'Dictionary archive',
-    maxInputBytes: MAX_DICTIONARY_ARCHIVE_BYTES,
+    maxInputBytes: maxBytes,
     signal: activeImportSignal ?? undefined,
     onProgress: (done, total) => {
       importState.done = done

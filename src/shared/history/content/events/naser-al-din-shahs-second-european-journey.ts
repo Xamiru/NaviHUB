@@ -126,7 +126,7 @@ export default defineEvent({
         },
         {
           id: 'q4',
-          text: 'In order to break the power monopolies of Mirzā Ḥosayn Khan Sepahsālār and Mostawfi–al–Mamālek, the shah installed Kāmrān Mirzā into new offices, creating a triumvirate of power which he could manipulate more effectively (Bakhash, pp. 146-48. Mostawfi, I, pp. 146-49).',
+          text: 'In order to break the power monopolies of Mirzā Ḥosayn Khan Sepahsālār and Mostawfi–al–Mamālek, the shah installed Kāmrān Mirzā into new offices, creating a triumvirate of power which he could manipulate more effectively',
           lang: 'en',
           cite: {
             source: 'iranica-walcher-kamran-mirza',
@@ -134,7 +134,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/kamran-mirza-nayeb-al-saltana'
           }
         }
@@ -158,7 +158,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q5',
-        text: 'With the decree read on 12 October 1878, Kāmrān Mirzā received the government and administration of Tehran, the ministry of commerce, affairs of the clergy, princes, and merchants, as well as the governorships of Qazvin, Gilan, Māzandarān, Damāvand, Firuzkuh, Qom, Kashan, Sāveh, Malāyer, Tuyserkān, Nehāvand, Astarābād, Šāhrud, Besṭām, Dāmḡān, and Semnān; in 1881 Astarābād was given him in lieu of Kashan, which was passed on to the shah’s wife, Anis–al–Dawla (Mostawfi, I, pp. 146-47; Bāmdād, Rejāl, pp. 151-52; Nicholson to Salisbury and government of India, No. 26, 28 February 1888, FO 248/464, FO 65/1347, and IO L/P&S/9/190; Eʿtemād–al–Salṭana, 1977, p. 544; idem, 1989, III, p. 1823).',
+        text: 'With the decree read on 12 October 1878, Kāmrān Mirzā received the government and administration of Tehran, the ministry of commerce, affairs of the clergy, princes, and merchants, as well as the governorships of Qazvin, Gilan, Māzandarān, Damāvand, Firuzkuh, Qom, Kashan, Sāveh, Malāyer, Tuyserkān, Nehāvand, Astarābād, Šāhrud, Besṭām, Dāmḡān, and Semnān; in 1881 Astarābād was given him in lieu of Kashan, which was passed on to the shah’s wife, Anis–al–Dawla',
         lang: 'en',
         cite: {
           source: 'iranica-walcher-kamran-mirza',
@@ -166,7 +166,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/kamran-mirza-nayeb-al-saltana'
         }
       }

@@ -5,7 +5,7 @@ export default definePolity({
   names: [
     { text: 'Emirate of Afghanistan', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   polityType: 'emirate',
   start: {
     alts: [
@@ -97,6 +97,26 @@ export default definePolity({
       kind: 'overview',
       quotes: [
         {
+          id: 'q5',
+          text: 'Abdur Rahman turned his considerable energies to what evolved into the creation of the modern state of Afghanistan.',
+          lang: 'en',
+          cite: {
+            source: 'loc-afghanistan-country-study-2001',
+            loc: { section: 'Consolidation of the Modern State', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/afghanistan/15.htm' }
+        },
+        {
+          id: 'q3',
+          text: 'It was not until 1826 that the energetic Dost Mohammad was able to exert sufficient control over his brothers to take over the throne in Kabul, where he proclaimed himself amir.',
+          lang: 'en',
+          cite: {
+            source: 'loc-afghanistan-country-study-2001',
+            loc: { section: 'The Rise of Dost Mohammad', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/afghanistan/12.htm' }
+        },
+        {
           id: 'q1',
           text: 'AFGHANISTAN, a country of Central Asia.',
           lang: 'en',
@@ -117,16 +137,6 @@ export default definePolity({
             at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Afghanistan'
           }
-        },
-        {
-          id: 'q3',
-          text: 'It was not until 1826 that the energetic Dost Mohammad was able to exert sufficient control over his brothers to take over the throne in Kabul, where he proclaimed himself amir.',
-          lang: 'en',
-          cite: {
-            source: 'loc-afghanistan-country-study-2001',
-            loc: { section: 'The Rise of Dost Mohammad', para: '2' }
-          },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/afghanistan/12.htm' }
         }
       ]
     },
@@ -146,16 +156,6 @@ export default definePolity({
             at: '2026-10-08',
             url: 'https://www.iranicaonline.org/articles/afghanistan-x-political-history'
           }
-        },
-        {
-          id: 'q5',
-          text: 'Abdur Rahman turned his considerable energies to what evolved into the creation of the modern state of Afghanistan.',
-          lang: 'en',
-          cite: {
-            source: 'loc-afghanistan-country-study-2001',
-            loc: { section: 'Consolidation of the Modern State', para: '2' }
-          },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/afghanistan/15.htm' }
         },
         {
           id: 'q6',

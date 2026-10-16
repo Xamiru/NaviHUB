@@ -5,7 +5,7 @@ export default definePolity({
   names: [
     { text: 'Khedivate of Egypt', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   polityType: 'emirate',
   start: {
     alts: [
@@ -86,6 +86,19 @@ export default definePolity({
       kind: 'overview',
       quotes: [
         {
+          id: 'q4',
+          text: 'The sultan also granted Ismail the formal title of khedive, which elevated his standing to a position closer to royalty.',
+          lang: 'en',
+          cite: {
+            source: 'loc-egypt-country-study-1990',
+            loc: {
+              section: 'ISMAIL, TAWFIQ, AND THE URABI REVOLT: Khedive Ismail, 1863-79',
+              para: '2'
+            }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/egypt/24.htm' }
+        },
+        {
           id: 'q1',
           text: 'Egypt, though nominally under Turkish suzerainty, has formed a practically independent principality since 1841, and has been de facto under British protection since 1881.',
           lang: 'en',
@@ -115,19 +128,6 @@ export default definePolity({
         {
           id: 'q3',
           text: 'Ismail achieved a considerable degree of independence from the Porte (from Sublime Porte, the term for the High Gate that came to be synonymous with the Ottoman government) by making large payments to the Ottoman treasury.',
-          lang: 'en',
-          cite: {
-            source: 'loc-egypt-country-study-1990',
-            loc: {
-              section: 'ISMAIL, TAWFIQ, AND THE URABI REVOLT: Khedive Ismail, 1863-79',
-              para: '2'
-            }
-          },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/egypt/24.htm' }
-        },
-        {
-          id: 'q4',
-          text: 'The sultan also granted Ismail the formal title of khedive, which elevated his standing to a position closer to royalty.',
           lang: 'en',
           cite: {
             source: 'loc-egypt-country-study-1990',

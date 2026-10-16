@@ -7,8 +7,8 @@
 // Converted/English editions, planetarian HD, Harmonia Full HD
 // Edition, Summer Pockets Reflection Blue) are ALIASES of their base novel,
 // the Persona rule. No chrono column: each title is a separate story.
-// Excluded: the mobile RPG Heaven Burns Red (2022, no verified Steam release),
-// short fan-disc extras (Clannad Hikari Mimamoru Sakamichi de, Little Busters!
+// Heaven Burns Red (2022 mobile RPG, no Steam release) was added 2026-10-17
+// as a game row with no external id, matched by title. Excluded: short fan-disc extras (Clannad Hikari Mimamoru Sakamichi de, Little Busters!
 // SS, the Nishizono Mio and Rewrite gaiden shorts, Rewrite: Cradles Tale),
 // Kanon Kazahana, Air in Summer, the Angel Beats! and Charlotte specials, the
 // Little Busters! OVA, Kaginado Season 2, the four 2025 Summer Pockets
@@ -414,6 +414,14 @@ export const KEY_VISUAL_ARTS: FranchiseCfg = {
       year: 2021,
       releaseDate: '2021-12-24',
       note: 'Genius gamer T-bit meets LUNAR-Q, an AI living on a hidden Moon server'
+    },
+    {
+      id: 'key-heaven-burns-red',
+      title: 'Heaven Burns Red',
+      mediaType: 'game',
+      year: 2022,
+      releaseDate: '2022-02-10',
+      note: 'Jun Maeda’s return as lead writer: a squad of girls fights the Cancers at humanity’s last base'
     },
     {
       id: 'key-prima-doll-anime',

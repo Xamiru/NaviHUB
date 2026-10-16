@@ -421,5 +421,16 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Louis_Laguerre_(1663-1721)_(possibly)_-_The_Duke_of_Marlborough_at_the_Battle_of_Blenheim,_The_Surrender_of_Mar%C3%A9chal_Tallard_(eight_ricordi_-_1176007_-_National_Trust.jpg',
     credit: { institution: 'National Trust', creator: 'Louis Laguerre (possibly)' },
     license: { id: 'public-domain' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:madrid',
+      cites: [
+        {
+          source: 'britannica-1911-spanish-succession-war-of-the',
+          loc: { section: 'Spanish Succession, War of the', para: '38' }
+        }
+      ]
+    }
+  ]
 })

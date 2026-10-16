@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Ehsanollah Khan Dustdar', lang: 'en', role: 'primary' },
     { text: 'احسان‌الله خان دوستدار', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -50,7 +50,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q1',
-          text: 'second most prominent figure in the the Soviet Socialist Republic of Iran (Ḥokūmat-e jomhūrī-e šūrawī-e Īrān), the radicalized second phase of the Jangalī movement in the years 1920-21',
+          text: 'Baku, ca. 1938), second most prominent figure in the the Soviet Socialist Republic of Iran (Ḥokūmat-e jomhūrī-e šūrawī-e Īrān), the radicalized second phase of the Jangalī movement in the years 1920-21',
           lang: 'en',
           cite: {
             source: 'iranica-chaqueri-ehsan-allah-khan',
@@ -58,7 +58,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/ehsan-allah-khan/'
           }
         },

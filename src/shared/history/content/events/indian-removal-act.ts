@@ -382,5 +382,8 @@ export default defineEvent({
   ],
   furtherReading: [
     { source: 'mattioli-2017-verlorene-welten', perspective: 'european' }
+  ],
+  places: [
+    { ref: 'place:washington-dc' }
   ]
 })

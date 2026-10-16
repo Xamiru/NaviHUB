@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Alfred Dreyfus', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-16',
   regions: ['europe'],
   roles: ['military'],
   sections: [
@@ -53,5 +53,31 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Alfred_Dreyfus_(1859-1935)_Restauration.jpg',
     credit: { institution: 'Bibliothèque municipale de Reims', creator: 'Aron Gerschel' },
     license: { id: 'public-domain' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1859-10-09' },
+        cites: [
+          {
+            source: 'loc-name-authority-alfred-dreyfus',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1935-07-12' },
+        cites: [
+          {
+            source: 'loc-name-authority-alfred-dreyfus',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
   }
 })

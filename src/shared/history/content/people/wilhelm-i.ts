@@ -14,7 +14,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -127,6 +127,25 @@ export default definePerson({
     }
   ],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q8',
+          text: 'WILLIAM I. (1797-1888), king of Prussia and German emperor, was the second son of Frederick William III. of Prussia and Louise, a princess of Mecklenburg-Strelitz.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-william-i-of-germany',
+            loc: { section: 'WILLIAM I. OF GERMANY', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/William_I._of_Germany'
+          }
+        }
+      ]
+    },
     {
       kind: 'career',
       quotes: [

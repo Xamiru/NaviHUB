@@ -45,20 +45,23 @@ export const VIDEO_PLAYER_SHORTCUTS: ShortcutRow[] = [
   { keys: ['Space', 'K'], label: 'Play / pause' },
   { keys: ['←', '→'], label: 'Back / forward 5 s (Shift = 1 s)' },
   { keys: ['J', 'L'], label: 'Back / forward 10 s' },
-  { keys: ['A', 'D'], label: 'Previous / next subtitle line' },
+  { keys: [',', '.'], label: 'Previous / next frame (while paused)' },
+  { keys: ['Home', 'End'], label: 'Jump to the start (or range start) / the end' },
+  { keys: ['A', 'D', 'Ctrl+←', 'Ctrl+→'], label: 'Previous / next subtitle line' },
   { keys: ['R'], label: 'Replay the current line' },
   { keys: ['Shift+R', 'Shift+L'], label: 'Replay / loop the study range' },
   { keys: ['↑', '↓', 'Shift+M'], label: 'Volume up / down, mute' },
   { keys: ['[', ']', '\\'], label: 'Slower / faster / normal speed' },
   { keys: ['S', 'B'], label: 'Subtitles on/off, second track' },
-  { keys: ['-', '='], label: 'Subtitle timing earlier / later' },
+  { keys: ['Shift+S'], label: 'Next subtitle track' },
+  { keys: ['-', '='], label: 'Subtitles earlier / later (remembered per show)' },
   { keys: ['T', 'M', 'C'], label: 'Transcript, mining panel, capture' },
   { keys: ['Q'], label: 'Save the line on screen as a quote' },
   { keys: ['N', 'P'], label: 'Next / previous file' },
   { keys: ['F', 'O'], label: 'Fullscreen, open externally' },
   { keys: ['Double-click'], label: 'Fullscreen (a single click does nothing)' },
   { keys: ['0-9'], label: 'Jump to 0-90 percent' },
-  { keys: ['Esc'], label: 'Close panels / leave the player' }
+  { keys: ['Esc', 'Backspace'], label: 'Close panels / leave the player' }
 ]
 
 export const SHORTCUT_GROUPS: ShortcutGroup[] = [
@@ -74,14 +77,16 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
   },
   {
     title: 'Browser tabs',
-    note: 'Up to five tabs. Ctrl+click or middle-click a link to open it in a background tab.',
+    note: 'Up to eight tabs. Ctrl+click or middle-click a link to open it in a background tab.',
     rows: [
       { keys: ['Ctrl+T'], label: 'New tab' },
       { keys: ['Ctrl+Shift+T'], label: 'Reopen the last closed tab' },
       { keys: ['Ctrl+W'], label: 'Close the tab' },
+      { keys: ['Ctrl+Shift+K'], label: 'Duplicate the tab' },
       { keys: ['Ctrl+Tab', 'Ctrl+Shift+Tab'], label: 'Next / previous tab' },
       { keys: ['Ctrl+PageDown', 'Ctrl+PageUp'], label: 'Next / previous tab' },
-      { keys: ['Ctrl+1', 'Ctrl+5'], label: 'Go to tab 1 to 5' }
+      { keys: ['Ctrl+1', 'Ctrl+8'], label: 'Go to tab 1 to 8' },
+      { keys: ['Ctrl+9'], label: 'Go to the last tab' }
     ]
   },
   {

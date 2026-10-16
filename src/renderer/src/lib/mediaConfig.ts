@@ -138,6 +138,8 @@ export interface MediaConfig {
   // (games + VNs — the same types that can link an executable, since tracking
   // is only offered where one is or once was linked).
   hasAchievements?: boolean
+  // Mods tab: GameBanana mods for the game, installed into its emulator.
+  hasMods?: boolean
 }
 
 // Roles that represent "playing/voicing a character" (vs. crew). Used to split
@@ -355,6 +357,7 @@ export const GAME: MediaConfig = {
   children: [
     { to: '/games/installed', label: 'Installed' },
     { to: '/games/achievements', label: 'Achievements' },
+    { to: '/games/emulators', label: 'Emulators' },
     { to: '/franchises', label: 'Franchises' },
     { to: '/people', label: 'Voice Actors', role: 'voice_actor' }
   ],
@@ -377,7 +380,8 @@ export const GAME: MediaConfig = {
   mediaTabLabel: 'Playtime',
   hasFanArt: true,
   hasGameLaunch: true,
-  hasAchievements: true
+  hasAchievements: true,
+  hasMods: true
 }
 
 export const MOVIE: MediaConfig = {
@@ -547,4 +551,15 @@ export function configFor(key: MediaType): MediaConfig {
 // that link back to the work — a person/character/company can span types).
 export function pathForMedia(m: Pick<MediaSummary, 'id' | 'mediaType'>): string {
   return `${configFor(m.mediaType).basePath}/${m.id}`
+}
+
+// The reverse: which title a detail-page path names, if any. Only the bare
+// detail route matches (not /anime/seasonal, /anime/7/edit or a reader).
+export function mediaRouteFor(pathname: string): { cfg: MediaConfig; id: number } | null {
+  for (const cfg of MEDIA_CONFIGS) {
+    if (!pathname.startsWith(`${cfg.basePath}/`)) continue
+    const rest = pathname.slice(cfg.basePath.length + 1)
+    if (/^\d+$/.test(rest)) return { cfg, id: Number(rest) }
+  }
+  return null
 }

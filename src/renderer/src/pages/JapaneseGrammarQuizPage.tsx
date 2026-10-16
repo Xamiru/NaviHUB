@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
+import JapaneseHubTabs from '../components/japanese/JapaneseHubTabs'
 import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
 import QuizRecord from '../components/QuizRecord'
 import { Group, Pill } from '../components/PillGroup'
@@ -202,6 +203,7 @@ export default function JapaneseGrammarQuizPage() {
   if (phase === 'setup') {
     return (
       <div className="p-6 max-w-2xl mx-auto">
+        <JapaneseHubTabs />
         <PageHeader
           back={{ to: '/japanese/grammar', label: 'Grammar' }}
           title="Grammar Drill"

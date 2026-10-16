@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'abul-hasan-khan-ilchi-character',
   about: ['person:abul-hasan-khan-ilchi'],
   topic: 'character',
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   framing: {
     id: 'q1',
     text: 'Receiving gifts was not uncommon among the courtiers of Fatḥ-ʿAlī Shah, but a regular annuity from a foreign government was unusual.',
@@ -75,7 +75,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q4',
-          text: 'Some Iranian historians have criticized him for joining Freemasonry and also for receiving gifts and an annuity from the British (E. Rāʾīn, Ḥoqūthat-begīrān-e Engelīs dar Īrān, Tehran, 1348 Š./1969, pp. 20-43).',
+          text: 'Some Iranian historians have criticized him for joining Freemasonry and also for receiving gifts and an annuity from the British',
           lang: 'en',
           cite: {
             source: 'iranica-javadi-abul-hasan-khan-ilci',
@@ -83,7 +83,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/abul-hasan-khan-ilci/'
           }
         },

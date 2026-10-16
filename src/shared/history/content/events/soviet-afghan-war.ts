@@ -465,5 +465,19 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:RIAN_archive_642790_Soviet_troop_withdrawal_from_Afghanistan.jpg',
     credit: { institution: 'RIA Novosti archive', creator: 'V. Kiselev' },
     license: { id: 'cc-by-sa', version: '3.0', url: 'https://creativecommons.org/licenses/by-sa/3.0' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:kabul',
+      cites: [
+        {
+          source: 'state-dept-milestones-soviet-invasion-of-afghanistan',
+          loc: {
+            section: 'The Soviet Invasion of Afghanistan and the U.S. Response, 1978–1980',
+            para: '5'
+          }
+        }
+      ]
+    }
+  ]
 })

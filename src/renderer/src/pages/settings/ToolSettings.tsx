@@ -688,3 +688,47 @@ export function TorrentSettings({
 
 // Offline Japanese dictionaries: install JMdict/KANJIDIC with one click, import
 // any other Yomitan .zip, watch import progress, and remove installed ones.
+
+export function SevenZipSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
+  const [path, setPath] = useState('')
+  const [found, setFound] = useState<string | null | undefined>(undefined)
+  useEffect(() => setPath(data?.['sevenzip.path'] ?? ''), [data])
+
+  async function test() {
+    await onSave('sevenzip.path', path.trim())
+    setFound(await api.mods.sevenZip())
+  }
+
+  return (
+    <SettingCard
+      title="7-Zip (game mods)"
+      description={
+        <>
+          Unpacks .7z and .rar mods from a game&apos;s Mods tab. Zip mods need nothing. Install
+          7-Zip yourself; leave this blank to use the standard install in Program Files, or set
+          the full path to <span className="text-gray-400">7z.exe</span>.
+        </>
+      }
+    >
+      <div className="flex items-center gap-2">
+        <Field label="7-Zip program path" hiddenLabel className="contents">
+          <input
+            className="input"
+            type="text"
+            value={path}
+            onChange={(e) => setPath(e.target.value)}
+            placeholder="C:\Program Files\7-Zip\7z.exe"
+          />
+        </Field>
+        <button className="btn-ghost shrink-0" onClick={() => void test()}>
+          Save &amp; check
+        </button>
+      </div>
+      {found !== undefined && (
+        <p className={`mt-3 text-sm ${found ? 'text-green-400' : 'text-red-400'}`}>
+          {found ? `✓ Using ${found}` : '7-Zip was not found there.'}
+        </p>
+      )}
+    </SettingCard>
+  )
+}

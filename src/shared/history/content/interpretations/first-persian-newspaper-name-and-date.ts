@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'first-persian-newspaper-name-and-date',
   about: ['event:first-persian-newspaper-1837'],
   topic: 'naming',
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'akhbar-may-1837',
@@ -15,7 +15,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q1',
-          text: 'Other than the short-lived Aḵbār (also known as Kāḡaḏ-e aḵbār) that had begun as a private venture under the supervision of Mirzā Ṣāleḥ Širāzi in May 1837, the first official newspaper appeared on 7 February 1851 on the orders of the first prime minister under Nāṣer-al-Din Shah’s rule, Mirzā Taqi Khan Amir Kabir (Mirzā Ṣāleḥ Širāzi, p. 21).',
+          text: 'Other than the short-lived Aḵbār (also known as Kāḡaḏ-e aḵbār) that had begun as a private venture under the supervision of Mirzā Ṣāleḥ Širāzi in May 1837, the first official newspaper appeared on 7 February 1851 on the orders of the first prime minister under Nāṣer-al-Din Shah’s rule, Mirzā Taqi Khan Amir Kabir',
           lang: 'en',
           cite: {
             source: 'iranica-nabavi-journalism-qajar',
@@ -23,7 +23,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/journalism-i-qajar-period/'
           }
         }

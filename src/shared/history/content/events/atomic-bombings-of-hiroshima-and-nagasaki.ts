@@ -135,6 +135,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'After the detonation of atomic bombs over Hiroshima and Nagasaki on August 6 and 8, 1945, respectively, the emperor asked that the Japanese people bring peace to Japan by "enduring the unendurable and suffering what is insufferable" by surrendering to the Allied powers.',
+          lang: 'en',
+          cite: {
+            source: 'loc-japan-country-study-1994',
+            loc: { section: 'WORLD WAR II AND THE OCCUPATION', para: '1' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/japan/33.htm' }
+        },
+        {
           id: 'q1',
           text: 'On 6 August and 9 August 1945, the first two atomic bombs to be used for military purposes were dropped on Hiroshima and Nagasaki respectively. One hundred thousand people were killed, 6 square miles or over 50 percent of the built-up areas of the two cities were destroyed.',
           lang: 'en',
@@ -144,16 +154,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://archive.org/download/unitedstatesstra00cent/unitedstatesstra00cent_djvu.txt'
           }
-        },
-        {
-          id: 'q2',
-          text: 'After the detonation of atomic bombs over Hiroshima and Nagasaki on August 6 and 8, 1945, respectively, the emperor asked that the Japanese people bring peace to Japan by "enduring the unendurable and suffering what is insufferable" by surrendering to the Allied powers.',
-          lang: 'en',
-          cite: {
-            source: 'loc-japan-country-study-1994',
-            loc: { section: 'WORLD WAR II AND THE OCCUPATION', para: '1' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/japan/33.htm' }
         }
       ]
     },
@@ -193,12 +193,7 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.trumanlibrary.gov/library/public-papers/93/statement-president-announcing-use-bomb-hiroshima'
           }
-        }
-      ]
-    },
-    {
-      kind: 'casualties',
-      quotes: [
+        },
         {
           id: 'q4',
           text: 'There has been great difficulty in estimating the total casualties in the Japanese cities as a result of the atomic bombing.',
@@ -226,7 +221,12 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://avalon.law.yale.edu/20th_century/mp10.asp'
           }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'casualties',
+      quotes: [
         {
           id: 'q6',
           text: 'The exact number of deaths from the atomic bombing is still unknown. Estimates place the number of dead by the end of December 1945, when the acute effects of radiation poisoning had largely subsided, at roughly 140,000.',

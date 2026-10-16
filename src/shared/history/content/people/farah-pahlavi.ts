@@ -14,9 +14,10 @@ export default definePerson({
           loc: { section: 'State and Society, 1964-74', para: '11' }
         }
       ]
-    }
+    },
+    { text: 'فرح پهلوی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-16',
   regions: ['iran'],
   roles: ['monarch'],
   portrait: {
@@ -43,5 +44,18 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1938-10-14' },
+        cites: [
+          {
+            source: 'loc-name-authority-farah-pahlavi',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  }
 })

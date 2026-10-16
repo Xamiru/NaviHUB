@@ -331,7 +331,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q12',
-        text: 'The previous day Wolff had already given the following “Assurance”: “In the event of any power making an attack without a just cause or provocation on Persia . . . Her Majesty’s Government engages to make earnest representations against such proceedings and to take such steps as may in their judgment be best calculated to prevent any infringement of the integrity of Persia . . .” (Tehran, 24 October 1888 (enclosure 3, ibid.).',
+        text: 'The previous day Wolff had already given the following “Assurance”: “In the event of any power making an attack without a just cause or provocation on Persia . . . Her Majesty’s Government engages to make earnest representations against such proceedings and to take such steps as may in their judgment be best calculated to prevent any infringement of the integrity of Persia . . .”',
         lang: 'en',
         cite: {
           source: 'iranica-shahnavaz-karun-river-opening',
@@ -339,7 +339,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/karun-river/karun_3'
         }
       }
@@ -418,7 +418,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q15',
-        text: 'On 30 October a steam launch owned by Mackenzie & Co. was dispatched from Basra to the Karun as a pioneer and to establish the right of way, and it was followed by the Lynch Brothers steamer which belonged to the Euphrates and Tigris Steam Navigation Co. and had been prepared and dispatched in just three days (Saldana, p. 28).',
+        text: 'On 30 October a steam launch owned by Mackenzie & Co. was dispatched from Basra to the Karun as a pioneer and to establish the right of way, and it was followed by the Lynch Brothers steamer which belonged to the Euphrates and Tigris Steam Navigation Co. and had been prepared and dispatched in just three days',
         lang: 'en',
         cite: {
           source: 'iranica-shahnavaz-karun-river-opening',
@@ -426,7 +426,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/karun-river/karun_3'
         }
       }

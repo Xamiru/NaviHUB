@@ -157,34 +157,6 @@ export default defineEvent({
             at: '2026-10-09',
             url: 'https://history.state.gov/milestones/1969-1976/helsinki'
           }
-        },
-        {
-          id: 'q5',
-          text: 'The participating States regard as inviolable all one another\'s frontiers as well as the frontiers of all States in Europe and therefore they will refrain now and in the future from assaulting these frontiers.',
-          lang: 'en',
-          cite: {
-            source: 'csce-1975-helsinki-final-act',
-            loc: { section: 'Final Act of the Conference on Security and Cooperation in Europe' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-09',
-            url: 'https://en.wikisource.org/wiki/Helsinki_Final_Act'
-          }
-        },
-        {
-          id: 'q6',
-          text: 'The participating States will respect human rights and fundamental freedoms, including the freedom of thought, conscience, religion or belief, for all without distinction as to race, sex, language or religion.',
-          lang: 'en',
-          cite: {
-            source: 'csce-1975-helsinki-final-act',
-            loc: { section: 'Final Act of the Conference on Security and Cooperation in Europe' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-09',
-            url: 'https://en.wikisource.org/wiki/Helsinki_Final_Act'
-          }
         }
       ]
     },
@@ -234,6 +206,53 @@ export default defineEvent({
           }
         }
       ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q5',
+          text: 'The participating States regard as inviolable all one another\'s frontiers as well as the frontiers of all States in Europe and therefore they will refrain now and in the future from assaulting these frontiers.',
+          lang: 'en',
+          cite: {
+            source: 'csce-1975-helsinki-final-act',
+            loc: { section: 'Final Act of the Conference on Security and Cooperation in Europe' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://en.wikisource.org/wiki/Helsinki_Final_Act'
+          }
+        },
+        {
+          id: 'q6',
+          text: 'The participating States will respect human rights and fundamental freedoms, including the freedom of thought, conscience, religion or belief, for all without distinction as to race, sex, language or religion.',
+          lang: 'en',
+          cite: {
+            source: 'csce-1975-helsinki-final-act',
+            loc: { section: 'Final Act of the Conference on Security and Cooperation in Europe' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://en.wikisource.org/wiki/Helsinki_Final_Act'
+          }
+        },
+        {
+          id: 'q11',
+          text: 'The Conference on Security and Co-operation in Europe, which opened at Helsinki on 3 July 1973 and continued at Geneva from 18 September 1973 to 21 July 1975, was concluded at Helsinki on 1 August 1975',
+          lang: 'en',
+          cite: {
+            source: 'csce-1975-helsinki-final-act',
+            loc: { section: 'Final Act of the Conference on Security and Cooperation in Europe' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://en.wikisource.org/wiki/Helsinki_Final_Act'
+          }
+        }
+      ]
     }
   ],
   course: [
@@ -263,37 +282,6 @@ export default defineEvent({
           via: 'web',
           at: '2026-10-09',
           url: 'https://history.state.gov/milestones/1969-1976/helsinki'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1973-07-03' },
-            cites: [
-              {
-                source: 'csce-1975-helsinki-final-act',
-                loc: {
-                  section: 'Final Act of the Conference on Security and Cooperation in Europe'
-                }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q11',
-        text: 'The Conference on Security and Co-operation in Europe, which opened at Helsinki on 3 July 1973 and continued at Geneva from 18 September 1973 to 21 July 1975, was concluded at Helsinki on 1 August 1975',
-        lang: 'en',
-        cite: {
-          source: 'csce-1975-helsinki-final-act',
-          loc: { section: 'Final Act of the Conference on Security and Cooperation in Europe' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-09',
-          url: 'https://en.wikisource.org/wiki/Helsinki_Final_Act'
         }
       }
     },

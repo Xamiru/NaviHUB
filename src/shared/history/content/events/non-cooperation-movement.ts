@@ -162,5 +162,16 @@ export default defineEvent({
   furtherReading: [
     { source: 'chandra-1989-indias-struggle-for-independence', perspective: 'south-asian' },
     { source: 'sarkar-1983-modern-india', perspective: 'south-asian' }
+  ],
+  places: [
+    {
+      ref: 'place:ahmedabad',
+      cites: [
+        {
+          source: 'loc-india-country-study-1995',
+          loc: { section: 'Mahatma Gandhi', para: '6' }
+        }
+      ]
+    }
   ]
 })

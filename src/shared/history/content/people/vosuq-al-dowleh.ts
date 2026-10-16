@@ -25,7 +25,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['iran'],
   roles: ['politician'],
   offices: [
@@ -102,7 +102,7 @@ export default definePerson({
   ],
   sections: [
     {
-      kind: 'career',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',
@@ -117,7 +117,12 @@ export default definePerson({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/constitutional-revolution-iv/'
           }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'career',
+      quotes: [
         {
           id: 'q2',
           text: 'After much maneuvering, in August 1918 Britain had secured the reappointment of the pro-British Ḥasan Khan Woṯuq-al-Dawla as Persian prime minister, in exchange for a pledge of personal protection and payment of subsidy to Aḥmad Shah.',

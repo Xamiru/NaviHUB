@@ -124,3 +124,30 @@ describe('deck hygiene', () => {
     expect(removeWords([])).toBe(0)
   })
 })
+
+describe('FSRS on the English deck', () => {
+  it('returns the persisted state and logs optimizer columns', () => {
+    const id = saveWord({ word: 'lucid', meaning: 'Clear.' })
+    const first = submitReview(id, 'good')
+    expect(first.state.stability).toBeGreaterThan(0)
+    expect(first.state.difficulty).toBeGreaterThan(0)
+    const row = db.prepare('SELECT stability, fsrs_difficulty FROM en_word WHERE id = ?').get(id)
+    expect(row).toEqual({ stability: first.state.stability, fsrs_difficulty: first.state.difficulty })
+    submitReview(id, 'good')
+    const logs = db
+      .prepare('SELECT state_before, elapsed_days, scheduled_days FROM en_review_log ORDER BY id')
+      .all()
+    expect(logs).toEqual([
+      { state_before: 'new', elapsed_days: null, scheduled_days: 0 },
+      { state_before: 'learning', elapsed_days: 0, scheduled_days: 0 }
+    ])
+  })
+
+  it('uses the desired retention setting', () => {
+    const id = saveWord({ word: 'terse', meaning: 'Brief.' })
+    db.prepare("INSERT INTO settings (key, value) VALUES ('srs.desiredRetention', '')").run()
+    // A blank row is the default, not the 70% floor: Easy graduates the same as with no row.
+    const blank = submitReview(id, 'easy').intervalDays
+    expect(blank).toBeGreaterThanOrEqual(2)
+  })
+})

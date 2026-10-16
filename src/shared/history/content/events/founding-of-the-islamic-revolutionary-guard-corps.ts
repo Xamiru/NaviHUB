@@ -286,5 +286,16 @@ export default defineEvent({
         provenance: { via: 'web', at: '2026-10-10', url: 'http://countrystudies.us/iran/26.htm' }
       }
     }
+  ],
+  places: [
+    {
+      ref: 'place:tehran',
+      cites: [
+        {
+          source: 'loc-iran-country-study-1987',
+          loc: { section: 'THE REVOLUTION', para: '6' }
+        }
+      ]
+    }
   ]
 })

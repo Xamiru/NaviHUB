@@ -24,7 +24,7 @@ export default definePolity({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   polityType: 'empire',
   start: {
     alts: [
@@ -106,6 +106,16 @@ export default definePolity({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'Leadership subsequently passed to Ertugrul\'s son, Osman I (r. ca. 1284-1324), founder of the Osmanli Dynasty--better known in the West as the Ottomans.',
+          lang: 'en',
+          cite: {
+            source: 'loc-turkey-country-study-1995',
+            loc: { section: 'The Ottoman Empire', para: '1' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/turkey/6.htm' }
+        },
+        {
           id: 'q1',
           text: 'The Turkish or Ottoman Empire comprises Turkey in Europe, Turkey in Asia, and the vilayets of Tripoli and Barca, or Bengazi, in North Africa; and in addition to those provinces under immediate Turkish rule, it embraces also certain tributary states and certain others under foreign administration.',
           lang: 'en',
@@ -115,16 +125,6 @@ export default definePolity({
             at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Turkey'
           }
-        },
-        {
-          id: 'q2',
-          text: 'Leadership subsequently passed to Ertugrul\'s son, Osman I (r. ca. 1284-1324), founder of the Osmanli Dynasty--better known in the West as the Ottomans.',
-          lang: 'en',
-          cite: {
-            source: 'loc-turkey-country-study-1995',
-            loc: { section: 'The Ottoman Empire', para: '1' }
-          },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/turkey/6.htm' }
         }
       ]
     },

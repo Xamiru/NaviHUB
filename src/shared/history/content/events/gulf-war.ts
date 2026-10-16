@@ -475,17 +475,6 @@ export default defineEvent({
           }
         },
         {
-          id: 'q14',
-          text: '2. Authorizes Member States co-operating with the Government of Kuwait, unless Iraq on or before 15 January 1991 fully implements, as set forth in paragraph 1 above, the above-mentioned resolutions, to use all necessary means to uphold and implement resolution 660 (1990) and all subsequent relevant resolutions and to restore international peace and security in the area;',
-          lang: 'en',
-          cite: { source: 'unsc-resolution-678-1990', loc: { section: 'Resolution 678 (1990)' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-10',
-            url: 'https://en.wikisource.org/wiki/United_Nations_Security_Council_Resolution_678'
-          }
-        },
-        {
           id: 'q15',
           text: 'After the deadline for withdrawal passed, the coalition led by the United States attacked Iraq by air.',
           lang: 'en',
@@ -655,6 +644,33 @@ export default defineEvent({
           }
         }
       ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q14',
+          text: '2. Authorizes Member States co-operating with the Government of Kuwait, unless Iraq on or before 15 January 1991 fully implements, as set forth in paragraph 1 above, the above-mentioned resolutions, to use all necessary means to uphold and implement resolution 660 (1990) and all subsequent relevant resolutions and to restore international peace and security in the area;',
+          lang: 'en',
+          cite: { source: 'unsc-resolution-678-1990', loc: { section: 'Resolution 678 (1990)' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-10',
+            url: 'https://en.wikisource.org/wiki/United_Nations_Security_Council_Resolution_678'
+          }
+        },
+        {
+          id: 'q28',
+          text: 'Adopted by the Security Council at its 2963rd meeting on 29 November 1990 by 12 votes to 2 (Cuba and Yemen), with 1 abstention (China).',
+          lang: 'en',
+          cite: { source: 'unsc-resolution-678-1990', loc: { section: 'Resolution 678 (1990)' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-10',
+            url: 'https://en.wikisource.org/wiki/United_Nations_Security_Council_Resolution_678'
+          }
+        }
+      ]
     }
   ],
   course: [
@@ -713,29 +729,6 @@ export default defineEvent({
           via: 'web',
           at: '2026-10-10',
           url: 'https://history.state.gov/milestones/1989-1992/gulf-war'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1990-11-29' },
-            cites: [
-              { source: 'unsc-resolution-678-1990', loc: { section: 'Resolution 678 (1990)' } }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q28',
-        text: 'Adopted by the Security Council at its 2963rd meeting on 29 November 1990 by 12 votes to 2 (Cuba and Yemen), with 1 abstention (China).',
-        lang: 'en',
-        cite: { source: 'unsc-resolution-678-1990', loc: { section: 'Resolution 678 (1990)' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-10',
-          url: 'https://en.wikisource.org/wiki/United_Nations_Security_Council_Resolution_678'
         }
       }
     },

@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Andrew Jackson', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -73,6 +73,25 @@ export default definePerson({
     }
   ],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q5',
+          text: 'JACKSON, ANDREW (1767–1845), seventh president of the United States, was born on the 15th of March 1767, at the Waxhaw or Warsaw settlement, in Union county, North Carolina, or in Lancaster county, South Carolina, whither his parents had immigrated from Carrickfergus, Ireland, in 1765.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-jackson-andrew',
+            loc: { section: 'JACKSON, ANDREW', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Jackson,_Andrew'
+          }
+        }
+      ]
+    },
     {
       kind: 'career',
       quotes: [

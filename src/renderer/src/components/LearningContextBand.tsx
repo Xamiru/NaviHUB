@@ -70,7 +70,7 @@ function JapaneseBand() {
     <Band>
       <span className="font-medium text-gray-200">Japanese</span>
       <span>{data?.dueCount ?? 0} reviews due</span>
-      <span>{data?.newAvailableCount ?? 0} new cards waiting</span>
+      <span>{(data?.newAvailableCount ?? 0) + (data?.newDirectionCount ?? 0)} new cards waiting</span>
       <Link to="/japanese" className="ml-auto text-accent hover:text-accent-hover">
         Back to Today
       </Link>

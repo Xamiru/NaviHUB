@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  parsePlayerServiceAchievements,
   buildGoldbergConfig,
   candidateUnlockPaths,
   diffNewUnlocks,
@@ -496,5 +497,79 @@ describe('joinCommunityWithPercentages', () => {
   it('never uses one api name twice', () => {
     const { rows } = joinCommunityWithPercentages(page, [{ name: 'ONLY', percent: 10 }])
     expect(rows.filter((r) => r.apiName === 'ONLY')).toHaveLength(1)
+  })
+})
+
+describe('parsePlayerServiceAchievements (Steam’s keyless GetGameAchievements)', () => {
+  it('maps the exact list, hidden text and percentages included', () => {
+    const rows = parsePlayerServiceAchievements(
+      {
+        response: {
+          achievements: [
+            {
+              internal_name: 'OGFAC02',
+              localized_name: 'Welcome Back',
+              localized_desc: 'Arrived in Kamurocho for the first time.',
+              icon: 'cb36.jpg',
+              icon_gray: '1dde.jpg',
+              hidden: true,
+              player_percent_unlocked: '22.6'
+            }
+          ]
+        }
+      },
+      '1388590'
+    )
+    expect(rows).toEqual([
+      {
+        apiName: 'OGFAC02',
+        name: 'Welcome Back',
+        description: 'Arrived in Kamurocho for the first time.',
+        hidden: true,
+        icon: 'https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/1388590/cb36.jpg',
+        iconGray: 'https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/1388590/1dde.jpg',
+        globalPct: 22.6
+      }
+    ])
+  })
+
+  it('falls back to the api name, drops duplicates and refuses odd icon names', () => {
+    const rows = parsePlayerServiceAchievements(
+      {
+        response: {
+          achievements: [
+            { internal_name: 'A', localized_name: ' ', icon: '../x.jpg', player_percent_unlocked: 'n/a' },
+            { internal_name: 'A', localized_name: 'Again' },
+            { localized_name: 'No id' },
+            null
+          ]
+        }
+      },
+      '1'
+    )
+    expect(rows).toEqual([
+      { apiName: 'A', name: 'A', description: null, hidden: false, icon: null, iconGray: null, globalPct: null }
+    ])
+  })
+
+  it('reads a blank percentage as unknown, never as 0%', () => {
+    const rows = parsePlayerServiceAchievements(
+      {
+        response: {
+          achievements: [
+            { internal_name: 'A', player_percent_unlocked: '' },
+            { internal_name: 'B', player_percent_unlocked: 4.5 }
+          ]
+        }
+      },
+      '1'
+    )
+    expect(rows.map((r) => r.globalPct)).toEqual([null, 4.5])
+  })
+
+  it('reads a game with no achievements, or anything else, as an empty list', () => {
+    expect(parsePlayerServiceAchievements({ response: {} }, '1')).toEqual([])
+    expect(parsePlayerServiceAchievements(null, '1')).toEqual([])
+    expect(parsePlayerServiceAchievements('<html>', '1')).toEqual([])
   })
 })

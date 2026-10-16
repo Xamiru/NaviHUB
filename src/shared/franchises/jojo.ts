@@ -177,7 +177,7 @@ export const JOJO: FranchiseCfg = {
       releaseDate: '2011-05-19',
       chrono: 8,
       mc: 85,
-      note: 'A amnesiac man washed ashore in a changed Morioh pieces together who, or what, he used to be'
+      note: 'An amnesiac man washed ashore in a changed Morioh pieces together who, or what, he used to be'
     },
     {
       id: 'jojo-tv1',

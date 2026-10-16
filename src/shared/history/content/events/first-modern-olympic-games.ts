@@ -58,7 +58,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: '1896 The first modern Olympic games, revived by Baron Pierre de Coubertin (b. 1863 in Paris), are held in Athens.',
+          text: 'The first modern Olympic games, revived by Baron Pierre de Coubertin (b. 1863 in Paris), are held in Athens.',
           lang: 'en',
           cite: {
             source: 'iranica-yarshater-chronology-part-2',
@@ -66,7 +66,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
           }
         }

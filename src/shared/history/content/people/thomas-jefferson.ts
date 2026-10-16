@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Thomas Jefferson', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -92,7 +92,7 @@ export default definePerson({
         },
         {
           id: 'q4',
-          text: 'peace, commerce, and honest friendship with all nations, entangling alliances with none;',
+          text: 'Equal and exact justice to all men, of whatever state or persuasion, religious or political; peace, commerce, and honest friendship with all nations, entangling alliances with none;',
           lang: 'en',
           cite: {
             source: 'jefferson-first-inaugural-address-1801',
@@ -100,7 +100,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://avalon.law.yale.edu/19th_century/jefinau1.asp'
           }
         }

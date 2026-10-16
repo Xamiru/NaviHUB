@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -132,7 +132,8 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
   // history-scoped state so Back out of the reader restores the view you chose.
   const [view, setView] = usePersistedState<'grid' | 'list'>('chapterView', 'grid')
 
-  const openReader = (ch: MangaChapter) => navigate(readerPath(basePath, m.id, ch))
+  // Links, not navigate(), so Ctrl+click and middle-click open a reader in a new tab.
+  const readerTo = (ch: MangaChapter) => readerPath(basePath, m.id, ch)
 
   return (
     <Section
@@ -165,9 +166,9 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
         <>
           <div className="flex flex-wrap items-center gap-2 mb-2 text-sm">
             {continueCh && (
-              <button className="btn-ghost py-1 px-3" onClick={() => openReader(continueCh)}>
+              <Link className="btn-ghost py-1 px-3" to={readerTo(continueCh)}>
                 {continueCh.lastReadPage != null ? 'Continue' : 'Start'} · {continueCh.title}
-              </button>
+              </Link>
             )}
             <button className="btn-ghost py-1 px-3" disabled={busy} onClick={rescan}>
               Rescan
@@ -242,7 +243,7 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
                     key={ch.id}
                     ch={ch}
                     hasOcr={ocrByChapter.get(ch.id)?.hasSidecar ?? false}
-                    onOpen={() => openReader(ch)}
+                    to={readerTo(ch)}
                     onChange={refresh}
                   />
                 ))}
@@ -254,7 +255,7 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
                     key={ch.id}
                     ch={ch}
                     hasOcr={ocrByChapter.get(ch.id)?.hasSidecar ?? false}
-                    onOpen={() => openReader(ch)}
+                    to={readerTo(ch)}
                     onChange={refresh}
                   />
                 ))}
@@ -273,12 +274,12 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
 function ChapterTile({
   ch,
   hasOcr,
-  onOpen,
+  to,
   onChange
 }: {
   ch: MangaChapter
   hasOcr: boolean
-  onOpen: () => void
+  to: string
   onChange: () => void
 }) {
   const inProgress = ch.lastReadPage != null && !ch.readAt
@@ -301,7 +302,7 @@ function ChapterTile({
 
   return (
     <div className="group">
-      <button className="relative block w-full text-left" onClick={onOpen} title="Read">
+      <Link className="relative block w-full text-left" to={to} title="Read">
         <CoverImage
           path={ch.coverPath}
           alt={ch.title}
@@ -326,7 +327,7 @@ function ChapterTile({
             <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
           </div>
         )}
-      </button>
+      </Link>
       <div className="mt-2 flex items-start gap-2">
         <button
           onClick={toggleRead}
@@ -361,12 +362,12 @@ function ChapterTile({
 function ChapterRow({
   ch,
   hasOcr,
-  onOpen,
+  to,
   onChange
 }: {
   ch: MangaChapter
   hasOcr: boolean
-  onOpen: () => void
+  to: string
   onChange: () => void
 }) {
   const inProgress = ch.lastReadPage != null && !ch.readAt
@@ -396,11 +397,11 @@ function ChapterRow({
       >
         ✓
       </button>
-      <button className="min-w-0 flex-1 text-left" onClick={onOpen} title="Read">
+      <Link className="block min-w-0 flex-1 text-left" to={to} title="Read">
         <span className={`text-sm ${ch.readAt ? 'text-gray-500' : 'text-gray-200'}`}>
           {ch.title}
         </span>
-      </button>
+      </Link>
       {isBookChapter(ch) && (
         <span className="chip text-[11px] px-1.5 py-0.5 shrink-0" title="EPUB book">
           本
@@ -422,9 +423,9 @@ function ChapterRow({
       <span className="text-xs text-gray-400 shrink-0">
         {ch.pageCount} {isBookChapter(ch) ? 'sections' : 'pages'}
       </span>
-      <button className="btn-ghost py-0.5 px-2.5 text-xs shrink-0" onClick={onOpen}>
+      <Link className="btn-ghost py-0.5 px-2.5 text-xs shrink-0" to={to}>
         Read
-      </button>
+      </Link>
     </div>
   )
 }

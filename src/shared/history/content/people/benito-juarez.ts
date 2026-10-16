@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Benito Juárez', lang: 'en', role: 'primary' },
     { text: 'Benito Juárez', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -70,6 +70,25 @@ export default definePerson({
     }
   ],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q4',
+          text: 'JUAREZ, BENITO PABLO (1806–1872), president of Mexico, was born near Ixtlan, in the state of Oajaca, Mexico, on the 21st of March 1806, of full Indian blood.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-juarez-benito-pablo',
+            loc: { section: 'JUAREZ, BENITO PABLO', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Juarez,_Benito_Pablo'
+          }
+        }
+      ]
+    },
     {
       kind: 'career',
       quotes: [

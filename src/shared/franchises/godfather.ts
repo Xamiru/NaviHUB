@@ -103,7 +103,7 @@ export const GODFATHER: FranchiseCfg = {
       role: 'Head of the Corleone family',
       portraitUrl: `${TM}/w300_and_h450_face/yIvLpf9U9NfAvC7fuAgOQ8tu51T.jpg`,
       appearsIn: ['godfather-novel', 'godfather-1972', 'godfather-2'],
-      blurb: 'Marlon Brando’s patriarch, whose request for respect starts the first film’s story.'
+      blurb: 'The Don who runs New York’s strongest family on favours and patience, and never asks for anything he cannot repay in kind. Marlon Brando plays him.'
     },
     {
       id: 'godfather-michael',
@@ -111,7 +111,7 @@ export const GODFATHER: FranchiseCfg = {
       role: 'Vito’s youngest son',
       portraitUrl: `${TM}/w300_and_h450_face/m8HAAjq1T75JypKk0v1FFQn4ysZ.jpg`,
       appearsIn: ['godfather-novel', 'godfather-1972', 'godfather-2', 'godfather-3'],
-      blurb: 'Al Pacino’s Michael starts outside the family business and ends as its ruler.'
+      blurb: 'The war-hero son who wanted no part of the family until one dinner in a Bronx restaurant makes him its head — and its most ruthless one. Al Pacino plays him.'
     },
     {
       id: 'godfather-sonny',
@@ -119,7 +119,7 @@ export const GODFATHER: FranchiseCfg = {
       role: 'Vito’s eldest son',
       portraitUrl: `${TM}/w300_and_h450_face/z2Lz3rtxZ7aJjzBUkCnExvo8stn.jpg`,
       appearsIn: ['godfather-novel', 'godfather-1972'],
-      blurb: 'James Caan’s hot-tempered heir runs the family while Vito recovers.'
+      blurb: 'Vito’s eldest and heir apparent, all temper and loyalty, whose hot head makes him the easiest Corleone to set up. James Caan plays him.'
     },
     {
       id: 'godfather-tom',
@@ -127,7 +127,7 @@ export const GODFATHER: FranchiseCfg = {
       role: 'Consigliere',
       portraitUrl: `${TM}/w300_and_h450_face/3tcKxC5Sc3DJ6XPDKKC2EAomEWn.jpg`,
       appearsIn: ['godfather-novel', 'godfather-1972', 'godfather-2'],
-      blurb: 'Robert Duvall’s lawyer, raised by the Corleones and trusted as their counsel.'
+      blurb: 'The orphan Vito raised as a son and made consigliere — trusted with everything except a wartime seat at the table. Robert Duvall plays him.'
     },
     {
       id: 'godfather-kay',
@@ -135,7 +135,7 @@ export const GODFATHER: FranchiseCfg = {
       role: 'Michael’s wife',
       portraitUrl: `${TM}/w300_and_h450_face/A8B3BsFgbmw2WEmJuQX38qeU9eR.jpg`,
       appearsIn: ['godfather-novel', 'godfather-1972', 'godfather-2', 'godfather-3'],
-      blurb: 'Diane Keaton’s Kay sees what the family business does to the man she married.'
+      blurb: 'The outsider Michael marries, who believes him when he says the family will go legitimate, and spends two films finding out. Diane Keaton plays her.'
     },
     {
       id: 'godfather-fredo',
@@ -143,7 +143,7 @@ export const GODFATHER: FranchiseCfg = {
       role: 'Vito’s middle son',
       portraitUrl: `${TM}/w300_and_h450_face/41wXX1FBalyIuf5eaA4S43Y8IfZ.jpg`,
       appearsIn: ['godfather-novel', 'godfather-1972', 'godfather-2'],
-      blurb: 'John Cazale’s Fredo is the overlooked brother whose betrayal drives Part II.'
+      blurb: 'The middle son passed over for everything, whose small betrayal in Part II becomes Michael’s most unforgivable sin. John Cazale plays him.'
     },
     {
       id: 'godfather-young-vito',
@@ -151,7 +151,7 @@ export const GODFATHER: FranchiseCfg = {
       role: 'Immigrant who becomes the Godfather',
       portraitUrl: `${TM}/w300_and_h450_face/cT8htcckIuyI1Lqwt1CvD02ynTh.jpg`,
       appearsIn: ['godfather-novel', 'godfather-2'],
-      blurb: 'Robert De Niro plays Vito’s rise from a New York grocery clerk to a man of respect.'
+      blurb: 'Part II’s other story: a boy from Corleone who reaches Ellis Island alone and builds the family one favour and one killing at a time. Robert De Niro won an Oscar for him.'
     }
   ]
 }

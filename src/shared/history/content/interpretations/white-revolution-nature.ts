@@ -33,7 +33,7 @@ export default defineInterpretation({
         },
         {
           id: 'q2',
-          text: 'At the inception of our land reforms that January, I had predicted that the forces of the clergy (the Black reaction) and the communists (the Red destruction) would attempt to sabotage this program: the former, because they wished the nation to remain submerged in abject poverty and injustice; the latter, because their aim was the complete disintegra- tion of the country.',
+          text: 'At the inception of our land reforms that January, I had predicted that the forces of the clergy (the Black reaction) and the communists (the Red destruction) would attempt to sabotage this program: the former, because they wished the nation to remain submerged in abject poverty and injustice; the latter, because their aim was the complete […]',
           lang: 'en',
           cite: {
             source: 'pahlavi-1980-answer-to-history',
@@ -41,7 +41,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://archive.org/download/answer-to-history-by-shah-mohammad-reza-pahlavi/Answer%20to%20History%20by%20Shah%20Mohammad%20Reza%20Pahlavi_djvu.txt'
           }
         }
@@ -175,5 +175,5 @@ export default defineInterpretation({
       ]
     }
   ],
-  researched: '2026-10-09'
+  researched: '2026-10-16'
 })

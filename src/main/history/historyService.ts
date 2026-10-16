@@ -14,6 +14,11 @@ import type {
   HistoryArticleView,
   HistoryDecade,
   HistoryImage,
+  HistoryYear,
+  HistoryQuizCounts,
+  HistoryQuizQuestion,
+  HistoryQuizRequest,
+  HistoryQuizScope,
   HistoryMark,
   HistoryMediaBacklink,
   HistoryNote,
@@ -35,6 +40,7 @@ import * as repo from '../repos/historyRepo'
 import { buildIndex, refInfo, type HistoryIndex } from './historyIndex'
 import { ensureImages } from './historyImages'
 import * as views from './historyViews'
+import * as quiz from './historyQuizPool'
 import { library, libraryItem } from './library'
 
 /** The signed year of a stored date (`-0479` is 480 BCE). */
@@ -102,6 +108,22 @@ export function overview(): HistoryOverview {
     .map((i) => i.image!.url)
   ensureImages(missing, 'Caching timeline images', Date.now(), { back: true })
   return o
+}
+
+export async function quizDeal(request: HistoryQuizRequest): Promise<HistoryQuizQuestion[]> {
+  const ctx = { marks: repo.marks(), cached: cachedUrl }
+  // Only the map kind needs borders, the whole span of them: an event's year
+  // can fall anywhere from antiquity on.
+  const borders = request.kind === 'historyMapState' ? quiz.bordersLookup(await (await import('./historyMap')).allBorders()) : null
+  return quiz.quizDeal(index(), request, ctx, borders, new Date().getFullYear())
+}
+
+export function quizCounts(scope: HistoryQuizScope): HistoryQuizCounts {
+  return quiz.quizCounts(quiz.quizPools(index(), scope, { marks: repo.marks(), cached: cachedUrl }))
+}
+
+export function year(y: number): HistoryYear {
+  return views.yearView(index(), y, context())
 }
 
 export function decade(start: number): HistoryDecade {

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import PageHeader from '../components/PageHeader'
+import JapaneseHubTabs from '../components/japanese/JapaneseHubTabs'
 import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -272,6 +273,7 @@ export default function JapaneseQuizPage() {
   if (phase === 'setup') {
     return (
       <div className="p-6 max-w-2xl mx-auto">
+        <JapaneseHubTabs />
         <PageHeader
           back={{ to: "/japanese", label: "Japanese" }}
           title="Practice Quiz"

@@ -284,7 +284,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q10',
-          text: 'In 1921, the fourth Majles would firmly refuse to sanction the Agreement, thwarting absolute British imperial rule in Persia (Katouzian, passim; Fatemi, pp. 10-120; Ghani, pp. 46-80; Bennett, pp. 123-28).',
+          text: 'In 1921, the fourth Majles would firmly refuse to sanction the Agreement, thwarting absolute British imperial rule in Persia',
           lang: 'en',
           cite: {
             source: 'iranica-bonakdarian-great-britain-iii',
@@ -292,27 +292,13 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/great-britain-iii'
           }
         },
         {
-          id: 'q9',
-          text: 'Finally what destroyed the agreement was the allegation that Prime Minister Woṯūq-al-dawla, the Minister of Finance Akbar Mīrzā Ṣārem-al-dawla, and the Minister of Foreign Affairs Fīrūz Mīrzā Noṣrat-al-dawla, collectively referred to in the British sources as “The Triumvirate,” had received a sum of β131,000 to secure the ratification of the Agreement by the Majlis.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-fatemi-anglo-persian-agreement-1919',
-            loc: { section: 'ANGLO-PERSIAN AGREEMENT OF 1919', para: '16' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/anglo-persian-agreement-1919'
-          }
-        },
-        {
           id: 'q11',
-          text: 'in late August 1919 the Soviet government announced in its appeal “To the Workers and Peasants of Persia” that it did not recognize the Agreement.',
+          text: 'In response to the Anglo-Persian Agreement of 1919 which was signed in Tehran in August 1919 and which could have potentially made Iran a de facto British protectorate, in late August 1919 the Soviet government announced in its appeal “To the Workers and Peasants of Persia” that it did not recognize the Agreement.',
           lang: 'en',
           cite: {
             source: 'iranica-mamedova-russia-ii',
@@ -320,7 +306,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/russia-ii'
           }
         }

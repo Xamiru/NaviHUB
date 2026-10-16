@@ -14,7 +14,38 @@ import EmptyState from '../components/EmptyState'
 import CoverImage from '../components/CoverImage'
 import Section from '../components/Section'
 import { Field } from '../components/Field'
+import { PLATFORM_KEYS, PLATFORMS } from '@shared/emulation/platforms'
 import type { InstalledGame } from '@shared/types'
+
+// Remembered across visits: whether the collection is shelved by console.
+const GROUP_PREF = 'installed.groupByConsole'
+
+function readGroupPref(): boolean {
+  try {
+    return localStorage.getItem(GROUP_PREF) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writeGroupPref(on: boolean): void {
+  try {
+    localStorage.setItem(GROUP_PREF, on ? '1' : '0')
+  } catch {
+    // A blocked storage only loses the preference.
+  }
+}
+
+// Console shelves in platform order, PC games (no game file) last.
+function shelves(games: InstalledGame[]): { key: string; label: string; games: InstalledGame[] }[] {
+  const out: { key: string; label: string; games: InstalledGame[] }[] = PLATFORM_KEYS.map((p) => ({
+    key: p as string,
+    label: PLATFORMS[p].label,
+    games: games.filter((g) => g.platform === p)
+  }))
+  out.push({ key: 'pc', label: 'PC', games: games.filter((g) => g.platform == null) })
+  return out.filter((s) => s.games.length > 0)
+}
 
 type SortMode = 'recent' | 'title' | 'time'
 
@@ -199,6 +230,7 @@ export default function InstalledGamesPage() {
   const [search, setSearch] = usePersistedState('installed.search', '')
   const [sort, setSort] = usePersistedState<SortMode>('installed.sort', 'recent')
   const [launchingId, setLaunchingId] = useState<number | null>(null)
+  const [grouped, setGrouped] = useState(readGroupPref)
   const debouncedSearch = useDebouncedValue(search)
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: qk.games.installed,
@@ -266,7 +298,7 @@ export default function InstalledGamesPage() {
         <PageHeader title="Installed" />
         <EmptyState
           title="Nothing linked yet"
-          body={<>Open a game, go to its Playtime tab and link the executable. It shows up here, and playing it from the app tracks your time and achievements.</>}
+          body={<>Open a game, go to its Playtime tab and link its executable or a game file for an emulator. It shows up here, and playing it from the app tracks your time and achievements.</>}
           action={<Link className="btn-primary" to="/games">Browse games</Link>}
         />
       </div>
@@ -341,8 +373,42 @@ export default function InstalledGamesPage() {
               <option value="time">Most played</option>
             </select>
           </Field>
+          <button
+            type="button"
+            className={grouped ? 'pill pill-active' : 'pill'}
+            aria-pressed={grouped}
+            onClick={() => {
+              setGrouped(!grouped)
+              writeGroupPref(!grouped)
+            }}
+          >
+            Group by console
+          </button>
         </div>
-        {visible.length > 0 ? (
+        {visible.length > 0 && grouped ? (
+          <div className="space-y-8">
+            {shelves(visible).map((shelf) => (
+              <section key={shelf.key} aria-labelledby={`shelf-${shelf.key}`}>
+                <h3 id={`shelf-${shelf.key}`} className="mb-3 flex items-baseline gap-3 text-sm font-semibold">
+                  {shelf.label}
+                  <span className="text-xs font-normal text-gray-400">
+                    {shelf.games.length} {shelf.games.length === 1 ? 'title' : 'titles'}
+                  </span>
+                </h3>
+                <ul className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4 sm:gap-5">
+                  {shelf.games.map((game) => (
+                    <ArtworkCard
+                      key={game.mediaId}
+                      game={game}
+                      runningHere={session.running && session.status?.mediaId === game.mediaId}
+                      {...playProps}
+                    />
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+        ) : visible.length > 0 ? (
           <ul className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4 sm:gap-5">
             {visible.map((game) => (
               <ArtworkCard

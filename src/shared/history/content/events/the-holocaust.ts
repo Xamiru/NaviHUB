@@ -215,47 +215,12 @@ export default defineEvent({
             loc: { section: 'Total Mobilization, Resistance, and the Holocaust', para: '5' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/42.htm' }
-        },
-        {
-          id: 'q13',
-          text: 'In the summer of 1941, however, plans were made for the " final solution" of the Jewish question in all of Europe.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-imt-judgment-war-crimes-and-crimes-against-humanity',
-            loc: { section: 'PERSECUTION OF THE JEWS', para: '11' }
-          },
-          provenance: { via: 'web', at: '2026-10-07', url: 'https://avalon.law.yale.edu/imt/judwarcr.asp' }
-        }
-      ]
-    },
-    {
-      kind: 'background',
-      quotes: [
-        {
-          id: 'q14',
-          text: 'The Nazi persecution of Jews in Germany before the war, severe and repressive as it was, cannot compare, however, with the policy pursued during the war in the occupied territories. Originally the policy was similar to that which had been in force inside Germany. Jews were required to register, were forced to live in ghettoes, to wear the yellow star, and were used as slave labourers.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-imt-judgment-war-crimes-and-crimes-against-humanity',
-            loc: { section: 'PERSECUTION OF THE JEWS', para: '11' }
-          },
-          provenance: { via: 'web', at: '2026-10-07', url: 'https://avalon.law.yale.edu/imt/judwarcr.asp' }
         }
       ]
     },
     {
       kind: 'course',
       quotes: [
-        {
-          id: 'q15',
-          text: 'The plan for exterminating the Jews was developed shortly after the attack on the Soviet Union. Einsatzgruppen of the Security Police and SD, formed for the purpose of breaking the resistance of the population of the areas lying behind the German armies in the East, were given the duty of exterminating the Jews in those areas.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-imt-judgment-war-crimes-and-crimes-against-humanity',
-            loc: { section: 'PERSECUTION OF THE JEWS', para: '12' }
-          },
-          provenance: { via: 'web', at: '2026-10-07', url: 'https://avalon.law.yale.edu/imt/judwarcr.asp' }
-        },
         {
           id: 'q5',
           text: 'Killing came to be done in an efficient, factorylike fashion in large extermination camps run by Himmler\'s Special Duty Section (Sonderdienst--SD). The tempo of the mass murder of Jewish men, women, and children was accelerated toward the end of the war. Hitler\'s preoccupation with the "final solution" was so great that the transport of Jews was at times given preference over the transport of war matériel.',
@@ -265,16 +230,6 @@ export default defineEvent({
             loc: { section: 'Total Mobilization, Resistance, and the Holocaust', para: '6' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/42.htm' }
-        },
-        {
-          id: 'q16',
-          text: 'All who were fit to work were used as slave labourers in the concentration camps; all who were not fit to work were destroyed in gas chambers and their bodies burnt. Certain concentration camps such as Treblinka and Auschwitz were set aside for this main purpose.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-imt-judgment-war-crimes-and-crimes-against-humanity',
-            loc: { section: 'PERSECUTION OF THE JEWS', para: '17' }
-          },
-          provenance: { via: 'web', at: '2026-10-07', url: 'https://avalon.law.yale.edu/imt/judwarcr.asp' }
         }
       ]
     },
@@ -305,6 +260,61 @@ export default defineEvent({
             loc: { section: 'The Holocaust', para: '2' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/israel/19.htm' }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q13',
+          text: 'In the summer of 1941, however, plans were made for the " final solution" of the Jewish question in all of Europe.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-imt-judgment-war-crimes-and-crimes-against-humanity',
+            loc: { section: 'PERSECUTION OF THE JEWS', para: '11' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'https://avalon.law.yale.edu/imt/judwarcr.asp' }
+        },
+        {
+          id: 'q14',
+          text: 'The Nazi persecution of Jews in Germany before the war, severe and repressive as it was, cannot compare, however, with the policy pursued during the war in the occupied territories. Originally the policy was similar to that which had been in force inside Germany. Jews were required to register, were forced to live in ghettoes, to wear the yellow star, and were used as slave labourers.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-imt-judgment-war-crimes-and-crimes-against-humanity',
+            loc: { section: 'PERSECUTION OF THE JEWS', para: '11' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'https://avalon.law.yale.edu/imt/judwarcr.asp' }
+        },
+        {
+          id: 'q15',
+          text: 'The plan for exterminating the Jews was developed shortly after the attack on the Soviet Union. Einsatzgruppen of the Security Police and SD, formed for the purpose of breaking the resistance of the population of the areas lying behind the German armies in the East, were given the duty of exterminating the Jews in those areas.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-imt-judgment-war-crimes-and-crimes-against-humanity',
+            loc: { section: 'PERSECUTION OF THE JEWS', para: '12' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'https://avalon.law.yale.edu/imt/judwarcr.asp' }
+        },
+        {
+          id: 'q16',
+          text: 'All who were fit to work were used as slave labourers in the concentration camps; all who were not fit to work were destroyed in gas chambers and their bodies burnt. Certain concentration camps such as Treblinka and Auschwitz were set aside for this main purpose.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-imt-judgment-war-crimes-and-crimes-against-humanity',
+            loc: { section: 'PERSECUTION OF THE JEWS', para: '17' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'https://avalon.law.yale.edu/imt/judwarcr.asp' }
+        },
+        {
+          id: 'q20',
+          text: 'Auschwitz itself was liberated on 27th January 1945 by the advancing Russian army. The Russians found a total of 7,500 inmates.',
+          lang: 'en',
+          cite: {
+            source: 'hdot-irving-v-penguin-books-and-lipstadt-judgment-2000',
+            loc: { section: 'VIII. JUSTIFICATION: THE CLAIM THAT IRVING IS A "HOLOCAUST DENIER"' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'https://www.hdot.org/judge/' }
         }
       ]
     }
@@ -364,33 +374,6 @@ export default defineEvent({
           loc: { section: 'World War II', para: '13' }
         },
         provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/poland/15.htm' }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1945-01-27' },
-            cites: [
-              {
-                source: 'hdot-irving-v-penguin-books-and-lipstadt-judgment-2000',
-                loc: {
-                  section: 'VIII. JUSTIFICATION: THE CLAIM THAT IRVING IS A "HOLOCAUST DENIER"'
-                }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q20',
-        text: 'Auschwitz itself was liberated on 27th January 1945 by the advancing Russian army. The Russians found a total of 7,500 inmates.',
-        lang: 'en',
-        cite: {
-          source: 'hdot-irving-v-penguin-books-and-lipstadt-judgment-2000',
-          loc: { section: 'VIII. JUSTIFICATION: THE CLAIM THAT IRVING IS A "HOLOCAUST DENIER"' }
-        },
-        provenance: { via: 'web', at: '2026-10-07', url: 'https://www.hdot.org/judge/' }
       }
     }
   ],

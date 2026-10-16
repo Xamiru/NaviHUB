@@ -55,7 +55,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q3',
-          text: 'Reliable evidence indicates that the party’s demise was related to its unusual show of force and to the shah’s decision to nip in the bud any effort by Hoveyda to develop an independent power base (ʿAlam, V, p. 49; Šāhqoli, U.S. Embassy in Iran, July 1977).',
+          text: 'Reliable evidence indicates that the party’s demise was related to its unusual show of force and to the shah’s decision to nip in the bud any effort by Hoveyda to develop an independent power base',
           lang: 'en',
           cite: {
             source: 'iranica-milani-hoveyda',
@@ -63,7 +63,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-09',
+            at: '2026-10-16',
             url: 'https://web.archive.org/web/20261002185029/https://www.iranicaonline.org/articles/hoveyda-amir-abbas/'
           }
         }
@@ -89,5 +89,5 @@ export default defineInterpretation({
       ]
     }
   ],
-  researched: '2026-10-09'
+  researched: '2026-10-16'
 })

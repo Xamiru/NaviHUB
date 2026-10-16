@@ -46,17 +46,17 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q5',
-          text: 'Reżā Shah ordered that, from March 20 onwards, the country be called Iran instead of Persia in all international communications',
+          id: 'q4',
+          text: 'In 1935 it was renamed the Anglo-Iranian Oil Company (AIOC) to conform with Reżā Shah’s wish that foreign governments should call the country Iran rather than Persia.',
           lang: 'en',
           cite: {
-            source: 'iranica-bast-germany-diplomatic-relations',
-            loc: { section: 'GERMANY i. German-Persian diplomatic relations', para: '40' }
+            source: 'iranica-kazemi-anglo-persian-oil-company',
+            loc: { section: 'ANGLO-PERSIAN OIL COMPANY', para: '9' }
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
-            url: 'https://www.iranicaonline.org/articles/germany-i'
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/anglo-persian-oil-company/'
           }
         }
       ]
@@ -84,20 +84,6 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
-          id: 'q4',
-          text: 'In 1935 it was renamed the Anglo-Iranian Oil Company (AIOC) to conform with Reżā Shah’s wish that foreign governments should call the country Iran rather than Persia.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-kazemi-anglo-persian-oil-company',
-            loc: { section: 'ANGLO-PERSIAN OIL COMPANY', para: '9' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/anglo-persian-oil-company/'
-          }
-        },
-        {
           id: 'q2',
           text: 'Persia itself (or Iran, as it would be known from 1935 onward) would emerge into prominence on the world oil stage.',
           lang: 'en',
@@ -122,5 +108,16 @@ export default defineEvent({
   },
   furtherReading: [
     { source: 'makki-1983-tarikh-e-bist-saleh-ye-iran', perspective: 'iranian' }
+  ],
+  places: [
+    {
+      ref: 'place:tehran',
+      cites: [
+        {
+          source: 'iranica-bast-germany-diplomatic-relations',
+          loc: { section: 'GERMANY i. German-Persian diplomatic relations', para: '72' }
+        }
+      ]
+    }
   ]
 })

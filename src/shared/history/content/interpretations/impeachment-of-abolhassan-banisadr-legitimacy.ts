@@ -15,13 +15,13 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q1',
-          text: 'that Mr. Abolhassan Bani-Sadr is not politically competent for the presidency',
+          text: 'After the overwheleming majority vote of the honorable representatives of the Islamic Consultative Assembly that Mr. Abolhassan Bani-Sadr is not politically competent for the presidency',
           lang: 'en',
           cite: {
             source: 'oral-history-ir-2023-dismissal-of-bani-sadr',
             loc: { section: 'Dismissal of Bani-Sadr', para: '5' }
           },
-          provenance: { via: 'web', at: '2026-10-08', url: 'https://oral-history.ir/?page=post&id=11289' }
+          provenance: { via: 'web', at: '2026-10-16', url: 'https://oral-history.ir/?page=post&id=11289' }
         }
       ],
       reception: [
@@ -146,5 +146,5 @@ export default defineInterpretation({
       ]
     }
   ],
-  researched: '2026-10-09'
+  researched: '2026-10-16'
 })

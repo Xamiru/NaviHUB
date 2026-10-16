@@ -9,6 +9,9 @@
 // 1932ish, decades before Harry's birth), then the seven Potter-era story
 // beats in sequence, then Cursed Child last (set nineteen years after the
 // Battle of Hogwarts). An adaptation shares its source book's chrono slot.
+// Hogwarts Legacy (2023 game, Steam id via the Steam store API 2026-10-17) is
+// set in the 1890s, so it opens the story order ahead of Fantastic Beasts and
+// sits on the route as an optional spin-off.
 // Entries are authored in RELEASE order, so the three Fantastic Beasts films
 // (2016-2022) sit near the end of the array despite being chrono-earliest.
 // Ids and dates from TMDB (en-US) and Open Library, curl-verified 2026-10-05.
@@ -48,7 +51,7 @@ export const WIZARDING_WORLD: FranchiseCfg = {
       externalIds: [{ source: 'openlibrary', id: 'OL82563W' }],
       year: 1997,
       releaseDate: '1997-06-26',
-      chrono: 4,
+      chrono: 5,
       route: 1,
       optional: true,
       note: 'Harry learns he is a wizard and starts at Hogwarts, where Voldemort is after the Philosopher\'s Stone'
@@ -60,7 +63,7 @@ export const WIZARDING_WORLD: FranchiseCfg = {
       externalIds: [{ source: 'openlibrary', id: 'OL82537W' }],
       year: 1998,
       releaseDate: '1998-07-02',
-      chrono: 5,
+      chrono: 6,
       route: 2,
       optional: true,
       note: 'A monster from the Chamber of Secrets is petrifying students, and Harry meets a young Voldemort\'s diary'
@@ -72,7 +75,7 @@ export const WIZARDING_WORLD: FranchiseCfg = {
       externalIds: [{ source: 'openlibrary', id: 'OL82536W' }],
       year: 1999,
       releaseDate: '1999-07-08',
-      chrono: 6,
+      chrono: 7,
       route: 3,
       optional: true,
       note: 'Escaped prisoner Sirius Black is hunting Harry, or so it seems'
@@ -84,7 +87,7 @@ export const WIZARDING_WORLD: FranchiseCfg = {
       externalIds: [{ source: 'openlibrary', id: 'OL82560W' }],
       year: 2000,
       releaseDate: '2000-07-08',
-      chrono: 7,
+      chrono: 8,
       route: 4,
       optional: true,
       note: 'Harry is mysteriously entered into the deadly Triwizard Tournament as Voldemort regains his body'
@@ -97,7 +100,7 @@ export const WIZARDING_WORLD: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '671' }],
       year: 2001,
       releaseDate: '2001-11-16',
-      chrono: 4,
+      chrono: 5,
       route: 5,
       adaptation: true,
       note: 'Chris Columbus\'s faithful first film, introducing Hogwarts and the trio'
@@ -109,7 +112,7 @@ export const WIZARDING_WORLD: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '672' }],
       year: 2002,
       releaseDate: '2002-11-13',
-      chrono: 5,
+      chrono: 6,
       route: 6,
       adaptation: true,
       note: 'Dobby the house-elf warns Harry away from Hogwarts as the Chamber of Secrets reopens'
@@ -121,7 +124,7 @@ export const WIZARDING_WORLD: FranchiseCfg = {
       externalIds: [{ source: 'openlibrary', id: 'OL82548W' }],
       year: 2003,
       releaseDate: '2003-06-21',
-      chrono: 8,
+      chrono: 9,
       route: 7,
       optional: true,
       note: 'The Ministry denies Voldemort\'s return, so Harry and friends train in secret as Dumbledore\'s Army'
@@ -133,7 +136,7 @@ export const WIZARDING_WORLD: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '673' }],
       year: 2004,
       releaseDate: '2004-05-31',
-      chrono: 6,
+      chrono: 7,
       route: 8,
       adaptation: true,
       note: 'Alfonso Cuaron\'s darker, stylistically distinct take, introducing Sirius Black and the Marauders\' past'
@@ -145,7 +148,7 @@ export const WIZARDING_WORLD: FranchiseCfg = {
       externalIds: [{ source: 'openlibrary', id: 'OL82565W' }],
       year: 2005,
       releaseDate: '2005-07-16',
-      chrono: 9,
+      chrono: 10,
       route: 9,
       optional: true,
       note: 'Dumbledore shows Harry Voldemort\'s past in search of a way to destroy his Horcruxes'
@@ -157,7 +160,7 @@ export const WIZARDING_WORLD: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '674' }],
       year: 2005,
       releaseDate: '2005-11-16',
-      chrono: 7,
+      chrono: 8,
       route: 10,
       adaptation: true,
       note: 'The Triwizard Tournament ends with Cedric Diggory\'s death and Voldemort\'s return'
@@ -169,7 +172,7 @@ export const WIZARDING_WORLD: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '675' }],
       year: 2007,
       releaseDate: '2007-07-08',
-      chrono: 8,
+      chrono: 9,
       route: 11,
       adaptation: true,
       note: 'Dolores Umbridge takes over Hogwarts as the Ministry refuses to believe Voldemort has returned'
@@ -181,7 +184,7 @@ export const WIZARDING_WORLD: FranchiseCfg = {
       externalIds: [{ source: 'openlibrary', id: 'OL82586W' }],
       year: 2007,
       releaseDate: '2007-07-21',
-      chrono: 10,
+      chrono: 11,
       route: 12,
       optional: true,
       note: 'Harry, Ron and Hermione hunt Horcruxes while Voldemort takes over the Ministry, ending at the Battle of Hogwarts'
@@ -193,7 +196,7 @@ export const WIZARDING_WORLD: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '767' }],
       year: 2009,
       releaseDate: '2009-07-15',
-      chrono: 9,
+      chrono: 10,
       route: 13,
       adaptation: true,
       note: 'Harry and Dumbledore search out Voldemort\'s Horcruxes as Snape\'s loyalties stay in question'
@@ -205,7 +208,7 @@ export const WIZARDING_WORLD: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '12444' }],
       year: 2010,
       releaseDate: '2010-11-17',
-      chrono: 10,
+      chrono: 11,
       route: 14,
       adaptation: true,
       note: 'The trio go on the run from the newly Death-Eater-controlled Ministry'
@@ -217,7 +220,7 @@ export const WIZARDING_WORLD: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '12445' }],
       year: 2011,
       releaseDate: '2011-07-12',
-      chrono: 10,
+      chrono: 11,
       route: 15,
       adaptation: true,
       note: 'The Battle of Hogwarts and Harry\'s final confrontation with Voldemort'
@@ -229,7 +232,7 @@ export const WIZARDING_WORLD: FranchiseCfg = {
       externalIds: [{ source: 'openlibrary', id: 'OL17360811W' }],
       year: 2016,
       releaseDate: '2016-07-31',
-      chrono: 11,
+      chrono: 12,
       route: 16,
       optional: true,
       note: 'Published script of the stage play, set nineteen years later, following Harry\'s son Albus and Draco\'s son Scorpius'
@@ -241,7 +244,7 @@ export const WIZARDING_WORLD: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '259316' }],
       year: 2016,
       releaseDate: '2016-11-16',
-      chrono: 1,
+      chrono: 2,
       route: 17,
       spinOff: true,
       note: '1926, New York: magizoologist Newt Scamander loses a case full of magical creatures in the no-maj city'
@@ -253,7 +256,7 @@ export const WIZARDING_WORLD: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '338952' }],
       year: 2018,
       releaseDate: '2018-11-14',
-      chrono: 2,
+      chrono: 3,
       route: 18,
       spinOff: true,
       note: 'Grindelwald escapes custody and recruits followers while hiding his plans from a young Dumbledore'
@@ -265,10 +268,23 @@ export const WIZARDING_WORLD: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '338953' }],
       year: 2022,
       releaseDate: '2022-04-06',
-      chrono: 3,
+      chrono: 4,
       route: 19,
       spinOff: true,
       note: 'Dumbledore works with Newt and allies to stop Grindelwald from seizing control of the wizarding world'
+    },
+    {
+      id: 'hp-hogwarts-legacy',
+      title: 'Hogwarts Legacy',
+      externalIds: [{ source: 'steam', id: '990080' }],
+      year: 2023,
+      releaseDate: '2023-02-10',
+      chrono: 1,
+      route: 20,
+      optional: true,
+      spinOff: true,
+      bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/990080/library_hero.jpg',
+      note: '1890s Hogwarts: a fifth-year student who can see ancient magic'
     }
   ],
   characters: [

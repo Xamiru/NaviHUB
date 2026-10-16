@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import type { MangaLibrary, MangaPages } from '@shared/types'
 import { api } from './api'
+import { useTabTitleOverride } from './browserTabs'
 import { qk } from './queryKeys'
 
 // Where a reader's content comes from. Both readers serve two routes now:
@@ -64,4 +65,17 @@ export function useReaderSource(): ReaderSource {
     loading: docQuery.isLoading || (!adhoc && libraryQuery.isLoading),
     retry
   }
+}
+
+// Names the reader's tab "Series · Chapter" (a chapter title alone is often just
+// "Vol. 3"). The series comes from the detail page's own cache entry; a file
+// opened from outside the library has only its own name.
+export function useReaderTabTitle({ doc, mediaId, adhoc }: ReaderSource): void {
+  const { data: media } = useQuery({
+    queryKey: qk.media.detail(mediaId),
+    queryFn: () => api.media.get(mediaId),
+    enabled: !adhoc && mediaId > 0
+  })
+  const chapter = doc?.title
+  useTabTitleOverride(chapter && media?.title && !adhoc ? `${media.title} · ${chapter}` : chapter)
 }

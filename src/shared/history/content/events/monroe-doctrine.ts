@@ -246,5 +246,16 @@ export default defineEvent({
   furtherReading: [
     { source: 'pereyra-1959-el-mito-de-monroe', perspective: 'latin-american' },
     { source: 'nerval-1934-autopsy-of-the-monroe-doctrine', perspective: 'latin-american' }
+  ],
+  places: [
+    {
+      ref: 'place:washington-dc',
+      cites: [
+        {
+          source: 'state-dept-milestones-monroe-doctrine',
+          loc: { section: 'Monroe Doctrine, 1823', para: '3' }
+        }
+      ]
+    }
   ]
 })

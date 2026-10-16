@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'William Knox D’Arcy', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   regions: ['iran', 'europe'],
   roles: ['businessperson'],
   sections: [
@@ -42,5 +42,31 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1849' },
+        cites: [
+          {
+            source: 'loc-name-authority-william-knox-darcy',
+            loc: { section: 'MARC field 100 $d: heading dates' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1917' },
+        cites: [
+          {
+            source: 'loc-name-authority-william-knox-darcy',
+            loc: { section: 'MARC field 100 $d: heading dates' }
+          }
+        ]
+      }
+    ]
+  }
 })

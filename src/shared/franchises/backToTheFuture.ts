@@ -96,7 +96,7 @@ export const BACK_TO_THE_FUTURE: FranchiseCfg = {
       role: 'Teenage time traveller',
       portraitUrl: `${TM}/w300_and_h450_face/2JB4FMgQmnhbBlQ4SxWFN9EIVDi.jpg`,
       appearsIn: ['bttf-1', 'bttf-2', 'bttf-3'],
-      blurb: 'Michael J. Fox’s skateboarding teenager is the trilogy’s constant across every time period.'
+      blurb: 'A 1985 teenager with a guitar and a skateboard who is sent thirty years back and accidentally makes his mother fall for him instead of his father. Michael J. Fox plays him.'
     },
     {
       id: 'bttf-doc',
@@ -104,7 +104,7 @@ export const BACK_TO_THE_FUTURE: FranchiseCfg = {
       role: 'Inventor',
       portraitUrl: `${TM}/w300_and_h450_face/nxVjpyb3UrfbPZnEyDNlQVlFAs5.jpg`,
       appearsIn: ['bttf-1', 'bttf-2', 'bttf-3', 'bttf-animated'],
-      blurb: 'Christopher Lloyd’s eccentric scientist builds the DeLorean time machine.'
+      blurb: 'Hill Valley’s crank inventor, who built a time machine out of a DeLorean because if you are going to do it, why not do it with some style. Christopher Lloyd plays him.'
     },
     {
       id: 'bttf-biff',
@@ -112,7 +112,7 @@ export const BACK_TO_THE_FUTURE: FranchiseCfg = {
       role: 'Bully and antagonist',
       portraitUrl: `${TM}/w300_and_h450_face/mVhm65ZVBIRIptWGiMIvoUy0Khi.jpg`,
       appearsIn: ['bttf-1', 'bttf-2', 'bttf-3'],
-      blurb: 'Thomas F. Wilson plays Biff and his descendants across the family’s generations.'
+      blurb: 'Hill Valley’s bully in every era, and in Part II the man who turns a stolen sports almanac into an empire. Thomas F. Wilson plays every Tannen.'
     },
     {
       id: 'bttf-lorraine',
@@ -120,7 +120,7 @@ export const BACK_TO_THE_FUTURE: FranchiseCfg = {
       role: 'Marty’s mother',
       portraitUrl: `${TM}/w300_and_h450_face/n7qTKpbAbr2P1RlcW1Lq1NhckQ2.jpg`,
       appearsIn: ['bttf-1', 'bttf-2'],
-      blurb: 'Lea Thompson’s Lorraine develops an unexpected crush on her own son in 1955.'
+      blurb: 'Marty’s mother, who in 1955 is nothing like the woman he knows — and falls hard for the strange boy in the life vest. Lea Thompson plays her.'
     },
     {
       id: 'bttf-george',
@@ -128,7 +128,7 @@ export const BACK_TO_THE_FUTURE: FranchiseCfg = {
       role: 'Marty’s father',
       portraitUrl: `${TM}/w300_and_h450_face/imBnLpSXvg61qDDdEfvL6R4ITKt.jpg`,
       appearsIn: ['bttf-1'],
-      blurb: 'Crispin Glover’s timid George finds his nerve with Marty’s help.'
+      blurb: 'Marty’s father, a timid science-fiction fan in 1955 who has to stand up to Biff for the future to happen at all. Crispin Glover plays him.'
     },
     {
       id: 'bttf-jennifer',
@@ -136,7 +136,7 @@ export const BACK_TO_THE_FUTURE: FranchiseCfg = {
       role: 'Marty’s girlfriend',
       portraitUrl: `${TM}/w300_and_h450_face/1pmjDSLvOuqKW1P2KRPlpFMeUFe.jpg`,
       appearsIn: ['bttf-2', 'bttf-3'],
-      blurb: 'Elisabeth Shue takes over the role from Part II onward.'
+      blurb: 'Marty’s girlfriend, swept into the DeLorean at the end of the first film and knocked out in 2015 for most of Part II. Claudia Wells, then Elisabeth Shue.'
     }
   ]
 }

@@ -42,6 +42,15 @@ export default defineEvent({
           loc: { section: 'The Spanish-American War, 1898', para: '3' }
         }
       ]
+    },
+    {
+      ref: 'place:havana',
+      cites: [
+        {
+          source: 'state-dept-milestones-spanish-american-war',
+          loc: { section: 'The Spanish-American War, 1898', para: '3' }
+        }
+      ]
     }
   ],
   polities: [

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'battle-of-trafalgar-significance',
   about: ['event:battle-of-trafalgar'],
   topic: 'significance',
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   framing: {
     id: 'q1',
     text: 'Perhaps in the case of few victories has the outcome been so different from that which has been assigned to it in the popular belief.',
@@ -80,7 +80,7 @@ export default defineInterpretation({
         },
         {
           id: 'q5',
-          text: 'nevertheless, its ultimate results in the sphere of European policy were incalculably great.',
+          text: 'Therefore, while that victory had singularly little influence on the situation at Boulogne, Dover, and other French and British ports; while its immediate effects may be limited to Mediterranean affairs and to the energetic pursuit of the French squadrons told off for the harrying of British commerce; nevertheless, its ultimate results in the sphere of European policy were incalculably great.',
           lang: 'en',
           cite: {
             source: 'holland-rose-1905-true-significance-of-trafalgar',
@@ -88,7 +88,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.napoleon.org/en/reading_room/articles/files/rose_trafalgar.asp'
           }
         }

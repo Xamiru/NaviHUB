@@ -1,5 +1,7 @@
 // Castlevania — the classic-era core titles the task scope calls out:
-// Castlevania through Order of Ecclesia (Circle of the Moon and Harmony of
+// Castlevania through Order of Ecclesia, plus Lament of Innocence (added
+// 2026-10-17: 1094, the start of the Belmont line, so it opens the story
+// order and every later slot moved down one; Circle of the Moon and Harmony of
 // Dissonance are deliberately skipped, matching the brief), the Lords of
 // Shadow reboot duology as its own spin-off continuity, and the two Netflix
 // series. Steam ids are attached to whichever single entry in each
@@ -62,7 +64,7 @@ export const CASTLEVANIA: FranchiseCfg = {
       externalIds: [{ source: 'steam', id: '1018010' }],
       year: 1986,
       releaseDate: '1986-09-26',
-      chrono: 2,
+      chrono: 3,
       note: 'Simon Belmont storms Dracula\'s castle (the Anniversary Collection also bundles II, III and Super IV)'
     },
     {
@@ -70,7 +72,7 @@ export const CASTLEVANIA: FranchiseCfg = {
       title: 'Castlevania II: Simon\'s Quest',
       year: 1987,
       releaseDate: '1987-08-28',
-      chrono: 3,
+      chrono: 4,
       note: 'An open, town-and-overworld sequel: Simon seeks Dracula\'s remains to lift his own curse'
     },
     {
@@ -78,7 +80,7 @@ export const CASTLEVANIA: FranchiseCfg = {
       title: 'Castlevania III: Dracula\'s Curse',
       year: 1989,
       releaseDate: '1989-12-22',
-      chrono: 1,
+      chrono: 2,
       note: 'Prequel: Trevor Belmont\'s original hunt, with three recruitable allies along the way'
     },
     {
@@ -86,7 +88,7 @@ export const CASTLEVANIA: FranchiseCfg = {
       title: 'Super Castlevania IV',
       year: 1991,
       releaseDate: '1991-10-31',
-      chrono: 2,
+      chrono: 3,
       note: 'SNES reimagining of the original game\'s story with a newly fluid, multi-directional whip'
     },
     {
@@ -95,7 +97,7 @@ export const CASTLEVANIA: FranchiseCfg = {
       aliases: ['Akumajo Dracula X: Chi no Rondo'],
       year: 1993,
       releaseDate: '1993-10-29',
-      chrono: 4,
+      chrono: 5,
       note: 'Richter Belmont rescues Maria Renard and others from Dracula\'s resurrection, PC Engine CD'
     },
     {
@@ -103,7 +105,7 @@ export const CASTLEVANIA: FranchiseCfg = {
       title: 'Castlevania: Symphony of the Night',
       year: 1997,
       releaseDate: '1997-03-20',
-      chrono: 5,
+      chrono: 6,
       note: 'Alucard explores his father\'s castle to learn why Richter vanished — the genre-defining entry'
     },
     {
@@ -113,8 +115,16 @@ export const CASTLEVANIA: FranchiseCfg = {
       externalIds: [{ source: 'steam', id: '1552550' }],
       year: 2003,
       releaseDate: '2003-05-06',
-      chrono: 8,
+      chrono: 9,
       note: 'Soma Cruz, able to absorb enemy souls, is pulled into Dracula\'s castle, sealed inside a 2035 solar eclipse (the Advance Collection also bundles Circle of the Moon, Harmony of Dissonance and Dracula X)'
+    },
+    {
+      id: 'cv-lament',
+      title: 'Castlevania: Lament of Innocence',
+      year: 2003,
+      releaseDate: '2003-10-21',
+      chrono: 1,
+      note: '1094: Leon Belmont takes up the whip — the start of the Belmont line'
     },
     {
       id: 'cv-dawn',
@@ -123,7 +133,7 @@ export const CASTLEVANIA: FranchiseCfg = {
       externalIds: [{ source: 'steam', id: '2369900' }],
       year: 2005,
       releaseDate: '2005-08-25',
-      chrono: 9,
+      chrono: 10,
       note: 'A cult tries to resurrect Dracula through Soma a year later (the Dominus Collection also bundles Portrait of Ruin and Order of Ecclesia)'
     },
     {
@@ -131,7 +141,7 @@ export const CASTLEVANIA: FranchiseCfg = {
       title: 'Castlevania: Portrait of Ruin',
       year: 2006,
       releaseDate: '2006-11-16',
-      chrono: 7,
+      chrono: 8,
       note: 'Jonathan Morris and Charlotte Aulin explore paintings inside Dracula\'s World War II-era castle'
     },
     {
@@ -139,7 +149,7 @@ export const CASTLEVANIA: FranchiseCfg = {
       title: 'Castlevania: Order of Ecclesia',
       year: 2008,
       releaseDate: '2008-10-21',
-      chrono: 6,
+      chrono: 7,
       note: 'Shanoa of the Order of Ecclesia hunts the stolen Dominus glyph and learns why her order wants Dracula back'
     },
     {

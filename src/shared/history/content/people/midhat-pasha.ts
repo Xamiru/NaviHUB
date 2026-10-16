@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Midhat Pasha', lang: 'en', role: 'primary' },
     { text: 'Mithat Paşa', lang: 'tr', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -42,6 +42,25 @@ export default definePerson({
   regions: ['mena', 'europe'],
   roles: ['politician'],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q3',
+          text: 'MIDHAT PASHA (1822–1884), Turkish statesman, the son of a civil judge, was born at Constantinople in 1822.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-midhat-pasha',
+            loc: { section: 'MIDHAT PASHA', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Midhat_Pasha'
+          }
+        }
+      ]
+    },
     {
       kind: 'career',
       quotes: [

@@ -36,8 +36,8 @@ export interface FranchiseEntry {
   // Curated in-universe story order (1-based). Omitted on every entry of a
   // franchise whose stories are standalone (Final Fantasy) — the Story column
   // hides itself when no entry has one. An adaptation shares its source's
-  // number (a retelling occupies the same story slot); release order breaks
-  // the tie. An entry from a separate continuity (the live-action Resident
+  // number (a retelling occupies the same story slot), and so does a remake
+  // or remaster of the original; release order breaks the tie. An entry from a separate continuity (the live-action Resident
   // Evil films) has none and sinks below the story order.
   chrono?: number
   // Editorial route position (1-based, unique per franchise): the suggested

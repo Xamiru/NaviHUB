@@ -7,8 +7,9 @@
 // anime, with the Mugen Train TV arc (the film re-cut into episodes plus one
 // original episode) as an optional detour. Excluded: the Infinity Castle
 // parts 2 and 3 (unreleased), the compilation films of TV arcs, the Kimetsu
-// Academy parody shorts and manga, the spin-off manga and light novels, and
-// the games.
+// Academy parody shorts and manga, and the spin-off manga and light novels.
+// The two Hinokami Chronicles games (added 2026-10-17, Steam ids via the Steam
+// store API) are optional adaptation rows in the slot of the arc each opens.
 // Ids, dates and scores from AniList; art from AniList, curl-verified
 // 2026-10-14.
 
@@ -35,7 +36,7 @@ export const DEMON_SLAYER: FranchiseCfg = {
     },
     {
       title: 'The finale as a film trilogy',
-      body: 'Rather than a TV season, the final Infinity Castle arc is being adapted as a trilogy of films. The first, released in July 2025, opens the corps’ assault on Muzan’s fortress; the remaining two parts had not been released at the time this page was written.'
+      body: 'Rather than a TV season, the final Infinity Castle arc is being adapted as a trilogy of films. The first, released in July 2025, opens the corps’ assault on Muzan’s fortress; two more films complete the arc.'
     }
   ],
   entries: [
@@ -95,6 +96,20 @@ export const DEMON_SLAYER: FranchiseCfg = {
       note: 'The film re-cut as TV episodes, plus an original episode following Rengoku before the train'
     },
     {
+      id: 'kny-hinokami',
+      title: 'Demon Slayer -Kimetsu no Yaiba- The Hinokami Chronicles',
+      aliases: ['Demon Slayer: The Hinokami Chronicles'],
+      externalIds: [{ source: 'steam', id: '1490890' }],
+      year: 2021,
+      releaseDate: '2021-10-14',
+      chrono: 1,
+      route: 8,
+      optional: true,
+      adaptation: true,
+      bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1490890/library_hero.jpg',
+      note: 'CyberConnect2 arena fighter retelling the first season through Mugen Train'
+    },
+    {
       id: 'kny-entertainment-district',
       title: 'Demon Slayer: Kimetsu no Yaiba Entertainment District Arc',
       mediaType: 'anime',
@@ -149,6 +164,20 @@ export const DEMON_SLAYER: FranchiseCfg = {
       adaptation: true,
       mc: 86,
       note: 'Film trilogy part 1: the corps is pulled into Muzan’s shifting fortress, and Akaza returns'
+    },
+    {
+      id: 'kny-hinokami-2',
+      title: 'Demon Slayer -Kimetsu no Yaiba- The Hinokami Chronicles 2',
+      aliases: ['Demon Slayer: The Hinokami Chronicles 2'],
+      externalIds: [{ source: 'steam', id: '2928600' }],
+      year: 2025,
+      releaseDate: '2025-08-05',
+      chrono: 3,
+      route: 9,
+      optional: true,
+      adaptation: true,
+      bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2928600/library_hero.jpg',
+      note: 'Picks up at the Entertainment District and runs to Hashira Training'
     }
   ],
   characters: [

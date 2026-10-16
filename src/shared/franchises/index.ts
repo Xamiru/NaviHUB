@@ -63,6 +63,7 @@ import { SUIKODEN } from './suikoden'
 import { STAR_OCEAN } from './starOcean'
 import { BREATH_OF_FIRE } from './breathOfFire'
 import { MOTHER } from './mother'
+import { SHADOW_HEARTS } from './shadowHearts'
 import { MANA } from './mana'
 import { PHANTASY_STAR } from './phantasyStar'
 import { VALKYRIA_CHRONICLES } from './valkyriaChronicles'
@@ -158,6 +159,7 @@ export const FRANCHISES: FranchiseCfg[] = [
   STAR_OCEAN,
   BREATH_OF_FIRE,
   MOTHER,
+  SHADOW_HEARTS,
   MANA,
   PHANTASY_STAR,
   VALKYRIA_CHRONICLES,

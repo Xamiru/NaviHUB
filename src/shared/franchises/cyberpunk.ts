@@ -79,7 +79,7 @@ export const CYBERPUNK: FranchiseCfg = {
       role: 'Edgerunner',
       portraitUrl: `${AL}/character/large/b284158-z1uGKC3IYVa1.png`,
       appearsIn: ['cp-edgerunners'],
-      blurb: 'A street kid from Santo Domingo who gets a military-grade implant and joins a crew of edgerunners.'
+      blurb: 'A Santo Domingo street kid who installs the military Sandevistan he finds among his late mother’s things, and chases the edgerunner life faster and harder than any body can take.'
     },
     {
       id: 'cp-lucy',
@@ -87,7 +87,7 @@ export const CYBERPUNK: FranchiseCfg = {
       role: 'Netrunner',
       portraitUrl: `${AL}/character/large/b284157-cqYawN7XCNJx.jpg`,
       appearsIn: ['cp-edgerunners'],
-      blurb: 'A netrunner who dreams of reaching the Moon, and the person David follows deeper into the work.'
+      blurb: 'A netrunner who escaped Arasaka’s training program and dreams of the Moon, the one place within Night City’s reach where nobody owns you.'
     },
     {
       id: 'cp-maine',
@@ -95,7 +95,7 @@ export const CYBERPUNK: FranchiseCfg = {
       role: 'Crew leader',
       portraitUrl: `${AL}/character/large/b284159-RvuKShSpDOS5.png`,
       appearsIn: ['cp-edgerunners'],
-      blurb: 'The heavily augmented leader of the edgerunner crew that takes David in.'
+      blurb: 'The chromed-to-the-limit leader of the crew, a big-hearted merc already sliding toward cyberpsychosis when he takes David in.'
     },
     {
       id: 'cp-rebecca',
@@ -103,7 +103,7 @@ export const CYBERPUNK: FranchiseCfg = {
       role: 'Edgerunner',
       portraitUrl: `${AL}/character/large/b284163-tt8smoAXl24x.jpg`,
       appearsIn: ['cp-edgerunners'],
-      blurb: 'A hard-fighting gunslinger on Maine\'s crew.'
+      blurb: 'The smallest member of Maine’s crew with the biggest guns, Pilar’s sister and David’s fiercest defender.'
     },
     {
       id: 'cp-kiwi',
@@ -111,7 +111,7 @@ export const CYBERPUNK: FranchiseCfg = {
       role: 'Edgerunner',
       portraitUrl: `${AL}/character/large/b284161-QlVuoXKKONLM.jpg`,
       appearsIn: ['cp-edgerunners'],
-      blurb: 'A netrunner and member of Maine\'s crew.'
+      blurb: 'The crew’s veteran netrunner and Lucy’s mentor, who trusts no one because Night City taught her not to — and lives by it.'
     },
     {
       id: 'cp-dorio',
@@ -119,7 +119,7 @@ export const CYBERPUNK: FranchiseCfg = {
       role: 'Edgerunner',
       portraitUrl: `${AL}/character/large/b284160-pfwyNhxrsZOP.png`,
       appearsIn: ['cp-edgerunners'],
-      blurb: 'A member of Maine\'s crew.'
+      blurb: 'Maine’s partner in work and life, the crew’s heavy, whose loyalty runs to Maine first and the job second.'
     }
   ]
 }

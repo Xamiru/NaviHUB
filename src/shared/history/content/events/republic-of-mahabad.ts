@@ -182,20 +182,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/azerbaijan-v/'
           }
-        },
-        {
-          id: 'q5',
-          text: 'the Kurds opposed, among other things, the government’s attempts at detribalization.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-kuniholm-azerbaijan-1941-1947',
-            loc: { section: 'AZERBAIJAN v. History from 1941 to 1947', para: '7' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/azerbaijan-v/'
-          }
         }
       ]
     },

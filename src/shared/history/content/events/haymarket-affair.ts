@@ -139,7 +139,26 @@ export default defineEvent({
       ]
     },
     {
-      kind: 'course',
+      kind: 'aftermath',
+      quotes: [
+        {
+          id: 'q6',
+          text: 'The public was greatly excited, and after a prolonged trial all the defendants were found guilty;',
+          lang: 'en',
+          cite: {
+            source: 'altgeld-1893-reasons-for-pardoning-fielden-neebe-and-schwab',
+            loc: { section: 'Altgeld\'s Reasons for Pardoning Fielden, Neebe and Schwab' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://en.wikisource.org/wiki/The_Chicago_Martyrs/Altgeld%27s_Reasons_for_Pardoning_Fielden,_Neebe_and_Schwab'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
       quotes: [
         {
           id: 'q4',
@@ -158,25 +177,6 @@ export default defineEvent({
         {
           id: 'q5',
           text: 'The prosecution could not discover who had thrown the bomb and could not bring the really guilty man to justice,',
-          lang: 'en',
-          cite: {
-            source: 'altgeld-1893-reasons-for-pardoning-fielden-neebe-and-schwab',
-            loc: { section: 'Altgeld\'s Reasons for Pardoning Fielden, Neebe and Schwab' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://en.wikisource.org/wiki/The_Chicago_Martyrs/Altgeld%27s_Reasons_for_Pardoning_Fielden,_Neebe_and_Schwab'
-          }
-        }
-      ]
-    },
-    {
-      kind: 'aftermath',
-      quotes: [
-        {
-          id: 'q6',
-          text: 'The public was greatly excited, and after a prolonged trial all the defendants were found guilty;',
           lang: 'en',
           cite: {
             source: 'altgeld-1893-reasons-for-pardoning-fielden-neebe-and-schwab',

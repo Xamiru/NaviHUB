@@ -1,5 +1,6 @@
 import { getSqlite } from '../db/connection'
-import { gradeCard, LEECH_LAPSES } from '@shared/srs'
+import { calendarDaysSince, gradeCard, LEECH_LAPSES, reviewLogValues, srsStateOf } from '@shared/srs'
+import { desiredRetention } from '../srsSettings'
 import type { SrsGrade, SrsStatus } from '@shared/types'
 import type {
   EnReviewOutcome,
@@ -32,7 +33,9 @@ function mapRow(r: Record<string, unknown>): EnWord {
     ease: (r.ease as number) ?? 2.5,
     reps: (r.reps as number) ?? 0,
     lapses: (r.lapses as number) ?? 0,
-    lastReviewedAt: (r.last_reviewed_at as string) ?? null
+    lastReviewedAt: (r.last_reviewed_at as string) ?? null,
+    stability: (r.stability as number | null) ?? null,
+    difficulty: (r.fsrs_difficulty as number | null) ?? null
   }
 }
 
@@ -121,7 +124,7 @@ export function removeWords(ids: number[]): number {
 export function listLeeches(): EnWord[] {
   const rows = getSqlite()
     .prepare(
-      `SELECT * FROM en_word WHERE lapses >= ? ORDER BY lapses DESC, ease ASC, id ASC LIMIT 100`
+      `SELECT * FROM en_word WHERE lapses >= ? ORDER BY lapses DESC, COALESCE(fsrs_difficulty, 0) DESC, id ASC LIMIT 100`
     )
     .all(LEECH_LAPSES) as Record<string, unknown>[]
   return rows.map(mapRow)
@@ -155,31 +158,20 @@ export function reviewQueue(newLimit: number): EnReviewQueue {
 export function submitReview(wordId: number, grade: SrsGrade): EnReviewOutcome {
   const db = getSqlite()
   const tx = db.transaction((): EnReviewOutcome => {
-    // See japaneseRepo.submitReview: the overdue gap feeds gradeCard so a
-    // cleared backlog is not scheduled as if every card were answered on time.
-    const row = db
-      .prepare(
-        `SELECT *, MAX(0, julianday('now') - julianday(due_at)) AS overdue_days
-         FROM en_word WHERE id = ?`
-      )
-      .get(wordId) as Record<string, unknown> | undefined
+    // See japaneseRepo.submitReview: FSRS needs the real gap since the
+    // previous answer.
+    const row = db.prepare('SELECT * FROM en_word WHERE id = ?').get(wordId) as
+      | Record<string, unknown>
+      | undefined
     if (!row) throw new Error(`Word ${wordId} not found`)
     const card = mapRow(row)
-    const next = gradeCard(
-      {
-        status: card.status,
-        learningStep: card.learningStep,
-        intervalDays: card.intervalDays,
-        ease: card.ease,
-        reps: card.reps,
-        lapses: card.lapses
-      },
-      grade,
-      { elapsedDays: Number(row.overdue_days ?? 0) }
-    )
+    const before = srsStateOf(card)
+    const elapsedDays = calendarDaysSince(card.lastReviewedAt)
+    const next = gradeCard(before, grade, { elapsedDays, retention: desiredRetention() })
     db.prepare(
       `UPDATE en_word
        SET status = ?, learning_step = ?, interval_days = ?, ease = ?, reps = ?, lapses = ?,
+           stability = ?, fsrs_difficulty = ?,
            due_at = datetime('now', '+' || ? || ' minutes'),
            last_reviewed_at = datetime('now')
        WHERE id = ?`
@@ -190,16 +182,19 @@ export function submitReview(wordId: number, grade: SrsGrade): EnReviewOutcome {
       next.ease,
       next.reps,
       next.lapses,
+      next.stability,
+      next.difficulty,
       next.dueInMinutes,
       wordId
     )
     db.prepare(
-      'INSERT INTO en_review_log (word_id, grade, interval_days, ease) VALUES (?, ?, ?, ?)'
-    ).run(wordId, grade, next.intervalDays, next.ease)
+      `INSERT INTO en_review_log (word_id, grade, interval_days, ease, state_before, elapsed_days, scheduled_days)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).run(wordId, grade, next.intervalDays, next.ease, ...reviewLogValues(before, elapsedDays))
     const dueAt = (
       db.prepare('SELECT due_at FROM en_word WHERE id = ?').get(wordId) as { due_at: string }
     ).due_at
-    return { wordId, status: next.status, intervalDays: next.intervalDays, dueAt }
+    return { wordId, status: next.status, intervalDays: next.intervalDays, dueAt, state: srsStateOf(next) }
   })
   return tx()
 }

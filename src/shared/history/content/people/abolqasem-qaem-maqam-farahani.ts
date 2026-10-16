@@ -20,7 +20,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   died: {
     alts: [
       {
@@ -77,6 +77,25 @@ export default definePerson({
   ],
   sections: [
     {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q3',
+          text: 'Upon Moḥammad Shah’s accession, Mirzā Abu’l-Qāsem Qāʾem-maqām assumed the premiership.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-calmard-mohammad-shah',
+            loc: { section: 'MOḤAMMAD SHAH QĀJĀR', para: '9' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/mohammad-shah'
+          }
+        }
+      ]
+    },
+    {
       kind: 'career',
       quotes: [
         {
@@ -100,20 +119,6 @@ export default definePerson({
           cite: {
             source: 'iranica-calmard-mohammad-shah',
             loc: { section: 'MOḤAMMAD SHAH QĀJĀR', para: '6' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/mohammad-shah'
-          }
-        },
-        {
-          id: 'q3',
-          text: 'Upon Moḥammad Shah’s accession, Mirzā Abu’l-Qāsem Qāʾem-maqām assumed the premiership.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-calmard-mohammad-shah',
-            loc: { section: 'MOḤAMMAD SHAH QĀJĀR', para: '9' }
           },
           provenance: {
             via: 'web',

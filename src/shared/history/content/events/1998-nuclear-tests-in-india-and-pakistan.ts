@@ -343,5 +343,16 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Chagaiatomictests.jpg',
     credit: { institution: 'Government of Pakistan' },
     license: { id: 'cc-by', version: '4.0', url: 'https://creativecommons.org/licenses/by/4.0' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:pokhran',
+      cites: [
+        {
+          source: 'acronym-1998-05-india-pakistan-nuclear-tests-introduction',
+          loc: { section: 'Special Feature: Introduction', para: '1' }
+        }
+      ]
+    }
+  ]
 })

@@ -319,7 +319,7 @@ export default defineEvent({
         },
         {
           id: 'q9',
-          text: 'According to two government decrees issued on 26 October and 3 December 1962, and approved by the parliament on 26 January 1963, young men holding the diploma of secondary education—mainly urban middle-class youth—were given the option of serving in the Literacy Corps as their two-year army service. Dispatched to rural areas, 166,949 corpsmen (FIGURE 1) and 33,642 corpswomen (from 1969 on; FIGURE 2) taught over 2.2 million children between the ages of six and twelve years who had not yet attended school up to the second grade, plus a million adults',
+          text: 'According to two government decrees issued on 26 October and 3 December 1962, and approved by the parliament on 26 January 1963, young men holding the diploma of secondary education—mainly urban middle-class youth—were given the option of serving in the Literacy Corps as their two-year army service.',
           lang: 'en',
           cite: {
             source: 'iranica-sabahi-literacy-corps',
@@ -327,7 +327,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://web.archive.org/web/20260907212738/https://www.iranicaonline.org/articles/literacy-corps-1/'
           }
         }

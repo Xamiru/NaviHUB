@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['south-asia'],
   roles: ['monarch'],
   offices: [
@@ -63,6 +63,25 @@ export default definePerson({
     }
   ],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q7',
+          text: 'DŌST MOḤAMMAD KHAN (b. Qandahār December 1792, d. Herat, 21 Ḏu’l-ḥejja 1279/9 June 1863), first ruler (1242-55/1826-39, 1259-79/1842-63) of the Bārakzay/Moḥammadzay dynasty of Afghanistan.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-tarzi-dost-mohammad-khan',
+            loc: { section: 'DŌST MOḤAMMAD KHAN', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://www.iranicaonline.org/articles/dost-mohammad-khan/'
+          }
+        }
+      ]
+    },
     {
       kind: 'career',
       quotes: [
@@ -164,6 +183,19 @@ export default definePerson({
           {
             source: 'iranica-balland-afghanistan-political-history',
             loc: { section: 'AFGHANISTAN x. Political History', para: '10' }
+          }
+        ]
+      }
+    ]
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1792-12' },
+        cites: [
+          {
+            source: 'iranica-tarzi-dost-mohammad-khan',
+            loc: { section: 'DŌST MOḤAMMAD KHAN', para: '1' }
           }
         ]
       }

@@ -42,6 +42,15 @@ export default defineEvent({
           loc: { section: 'The Palestinian Revolt', para: '2' }
         }
       ]
+    },
+    {
+      ref: 'place:jerusalem',
+      cites: [
+        {
+          source: 'loc-israel-country-study-1988',
+          loc: { section: 'The Palestinian Revolt', para: '4' }
+        }
+      ]
     }
   ],
   participants: [

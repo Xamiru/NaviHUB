@@ -119,7 +119,7 @@ export const SWORD_ART_ONLINE: FranchiseCfg = {
       aliases: ['Sword Art Online: Hollow Realization Deluxe Edition'],
       externalIds: [{ source: 'steam', id: '607890' }],
       year: 2016,
-      note: '2026: Kirito enters the new VRMMORPG Sword Art: Origin and meets a mysterious NPC'
+      note: 'In 2026 Kirito enters the new VRMMORPG Sword Art: Origin and meets a mysterious NPC'
     },
     {
       id: 'sao-ordinal-scale',

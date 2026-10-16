@@ -52,18 +52,6 @@ export default defineEvent({
         heldBy: [
           { kind: 'organization', name: 'Encyclopædia Britannica (11th edition, 1911)' }
         ]
-      },
-      {
-        value: { d: '1739-05', approx: true },
-        cites: [
-          {
-            source: 'iranica-bonakdarian-india-afsharid-zand-periods',
-            loc: { section: 'INDIA vii. RELATIONS: THE AFSHARID AND ZAND PERIODS', para: '8' }
-          }
-        ],
-        heldBy: [
-          { kind: 'scholar', name: 'Mansour Bonakdarian', discipline: 'historian' }
-        ]
       }
     ]
   },

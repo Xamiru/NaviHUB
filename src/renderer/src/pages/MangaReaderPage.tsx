@@ -4,7 +4,7 @@ import { useCanGoBack } from '../lib/navState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
-import { useReaderSource } from '../lib/readerSource'
+import { useReaderSource, useReaderTabTitle } from '../lib/readerSource'
 import { readerPath } from '../lib/readerPath'
 import OcrOverlay from '../components/reader/OcrOverlay'
 import MiningPanel from '../components/reader/MiningPanel'
@@ -39,6 +39,7 @@ const FIT_CYCLE: Fit[] = ['height', 'width', 'original']
 const SHORTCUTS = MANGA_READER_SHORTCUTS
 
 export default function MangaReaderPage() {
+  const reader = useReaderSource()
   const {
     doc,
     library,
@@ -49,7 +50,8 @@ export default function MangaReaderPage() {
     error: sourceError,
     loading,
     retry
-  } = useReaderSource()
+  } = reader
+  useReaderTabTitle(reader)
   const navigate = useNavigate()
   const canGoBack = useCanGoBack()
   const location = useLocation()

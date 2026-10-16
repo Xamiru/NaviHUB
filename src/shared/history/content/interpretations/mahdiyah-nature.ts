@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'mahdiyah-nature',
   about: ['period:mahdiyah', 'person:muhammad-ahmad-al-mahdi'],
   topic: 'nature',
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'divinely-appointed-mahdi',
@@ -95,7 +95,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q4',
-          text: 'The Mahdist movement was not only a revolt against misgovernment. It was also, in the eyes of its followers, a religious move- ment having for its object the forced conversion of the whole world to Mahdiism.',
+          text: 'The Mahdist movement was not only a revolt against misgovernment. It was also, in the eyes of its followers, a religious […] having for its object the forced conversion of the whole world to Mahdiism.',
           lang: 'en',
           cite: {
             source: 'cromer-1908-modern-egypt-vol-1',
@@ -103,7 +103,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-16',
             url: 'https://archive.org/download/modernegypt0001crom_z1y4/modernegypt0001crom_z1y4_djvu.txt'
           }
         }

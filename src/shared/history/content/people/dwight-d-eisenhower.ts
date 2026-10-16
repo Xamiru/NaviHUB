@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Dwight D. Eisenhower', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   died: {
     alts: [
       {
@@ -153,5 +153,18 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1890' },
+        cites: [
+          {
+            source: 'loc-name-authority-dwight-d-eisenhower',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  }
 })

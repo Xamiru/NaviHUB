@@ -244,20 +244,6 @@ export default defineEvent({
             at: '2026-10-09',
             url: 'https://history.state.gov/milestones/1977-1980/camp-david'
           }
-        },
-        {
-          id: 'q12',
-          text: 'Muhammad Anwar al-Sadat, President of the Arab Republic of Egypt, and Menachem Begin, Prime Minister of Israel, met with Jimmy Carter, President of the United States of America, at Camp David from September 5 to September 17, 1978, and have agreed on the following framework for peace in the Middle East.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-camp-david-accords-1978',
-            loc: { section: 'The Framework for Peace in the Middle East', para: '3' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-09',
-            url: 'https://avalon.law.yale.edu/20th_century/campdav.asp'
-          }
         }
       ]
     },
@@ -309,6 +295,25 @@ export default defineEvent({
             }
           },
           provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/egypt/45.htm' }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q12',
+          text: 'Muhammad Anwar al-Sadat, President of the Arab Republic of Egypt, and Menachem Begin, Prime Minister of Israel, met with Jimmy Carter, President of the United States of America, at Camp David from September 5 to September 17, 1978, and have agreed on the following framework for peace in the Middle East.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-camp-david-accords-1978',
+            loc: { section: 'The Framework for Peace in the Middle East', para: '3' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://avalon.law.yale.edu/20th_century/campdav.asp'
+          }
         }
       ]
     }
@@ -467,7 +472,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q6',
-        text: 'the U.S. and Israeli delegations agreed to a treaty text on March 13. Sadat quickly assented to the agreement and the Egyptian-Israeli Peace Treaty was formally signed on March 26.',
+        text: 'As a result of a series of compromises, notably a U.S. guarantee of Israel’s oil supply, omitting references to a “special role” for Egypt in Gaza, and Israeli agreement to make a number of unilateral gestures to the Palestinians, the U.S. and Israeli delegations agreed to a treaty text on March 13. Sadat quickly assented to the agreement and the Egyptian-Israeli Peace Treaty was formally signed on March 26.',
         lang: 'en',
         cite: {
           source: 'state-dept-milestones-camp-david',
@@ -475,7 +480,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-09',
+          at: '2026-10-16',
           url: 'https://history.state.gov/milestones/1977-1980/camp-david'
         }
       }

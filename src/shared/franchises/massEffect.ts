@@ -43,8 +43,8 @@ export const MASS_EFFECT: FranchiseCfg = {
       spinOff: true,
       note: 'Anime introducing Mass Effect 3’s James Vega: his squad against the Collectors'
     },
-    { id: 'me-andromeda', title: 'Mass Effect: Andromeda', externalIds: [{ source: 'steam', id: '1238000' }], year: 2017, chrono: 5, mc: 72, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1238000/library_hero.jpg', note: 'Heleus, 600 years on — the Ryders' },
-    { id: 'me-legendary', title: 'Mass Effect Legendary Edition', externalIds: [{ source: 'steam', id: '1328670' }], year: 2021, chrono: 4, mc: 86, remake: true, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1328670/library_hero.jpg', note: 'Remaster of the trilogy in one package' }
+    { id: 'me-andromeda', title: 'Mass Effect: Andromeda', externalIds: [{ source: 'steam', id: '1238000' }], year: 2017, chrono: 4, mc: 72, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1238000/library_hero.jpg', note: 'Heleus, 600 years on — the Ryders' },
+    { id: 'me-legendary', title: 'Mass Effect Legendary Edition', externalIds: [{ source: 'steam', id: '1328670' }], year: 2021, chrono: 1, mc: 86, remake: true, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1328670/library_hero.jpg', note: 'Remaster of the trilogy in one package' }
   ],
   characters: [
     { id: 'me-shepard', name: 'Commander Shepard', role: 'Protagonist', portraitUrl: 'https://static.wikia.nocookie.net/masseffect/images/2/24/MELE_Default_Shepards.png', appearsIn: ['me-1', 'me-2', 'me-3', 'me-legendary'], blurb: 'The first human Spectre, the only one who believes in the Reapers, and whoever you decided they were — man or woman, saint or bastard, Shepard is the trilogy\'s one constant.' },

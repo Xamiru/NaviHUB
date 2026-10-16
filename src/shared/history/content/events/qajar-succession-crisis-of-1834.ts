@@ -273,7 +273,7 @@ export default defineEvent({
         },
         {
           id: 'q4',
-          text: 'To limit frictions between contending claimants, the Shah held an assembly (šurā) to confirm Moḥammad Mirzā as nāyeb-al-salṭana (20 June 1834), thereby fulfilling the common wish of Russian and British powers (Ebrahimnejad, pp. 289-90).',
+          text: 'To limit frictions between contending claimants, the Shah held an assembly (šurā) to confirm Moḥammad Mirzā as nāyeb-al-salṭana (20 June 1834), thereby fulfilling the common wish of Russian and British powers',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-mohammad-shah',
@@ -281,7 +281,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
         }
@@ -292,7 +292,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'Most significantly, Ḥosayn-ʿAlī Mīrzā, the Farmānfarmā of Fārs, viewed the nomination not only as a personal affront to his own rightful position but a sign of the shah’s surrender to a pro-Russian interpretation of Article 13 of the Treaty of Torkamānčāy, which guaranteed ʿAbbās Mīrzā’s succession (Hurowitz, I, pp. 234; Amanat, 1997, p. 22).',
+          text: 'Most significantly, Ḥosayn-ʿAlī Mīrzā, the Farmānfarmā of Fārs, viewed the nomination not only as a personal affront to his own rightful position but a sign of the shah’s surrender to a pro-Russian interpretation of Article 13 of the Treaty of Torkamānčāy, which guaranteed ʿAbbās Mīrzā’s succession',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-fath-ali-shah',
@@ -300,7 +300,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/fath-ali-shah'
           }
         }
@@ -325,7 +325,7 @@ export default defineEvent({
         },
         {
           id: 'q7',
-          text: 'When the news reached Tabriz in early November, the British and Russian envoys, John Campbell and Comte Simonich, hailed Moḥammad Mirzā as king, “conjunctly and separately” (Ingram, p. 318).',
+          text: 'When the news reached Tabriz in early November, the British and Russian envoys, John Campbell and Comte Simonich, hailed Moḥammad Mirzā as king, “conjunctly and separately”',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-mohammad-shah',
@@ -333,7 +333,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
         },
@@ -494,7 +494,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q15',
-        text: 'The day after Moḥammad’s accession at Tabriz (9 November 1834), a force set out for Tehran under the command of Colonel Henry Lindesay-Bethune, who had previously served in Persia (on him, see Wright, 1977, pp. 52-58).',
+        text: 'The day after Moḥammad’s accession at Tabriz (9 November 1834), a force set out for Tehran under the command of Colonel Henry Lindesay-Bethune, who had previously served in Persia',
         lang: 'en',
         cite: {
           source: 'iranica-calmard-mohammad-shah',
@@ -502,7 +502,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/mohammad-shah'
         }
       }
@@ -552,7 +552,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q17',
-        text: 'After his coronation (14 Ramażān 1250/14 January 1835), Moḥammad Shah gave governorship of provinces to Qajar princes that he felt were loyal to the dynasty (Ḵormuji, pp. 23-24).',
+        text: 'After his coronation (14 Ramażān 1250/14 January 1835), Moḥammad Shah gave governorship of provinces to Qajar princes that he felt were loyal to the dynasty',
         lang: 'en',
         cite: {
           source: 'iranica-calmard-mohammad-shah',
@@ -560,7 +560,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/mohammad-shah'
         }
       }
@@ -624,12 +624,6 @@ export default defineEvent({
       }
     }
   ],
-  hero: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/2/2c/Portrait_of_Muhammad_Shah_Qadjar_-_MV_6700_-_v1.JPG',
-    page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Muhammad_Shah_Qadjar_-_MV_6700_-_v1.JPG',
-    credit: { institution: 'Musée du Louvre', creator: 'Muhammad Hasan Afshar' },
-    license: { id: 'public-domain' }
-  },
   furtherReading: [
     { source: 'nateq-1988-iran-dar-rahyabi-ye-farhangi', perspective: 'iranian' }
   ]

@@ -25,11 +25,14 @@ import { usePlayerControls } from '../lib/player'
 import { toast } from '../lib/toast'
 import { pathForMedia } from '../lib/mediaConfig'
 import { useCanGoBack } from '../lib/navState'
+import { useTabTitleOverride } from '../lib/browserTabs'
 import { VIDEO_PLAYER_SHORTCUTS } from '../lib/shortcuts'
 import {
   PLAYBACK_RATES,
+  loadSubOffset,
   loadVideoPrefs,
   lookOf,
+  saveSubOffset,
   saveVideoPrefs,
   type SubtitleLook,
   type VideoPrefs
@@ -44,11 +47,27 @@ import StyledSubtitleLayer from '../components/video/StyledSubtitleLayer'
 import SubtitleOverlay, { type SubtitleWordPick } from '../components/video/SubtitleOverlay'
 import TranscriptPanel from '../components/video/TranscriptPanel'
 import VideoControls from '../components/video/VideoControls'
+import VideoOsd from '../components/video/VideoOsd'
 
 const EMPTY_TRACK: CueTrack = { cues: [], maxEnd: [] }
 const KINDS: VideoSourceKind[] = ['file', 'wrestling', 'clip', 'football']
 // Media seconds of playback before the watchdog judges the decode.
 const WATCHDOG_GRACE_SECONDS = 1.5
+const SYSTEM_PLAYER_HEADING = 'This file plays in the system player'
+// Frame step before a frame duration has been measured (24 fps).
+const FALLBACK_FRAME_SECONDS = 1 / 24
+
+function delayText(seconds: number): string {
+  return seconds === 0
+    ? 'Subtitle delay 0 s'
+    : `Subtitle delay ${seconds > 0 ? '+' : ''}${seconds.toFixed(1)} s`
+}
+
+interface PlayerFailure {
+  heading: string
+  reason: string
+  external: boolean // false when the file itself is gone
+}
 
 function refFor(kind: string | undefined, idParam: string | undefined): VideoSourceRef | null {
   const id = Number(idParam)
@@ -56,6 +75,14 @@ function refFor(kind: string | undefined, idParam: string | undefined): VideoSou
   if (kind === 'clip') return { kind: 'clip', clipId: id }
   if (kind === 'football') return { kind: 'football', mediaId: id }
   return { kind: kind as 'file' | 'wrestling', fileId: id }
+}
+
+// The tab names the show or event for library episodes and wrestling files;
+// a clip's or Football item's seriesTitle is only a fixed label.
+function videoTabTitle(source: VideoSource): string {
+  const { kind } = source.ref
+  const owner = kind === 'file' || kind === 'wrestling' ? source.seriesTitle : null
+  return owner ? `${owner} · ${source.title}` : source.title
 }
 
 // The in-app video player. Chrome-free (App.tsx renders it outside the shell),
@@ -77,6 +104,7 @@ export default function VideoPlayerPage(): JSX.Element {
     staleTime: 0,
     retry: false
   })
+  useTabTitleOverride(source ? videoTabTitle(source) : null)
 
   const fallbackPath = source
     ? source.mediaId && source.mediaType
@@ -129,7 +157,7 @@ export default function VideoPlayerPage(): JSX.Element {
     return (
       <DecodePanel
         title={source.title}
-        heading="This file plays in the system player"
+        heading={SYSTEM_PLAYER_HEADING}
         reason={source.decode.reason ?? 'This file cannot be decoded inside NaviHUB.'}
         onExternal={openExternal}
         onBack={exitPlayer}
@@ -182,6 +210,23 @@ function Player({
     })
   }, [])
 
+  // ---- subtitle delay ----
+  // Positive = subtitles later. Remembered per show or event (offsetKey), not
+  // globally: one release's timing fix must not shift every other video.
+  const [subDelay, setSubDelayState] = useState(() => loadSubOffset(source.offsetKey))
+  const setSubDelay = useCallback(
+    (seconds: number): number => {
+      const next = Number(seconds.toFixed(2))
+      setSubDelayState(next)
+      saveSubOffset(source.offsetKey, next)
+      return next
+    },
+    [source.offsetKey]
+  )
+  // Both cue clocks (ours and libass's timeOffset) read subtitle time as media
+  // time + offset, so a delay is a negative offset.
+  const subOffset = -subDelay
+
   // ---- element + clocks ----
   //
   // Three separate clocks on purpose. `timeRef` is frame-accurate and drives
@@ -198,7 +243,9 @@ function Player({
   const [buffered, setBuffered] = useState<{ start: number; end: number }[]>([])
   const [activeCues, setActiveCues] = useState<SubCue[]>([])
   const [activeSecondary, setActiveSecondary] = useState<SubCue[]>([])
-  const [decodeFailure, setDecodeFailure] = useState<string | null>(null)
+  const [failure, setFailure] = useState<PlayerFailure | null>(null)
+  // The shortest frame interval seen while playing; drives , and . frame step.
+  const frameRef = useRef<number | null>(null)
 
   // ---- study range (?start=&end=) ----
   const range = useMemo(
@@ -265,7 +312,7 @@ function Player({
   syncRef.current = {
     shownPrimary,
     shownSecondary,
-    offset: prefs.subOffsetSec,
+    offset: subOffset,
     dual: prefs.dualSubs,
     subsOn: prefs.subsOn
   }
@@ -274,11 +321,19 @@ function Player({
     if (!el) return
     let raf = 0
     let vfc = 0
+    let lastMediaTime = -1
     const sameIds = (a: SubCue[], b: SubCue[]): boolean =>
       a.length === b.length && a.every((c, i) => c.id === b[i].id)
 
-    const tick = (): void => {
+    const tick = (_now?: number, meta?: { mediaTime: number }): void => {
       timeRef.current = el.currentTime
+      if (meta) {
+        const step = meta.mediaTime - lastMediaTime
+        if (!el.paused && step > 0.004 && step < 0.1 && (frameRef.current == null || step < frameRef.current)) {
+          frameRef.current = step
+        }
+        lastMediaTime = meta.mediaTime
+      }
       const r = rangeRef.current
       if (r.range && !r.done && !el.paused && el.currentTime >= r.range.end) {
         if (r.loop) {
@@ -301,7 +356,9 @@ function Player({
     const schedule = (): void => {
       if ('requestVideoFrameCallback' in el) {
         vfc = (
-          el as HTMLVideoElement & { requestVideoFrameCallback: (cb: () => void) => number }
+          el as HTMLVideoElement & {
+            requestVideoFrameCallback: (cb: (now: number, meta: { mediaTime: number }) => void) => number
+          }
         ).requestVideoFrameCallback(tick)
       } else {
         raf = requestAnimationFrame(tick)
@@ -347,29 +404,41 @@ function Player({
   )
 
   // ---- progress autosave (library episodes and wrestling files only) ----
-  // The debounce input is coarsened to 5 s buckets, and pause, seek, hide and
-  // unmount all flush. A resume position is not progress: main never logs it.
+  // The debounce input is coarsened to 5 s buckets; a landed seek flushes
+  // after 500 ms (one write per scrub, not per step); pause, hide and unmount
+  // flush at once. A resume position is not progress: main never logs it.
   const pendingRef = useRef<number | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const endedRef = useRef(false)
+  // markFinished's writes. A replay's first position waits for them, so the
+  // late "clear the position" write cannot overwrite it.
+  const finishingRef = useRef<Promise<void> | null>(null)
   const flushProgress = useCallback(() => {
     const seconds = pendingRef.current
     pendingRef.current = null
     if (seconds == null || !isFileRef || endedRef.current) return
-    void api.video.markProgress(sourceRef, seconds).catch(() => undefined)
+    const write = (): Promise<unknown> =>
+      api.video.markProgress(sourceRef, seconds).catch(() => undefined)
+    void (finishingRef.current ? finishingRef.current.then(write) : write())
   }, [isFileRef, sourceRef])
+  const scheduleFlush = useCallback(
+    (ms: number) => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(flushProgress, ms)
+    },
+    [flushProgress]
+  )
 
   // pendingRef follows every timeupdate, so a flush always writes the latest
   // position, even when the player is left inside the first 5-second bucket.
   const bucket = Math.floor(uiTime / 5)
   useEffect(() => {
     if (!isFileRef || uiTime <= 0) return
-    if (timerRef.current) clearTimeout(timerRef.current)
-    timerRef.current = setTimeout(flushProgress, 800)
+    scheduleFlush(800)
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [bucket, isFileRef, flushProgress]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [bucket, isFileRef, scheduleFlush]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const onHide = (): void => {
@@ -400,9 +469,16 @@ function Player({
     if (!isFileRef || endedRef.current) return
     endedRef.current = true
     pendingRef.current = null
-    await api.video.markWatched(sourceRef, true)
-    // A finished file reopens from the start.
-    await api.video.markProgress(sourceRef, null)
+    const run = (async () => {
+      await api.video.markWatched(sourceRef, true)
+      // A finished file reopens from the start.
+      await api.video.markProgress(sourceRef, null)
+    })()
+    finishingRef.current = run.then(
+      () => undefined,
+      () => undefined
+    )
+    await run
     if (sourceRef.kind === 'wrestling') {
       void qc.invalidateQueries({ queryKey: qk.wrestling.all })
     } else {
@@ -419,8 +495,8 @@ function Player({
       if (!el) return
       el.currentTime = Math.max(0, Math.min(t, el.duration || t))
       setUiTime(el.currentTime)
-      // onSeeked flushes once the seek lands; a flush here would write on
-      // every scrub step of the timeline.
+      // onSeeked schedules the flush once the seek lands; a flush here would
+      // write on every scrub step of the timeline.
       if (!endedRef.current) pendingRef.current = el.currentTime
     },
     []
@@ -486,8 +562,8 @@ function Player({
   )
   const replayCue = useCallback(() => {
     const active = activeCues[0]
-    if (active) seekTo(Math.max(0, active.start - CUE_SEEK_LEAD - prefs.subOffsetSec))
-  }, [activeCues, prefs.subOffsetSec, seekTo])
+    if (active) seekTo(Math.max(0, active.start - CUE_SEEK_LEAD - syncRef.current.offset))
+  }, [activeCues, seekTo])
 
   const toggleFullscreen = useCallback(() => {
     // Fullscreen the whole row, never the <video>, so the mining panel and the
@@ -547,6 +623,24 @@ function Player({
     [openMining]
   )
 
+  // Stable, so the memoised transcript does not re-render with the 4 Hz clock.
+  const primaryLang = primaryTrack?.lang ?? 'ja'
+  const onTranscriptSeek = useCallback(
+    (cue: SubCue) => {
+      seekTo(Math.max(0, cue.start - CUE_SEEK_LEAD - syncRef.current.offset))
+      void videoRef.current?.play().catch(() => undefined)
+    },
+    [seekTo]
+  )
+  const onTranscriptMine = useCallback(
+    (cue: SubCue) => openMining(cue.text, null, primaryLang),
+    [openMining, primaryLang]
+  )
+  const closeTranscript = useCallback(() => {
+    setTranscriptOpen(false)
+    setPref('transcriptOpen', false)
+  }, [setPref])
+
   // ---- capture (frame + sentence audio) ----
   // The frame comes from the renderer's own canvas. It only works because the
   // navimg protocol sends access-control-allow-origin and the <video> carries
@@ -572,11 +666,19 @@ function Player({
       }
     }
     // The clip is a bonus: without ffmpeg the card keeps its frame and text.
+    // Cue times are subtitle time; the cut is in media time, so the delay
+    // the viewer set applies to it as well.
     let audioPath: string | null = null
     if (cue) {
+      const offset = syncRef.current.offset
       audioPath =
-        (await api.video.clipAudio({ ref: sourceRef, startSec: cue.start, endSec: cue.end }))
-          ?.audioPath ?? null
+        (
+          await api.video.clipAudio({
+            ref: sourceRef,
+            startSec: Math.max(0, cue.start - offset),
+            endSec: cue.end - offset
+          })
+        )?.audioPath ?? null
     }
     setAttach({ imagePath, audioPath })
   }, [activeCues, openMining, primaryTrack?.lang, sourceRef])
@@ -594,6 +696,22 @@ function Player({
     hoverPausedRef.current = false
     void videoRef.current?.play().catch(() => undefined)
   }, [])
+
+  // ---- on-screen readout ----
+  // Keyboard changes (volume, speed, delay, tracks) are otherwise invisible.
+  const [osd, setOsd] = useState<string | null>(null)
+  const osdTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const showOsd = useCallback((text: string) => {
+    setOsd(text)
+    if (osdTimer.current) clearTimeout(osdTimer.current)
+    osdTimer.current = setTimeout(() => setOsd(null), 1200)
+  }, [])
+  useEffect(
+    () => () => {
+      if (osdTimer.current) clearTimeout(osdTimer.current)
+    },
+    []
+  )
 
   // ---- auto-hiding bars ----
   // They stay up while paused, while a menu is open, while the pointer is over
@@ -665,14 +783,14 @@ function Player({
       const w = watchRef.current
       if (w.judged || w.from == null || el.currentTime - w.from < WATCHDOG_GRACE_SECONDS) return
       w.judged = true
-      const failure = silentDecodeFailure({
+      const silent = silentDecodeFailure({
         videoWidth: el.videoWidth,
         hasAudio: source.hasAudio,
         stats: readDecodeStats(el)
       })
-      if (failure) {
+      if (silent) {
         el.pause()
-        setDecodeFailure(failure)
+        setFailure({ heading: SYSTEM_PLAYER_HEADING, reason: silent, external: true })
       }
     },
     [source.hasAudio]
@@ -683,8 +801,10 @@ function Player({
     function onKey(e: KeyboardEvent): void {
       if (helpOpen || quoteSeed || e.defaultPrevented) return
       const t = e.target as HTMLElement
+      // The timeline and volume sliders opt in (data-player-keys): after a
+      // click on them, Space and the arrows still drive the player.
       if (
-        t instanceof HTMLInputElement ||
+        (t instanceof HTMLInputElement && !t.hasAttribute('data-player-keys')) ||
         t instanceof HTMLTextAreaElement ||
         t instanceof HTMLSelectElement ||
         t.isContentEditable
@@ -695,7 +815,14 @@ function Player({
       if (e.ctrlKey && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
       const el = videoRef.current
       pokeBar()
-      switch (e.key) {
+      // Letters are told apart by Shift, never by case, so Caps Lock cannot
+      // turn L (forward 10 s) into Shift+L (loop the range).
+      const key = /^[a-z]$/i.test(e.key)
+        ? e.shiftKey
+          ? e.key.toUpperCase()
+          : e.key.toLowerCase()
+        : e.key
+      switch (key) {
         case ' ':
         case 'k':
           e.preventDefault()
@@ -724,7 +851,9 @@ function Player({
           replayRange()
           return
         case 'L':
-          if (range) setLoopRange((v) => !v)
+          if (!range) return
+          setLoopRange(!loopRange)
+          showOsd(loopRange ? 'Range loop off' : 'Range loop on')
           return
         case 'j':
           seekBy(-10)
@@ -733,52 +862,66 @@ function Player({
           seekBy(10)
           return
         case ',':
-          if (el?.paused) seekBy(-0.042)
+          if (el?.paused) seekBy(-(frameRef.current ?? FALLBACK_FRAME_SECONDS))
           return
         case '.':
-          if (el?.paused) seekBy(0.042)
+          if (el?.paused) seekBy(frameRef.current ?? FALLBACK_FRAME_SECONDS)
           return
-        case 'ArrowUp':
+        case 'ArrowUp': {
           e.preventDefault()
-          setPref('volume', Math.min(1, prefs.volume + 0.05))
+          const v = Math.min(1, prefs.volume + 0.05)
+          setPref('volume', v)
           setPref('muted', false)
-          return
-        case 'ArrowDown':
-          e.preventDefault()
-          setPref('volume', Math.max(0, prefs.volume - 0.05))
-          return
-        case 'M':
-          setPref('muted', !prefs.muted)
-          return
-        case '[': {
-          const i = PLAYBACK_RATES.indexOf(prefs.rate as (typeof PLAYBACK_RATES)[number])
-          setPref('rate', PLAYBACK_RATES[Math.max(0, (i === -1 ? 3 : i) - 1)])
+          showOsd(`Volume ${Math.round(v * 100)}%`)
           return
         }
+        case 'ArrowDown': {
+          e.preventDefault()
+          const v = Math.max(0, prefs.volume - 0.05)
+          setPref('volume', v)
+          showOsd(`Volume ${Math.round(v * 100)}%${prefs.muted ? ', muted' : ''}`)
+          return
+        }
+        case 'M':
+          setPref('muted', !prefs.muted)
+          showOsd(prefs.muted ? 'Sound on' : 'Muted')
+          return
+        case '[':
         case ']': {
           const i = PLAYBACK_RATES.indexOf(prefs.rate as (typeof PLAYBACK_RATES)[number])
-          setPref('rate', PLAYBACK_RATES[Math.min(PLAYBACK_RATES.length - 1, (i === -1 ? 3 : i) + 1)])
+          const from = i === -1 ? 3 : i
+          const r =
+            PLAYBACK_RATES[
+              key === '[' ? Math.max(0, from - 1) : Math.min(PLAYBACK_RATES.length - 1, from + 1)
+            ]
+          setPref('rate', r)
+          showOsd(`Speed ${r}x`)
           return
         }
         case '\\':
           setPref('rate', 1)
+          showOsd('Speed 1x')
           return
         case 's':
           setPref('subsOn', !prefs.subsOn)
+          showOsd(prefs.subsOn ? 'Subtitles off' : 'Subtitles on')
           return
         case 'b':
           setPref('dualSubs', !prefs.dualSubs)
+          showOsd(prefs.dualSubs ? 'Second track off' : 'Second track on')
           return
         case 'S': {
-          const idx = tracks.findIndex((x) => x.id === primaryId)
-          setPrimaryId(tracks.length ? tracks[(idx + 1) % tracks.length].id : null)
+          if (tracks.length === 0) return
+          const next = tracks[(tracks.findIndex((x) => x.id === primaryId) + 1) % tracks.length]
+          setPrimaryId(next.id)
+          showOsd(`Subtitles: ${next.label}`)
           return
         }
         case '-':
-          setPref('subOffsetSec', Number((prefs.subOffsetSec - 0.1).toFixed(2)))
+          showOsd(delayText(setSubDelay(subDelay - 0.1)))
           return
         case '=':
-          setPref('subOffsetSec', Number((prefs.subOffsetSec + 0.1).toFixed(2)))
+          showOsd(delayText(setSubDelay(subDelay + 0.1)))
           return
         case 't':
           if (!hasSubs) return
@@ -840,6 +983,7 @@ function Player({
     goToFile,
     hasSubs,
     helpOpen,
+    loopRange,
     openQuote,
     quoteSeed,
     menuOpen,
@@ -854,7 +998,10 @@ function Player({
     replayRange,
     seekBy,
     seekTo,
+    subDelay,
     setPref,
+    setSubDelay,
+    showOsd,
     source.next,
     source.prev,
     toggleFullscreen,
@@ -863,13 +1010,13 @@ function Player({
     transcriptOpen
   ])
 
-  if (decodeFailure) {
+  if (failure) {
     return (
       <DecodePanel
         title={source.title}
-        heading="This file plays in the system player"
-        reason={decodeFailure}
-        onExternal={onExternal}
+        heading={failure.heading}
+        reason={failure.reason}
+        onExternal={failure.external ? onExternal : null}
         onBack={onExit}
       />
     )
@@ -959,18 +1106,36 @@ function Player({
               if (!endedRef.current) pendingRef.current = e.currentTarget.currentTime
               judgeDecode(e.currentTarget)
             }}
-            onSeeked={flushProgress}
+            onSeeking={(e) => {
+              // Playing or seeking back after the end leaves the Finished
+              // screen and resumes position saving.
+              const el = e.currentTarget
+              if (el.duration && el.currentTime < el.duration - 0.5) {
+                endedRef.current = false
+                setEnded(false)
+              }
+            }}
+            onSeeked={() => scheduleFlush(500)}
             onProgress={(e) => {
               const b = e.currentTarget.buffered
               setBuffered(Array.from({ length: b.length }, (_, i) => ({ start: b.start(i), end: b.end(i) })))
             }}
-            onError={(e) =>
-              setDecodeFailure(
-                e.currentTarget.error?.message
-                  ? `This file could not be played inside NaviHUB (${e.currentTarget.error.message}).`
-                  : 'This file could not be played inside NaviHUB.'
+            onError={(e) => {
+              const reason = e.currentTarget.error?.message
+                ? `This file could not be played inside NaviHUB (${e.currentTarget.error.message}).`
+                : 'This file could not be played inside NaviHUB.'
+              // A file that vanished (drive unplugged, folder moved) is not a
+              // decode problem: resolving it again gets main's own sentence.
+              api.video.source(sourceRef).then(
+                () => setFailure({ heading: SYSTEM_PLAYER_HEADING, reason, external: true }),
+                (cause: unknown) =>
+                  setFailure({
+                    heading: 'Video unavailable',
+                    reason: cause instanceof Error ? cause.message : reason,
+                    external: false
+                  })
               )
-            }
+            }}
             onEnded={() => {
               setEnded(true)
               void markFinished()
@@ -986,7 +1151,7 @@ function Player({
               dialogueOnly={prefs.dialogueOnly}
               visible={styledDrawing}
               scale={prefs.scale}
-              offsetSec={prefs.subOffsetSec}
+              offsetSec={subOffset}
               onReady={setStyledReady}
               onFailure={setStyledFailure}
             />
@@ -1007,6 +1172,8 @@ function Player({
               onHoverEnd={onHoverEnd}
             />
           )}
+
+          <VideoOsd text={osd} />
 
           {rangeDone && range && !loopRange && (
             <div
@@ -1071,7 +1238,7 @@ function Player({
           subsOn={prefs.subsOn}
           dualSubs={prefs.dualSubs}
           dialogueOnly={prefs.dialogueOnly}
-          subOffsetSec={prefs.subOffsetSec}
+          subDelaySec={subDelay}
           extracting={primary.extracting || secondary.extracting}
           trackError={primary.error ?? secondary.error}
           transcriptOpen={showTranscript}
@@ -1103,7 +1270,7 @@ function Player({
           onToggleSubs={() => setPref('subsOn', !prefs.subsOn)}
           onToggleDual={() => setPref('dualSubs', !prefs.dualSubs)}
           onDialogueOnly={(on) => setPref('dialogueOnly', on)}
-          onSubOffset={(d) => setPref('subOffsetSec', Number((prefs.subOffsetSec + d).toFixed(2)))}
+          onSubDelay={(d) => setSubDelay(subDelay + d)}
           onTranscript={() => {
             setTranscriptOpen(!transcriptOpen)
             setPref('transcriptOpen', !transcriptOpen)
@@ -1136,15 +1303,9 @@ function Player({
           showSecondary={prefs.dualSubs}
           dialogueOnly={prefs.dialogueOnly}
           activeCueId={activeCueId}
-          onSeek={(cue) => {
-            seekTo(Math.max(0, cue.start - CUE_SEEK_LEAD - prefs.subOffsetSec))
-            void videoRef.current?.play().catch(() => undefined)
-          }}
-          onMineCue={(cue) => openMining(cue.text, null, primaryTrack?.lang ?? 'ja')}
-          onClose={() => {
-            setTranscriptOpen(false)
-            setPref('transcriptOpen', false)
-          }}
+          onSeek={onTranscriptSeek}
+          onMineCue={onTranscriptMine}
+          onClose={closeTranscript}
         />
       )}
 

@@ -32,7 +32,8 @@ export function recordSession(
   startedAtEpochSec: number,
   endedAtEpochSec: number,
   durationSec: number,
-  runId: number | null = null
+  runId: number | null = null,
+  launch: { via: string | null; platform: string | null } = { via: null, platform: null }
 ): { progressDelta: number; progressAfter: number } {
   const db = getSqlite()
   return db.transaction(() => {
@@ -48,9 +49,9 @@ export function recordSession(
     ).s
 
     const inserted = db.prepare(
-      `INSERT INTO game_session (media_id, started_at, ended_at, duration)
-       VALUES (?, datetime(?, 'unixepoch'), datetime(?, 'unixepoch'), ?)`
-    ).run(mediaId, startedAtEpochSec, endedAtEpochSec, durationSec)
+      `INSERT INTO game_session (media_id, started_at, ended_at, duration, via, platform)
+       VALUES (?, datetime(?, 'unixepoch'), datetime(?, 'unixepoch'), ?, ?, ?)`
+    ).run(mediaId, startedAtEpochSec, endedAtEpochSec, durationSec, launch.via, launch.platform)
 
     // A run may have been removed while the game was running. Keep the session
     // and time even then; never attach it to whichever run became active later.

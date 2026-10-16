@@ -156,16 +156,6 @@ export default defineEvent({
             at: '2026-10-09',
             url: 'https://history.state.gov/milestones/1801-1829/napoleonic-wars'
           }
-        },
-        {
-          id: 'q6',
-          text: 'In April of that year, Bonaparte signed a treaty that allowed the purchase of Louisiana by the United States and ended French ambitions in the Western Hemisphere.',
-          lang: 'en',
-          cite: {
-            source: 'loc-haiti-country-study-1989',
-            loc: { section: 'Toussaint Louverture', para: '14' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/haiti/10.htm' }
         }
       ]
     },
@@ -185,7 +175,12 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1801-1829/louisiana-purchase'
           }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
         {
           id: 'q8',
           text: 'The inhabitants of the ceded territory shall be incorporated in the Union of the United States and admitted as soon as possible according to the principles of the federal Constitution',
@@ -193,6 +188,20 @@ export default defineEvent({
           cite: {
             source: 'louisiana-purchase-treaty-1803',
             loc: { section: 'Louisiana Purchase Treaty, Art. III' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://avalon.law.yale.edu/19th_century/louis1.asp'
+          }
+        },
+        {
+          id: 'q9',
+          text: 'Done at Paris the tenth day of Floreal in the eleventh year of the French Republic; and the 30th of April 1803.',
+          lang: 'en',
+          cite: {
+            source: 'louisiana-purchase-treaty-1803',
+            loc: { section: 'Louisiana Purchase Treaty, closing' }
           },
           provenance: {
             via: 'web',
@@ -226,18 +235,14 @@ export default defineEvent({
         ]
       },
       quote: {
-        id: 'q9',
-        text: 'Done at Paris the tenth day of Floreal in the eleventh year of the French Republic; and the 30th of April 1803.',
+        id: 'q6',
+        text: 'In April of that year, Bonaparte signed a treaty that allowed the purchase of Louisiana by the United States and ended French ambitions in the Western Hemisphere.',
         lang: 'en',
         cite: {
-          source: 'louisiana-purchase-treaty-1803',
-          loc: { section: 'Louisiana Purchase Treaty, closing' }
+          source: 'loc-haiti-country-study-1989',
+          loc: { section: 'Toussaint Louverture', para: '14' }
         },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://avalon.law.yale.edu/19th_century/louis1.asp'
-        }
+        provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/haiti/10.htm' }
       }
     }
   ],

@@ -5,8 +5,11 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { loadJpDailyTarget, saveJpDailyTarget } from '../lib/japanesePrefs'
-import { gradeCard, LEECH_LAPSES, overdueDays, previewIntervals, type SrsState } from '@shared/srs'
-import { buildTypedPrompt } from '@shared/cloze'
+import { LEECH_LAPSES, previewIntervals, srsStateOf, type SrsState } from '@shared/srs'
+import { elapsedSinceAnswer, useRetention } from '../lib/srsPreview'
+import { buildDirectionPrompt, buildTypedPrompt } from '@shared/cloze'
+import { DIRECTION_LABEL } from '@shared/japanese/reviewDirections'
+import SpeakButton from '../components/japanese/SpeakButton'
 import { jpDailyPacing } from '@shared/japanese/dailyPlan'
 import CardSourceBadge from '../components/CardSourceBadge'
 import CardAttachments from '../components/japanese/CardAttachments'
@@ -26,22 +29,15 @@ interface SessionItem {
   card: JpReviewCard
   srs: SrsState
   // Ghost review (Bunpro echo): graded Missed/Got it via ghostAnswer, never
-  // through SM-2 — see japaneseRepo.ghostAnswer.
+  // through the scheduler — see japaneseRepo.ghostAnswer.
   ghost?: boolean
+  // Answered earlier this session (a requeued learning step): the preview's
+  // gap is then 0 days, not the stored previous answer.
+  answered?: boolean
 }
 
 function toItem(card: JpReviewCard): SessionItem {
-  return {
-    card,
-    srs: {
-      status: card.status,
-      learningStep: card.learningStep,
-      intervalDays: card.intervalDays,
-      ease: card.ease,
-      reps: card.reps,
-      lapses: card.lapses
-    }
-  }
+  return { card, srs: srsStateOf(card) }
 }
 
 const GRADE_KEYS: Record<string, SrsGrade> = { '1': 'again', '2': 'hard', '3': 'good', '4': 'easy' }
@@ -63,16 +59,17 @@ export default function JapaneseReviewPage() {
   const [initialNewLimit] = useState(loadJpDailyTarget)
   const [newLimit, setNewLimitState] = usePersistedState<number>('jpNewLimit', initialNewLimit)
   // Bunpro-style typed answers. Only suggests a grade — the four buttons still
-  // decide, so SM-2 semantics are untouched.
+  // decide, so the scheduler's semantics are untouched.
   const [typedMode, setTypedMode] = usePersistedState<boolean>('jpTypedMode', false)
   // Backlog forgiveness: cap today's due cards (0 = no cap). The repo orders
   // most-overdue-first, so a plain slice takes the right ones; the rest just
-  // stay due — nothing is postponed. Lateness is not free either: submitReview
-  // passes the overdue gap into gradeCard, which uses it as the multiplier base
-  // for Good/Easy, so a card cleared late is scheduled for what it survived.
+  // stay due — nothing is postponed. Lateness is not free either: FSRS sees the
+  // real gap since the previous answer, so a card cleared late is scheduled
+  // for what it survived.
   const [dueCap, setDueCap] = usePersistedState<number>('jpDueCap', 0)
   // Ghost reviews: lapsed cards echo back until answered 3x correctly.
   const [ghostsOn, setGhostsOn] = usePersistedState<boolean>('jpGhosts', true)
+  const retention = useRetention()
 
   const { data: stats } = useQuery({
     queryKey: qk.japanese.stats,
@@ -100,7 +97,7 @@ export default function JapaneseReviewPage() {
   const current = queue[0] ?? null
 
   function rememberMiss(card: JpReviewCard): void {
-    const key = String(card.id)
+    const key = `${card.id}:${card.direction}`
     setMissed((list) =>
       list.some((item) => item.key === key)
         ? list
@@ -108,10 +105,15 @@ export default function JapaneseReviewPage() {
     )
   }
   // Null when this card can't produce a good prompt — it just flips as before.
-  const prompt =
-    typedMode && current
-      ? buildTypedPrompt(current.card, current.card.lessonKind, current.card.lessonTitle)
-      : null
+  // Extra directions are always typed; grammar sentences default to their cloze
+  // (the blank is the grammar point); other cards follow the typed toggle.
+  const prompt = !current
+    ? null
+    : current.card.direction !== 'recognition'
+      ? buildDirectionPrompt(current.card, current.card.direction)
+      : typedMode || current.card.lessonKind === 'grammar'
+        ? buildTypedPrompt(current.card, current.card.lessonKind, current.card.lessonTitle)
+        : null
 
   async function start() {
     setError(null)
@@ -120,13 +122,15 @@ export default function JapaneseReviewPage() {
       const daily = jpDailyPacing(
         newLimit,
         stats?.introducedToday ?? 0,
-        stats?.newAvailableCount ?? 0
+        (stats?.newAvailableCount ?? 0) + (stats?.newDirectionCount ?? 0)
       )
       const { due, fresh } = await api.japanese.reviewQueue(daily.newThisSession)
       const cappedDue = dueCap > 0 ? due.slice(0, dueCap) : due
       const items: SessionItem[] = [...cappedDue, ...fresh].map(toItem)
       if (ghostsOn) {
-        const ghosts = await api.japanese.ghostQueue(5)
+        // Never echo a word already in this session under another schedule.
+        const inSession = new Set(items.map((i) => i.card.id))
+        const ghosts = (await api.japanese.ghostQueue(5)).filter((g) => !inSession.has(g.id))
         for (const g of ghosts) {
           // Interleave, never first — a session should open with a real review.
           const at = items.length > 0 ? 1 + Math.floor(Math.random() * items.length) : 0
@@ -155,8 +159,12 @@ export default function JapaneseReviewPage() {
       if (!current || grading) return
       setGrading(true)
       try {
-        await api.japanese.submitReview(current.card.id, g)
-        const next = gradeCard(current.srs, g)
+        // Continue from exactly the state main persisted.
+        const { state: next } = await api.japanese.submitReview(
+          current.card.id,
+          g,
+          current.card.direction
+        )
         setReviewed((n) => n + 1)
         if (g === 'again') {
           setMisses((n) => n + 1)
@@ -169,7 +177,9 @@ export default function JapaneseReviewPage() {
           const rest = q.slice(1)
           // Cards still in a learning step come back later this session
           // (Anki-style); graduated/rescheduled cards leave it.
-          return next.status === 'learning' ? [...rest, { card: current.card, srs: next }] : rest
+          return next.status === 'learning'
+            ? [...rest, { card: current.card, srs: next, answered: true }]
+            : rest
         })
       } finally {
         setGrading(false)
@@ -253,7 +263,7 @@ export default function JapaneseReviewPage() {
     const daily = jpDailyPacing(
       newLimit,
       stats?.introducedToday ?? 0,
-      stats?.newAvailableCount ?? 0
+      (stats?.newAvailableCount ?? 0) + (stats?.newDirectionCount ?? 0)
     )
     return (
       <div className="p-6 max-w-2xl mx-auto">
@@ -274,7 +284,8 @@ export default function JapaneseReviewPage() {
                 <p className="text-5xl font-semibold tabular-nums text-gray-300">{daily.newThisSession}</p>
                 <p className="mt-1 text-sm text-gray-400">new this session</p>
               </div>
-              {(stats?.dueCount ?? 0) === 0 && (stats?.newAvailableCount ?? 0) === 0 && (
+              {(stats?.dueCount ?? 0) === 0 &&
+                (stats?.newAvailableCount ?? 0) + (stats?.newDirectionCount ?? 0) === 0 && (
                 <p className="basis-full text-sm text-gray-400">
                   Nothing is waiting. Mark a lesson as learned to add its words, or come back when
                   cards are due.
@@ -404,9 +415,13 @@ export default function JapaneseReviewPage() {
 
   if (!current) return null
   const { card, srs } = current
-  // The real overdue gap, so the buttons cannot advertise a schedule the
-  // scheduler will not use (submitReview passes the same number to gradeCard).
-  const previews = previewIntervals(srs, overdueDays(card.dueAt))
+  // The real gap since the previous answer and the user's retention, so the
+  // buttons cannot advertise a schedule submitReview will not write.
+  const previews = previewIntervals(
+    srs,
+    elapsedSinceAnswer(!!current.answered, card.lastReviewedAt),
+    retention
+  )
 
   return (
     <StudySessionFrame
@@ -422,6 +437,9 @@ export default function JapaneseReviewPage() {
             >
               echo
             </span>
+          )}
+          {card.direction !== 'recognition' && (
+            <span className="chip bg-base-700 text-gray-300">{DIRECTION_LABEL[card.direction]}</span>
           )}
           {srs.status === 'new' && !current.ghost && <span className="chip bg-sky-500/20 text-sky-300">new</span>}
           {srs.status === 'learning' && (
@@ -480,6 +498,12 @@ export default function JapaneseReviewPage() {
               <p lang="ja" className="mt-3 text-lg text-gray-400">{card.reading}</p>
             )}
             <p className="mt-3 text-xl text-gray-100">{card.back}</p>
+            {/* A lone kanji has several readings; its example word is what to hear. */}
+            <SpeakButton
+              className="mt-2"
+              text={card.lessonKind === 'kanji' ? card.exampleJp : card.front}
+              reading={card.lessonKind === 'kanji' ? card.exampleReading : card.reading}
+            />
             {(card.onyomi || card.kunyomi) && (
               <p className="mt-2 text-sm text-gray-400">
                 {card.onyomi && (
@@ -505,6 +529,9 @@ export default function JapaneseReviewPage() {
                   {card.exampleReading && (
                     <span className="ml-2 text-xs text-gray-500">{card.exampleReading}</span>
                   )}
+                  {card.lessonKind !== 'kanji' && (
+                    <SpeakButton className="ml-1" text={card.exampleJp} reading={card.exampleReading} />
+                  )}
                 </p>
                 {card.exampleEn && <p className="mt-0.5 text-xs text-gray-500">{card.exampleEn}</p>}
               </div>
@@ -526,7 +553,7 @@ export default function JapaneseReviewPage() {
               aria-label="Typed review answer"
               className="input flex-1"
               autoFocus
-              placeholder="Type the missing part — kana or romaji"
+              placeholder={prompt.placeholder ?? 'Type the missing part — kana or romaji'}
               value={typed}
               onChange={(e) => setTyped(e.target.value)}
               onKeyDown={(e) => {

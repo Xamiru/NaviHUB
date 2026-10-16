@@ -10,6 +10,10 @@
 // fortnight of playing outside NaviHUB arrives as one batch.
 export const ACH_POPUP_BURST_AT = 3
 
+// The archive's full unlock history asks for this many at most; the repo
+// clamps any larger request to it.
+export const MAX_RECENT_UNLOCKS = 5000
+
 // ---- Overlay window geometry -------------------------------------------------
 
 export type Rect = { x: number; y: number; width: number; height: number }

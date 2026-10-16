@@ -88,7 +88,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'But new difficulties arose after Mīrzā Malkom Khan Nāẓem-al-dawla, the Iranian ambassador in London (1873-89), was revoked for his dealings in the business of a lottery concession and shadowy corporations. Objections to this concession had been formulated by Wolff and the Russian charge d’affaires. Amīn-al-solṭān obtained its condemnation from the ʿolamāʾ. Malkom refused to accept this cancellation and, for financial and other reasons, the shah preferred to dismiss him (December, 1889).',
+          text: 'Malkom refused to accept this cancellation and, for financial and other reasons, the shah preferred to dismiss him (December, 1889).',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-atabak-e-azam',
@@ -96,7 +96,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/atabak-e-azam'
           }
         }

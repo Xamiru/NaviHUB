@@ -161,7 +161,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'On 29 March 1912, the Russians directed a volley of hundreds of artillery shells and bullets at the Rażawi shrine (Adib Heravi, pp. 211-12; Sykes, II, p. 426; Matthee; Figure 2).',
+          text: 'On 29 March 1912, the Russians directed a volley of hundreds of artillery shells and bullets at the Rażawi shrine',
           lang: 'en',
           cite: {
             source: 'iranica-motavalli-haghighi-khorasan-qajar-pahlavi',
@@ -169,13 +169,13 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/khorasan-xi-history-in-the-qajar-and-pahlavi-periods'
           }
         },
         {
           id: 'q4',
-          text: 'On 30 March 912, after they refused several times to leave their sanctuary, Russian troops surrounded the shrine, shelled and stormed it. At least thirty-nine Iranians were killed (Kulagina, pp. 182-86).',
+          text: 'On 30 March 912, after they refused several times to leave their sanctuary, Russian troops surrounded the shrine, shelled and stormed it. At least thirty-nine Iranians were killed',
           lang: 'en',
           cite: {
             source: 'iranica-andreeva-russia-relations',
@@ -186,7 +186,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/russia-i-relations/'
           }
         },
@@ -211,7 +211,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q6',
-          text: 'In addition to damaging the dome of the Rażawi shrine, and despite Yusof Khan Herāti and his confederates having left the shrine and its surrounding structures, the Russians brutally occupied the courtyard with their cavalry and infantry, killing many innocent pilgrims. Estimates of the number of people who died in this incident vary greatly, from 40 to 800 (Motavalli Ḥaqiqi, 2013, I, pp. 145-47).',
+          text: 'In addition to damaging the dome of the Rażawi shrine, and despite Yusof Khan Herāti and his confederates having left the shrine and its surrounding structures, the Russians brutally occupied the courtyard with their cavalry and infantry, killing many innocent pilgrims. Estimates of the number of people who died in this incident vary greatly, from 40 to 800',
           lang: 'en',
           cite: {
             source: 'iranica-motavalli-haghighi-khorasan-qajar-pahlavi',
@@ -219,7 +219,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/khorasan-xi-history-in-the-qajar-and-pahlavi-periods'
           }
         }
@@ -230,7 +230,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q7',
-          text: 'Persia, which had hoped to use Germany to counterbalance the steadily increasing influence of Russia and Britain, was made painfully aware of what the agreement meant for those expectations when German diplomacy remained distressingly passive in face of the harsh measures of coercion taken by Russia against Persia in December 1911 (e.g, the ultimatum leading to the dismissal of the American financial advisor Morgan W. Shuster, the occupation of parts of Azarbaijan and Khorasan, and the bombardment of the shrine of Imam Reżā in Mašhad; see Martin, pp. 194-96).',
+          text: 'Persia, which had hoped to use Germany to counterbalance the steadily increasing influence of Russia and Britain, was made painfully aware of what the agreement meant for those expectations when German diplomacy remained distressingly passive in face of the harsh measures of coercion taken by Russia against Persia in December 1911',
           lang: 'en',
           cite: {
             source: 'iranica-bast-germany-diplomatic-relations',
@@ -238,7 +238,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/germany-i'
           }
         }

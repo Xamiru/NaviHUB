@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Gamal Abdel Nasser', lang: 'en', role: 'primary' },
     { text: 'جمال عبد الناصر', lang: 'ar', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -86,6 +86,19 @@ export default definePerson({
       kind: 'overview',
       quotes: [
         {
+          id: 'q3',
+          text: 'Although Naguib headed the RCC and Mahir the civilian government, Nasser was the real power behind the RCC. The years between 1952 and 1954 witnessed a struggle for control of the government that Nasser ultimately won.',
+          lang: 'en',
+          cite: {
+            source: 'loc-egypt-country-study-1990',
+            loc: {
+              section: 'The Revolution and the Early Years of the New Government: 1952-56',
+              para: '7'
+            }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/egypt/32.htm' }
+        },
+        {
           id: 'q1',
           text: 'It was under Nasser that Egypt finally succeeded in ridding itself of the last vestiges of British imperialism',
           lang: 'en',
@@ -130,19 +143,6 @@ export default definePerson({
             }
           },
           provenance: { via: 'web', at: '2026-10-09', url: 'http://countrystudies.us/egypt/32.htm' }
-        },
-        {
-          id: 'q3',
-          text: 'Although Naguib headed the RCC and Mahir the civilian government, Nasser was the real power behind the RCC. The years between 1952 and 1954 witnessed a struggle for control of the government that Nasser ultimately won.',
-          lang: 'en',
-          cite: {
-            source: 'loc-egypt-country-study-1990',
-            loc: {
-              section: 'The Revolution and the Early Years of the New Government: 1952-56',
-              para: '7'
-            }
-          },
-          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/egypt/32.htm' }
         },
         {
           id: 'q4',

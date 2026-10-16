@@ -100,5 +100,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Eleanor_Roosevelt_UDHR.jpg',
     credit: { institution: 'FDR Presidential Library & Museum' },
     license: { id: 'cc-by', version: '2.0' }
-  }
+  },
+  places: [
+    { ref: 'place:paris' }
+  ]
 })

@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['oceania'],
   roles: ['monarch'],
   offices: [
@@ -69,7 +69,7 @@ export default definePerson({
   ],
   sections: [
     {
-      kind: 'career',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',
@@ -87,7 +87,12 @@ export default definePerson({
             at: '2026-10-06',
             url: 'https://www.archives.gov/milestone-documents/joint-resolution-for-annexing-the-hawaiian-islands'
           }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'career',
+      quotes: [
         {
           id: 'q2',
           text: 'Though she introduced a new constitution that would restore her power and Hawaiian rights, she would be Hawaii\'s last monarch.',
@@ -151,5 +156,31 @@ export default definePerson({
       license: { id: 'public-domain' },
       bytes: 35327203
     }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1838-09-02' },
+        cites: [
+          {
+            source: 'loc-name-authority-liliuokalani',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1917-11-11' },
+        cites: [
+          {
+            source: 'loc-name-authority-liliuokalani',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
+  }
 })

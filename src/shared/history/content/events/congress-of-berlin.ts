@@ -166,13 +166,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'The new Bulgaria would be about onethird the size of that prescribed by the Treaty of San Stefano; Macedonia and Thrace, south of the Balkans, would revert to complete Ottoman control. The province of Eastern Rumelia would remain under Turkish rule, but with a Christian governor.',
+          text: 'The province of Eastern Rumelia would remain under Turkish rule, but with a Christian governor.',
           lang: 'en',
           cite: {
             source: 'loc-bulgaria-country-study-1992',
             loc: { section: 'BULGARIAN INDEPENDENCE', para: '23' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/bulgaria/10.htm' }
+          provenance: { via: 'web', at: '2026-10-16', url: 'http://countrystudies.us/bulgaria/10.htm' }
         },
         {
           id: 'q6',

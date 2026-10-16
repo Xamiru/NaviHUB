@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Mohammad Khiabani', lang: 'en', role: 'primary' },
     { text: 'شیخ محمد خیابانی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -54,7 +54,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q1',
-          text: 'cleric, nationalist, constitutionalist revolutionary (1908-9), member of the Second Majles (1909-11), elected to the Fourth Majles, leader of the Democrat party of (Iranian) Azarbaijan, and founder of the short-lived Ᾱzādisetān autonomous province in 1920',
+          text: 'ḴIᾹBᾹNI, SHAIKH MOḤAMMAD (b. ca. 1297/1879-80, Ḵāmena, d. 14 September 1920, Tabriz; Figure 1), cleric, nationalist, constitutionalist revolutionary (1908-9), member of the Second Majles (1909-11), elected to the Fourth Majles, leader of the Democrat party of (Iranian) Azarbaijan, and founder of the short-lived Ᾱzādisetān autonomous province in 1920',
           lang: 'en',
           cite: {
             source: 'iranica-bonakdarian-khiabani',
@@ -62,7 +62,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/%E1%B8%B5iabani-shaikh-mo%E1%B8%A5ammad/'
           }
         },

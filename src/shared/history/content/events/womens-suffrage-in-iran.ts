@@ -121,7 +121,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'In 1956 the Society along with the Association of Women Lawyers (Anjoman-e zanān-e ḥoqūqdān), founded by Mehrangīz Manūčehrīān, and the League of Women Supporters of Human Rights (Jamʿīyat-e zanān-e ṭarafdār-e ḥoqūq-e bašar), founded by Badr-al-Molūk Bāmdād, launched a campaign for women’s suffrage (Paidar, pp. 136-37).',
+          text: 'In 1956 the Society along with the Association of Women Lawyers (Anjoman-e zanān-e ḥoqūqdān), founded by Mehrangīz Manūčehrīān, and the League of Women Supporters of Human Rights (Jamʿīyat-e zanān-e ṭarafdār-e ḥoqūq-e bašar), founded by Badr-al-Molūk Bāmdād, launched a campaign for women’s suffrage',
           lang: 'en',
           cite: {
             source: 'iranica-sedghi-feminist-movements-pahlavi',
@@ -129,7 +129,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/feminist-movements-iii/'
           }
         },

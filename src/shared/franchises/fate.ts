@@ -4,12 +4,15 @@
 // stories (Babylonia, Camelot, Strange Fake) are explicitly parallel or
 // alternate worlds rather than one timeline, the same reason Ghost in the
 // Shell omits chrono. Route is centred on Fate/stay night's three visual
-// novel routes: the VN itself, then its most faithful screen adaptations of
-// each route in turn (Unlimited Blade Works' TV series, then the Heaven's
-// Feel film trilogy), with the 2006 TV series, the 2010 UBW film, Fate/Zero
-// and hollow ataraxia as optional detours around that spine, and every
+// novel routes: the VN itself, then Fate/Zero (an original prequel story, so a
+// core stop), with every screen adaptation of the novel's routes (the 2006 TV
+// series, the 2010 UBW film, ufotable's Unlimited Blade Works and the Heaven's
+// Feel trilogy) and hollow ataraxia as optional detours for someone who has
+// already read the novel (changed 2026-10-17), and every
 // standalone Fate anime placed after as optional, spinOff branches in
-// release order. Excluded: the kaleid liner Prisma Illya franchise and
+// release order. Fate/Grand Order itself (the 2015 mobile game, no Steam
+// listing) was added 2026-10-17 as an optional spin-off row. Excluded: the
+// kaleid liner Prisma Illya franchise and
 // Carnival Phantasm (gag/crossover spinoffs), Today's Menu for the Emiya
 // Family (a cooking-focused spinoff), the Fate/EXTRA and Fate/EXTELLA games
 // and their manga, and promotional/clip specials (Grand Order Memorial
@@ -103,7 +106,6 @@ export const FATE: FranchiseCfg = {
       year: 2011,
       releaseDate: '2011-10-02',
       route: 2,
-      optional: true,
       mc: 81,
       note: 'Prequel novel adaptation: the fourth Holy Grail War, fought by Shirou’s adoptive father Kiritsugu a decade earlier'
     },
@@ -115,7 +117,6 @@ export const FATE: FranchiseCfg = {
       year: 2012,
       releaseDate: '2012-04-08',
       route: 3,
-      optional: true,
       mc: 84,
       note: 'Concludes the fourth war, and the choice that shapes who Kiritsugu becomes by the time Shirou knows him'
     },
@@ -129,7 +130,8 @@ export const FATE: FranchiseCfg = {
       route: 6,
       adaptation: true,
       mc: 80,
-      note: 'ufotable’s adaptation of the second route: Shirou allies with Rin Tohsaka and keeps clashing with her Servant, Archer'
+      note: 'ufotable’s adaptation of the second route: Shirou allies with Rin Tohsaka and keeps clashing with her Servant, Archer',
+      optional: true
     },
     {
       id: 'fate-ubw-tv2',
@@ -141,7 +143,19 @@ export const FATE: FranchiseCfg = {
       route: 7,
       adaptation: true,
       mc: 82,
-      note: 'Concludes the Unlimited Blade Works route and Archer’s reason for existing at all'
+      note: 'Concludes the Unlimited Blade Works route and Archer’s reason for existing at all',
+      optional: true
+    },
+    {
+      id: 'fate-grand-order',
+      title: 'Fate/Grand Order',
+      mediaType: 'game',
+      year: 2015,
+      releaseDate: '2015-07-30',
+      route: 23,
+      optional: true,
+      spinOff: true,
+      note: 'The mobile game behind Babylonia and Camelot: Chaldea repairs human history one Singularity at a time'
     },
     {
       id: 'fate-ubw-sunny-day',
@@ -179,7 +193,8 @@ export const FATE: FranchiseCfg = {
       route: 9,
       adaptation: true,
       mc: 80,
-      note: 'Opens the third route: Shirou’s path with Sakura Matou, and the shadow war already closing in on her'
+      note: 'Opens the third route: Shirou’s path with Sakura Matou, and the shadow war already closing in on her',
+      optional: true
     },
     {
       id: 'fate-extra-le',
@@ -218,7 +233,8 @@ export const FATE: FranchiseCfg = {
       route: 10,
       adaptation: true,
       mc: 84,
-      note: 'Shirou’s choices start costing him the support of everyone he has relied on so far'
+      note: 'Shirou’s choices start costing him the support of everyone he has relied on so far',
+      optional: true
     },
     {
       id: 'fate-elmelloi-tv',
@@ -257,7 +273,8 @@ export const FATE: FranchiseCfg = {
       route: 11,
       adaptation: true,
       mc: 85,
-      note: 'Closes the Heaven’s Feel route and the Fate/stay night story'
+      note: 'Closes the Heaven’s Feel route and the Fate/stay night story',
+      optional: true
     },
     {
       id: 'fate-camelot-1',

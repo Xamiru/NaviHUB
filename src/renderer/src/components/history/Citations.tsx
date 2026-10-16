@@ -1,3 +1,4 @@
+import { OLDER_BEFORE, isOlderScholarship } from '@shared/history/sourceAge'
 import { createContext, useContext, useId, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -100,6 +101,11 @@ export function SourceReference({ source, className = '' }: { source: HistorySou
       {[source.place, source.publisher].filter(Boolean).join(': ')}
       {(source.place || source.publisher) && ', '}
       {source.date.slice(0, 4)}.
+      {isOlderScholarship(source) && (
+        <span className="ml-1.5 rounded border border-line-subtle px-1 py-px text-[10px] uppercase tracking-wide text-ink-muted" title={`Scholarship published before ${OLDER_BEFORE}`}>
+          older scholarship
+        </span>
+      )}
     </span>
   )
 }

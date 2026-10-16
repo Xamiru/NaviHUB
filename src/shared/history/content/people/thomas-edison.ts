@@ -16,7 +16,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -47,7 +47,7 @@ export default definePerson({
   roles: ['scientist', 'businessperson'],
   sections: [
     {
-      kind: 'early-life',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',

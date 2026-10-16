@@ -14,7 +14,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -101,13 +101,13 @@ export default definePerson({
         },
         {
           id: 'q3',
-          text: 'the Red Army, which Trotsky, named commissar of war in the Soviet government, organized to defend the new state.',
+          text: 'Beginning in April 1918, anticommunist forces, called the Whites and often led by former officers of the tsarist army, began to clash with the Red Army, which Trotsky, named commissar of war in the Soviet government, organized to defend the new state.',
           lang: 'en',
           cite: {
             source: 'loc-russia-country-study-1996',
             loc: { section: 'Revolutions and Civil War', para: '19' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/8.htm' }
+          provenance: { via: 'web', at: '2026-10-16', url: 'http://countrystudies.us/russia/8.htm' }
         }
       ]
     },

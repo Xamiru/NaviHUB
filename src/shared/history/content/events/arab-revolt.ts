@@ -178,7 +178,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'This article provides an overview of the 1916-1918 Arab Revolt against the Ottoman government during World War I, led by Sharif Husayn bin ‘Ali of Mecca in conjunction with British support. The main aim of the revolt was to establish an independent Arab state with Husayn as king.',
+          text: 'The main aim of the revolt was to establish an independent Arab state with Husayn as king.',
           lang: 'en',
           cite: {
             source: 'eo1418-el-bakri-arab-revolt',
@@ -186,7 +186,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://encyclopedia.1914-1918-online.net/article/revolutions-and-rebellions-arab-revolt-ottoman-empiremiddle-east/'
           }
         }

@@ -100,6 +100,21 @@ export class TabHistory implements Navigator {
     this.lastAction = NavigationType.Pop
   }
 
+  // Duplicate tab: the same stack and position under fresh keys, so the copy
+  // never shares navState entries with this one. `keyMap` maps old key → new
+  // for copying that state across.
+  clone(): { history: TabHistory; keyMap: Map<string, string> } {
+    const copy = new TabHistory('/')
+    const keyMap = new Map<string, string>()
+    copy.stack = this.stack.map((entry) => {
+      const key = newEntryKey()
+      keyMap.set(entry.key, key)
+      return { ...entry, key }
+    })
+    copy.idx = this.idx
+    return { history: copy, keyMap }
+  }
+
   listen(fn: () => void): () => void {
     this.listeners.add(fn)
     return () => {

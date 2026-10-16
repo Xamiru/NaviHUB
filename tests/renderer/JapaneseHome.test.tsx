@@ -24,10 +24,14 @@ vi.mock('../../src/renderer/src/lib/api', () => ({
     media: { list: async () => [] },
     quiz: { history: async () => history },
     japanese: {
-      stats: async () => ({ dueCount: 0, newAvailableCount: 0, learnedLessons: 0, totalLessons: 21, totalCards: 40, reviewsToday: 0, introducedToday: 0 }),
+      stats: async () => ({ dueCount: 0, newAvailableCount: 0, newDirectionCount: 0, learnedLessons: 0, totalLessons: 21, totalCards: 40, reviewsToday: 0, introducedToday: 0 }),
       roadmap: async () => ({
         steps: [course(1, 'Kana', 4, 4), course(2, 'JLPT N5 Foundations', 0, 21), course(3, 'N5 Kanji', 0, 6)],
         unscheduled: [],
+        tracks: {
+          words: { built: 0, target: 0, decks: 0, nextLesson: null },
+          kanji: { built: 0, target: 0, decks: 0, nextLesson: null }
+        },
         frontierCourseId: 2,
         nextLesson: { id: 9, title: 'Greetings', kind: 'vocab', courseId: 2, courseTitle: 'JLPT N5 Foundations' }
       }),

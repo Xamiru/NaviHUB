@@ -21,7 +21,7 @@ export default definePolity({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   polityType: 'republic',
   start: {
     alts: [
@@ -61,6 +61,20 @@ export default definePolity({
       kind: 'overview',
       quotes: [
         {
+          id: 'q3',
+          text: 'After Argentina gained independence from the Spanish in 1816, the nation was paralyzed by tension between Centralist and Federalist forces. In 1854 the Federalist provinces ratified a constitution that established the Argentine Confederation, which Centralists in Buenos Aires repudiated while declaring themselves independent. Resistance forces expelled a brief Federalist incursion into Buenos Aires and the Confederation collapsed in 1861, paving way for the national rule under the Argentine Republic that same year.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-countries-argentina',
+            loc: { section: 'Argentina: Summary', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://history.state.gov/countries/argentina'
+          }
+        },
+        {
           id: 'q1',
           text: 'ARGENTINA, or the Argentine Republic (officially, Republica Argentina), a country occupying the greater part of the southern extremity of South America.',
           lang: 'en',
@@ -80,25 +94,6 @@ export default definePolity({
             via: 'web',
             at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Argentina'
-          }
-        }
-      ]
-    },
-    {
-      kind: 'background',
-      quotes: [
-        {
-          id: 'q3',
-          text: 'After Argentina gained independence from the Spanish in 1816, the nation was paralyzed by tension between Centralist and Federalist forces. In 1854 the Federalist provinces ratified a constitution that established the Argentine Confederation, which Centralists in Buenos Aires repudiated while declaring themselves independent. Resistance forces expelled a brief Federalist incursion into Buenos Aires and the Confederation collapsed in 1861, paving way for the national rule under the Argentine Republic that same year.',
-          lang: 'en',
-          cite: {
-            source: 'state-dept-countries-argentina',
-            loc: { section: 'Argentina: Summary', para: '1' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://history.state.gov/countries/argentina'
           }
         }
       ]

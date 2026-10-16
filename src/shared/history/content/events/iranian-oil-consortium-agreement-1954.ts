@@ -171,7 +171,7 @@ export default defineEvent({
         },
         {
           id: 'q3',
-          text: 'Thus the stage was set for the settlement of the Iranian oil crisis, and the conclusion of a new agreement for revival of the Iranian oil industry (Yeganeh, pp. 61-64).',
+          text: 'Thus the stage was set for the settlement of the Iranian oil crisis, and the conclusion of a new agreement for revival of the Iranian oil industry',
           lang: 'en',
           cite: {
             source: 'iranica-mina-oil-agreements',
@@ -179,7 +179,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-09',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/oil-agreements-in-iran/'
           }
         },

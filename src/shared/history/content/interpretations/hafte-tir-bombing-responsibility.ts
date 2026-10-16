@@ -102,7 +102,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q5',
-          text: 'the Mojāhedin-e ḵalq claim responsibility for the attack.',
+          text: '1981 A bomb at the Islamic Republican Party headquarters kills some 70 members of the ruling party including its leader, Ayatollah Sayyed-Moḥammad Behešti (b. 1928); the Mojāhedin-e ḵalq claim responsibility for the attack.',
           lang: 'en',
           cite: {
             source: 'iranica-yarshater-chronology-part-4',
@@ -110,7 +110,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-4/'
           }
         },
@@ -160,5 +160,5 @@ export default defineInterpretation({
       ]
     }
   ],
-  researched: '2026-10-09'
+  researched: '2026-10-16'
 })

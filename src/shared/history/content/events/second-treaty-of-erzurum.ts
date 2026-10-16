@@ -134,7 +134,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'Local thugs at Karbalāʾ created similar problems with subsequent Ottoman harsh repression that resulted in a wholesale massacre of the inhabitants. Both British and Russian envoys intervened to prevent war between Persia and the Ottomans (Algar, pp. 114 ff.), which led to the signing of the second treaty of Erzerum (16 Jomādā II 1263/31 May 1847; Hedāyat, Rawżat al-ṣafā X, pp. 302-6; see BOUNDARIES i).',
+          text: 'Local thugs at Karbalāʾ created similar problems with subsequent Ottoman harsh repression that resulted in a wholesale massacre of the inhabitants. Both British and Russian envoys intervened to prevent war between Persia and the Ottomans (Algar, pp. 114 ff.), which led to the signing of the second treaty of Erzerum',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-mohammad-shah',
@@ -142,7 +142,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
         }

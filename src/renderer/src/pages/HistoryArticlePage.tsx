@@ -1,9 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { decimalYear, formatHistDate } from '@shared/history/calendars'
+import { decimalYear, formatHistDate, yearLabel, yearOf } from '@shared/history/calendars'
 import { splitAtCourse } from '@shared/history/sectionOrder'
-import type { Section } from '@shared/history/schema'
+import type { Claim, HistDate, Section } from '@shared/history/schema'
 import {
   EVENT_TYPES,
   FIGURE_KEYS,
@@ -42,8 +42,10 @@ import {
   NativeName,
   PersonalBadge,
   RefCard,
+  RefLink,
   RefRow
 } from '../components/history/HistoryBits'
+import SuccessionChart from '../components/history/SuccessionChart'
 import InterpretationsPanel from '../components/history/InterpretationsPanel'
 import { MediaRows } from '../components/history/HistoryMediaCards'
 import HistoryArchiveList from '../components/history/HistoryArchiveList'
@@ -130,18 +132,6 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
-function RefLink({ info }: { info: HistoryRefInfo | undefined }) {
-  if (!info) return null
-  const to = historyPath(info.ref)
-  return to && !info.missing ? (
-    <Link to={to} className="hover:text-accent">
-      {info.title}
-    </Link>
-  ) : (
-    <span className="text-ink-muted">{info.title}</span>
-  )
-}
-
 function LinkList({ links, view }: { links: Array<{ ref: string; cites?: Cite[] }>; view: HistoryArticleView }) {
   return (
     <>
@@ -207,6 +197,18 @@ function Infobox({ view, inline }: { view: HistoryArticleView; inline?: boolean 
   )
 }
 
+/** The year page for a start date's first reading. */
+function WorldInYear({ claim }: { claim: Claim<HistDate> | undefined }) {
+  const d = claim?.alts[0]?.value.d
+  const y = d ? yearOf(d) : null
+  if (y === null) return null
+  return (
+    <Link to={`/history/year/${y}`} className="mt-0.5 block text-xs text-ink-muted hover:text-accent">
+      The world in {yearLabel(y)}
+    </Link>
+  )
+}
+
 function InfoCard({ view }: { view: HistoryArticleView }) {
   const e = view.entity
   const sh = view.solarHijri
@@ -224,6 +226,7 @@ function InfoCard({ view }: { view: HistoryArticleView }) {
                   <Fact label="Type">{EVENT_TYPES[e.type]}</Fact>
                   <Fact label={e.end ? 'Began' : 'Date'}>
                     <DateClaim claim={e.start} solarHijri={sh} lunarHijri={view.lunarHijri} />
+                    <WorldInYear claim={e.start} />
                   </Fact>
                   {e.end && (
                     <Fact label="Ended">
@@ -315,6 +318,7 @@ function InfoCard({ view }: { view: HistoryArticleView }) {
                   <Fact label="Type">{PERIOD_TYPES[e.periodType]}</Fact>
                   <Fact label="Began">
                     <DateClaim claim={e.start} solarHijri={sh} lunarHijri={view.lunarHijri} />
+                    <WorldInYear claim={e.start} />
                   </Fact>
                   {e.end && (
                     <Fact label="Ended">
@@ -333,6 +337,7 @@ function InfoCard({ view }: { view: HistoryArticleView }) {
                   <Fact label="Type">{POLITY_TYPES[e.polityType]}</Fact>
                   <Fact label="Founded">
                     <DateClaim claim={e.start} solarHijri={sh} lunarHijri={view.lunarHijri} />
+                    <WorldInYear claim={e.start} />
                   </Fact>
                   {e.end && (
                     <Fact label="Ended">
@@ -654,6 +659,12 @@ export default function HistoryArticlePage({ kind }: { kind: Kind }) {
     void queryClient.invalidateQueries({ queryKey: qk.history.all })
   }
 
+  const stateStart = e.kind === 'polity' ? e.start?.alts[0]?.value : undefined
+  const stateEnd = e.kind === 'polity' ? e.end?.alts[0]?.value : undefined
+  const stateStartYear = stateStart ? decimalYear(stateStart.d) : null
+  const stateSpan =
+    stateStartYear === null ? null : { s: stateStartYear, e: stateEnd ? decimalYear(stateEnd.notAfter ?? stateEnd.d, 'end') : null }
+
   const sections = e.sections ?? []
   const course = e.kind === 'event' ? e.course ?? [] : []
   // Stored order is not reading order: background before the course, results after it.
@@ -762,6 +773,14 @@ export default function HistoryArticlePage({ kind }: { kind: Kind }) {
 
               {view.rulers.length > 0 && (
                 <SectionBlock id="rulers" title="Rulers and officials">
+                  <SuccessionChart
+                    rulers={view.rulers}
+                    span={stateSpan}
+                    refs={view.refs}
+                    predecessors={(e.kind === 'polity' ? e.predecessors ?? [] : []).map((p) => p.ref)}
+                    successors={view.successors}
+                    stateNames={e.names.map((n) => n.text)}
+                  />
                   <Timeline
                     items={view.rulers.map((r, i) => ({
                       key: `${r.person}-${i}`,
@@ -924,6 +943,11 @@ export default function HistoryArticlePage({ kind }: { kind: Kind }) {
               </SectionBlock>
 
               <SectionBlock id="sources" title="Sources" aside={<span className="text-xs text-ink-muted">Every citation on this page</span>}>
+                {view.datedNarration && view.datedNarration.share > 0.5 && (
+                  <p className="mb-3 text-xs text-ink-muted">
+                    Most of this page's narrative rests on works published before 1950, the oldest from {view.datedNarration.oldest}.
+                  </p>
+                )}
                 <Bibliography order={view.sourceOrder} />
               </SectionBlock>
 

@@ -13,7 +13,7 @@ export default definePolity({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   polityType: 'republic',
   start: {
     alts: [
@@ -60,6 +60,16 @@ export default definePolity({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'The constitution of 1824, which was strongly influenced by the United States constitution and Mexico\'s legislative relationship with Spain since 1810, established the United Mexican States (Estados Unidos Mexicanos) as a federal republic composed of nineteen states and four territories',
+          lang: 'en',
+          cite: {
+            source: 'loc-mexico-country-study-1996',
+            loc: { section: 'The Federalist Republic, 1824-36', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/mexico/15.htm' }
+        },
+        {
           id: 'q1',
           text: 'MEXICO (Span. Méjico, or Mexico,) officially styled Estados Unidos Mexicanos and República Mexicana, a federal republic of North America extending from the United States of America southward to Guatemala and British Honduras, and lying between the Pacific Ocean on the west and the Gulf of Mexico and Caribbean Sea on the east.',
           lang: 'en',
@@ -69,21 +79,6 @@ export default definePolity({
             at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Mexico'
           }
-        }
-      ]
-    },
-    {
-      kind: 'background',
-      quotes: [
-        {
-          id: 'q2',
-          text: 'The constitution of 1824, which was strongly influenced by the United States constitution and Mexico\'s legislative relationship with Spain since 1810, established the United Mexican States (Estados Unidos Mexicanos) as a federal republic composed of nineteen states and four territories',
-          lang: 'en',
-          cite: {
-            source: 'loc-mexico-country-study-1996',
-            loc: { section: 'The Federalist Republic, 1824-36', para: '2' }
-          },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/mexico/15.htm' }
         }
       ]
     },

@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -153,7 +153,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q5',
-          text: 'Much impressed by the political, social, and technical progress of the European countries, Farroḵ Khan joined the French freemasonry of Grand Orient (Thieury, France, pp. 35, 40; Maḵzan al-waqāyeʿ, intro., pp. 22, 47).',
+          text: 'Much impressed by the political, social, and technical progress of the European countries, Farroḵ Khan joined the French freemasonry of Grand Orient',
           lang: 'en',
           cite: {
             source: 'iranica-gaffary-amin-al-dawla-farrok-khan',
@@ -161,13 +161,13 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/amin-al-dawla-farrok-khan-gaffari'
           }
         },
         {
           id: 'q6',
-          text: 'Nāṣer-al-dīn Shah and Mīrzā Āqā Khan were so alarmed by the liberal models described by Farroḵ Khan that the publication of the book was banned (Maḵzan al-waqāyeʿ, intro., p. 26; Bakhash, Iran, p. 31).',
+          text: 'Nāṣer-al-dīn Shah and Mīrzā Āqā Khan were so alarmed by the liberal models described by Farroḵ Khan that the publication of the book was banned',
           lang: 'en',
           cite: {
             source: 'iranica-gaffary-amin-al-dawla-farrok-khan',
@@ -175,7 +175,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/amin-al-dawla-farrok-khan-gaffari'
           }
         }

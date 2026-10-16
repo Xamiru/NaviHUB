@@ -175,6 +175,22 @@ export default defineEvent({
             at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Victoria_(Australia)'
           }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q6',
+          text: 'We swear by the Southern Cross to stand truly by each other, and fight to defend our rights and liberties.',
+          lang: 'en',
+          cite: { source: 'carboni-1855-eureka-stockade', loc: { section: 'The Eureka Stockade' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://en.wikisource.org/wiki/The_Eureka_Stockade'
+          }
         },
         {
           id: 'q4',
@@ -197,15 +213,21 @@ export default defineEvent({
             at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/The_Eureka_Stockade'
           }
-        }
-      ]
-    },
-    {
-      kind: 'in-their-words',
-      quotes: [
+        },
         {
-          id: 'q6',
-          text: 'We swear by the Southern Cross to stand truly by each other, and fight to defend our rights and liberties.',
+          id: 'q12',
+          text: 'A regular volley of revolvers and other pistols now took place, and a good blazing up of gold-licences.',
+          lang: 'en',
+          cite: { source: 'carboni-1855-eureka-stockade', loc: { section: 'The Eureka Stockade' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://en.wikisource.org/wiki/The_Eureka_Stockade'
+          }
+        },
+        {
+          id: 'q13',
+          text: 'A discharge of musketry—then a round from the bugle—the command "forward"—and another discharge of musketry was sharply kept on the the red-coats (some 300 strong) advancing on the gully west of the stockade, for a couple of minutes.',
           lang: 'en',
           cite: { source: 'carboni-1855-eureka-stockade', loc: { section: 'The Eureka Stockade' } },
           provenance: {
@@ -309,58 +331,6 @@ export default defineEvent({
           via: 'web',
           at: '2026-10-08',
           url: 'https://explore.moadoph.gov.au/people/raffaello-carboni.html'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1854-11-29' },
-            cites: [
-              {
-                source: 'carboni-1855-eureka-stockade',
-                loc: { section: 'The Eureka Stockade' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q12',
-        text: 'A regular volley of revolvers and other pistols now took place, and a good blazing up of gold-licences.',
-        lang: 'en',
-        cite: { source: 'carboni-1855-eureka-stockade', loc: { section: 'The Eureka Stockade' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-08',
-          url: 'https://en.wikisource.org/wiki/The_Eureka_Stockade'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1854-12-03' },
-            cites: [
-              {
-                source: 'moad-exploring-democracy-raffaello-carboni',
-                loc: { section: 'Raffaello Carboni' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q13',
-        text: 'A discharge of musketry—then a round from the bugle—the command "forward"—and another discharge of musketry was sharply kept on the the red-coats (some 300 strong) advancing on the gully west of the stockade, for a couple of minutes.',
-        lang: 'en',
-        cite: { source: 'carboni-1855-eureka-stockade', loc: { section: 'The Eureka Stockade' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-08',
-          url: 'https://en.wikisource.org/wiki/The_Eureka_Stockade'
         }
       }
     }

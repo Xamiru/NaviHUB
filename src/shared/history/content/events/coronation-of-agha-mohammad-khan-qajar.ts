@@ -31,6 +31,15 @@ export default defineEvent({
           loc: { section: 'ĀḠĀ MOḤAMMAD KHAN QĀJĀR', para: '6' }
         }
       ]
+    },
+    {
+      ref: 'place:tehran',
+      cites: [
+        {
+          source: 'iranica-perry-aga-mohammad-khan-qajar',
+          loc: { section: 'ĀḠĀ MOḤAMMAD KHAN QĀJĀR', para: '5' }
+        }
+      ]
     }
   ],
   polities: [

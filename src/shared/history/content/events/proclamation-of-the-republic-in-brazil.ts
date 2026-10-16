@@ -80,17 +80,6 @@ export default defineEvent({
             loc: { section: 'The Second Empire, 1840-89', para: '24' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/brazil/13.htm' }
-        },
-        {
-          id: 'q8',
-          text: 'The rising generation had become honeycombed with republicanism, the prospects of the imperial succession were justly regarded as unsatisfactory, the higher classes had been estranged by the emancipation of the slaves, and all these causes of discontent found expression in a military revolt, which in November 1889 overthrew the seemingly solid edifice of the Brazilian Empire in a few hours.',
-          lang: 'en',
-          cite: { source: 'britannica-1911-pedro-ii', loc: { section: 'PEDRO II.', para: '1' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-07',
-            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Pedro_II.'
-          }
         }
       ]
     },

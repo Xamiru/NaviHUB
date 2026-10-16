@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'treaty-of-finkenstein-failure',
   about: ['event:treaty-of-finkenstein', 'event:gardane-mission'],
   topic: 'outcome',
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'tilsit-and-british-diplomacy',
@@ -15,7 +15,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q1',
-          text: 'But Napoleon’s volte-face in signing a peace treaty with Russia at Tilsit (7 July l807) and the delay in conveying instructions to Gardane, who had arrived at Tehran in December 1807, combined with some adroit diplomacy by the British in Persia',
+          text: 'Gardane negotiated a commercial treaty, but this was regarded as unfavorable by the French authorities, and their subsequent inaction encouraged Fatḥ-ʿAlī Shah to turn to the British as allies instead',
           lang: 'en',
           cite: {
             source: 'iranica-hellot-bellier-france-relations',
@@ -23,7 +23,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/france-iii-relations-with-persia-1789-1918/'
           }
         }

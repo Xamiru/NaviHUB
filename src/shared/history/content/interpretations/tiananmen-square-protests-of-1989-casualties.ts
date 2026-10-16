@@ -87,7 +87,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q5',
-          text: 'deaths from the military assault on Tiananmen Square range from 180 to 500; thousands more have been injured.',
+          text: 'The Secretary of State’s intelligence summary for the following morning (Document 13) reports that "deaths from the military assault on Tiananmen Square range from 180 to 500; thousands more have been injured.',
           lang: 'en',
           cite: {
             source: 'nsarchive-ebb16-tiananmen-square-1989-the-declassified-history-documents',
@@ -98,13 +98,13 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-16',
             url: 'https://nsarchive2.gwu.edu/NSAEBB/NSAEBB16/documents/index.html'
           }
         },
         {
           id: 'q6',
-          text: 'casualty estimates vary from 500 to 2600 deaths, with injuries up to 10,000.',
+          text: 'This SITREP reports the current situation in Beijing where, "The PLA is mopping up isolated resistance," and notes that "casualty estimates vary from 500 to 2600 deaths, with injuries up to 10,000.',
           lang: 'en',
           cite: {
             source: 'nsarchive-ebb16-tiananmen-square-1989-the-declassified-history-documents',
@@ -115,12 +115,12 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-16',
             url: 'https://nsarchive2.gwu.edu/NSAEBB/NSAEBB16/documents/index.html'
           }
         }
       ]
     }
   ],
-  researched: '2026-10-08'
+  researched: '2026-10-16'
 })

@@ -28,7 +28,7 @@ export const BERSERK: FranchiseCfg = {
   trivia: [
     {
       title: 'One story, three Golden Age adaptations',
-      body: 'The Golden Age Arc — Guts joining Griffith’s Band of the Hawk, their rise through the Hundred Years’ War, and the Eclipse that ends it — has been animated three separate times: the 1997 TV series (which also continues a short way past it before ending abruptly), the 2012-2013 trilogy of theatrical films with early 3D-CG character models, and a 2022 "Memorial Edition" that re-cuts and re-times the films into a 13-episode TV format.'
+      body: 'The Golden Age Arc — Guts joining Griffith’s Band of the Hawk, their rise through the Hundred Years’ War, and the Eclipse that ends it — has been animated three separate times: the 1997 TV series (which opens on the Black Swordsman, flashes back, and ends abruptly at the Eclipse), the 2012-2013 trilogy of theatrical films with early 3D-CG character models, and a 2022 "Memorial Edition" that re-cuts and re-times the films into a 13-episode TV format.'
     },
     {
       title: 'The 2016-2017 TV seasons and their reputation',

@@ -223,7 +223,7 @@ export default defineEvent({
         },
         {
           id: 'q6',
-          text: 'According to the British members of the commission, the boundary was “only an arbitrary line based on the circumstances of the moment rather than on any permanent and natural basis” and thus could not “be expected to be permanent” (Yate, 1888, pp. 178f.).',
+          text: 'According to the British members of the commission, the boundary was “only an arbitrary line based on the circumstances of the moment rather than on any permanent and natural basis” and thus could not “be expected to be permanent”',
           lang: 'en',
           cite: {
             source: 'iranica-balland-boundaries-afghanistan',
@@ -231,7 +231,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/boundaries-iii'
           }
         }

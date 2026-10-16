@@ -139,6 +139,20 @@ export default defineEvent({
             at: '2026-10-08',
             url: 'https://www.marxists.org/reference/archive/stalin/works/1922/12/30.htm'
           }
+        },
+        {
+          id: 'q16',
+          text: 'The conference examined and adopted the Declaration and the Treaty on the Formation of the Union of Soviet Socialist Republics.',
+          lang: 'en',
+          cite: {
+            source: 'stalin-1922-formation-of-the-union-of-soviet-republics',
+            loc: { section: 'Notes', para: '2' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.marxists.org/reference/archive/stalin/works/1922/12/30.htm'
+          }
         }
       ]
     },
@@ -218,35 +232,6 @@ export default defineEvent({
     }
   ],
   course: [
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1922-12-29' },
-            cites: [
-              {
-                source: 'stalin-1922-formation-of-the-union-of-soviet-republics',
-                loc: { section: 'Notes', para: '2' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q16',
-        text: 'The conference examined and adopted the Declaration and the Treaty on the Formation of the Union of Soviet Socialist Republics.',
-        lang: 'en',
-        cite: {
-          source: 'stalin-1922-formation-of-the-union-of-soviet-republics',
-          loc: { section: 'Notes', para: '2' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-08',
-          url: 'https://www.marxists.org/reference/archive/stalin/works/1922/12/30.htm'
-        }
-      }
-    },
     {
       date: {
         alts: [

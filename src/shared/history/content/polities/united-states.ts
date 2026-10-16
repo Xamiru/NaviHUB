@@ -16,7 +16,7 @@ export default definePolity({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   polityType: 'republic',
   start: {
     alts: [
@@ -59,6 +59,20 @@ export default definePolity({
       kind: 'overview',
       quotes: [
         {
+          id: 'q3',
+          text: 'The United States of America declared its independence from the United Kingdom of Great Britain on July 4, 1776. However, the American Revolutionary War continued until the British General Cornwallis surrendered to General George Washington on October 19, 1781.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-countries-united-kingdom',
+            loc: { section: 'The United Kingdom: Summary', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://history.state.gov/countries/united-kingdom'
+          }
+        },
+        {
           id: 'q1',
           text: 'UNITED STATES, THE, the short title usually given to the great federal republic which had its origin in the revolt of the British colonies in North America, when, in the Declaration of Independence, they described themselves as “The Thirteen United States of America.”',
           lang: 'en',
@@ -91,20 +105,6 @@ export default definePolity({
     {
       kind: 'background',
       quotes: [
-        {
-          id: 'q3',
-          text: 'The United States of America declared its independence from the United Kingdom of Great Britain on July 4, 1776. However, the American Revolutionary War continued until the British General Cornwallis surrendered to General George Washington on October 19, 1781.',
-          lang: 'en',
-          cite: {
-            source: 'state-dept-countries-united-kingdom',
-            loc: { section: 'The United Kingdom: Summary', para: '1' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://history.state.gov/countries/united-kingdom'
-          }
-        },
         {
           id: 'q4',
           text: 'When, in 1776, the thirteen colonies threw off their allegiance to the British Crown and took the title of states, they proceeded to unite themselves in a league by the Articles of Confederation of 1781. This scheme of union proved defective, for its central authority, an assembly called Congress, was hopelessly weak. It had neither an executive nor a judiciary, nor had it proper means of coercing a recalcitrant state. Its weakness became so apparent, especially after the pressure of the war with Great Britain had been removed, that the opinion of the wisest men called for a closer and more effective union. Thus the present Constitution was drafted by a convention in 1787, was ratified by nine states (the prescribed number) in 1788, and was set to work under George Washington as first president in 1789.',

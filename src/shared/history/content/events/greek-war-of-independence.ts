@@ -71,7 +71,8 @@ export default defineEvent({
           loc: { section: 'Lecture 6: The Greek Revolution and the Greek State', para: '42' }
         }
       ]
-    }
+    },
+    { ref: 'place:athens' }
   ],
   related: [
     { ref: 'event:battle-of-navarino', rel: 'related' },

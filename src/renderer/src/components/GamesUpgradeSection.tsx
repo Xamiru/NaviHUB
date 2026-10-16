@@ -61,11 +61,18 @@ export default function GamesUpgradeSection(): React.JSX.Element {
     await qc.invalidateQueries({ queryKey: qk.gameUpgrade.status })
   }
 
-  async function install(): Promise<void> {
+  // Also the update path: the catalog is republished (new wiki casts, newer
+  // LaunchBox data) under the same release, and installing replaces the file.
+  async function install(update = false): Promise<void> {
     setInstalling(true)
     try {
       await api.gameCatalog.install()
       await qc.invalidateQueries({ queryKey: qk.gamesCatalog.status })
+      await qc.invalidateQueries({ queryKey: qk.gameLinks.all })
+      if (update) {
+        setPlan(null)
+        toast('Games catalog updated. Check your games again to pick up what is new.', 'success')
+      }
     } catch (e) {
       toastError(e)
     } finally {
@@ -115,14 +122,17 @@ export default function GamesUpgradeSection(): React.JSX.Element {
             </div>
           ) : (
             <div className="flex flex-wrap gap-2">
-              <button className="btn" disabled={checking} onClick={() => void check()}>
+              <button className="btn" disabled={checking || installing} onClick={() => void check()}>
                 {checking ? 'Checking…' : plan ? 'Check again' : 'Check my games'}
               </button>
               {plan && plan.toUpgrade > 0 && (
-                <button className="btn-primary" onClick={() => void start()}>
+                <button className="btn-primary" disabled={installing} onClick={() => void start()}>
                   Upgrade {plan.toUpgrade} game{plan.toUpgrade === 1 ? '' : 's'}
                 </button>
               )}
+              <button className="btn-ghost" disabled={installing || checking} onClick={() => void install(true)}>
+                {installing ? 'Downloading…' : 'Update catalog'}
+              </button>
             </div>
           )}
 

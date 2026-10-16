@@ -7,7 +7,7 @@ export default definePerson({
     { text: '慈禧', lang: 'zh', role: 'native' },
     { text: 'Ci Xi', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   regions: ['east-asia'],
   roles: ['monarch'],
   sections: [
@@ -52,5 +52,25 @@ export default definePerson({
       creator: 'Yu Xunling'
     },
     license: { id: 'public-domain' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1835' },
+        cites: [
+          { source: 'loc-name-authority-cixi', loc: { section: 'MARC field 046: birth date' } }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1908' },
+        cites: [
+          { source: 'loc-name-authority-cixi', loc: { section: 'MARC field 046: death date' } }
+        ]
+      }
+    ]
   }
 })

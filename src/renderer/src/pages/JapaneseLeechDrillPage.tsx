@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
+import JapaneseHubTabs from '../components/japanese/JapaneseHubTabs'
 import EmptyState from '../components/EmptyState'
 import PageStatus from '../components/PageStatus'
 import { api } from '../lib/api'
@@ -133,6 +134,7 @@ export default function JapaneseLeechDrillPage() {
   if (!items || items.length === 0) {
     return (
       <div className="p-6 max-w-[1320px] mx-auto">
+        <JapaneseHubTabs />
         <PageHeader back={{ to: '/japanese/stats', label: 'Stats' }} title="Leech Drill" />
         <EmptyState
           title="No leeches to drill"
@@ -149,6 +151,7 @@ export default function JapaneseLeechDrillPage() {
 
   return (
     <div className="p-6 max-w-[1320px] mx-auto">
+      <JapaneseHubTabs />
       <PageHeader
         back={{ to: '/japanese/stats', label: 'Stats' }}
         title="Leech Drill"

@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Karl Marx', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -52,6 +52,25 @@ export default definePerson({
   regions: ['europe'],
   roles: ['scholar', 'journalist', 'revolutionary'],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q10',
+          text: 'MARX, HEINRICH KARL (1818–1883), German socialist, and head of the International Working Men’s Association, was born on the 5th of May 1818 in Trèves (Rhenish Prussia).',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-marx',
+            loc: { section: 'MARX, HEINRICH KARL', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Marx,_Heinrich_Karl'
+          }
+        }
+      ]
+    },
     {
       kind: 'career',
       quotes: [

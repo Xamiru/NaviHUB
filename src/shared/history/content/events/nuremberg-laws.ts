@@ -128,7 +128,12 @@ export default defineEvent({
             loc: { section: 'Total Mobilization, Resistance, and the Holocaust', para: '4' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/42.htm' }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
         {
           id: 'q9',
           text: 'With the seizure of power, the persecution of the Jews was intensified. A series of discriminatory laws were passed, which limited the offices and professions permitted to Jews; and restrictions were placed on their family life and their rights of citizenship.',
@@ -158,40 +163,23 @@ export default defineEvent({
             loc: { section: 'Document No. 1416-PS: Reich Citizenship Law of 15 September 1935' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'https://avalon.law.yale.edu/imt/1416-ps.asp' }
+        },
+        {
+          id: 'q10',
+          text: '1. Marriages between Jews and nationals of German or kindred blood are forbidden.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-nca-2000-ps-law-for-the-protection-of-german-blood',
+            loc: {
+              section: 'Law for the Protection of German Blood and German Honor of 15 September 1935'
+            }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'https://avalon.law.yale.edu/imt/2000-ps.asp' }
         }
       ]
     }
   ],
   course: [
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1935-09-15' },
-            cites: [
-              {
-                source: 'avalon-nca-2000-ps-law-for-the-protection-of-german-blood',
-                loc: {
-                  section: 'Law for the Protection of German Blood and German Honor of 15 September 1935'
-                }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q10',
-        text: '1. Marriages between Jews and nationals of German or kindred blood are forbidden.',
-        lang: 'en',
-        cite: {
-          source: 'avalon-nca-2000-ps-law-for-the-protection-of-german-blood',
-          loc: {
-            section: 'Law for the Protection of German Blood and German Honor of 15 September 1935'
-          }
-        },
-        provenance: { via: 'web', at: '2026-10-07', url: 'https://avalon.law.yale.edu/imt/2000-ps.asp' }
-      }
-    },
     {
       date: {
         alts: [

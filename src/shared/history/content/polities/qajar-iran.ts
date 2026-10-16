@@ -33,7 +33,7 @@ export default definePolity({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   polityType: 'kingdom',
   start: {
     alts: [
@@ -111,6 +111,16 @@ export default definePolity({
       kind: 'overview',
       quotes: [
         {
+          id: 'q3',
+          text: 'The Qajars revived the concept of the shah as the shadow of God on earth and exercised absolute powers over the servants of the state.',
+          lang: 'en',
+          cite: {
+            source: 'loc-iran-country-study-1987',
+            loc: { section: 'THE QAJARS, 1795-1925', para: '1' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/iran/12.htm' }
+        },
+        {
           id: 'q1',
           text: 'PERSIA, a kingdom of western Asia, bounded on the N. by the Caspian Sea and the Russian Transcaucasian and Transcaspian territories, on the E. by Afghanistan and Baluchistan, on the S. by the Arabian Sea and the Persian Gulf, and on the W. by Turkish territory.',
           lang: 'en',
@@ -120,16 +130,6 @@ export default definePolity({
             at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Persia'
           }
-        },
-        {
-          id: 'q3',
-          text: 'The Qajars revived the concept of the shah as the shadow of God on earth and exercised absolute powers over the servants of the state.',
-          lang: 'en',
-          cite: {
-            source: 'loc-iran-country-study-1987',
-            loc: { section: 'THE QAJARS, 1795-1925', para: '1' }
-          },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/iran/12.htm' }
         }
       ]
     },

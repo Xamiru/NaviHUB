@@ -31,6 +31,46 @@ export function WordFurigana({
   return <RubySegments segments={alignFurigana(word, reading)} show={show} className={className} />
 }
 
+// Text with its full kana reading: the reading over each kanji run when it
+// aligns unambiguously, otherwise the reading printed after (inline) or under
+// (block) the text. `show` hides both forms, keeping the ruby's line height.
+export function ReadingText({
+  text,
+  reading,
+  show = true,
+  fallback = 'block',
+  className = ''
+}: {
+  text: string
+  reading: string | null | undefined
+  show?: boolean
+  fallback?: 'inline' | 'block'
+  className?: string
+}) {
+  const segments = alignFurigana(text, reading)
+  if (segments.some((seg) => seg.ruby)) {
+    return <RubySegments segments={segments} show={show} className={className} />
+  }
+  const extra = show && reading && reading !== text
+  return (
+    <>
+      <span className={className} lang="ja">
+        {text}
+      </span>
+      {extra &&
+        (fallback === 'block' ? (
+          <span className="block text-sm text-gray-500" lang="ja">
+            {reading}
+          </span>
+        ) : (
+          <span className="ml-1.5 text-xs text-gray-500" lang="ja">
+            {reading}
+          </span>
+        ))}
+    </>
+  )
+}
+
 function RubySegments({
   segments,
   show,

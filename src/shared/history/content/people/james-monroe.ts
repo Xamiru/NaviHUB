@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'James Monroe', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -53,6 +53,25 @@ export default definePerson({
     }
   ],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q4',
+          text: 'MONROE, JAMES (1758–1831), fifth president of the United States, was born on Monroe’s creek, a tributary of the Potomac  river, in Westmoreland county, Virginia, on the 28th of April 1758.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-monroe-james',
+            loc: { section: 'MONROE, JAMES', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Monroe,_James'
+          }
+        }
+      ]
+    },
     {
       kind: 'career',
       quotes: [

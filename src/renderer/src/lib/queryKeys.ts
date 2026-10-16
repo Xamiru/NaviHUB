@@ -297,6 +297,10 @@ export const qk = {
     course: (id: number) => ['japanese', 'course', id] as const,
     lesson: (id: number) => ['japanese', 'lesson', id] as const,
     roadmap: ['japanese', 'roadmap'] as const,
+    cardsForFronts: (fronts: string) => ['japanese', 'cardsForFronts', fronts] as const,
+    grammarIndex: ['japanese', 'grammarIndex'] as const,
+    builtInStatus: ['japanese', 'builtInStatus'] as const,
+    voiceInfo: ['japanese', 'voiceInfo'] as const,
     leeches: ['japanese', 'leeches'] as const,
     stats: ['japanese', 'stats'] as const,
     statsDetail: ['japanese', 'statsDetail'] as const,
@@ -306,6 +310,10 @@ export const qk = {
     lessonQuizPool: (lessonId: number) => ['japanese', 'lessonQuizPool', lessonId] as const,
     prepDeckStatus: ['japanese', 'prepDeckStatus'] as const,
     coreDeckStatus: ['japanese', 'coreDeckStatus'] as const,
+    kanjiDeckStatus: ['japanese', 'kanjiDeckStatus'] as const,
+    // A graded passage's words, tiered against the decks (keyed by the frozen passage key,
+    // never by the text).
+    passageWords: (key: string) => ['japanese', 'passageWords', key] as const,
     // Comprehension. No key for analyzeText: its argument is up to 200KB of
     // pasted text and must never become a cache key — it runs as a plain await.
     coverage: (mediaId: number) => ['japanese', 'coverage', mediaId] as const,
@@ -342,6 +350,8 @@ export const qk = {
     all: ['history'] as const,
     overview: ['history', 'overview'] as const,
     decade: (start: number) => ['history', 'decade', start] as const,
+    year: (year: number) => ['history', 'year', year] as const,
+    quizCounts: (scope: string) => ['history', 'quizCounts', scope] as const,
     article: (ref: string) => ['history', 'article', ref] as const,
     sources: ['history', 'sources'] as const,
     source: (id: string) => ['history', 'source', id] as const,
@@ -376,6 +386,7 @@ export const qk = {
     list: ['dict', 'list'] as const,
     lookup: (query: string) => ['dict', 'lookup', query] as const,
     kanji: (text: string) => ['dict', 'kanji', text] as const,
+    tagInfo: ['dict', 'tagInfo'] as const,
     importStatus: ['dict', 'importStatus'] as const,
     starterStatus: ['dict', 'starterStatus'] as const,
     // Example sentences + stroke order live under `dict` on purpose: installing
@@ -541,7 +552,27 @@ export const qk = {
     all: ['games'] as const,
     sessionStatus: ['games', 'sessionStatus'] as const,
     overview: (mediaId: number) => ['games', 'overview', mediaId] as const,
-    installed: ['games', 'installed'] as const
+    installed: ['games', 'installed'] as const,
+    // Linked game files and emulators. Emulators sit inside the games group
+    // so a session or link change refreshes every launcher surface at once.
+    playOptions: (mediaId: number) => ['games', 'playOptions', mediaId] as const,
+    emulators: ['games', 'emulators'] as const,
+    romScan: ['games', 'romScan'] as const,
+    emulationStats: ['games', 'emulationStats'] as const,
+    // GameBanana: the link is local. The lists and pages are network reads
+    // and live in qk.gamebanana, outside this group, so a games-wide
+    // invalidation (a session ending, a link change) never re-fetches them.
+    modLink: (mediaId: number) => ['games', 'modLink', mediaId] as const,
+    modTargets: (mediaId: number) => ['games', 'modTargets', mediaId] as const,
+    modInstalled: (mediaId: number) => ['games', 'modInstalled', mediaId] as const,
+    modJob: ['games', 'modJob'] as const
+  },
+  // GameBanana network reads (ModsSection). Only a user action fetches them:
+  // nothing outside this group's own queries invalidates it.
+  gamebanana: {
+    all: ['gamebanana'] as const,
+    modList: (gameId: number, sort: string) => ['gamebanana', 'modList', gameId, sort] as const,
+    modDetail: (modId: number) => ['gamebanana', 'modDetail', modId] as const
   },
   achievements: {
     // Steam-emulator + RetroAchievements tracking. `watch` polls only while a

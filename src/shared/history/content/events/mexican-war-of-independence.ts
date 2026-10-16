@@ -44,6 +44,15 @@ export default defineEvent({
           loc: { section: 'Hidalgo and Morelos', para: '1' }
         }
       ]
+    },
+    {
+      ref: 'place:mexico-city',
+      cites: [
+        {
+          source: 'loc-mexico-country-study-1996',
+          loc: { section: 'Hidalgo and Morelos', para: '4' }
+        }
+      ]
     }
   ],
   polities: [

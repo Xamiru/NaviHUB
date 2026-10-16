@@ -184,5 +184,16 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Henry_Clay_Senate3.jpg',
     credit: { creator: 'Peter F. Rothermel' },
     license: { id: 'public-domain' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:washington-dc',
+      cites: [
+        {
+          source: 'nara-milestone-compromise-of-1850',
+          loc: { section: 'Compromise of 1850 (1850)', para: '94' }
+        }
+      ]
+    }
+  ]
 })

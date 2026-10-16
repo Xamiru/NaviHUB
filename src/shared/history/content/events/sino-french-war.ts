@@ -71,6 +71,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q1',
+          text: 'Following a victorious war against China in 1884-85, France also took Annam.',
+          lang: 'en',
+          cite: {
+            source: 'loc-china-country-study-1987',
+            loc: { section: 'The Self-Strengthening Movement', para: '5' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/china/17.htm' }
+        },
+        {
           id: 'q11',
           text: 'During 1884 the French made themselves masters of the lower delta. Throughout the campaign Chinese regulars fought against the French, who thus found themselves involved in war with China.',
           lang: 'en',
@@ -80,16 +90,6 @@ export default defineEvent({
             at: '2026-10-07',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Tongking'
           }
-        },
-        {
-          id: 'q1',
-          text: 'Following a victorious war against China in 1884-85, France also took Annam.',
-          lang: 'en',
-          cite: {
-            source: 'loc-china-country-study-1987',
-            loc: { section: 'The Self-Strengthening Movement', para: '5' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/china/17.htm' }
         }
       ]
     },

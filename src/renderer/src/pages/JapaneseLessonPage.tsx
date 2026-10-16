@@ -18,7 +18,10 @@ import { grammarCandidates } from '@shared/cloze'
 import type { JpCard, JpLessonKind } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
 import EditorialDetailFrame from '../components/EditorialDetailFrame'
+import SpeakButton from '../components/japanese/SpeakButton'
 import ContextPanel, { ContextFact } from '../components/ContextPanel'
+import { ReadingText } from '../components/japanese/Furigana'
+import { loadJpFurigana, saveJpFurigana } from '../lib/japanesePrefs'
 
 const KIND_CHIP: Record<JpLessonKind, { cls: string; label: string }> = {
   grammar: { cls: 'bg-purple-500/20 text-purple-300', label: '文法 Grammar' },
@@ -39,6 +42,12 @@ export default function JapaneseLessonPage() {
 
   // Practice mode hides readings/meanings in the tables (click to reveal).
   const [practice, setPractice] = usePersistedState('jpLessonPractice', false)
+  // Furigana over sentences and example words; remembered across lessons.
+  const [furigana, setFuriganaState] = useState(loadJpFurigana)
+  const setFurigana = (show: boolean): void => {
+    setFuriganaState(show)
+    saveJpFurigana(show)
+  }
 
   async function toggleLearned() {
     if (!lesson) return
@@ -118,15 +127,27 @@ export default function JapaneseLessonPage() {
       <Section
         title={`${isGrammar ? 'Example sentences' : lesson.kind === 'kanji' ? 'Kanji' : 'Vocabulary'} · ${lesson.cards.length}`}
         subtitle={
-          !isGrammar && lesson.cards.length > 0 ? (
-            <button
-              className={`btn-ghost text-sm ${practice ? 'text-accent' : ''}`}
-              aria-pressed={practice}
-              onClick={() => setPractice(!practice)}
-              title="Hide readings and meanings — click a cell to reveal it"
-            >
-              {practice ? 'Practice mode: on' : 'Practice mode'}
-            </button>
+          lesson.cards.length > 0 ? (
+            <span className="flex flex-wrap gap-2">
+              <button
+                className={`btn-ghost text-sm ${furigana ? 'text-accent' : ''}`}
+                aria-pressed={furigana}
+                onClick={() => setFurigana(!furigana)}
+                title="Show the reading above the kanji in sentences and example words"
+              >
+                {furigana ? 'Furigana: on' : 'Furigana: off'}
+              </button>
+              {!isGrammar && (
+                <button
+                  className={`btn-ghost text-sm ${practice ? 'text-accent' : ''}`}
+                  aria-pressed={practice}
+                  onClick={() => setPractice(!practice)}
+                  title="Hide readings and meanings — click a cell to reveal it"
+                >
+                  {practice ? 'Practice mode: on' : 'Practice mode'}
+                </button>
+              )}
+            </span>
           ) : undefined
         }
         className="mb-0"
@@ -136,13 +157,13 @@ export default function JapaneseLessonPage() {
         ) : isGrammar ? (
           <div className="space-y-2">
             {lesson.cards.map((c) => (
-              <SentenceCard key={c.id} card={c} />
+              <SentenceCard key={c.id} card={c} furigana={furigana} />
             ))}
           </div>
         ) : lesson.kind === 'kanji' ? (
-          <KanjiTable cards={lesson.cards} practice={practice} />
+          <KanjiTable cards={lesson.cards} practice={practice} furigana={furigana} />
         ) : (
-          <VocabTable cards={lesson.cards} practice={practice} />
+          <VocabTable cards={lesson.cards} practice={practice} furigana={furigana} />
         )}
       </Section>
 
@@ -201,20 +222,28 @@ function Reveal({ value }: { value: string }) {
   )
 }
 
-function SentenceCard({ card }: { card: JpCard }) {
+function SentenceCard({ card, furigana }: { card: JpCard; furigana: boolean }) {
   return (
     <div className="card p-4">
-      <p className="text-lg">{card.front}</p>
-      {card.reading && card.reading !== card.front && (
-        <p className="mt-0.5 text-sm text-gray-500">{card.reading}</p>
-      )}
+      <p className="text-lg leading-loose">
+        <ReadingText text={card.front} reading={card.reading} show={furigana} fallback="inline" />
+        <SpeakButton className="ml-1 align-middle" text={card.front} reading={card.reading} />
+      </p>
       <p className="mt-1 text-sm text-gray-300">{card.back}</p>
       {card.notes && <p className="mt-1 text-xs text-gray-500">{card.notes}</p>}
     </div>
   )
 }
 
-function VocabTable({ cards, practice }: { cards: JpCard[]; practice: boolean }) {
+function VocabTable({
+  cards,
+  practice,
+  furigana
+}: {
+  cards: JpCard[]
+  practice: boolean
+  furigana: boolean
+}) {
   const hasSource = cards.some((c) => c.sourceTitle)
   return (
     <div
@@ -238,6 +267,7 @@ function VocabTable({ cards, practice }: { cards: JpCard[]; practice: boolean })
             <tr key={c.id} className="border-b border-base-700/50 last:border-0">
               <td className="px-4 py-2.5 text-base">
                 <DictLink text={c.front} />
+                <SpeakButton className="ml-1 align-middle" text={c.front} reading={c.reading} />
               </td>
               <td className="px-4 py-2.5 text-gray-400">
                 {c.reading && c.reading !== c.front ? (
@@ -259,6 +289,13 @@ function VocabTable({ cards, practice }: { cards: JpCard[]; practice: boolean })
                 {!practice && c.notes && (
                   <span className="block text-xs text-gray-500">{c.notes}</span>
                 )}
+                {!practice && c.exampleJp && (
+                  <span className="mt-1.5 block leading-loose text-gray-300">
+                    <ReadingText text={c.exampleJp} reading={c.exampleReading} show={furigana} fallback="inline" />
+                    <SpeakButton className="ml-1 align-middle" text={c.exampleJp} reading={c.exampleReading} />
+                    {c.exampleEn && <span className="block text-xs text-gray-500">{c.exampleEn}</span>}
+                  </span>
+                )}
               </td>
               <td className="px-4 py-2.5 text-xs text-gray-500">{c.pos ?? ''}</td>
               {hasSource && (
@@ -274,7 +311,15 @@ function VocabTable({ cards, practice }: { cards: JpCard[]; practice: boolean })
   )
 }
 
-function KanjiTable({ cards, practice }: { cards: JpCard[]; practice: boolean }) {
+function KanjiTable({
+  cards,
+  practice,
+  furigana
+}: {
+  cards: JpCard[]
+  practice: boolean
+  furigana: boolean
+}) {
   return (
     <div
       className="card overflow-x-auto"
@@ -334,13 +379,16 @@ function KanjiTable({ cards, practice }: { cards: JpCard[]; practice: boolean })
                   </>
                 )}
               </td>
-              <td className="px-4 py-2.5 text-gray-300">
+              <td className="px-4 py-2.5 leading-loose text-gray-300">
                 {c.exampleJp && (
                   <>
-                    {c.exampleJp}
-                    {c.exampleReading && (
-                      <span className="ml-1.5 text-xs text-gray-500">{c.exampleReading}</span>
-                    )}
+                    <ReadingText
+                      text={c.exampleJp}
+                      reading={c.exampleReading}
+                      show={furigana && !practice}
+                      fallback="inline"
+                    />
+                    <SpeakButton className="ml-1 align-middle" text={c.exampleJp} reading={c.exampleReading} />
                     {c.exampleEn && (
                       <span className="block text-xs text-gray-500">{c.exampleEn}</span>
                     )}

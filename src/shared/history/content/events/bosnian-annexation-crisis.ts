@@ -38,7 +38,8 @@ export default defineEvent({
           }
         }
       ]
-    }
+    },
+    { ref: 'place:vienna' }
   ],
   polities: [
     { ref: 'polity:austria-hungary' },

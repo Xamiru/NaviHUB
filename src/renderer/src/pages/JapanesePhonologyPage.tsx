@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import PageHeader from '../components/PageHeader'
+import JapaneseHubTabs from '../components/japanese/JapaneseHubTabs'
 import Section from '../components/Section'
 import StudySessionFrame, {
   SessionEvidence,
@@ -190,6 +191,7 @@ export default function JapanesePhonologyPage() {
     const percent = Math.round((score / unit.questions.length) * 100)
     return (
       <div className="mx-auto max-w-xl p-6">
+        <JapaneseHubTabs />
         <PageHeader
           back={{ to: '/japanese/tutor', label: 'Tutor' }}
           title="Unit complete"
@@ -216,6 +218,7 @@ export default function JapanesePhonologyPage() {
 
   return (
     <div className="mx-auto max-w-[1320px] p-4 sm:p-6">
+      <JapaneseHubTabs />
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Japanese sound foundation"

@@ -679,7 +679,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q23',
-        text: 'The first break in the conflict occurred when Ayatollah Khomeini released thirteen female and African-American hostages on 18 and 19 November 1979 (see Table 2).',
+        text: 'The first break in the conflict occurred when Ayatollah Khomeini released thirteen female and African-American hostages on 18 and 19 November 1979',
         lang: 'en',
         cite: {
           source: 'iranica-mohsen-milani-hostage-crisis',
@@ -687,7 +687,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-09',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/hostage-crisis/'
         }
       }

@@ -272,7 +272,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'COUP D’ETAT OF 1332 Š./1953. The appointment of Moḥammad Moṣaddeq (q.v.) as prime minister of Persia on 9 Ordībehešt 1330 Š./29 April 1951 and the nationalization two days later of Persia’s British-owned oil industry initiated a period of tense confrontation between the Persian and British governments. It lasted until the overthrow of Moṣaddeq in the coup d’etat of 28 Mordād 1332 Š./19 August 1953, which was “conceived by MI6 [the British Intelligence Service] and delivered by CIA” (Wright, p. 259).',
+          text: 'COUP D’ETAT OF 1332 Š./1953. The appointment of Moḥammad Moṣaddeq (q.v.) as prime minister of Persia on 9 Ordībehešt 1330 Š./29 April 1951 and the nationalization two days later of Persia’s British-owned oil industry initiated a period of tense confrontation between the Persian and British governments. It lasted until the overthrow of Moṣaddeq in the coup d’etat of 28 Mordād 1332 Š./19 August 1953, which was “conceived by MI6 [the British Intelligence Service] and delivered by CIA”',
           lang: 'en',
           cite: {
             source: 'iranica-gasiorowski-coup-detat-1953',
@@ -280,7 +280,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/coup-detat-1953/'
           }
         },
@@ -584,7 +584,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q18',
-        text: 'Final approval was received at a State Department meeting on 25 June (Roosevelt, pp. 120-24).',
+        text: 'Final approval was received at a State Department meeting on 25 June',
         lang: 'en',
         cite: {
           source: 'iranica-gasiorowski-coup-detat-1953',
@@ -592,7 +592,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-07',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/coup-detat-1953/'
         }
       }

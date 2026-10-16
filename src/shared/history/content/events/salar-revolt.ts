@@ -281,7 +281,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q8',
-        text: 'Amīr Kabīr had him executed (1266/1850), together with one of his sons and one of his brothers, a punishment of unprecedented severity for such provincial resistance to central authority, and a clear sign of Amīr Kabīr’s intention to assert the prerogatives of the state (ibid., pp. 232-41).',
+        text: 'Amīr Kabīr had him executed (1266/1850), together with one of his sons and one of his brothers, a punishment of unprecedented severity for such provincial resistance to central authority, and a clear sign of Amīr Kabīr’s intention to assert the prerogatives of the state',
         lang: 'en',
         cite: {
           source: 'iranica-algar-amir-kabir',
@@ -289,7 +289,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/amir-e-kabir-mirza-taqi-khan'
         }
       }

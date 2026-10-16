@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['iran'],
   roles: ['revolutionary', 'journalist', 'politician'],
   sections: [
@@ -129,5 +129,31 @@ export default definePerson({
   },
   furtherReading: [
     { source: 'hasanli-2006-at-the-dawn-of-the-cold-war', perspective: 'central-asian' }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1893' },
+        cites: [
+          {
+            source: 'loc-name-authority-jafar-pishevari',
+            loc: { section: 'MARC field 100 $d: heading dates' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1947' },
+        cites: [
+          {
+            source: 'loc-name-authority-jafar-pishevari',
+            loc: { section: 'MARC field 100 $d: heading dates' }
+          }
+        ]
+      }
+    ]
+  }
 })

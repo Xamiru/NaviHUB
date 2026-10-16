@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Patrice Lumumba', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-16',
   died: {
     alts: [
       {
@@ -127,5 +127,18 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1925-07-02' },
+        cites: [
+          {
+            source: 'loc-name-authority-patrice-lumumba',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  }
 })

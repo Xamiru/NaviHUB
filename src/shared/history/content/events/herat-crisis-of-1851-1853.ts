@@ -152,7 +152,7 @@ export default defineEvent({
         },
         {
           id: 'q2',
-          text: 'In spite of warnings from the British minister in Tehran, Colonel Sheil, the Persians moved into Herat the next spring, but faced with British threats to break diplomatic relations and reoccupy Ḵārg island, the shah withdrew his troops (G. H. Hunt, Outram and Havelock’s Persian Campaign, London, 1858, pp. 149f.; P. P. Bushev, Gerat i anglo-iranskaya voĭna, Moscow, 1959, pp. 43f.), agreeing not to send them to Herat again unless it was threatened from the east and not to interfere in Herat’s internal affairs (engagement of 15 Rabīʿ II 1269/25 January 1853: see parts regarding ḵoṭba and coinage in C. U. Aitchison, A Collection of Treaties, Engagements, and Other Sanads Relating to India and Neighbouring Countries, Delhi, 1933, XIII, no. XVII, pp. 77f.; see also Hunt, Outram, pp. 155f.; Bushev, Gerat, pp. 44f.).',
+          text: 'In spite of warnings from the British minister in Tehran, Colonel Sheil, the Persians moved into Herat the next spring, but faced with British threats to break diplomatic relations and reoccupy Ḵārg island, the shah withdrew his troops (G. H. Hunt, Outram and Havelock’s Persian Campaign, London, 1858, pp. 149f.; P. P. Bushev, Gerat i anglo-iranskaya voĭna, Moscow, 1959, pp. 43f.), agreeing not to send them to Herat again unless it was threatened from the east and not to interfere in Herat’s internal affairs',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-anglo-persian-war',
@@ -160,7 +160,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/anglo-persian-war-1856-57'
           }
         },
@@ -263,7 +263,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q7',
-        text: 'The Persian expeditionary force of one thousand strong that was dispatched to Herat after the fall of Amir Kabir by the new prime minister, Mirzā Āqā Khan Nuri, entered the citadel of Herat in late 1851 and disbanded the pro-Bārakzay forces there under Kohandel Khan and Dōst-Moḥammad Khan (Ādamiyat, pp. 605-44).',
+        text: 'The Persian expeditionary force of one thousand strong that was dispatched to Herat after the fall of Amir Kabir by the new prime minister, Mirzā Āqā Khan Nuri, entered the citadel of Herat in late 1851 and disbanded the pro-Bārakzay forces there under Kohandel Khan and Dōst-Moḥammad Khan',
         lang: 'en',
         cite: {
           source: 'iranica-amanat-herat-vi',
@@ -271,7 +271,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/herat-vi'
         }
       }

@@ -13,7 +13,7 @@ import {
   type StarterPackFacts
 } from '../src/shared/japanese/starterPacks'
 
-const NOTHING: StarterPackFacts = { dicts: [], krad: false, grammar: false, sentences: false }
+const NOTHING: StarterPackFacts = { dicts: [], krad: false, grammar: false, sentences: false, voice: false }
 
 describe('starter pack predicates', () => {
   it('recognises each pack the way Settings does', () => {
@@ -25,12 +25,14 @@ describe('starter pack predicates', () => {
       ],
       krad: true,
       grammar: false,
-      sentences: false
+      sentences: false,
+      voice: true
     }
     expect(starterPackInstalled('jmdict', facts)).toBe(true)
     // Any dictionary with frequency ranks counts, not only the JPDB preset.
     expect(starterPackInstalled('freq', facts)).toBe(true)
     expect(starterPackInstalled('kanjidic', facts)).toBe(false)
+    expect(starterPackInstalled('voice', facts)).toBe(true)
     expect(missingStarterPacks(facts)).toEqual(['kanjidic', 'grammar', 'sentences'])
   })
 
@@ -50,7 +52,7 @@ describe('runStarterInstall', () => {
         installed.push(key)
       }
     })
-    expect(installed).toEqual(['freq', 'kanjidic', 'grammar', 'sentences'])
+    expect(installed).toEqual(['freq', 'kanjidic', 'grammar', 'sentences', 'voice'])
     expect(result).toMatchObject({ running: false, current: null, error: null, remaining: [] })
     expect(result.done).toEqual(installed)
   })
@@ -66,7 +68,7 @@ describe('runStarterInstall', () => {
     })
     expect(installed).toEqual(['jmdict', 'freq'])
     expect(result.done).toEqual(['jmdict', 'freq'])
-    expect(result.remaining).toEqual(['kanjidic', 'krad', 'grammar', 'sentences'])
+    expect(result.remaining).toEqual(['kanjidic', 'krad', 'grammar', 'sentences', 'voice'])
     expect(result.error).toBe('KANJIDIC (English): Download failed (HTTP 503)')
   })
 
@@ -74,7 +76,7 @@ describe('runStarterInstall', () => {
     let release: () => void = () => {}
     const gate = new Promise<void>((resolve) => (release = resolve))
     const install = vi.fn(async () => gate)
-    const first = runStarterInstall({ facts: () => ({ ...NOTHING, krad: true, grammar: true, sentences: true, dicts: [{ title: 'JMdict', freqCount: 9 }] }), install })
+    const first = runStarterInstall({ facts: () => ({ ...NOTHING, krad: true, grammar: true, sentences: true, voice: true, dicts: [{ title: 'JMdict', freqCount: 9 }] }), install })
     await Promise.resolve()
     expect(getStarterInstallStatus()).toMatchObject({ running: true, current: 'kanjidic' })
 

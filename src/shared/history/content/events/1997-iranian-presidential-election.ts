@@ -296,5 +296,16 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Khatami_Cropped_2001_2.jpg',
     credit: { institution: 'Presidential Press and Information Office (Kremlin.ru)' },
     license: { id: 'cc-by', version: '4.0', url: 'https://creativecommons.org/licenses/by/4.0' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:tehran',
+      cites: [
+        {
+          source: 'hrw-1998-world-report-iran',
+          loc: { section: 'World Report 1998: Iran', para: '18' }
+        }
+      ]
+    }
+  ]
 })

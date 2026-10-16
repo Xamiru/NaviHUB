@@ -75,7 +75,7 @@ export const CODE_GEASS: FranchiseCfg = {
       year: 2008,
       releaseDate: '2008-04-06',
       chrono: 3,
-      route: 3,
+      route: 7,
       mc: 87,
       note: 'A year later, with his memories sealed, Lelouch is drawn back into the war and finishes it'
     },
@@ -105,7 +105,9 @@ export const CODE_GEASS: FranchiseCfg = {
       chrono: 2,
       spinOff: true,
       mc: 71,
-      note: 'Akito the Exiled part 2'
+      note: 'Akito the Exiled part 2',
+      route: 3,
+      optional: true
     },
     {
       id: 'geass-akito-3',
@@ -118,7 +120,9 @@ export const CODE_GEASS: FranchiseCfg = {
       chrono: 2,
       spinOff: true,
       mc: 69,
-      note: 'Akito the Exiled part 3'
+      note: 'Akito the Exiled part 3',
+      route: 4,
+      optional: true
     },
     {
       id: 'geass-akito-4',
@@ -131,7 +135,9 @@ export const CODE_GEASS: FranchiseCfg = {
       chrono: 2,
       spinOff: true,
       mc: 69,
-      note: 'Akito the Exiled part 4'
+      note: 'Akito the Exiled part 4',
+      route: 5,
+      optional: true
     },
     {
       id: 'geass-akito-5',
@@ -144,7 +150,9 @@ export const CODE_GEASS: FranchiseCfg = {
       chrono: 2,
       spinOff: true,
       mc: 68,
-      note: 'Akito the Exiled final part'
+      note: 'Akito the Exiled final part',
+      route: 6,
+      optional: true
     },
     {
       id: 'geass-film-1',
@@ -155,7 +163,7 @@ export const CODE_GEASS: FranchiseCfg = {
       year: 2017,
       releaseDate: '2017-10-21',
       chrono: 1,
-      route: 4,
+      route: 8,
       optional: true,
       mc: 76,
       note: 'Film trilogy part 1: the first half of season one, re-edited with new footage'
@@ -169,7 +177,7 @@ export const CODE_GEASS: FranchiseCfg = {
       year: 2018,
       releaseDate: '2018-02-10',
       chrono: 1,
-      route: 5,
+      route: 9,
       optional: true,
       mc: 74,
       note: 'Film trilogy part 2: the rest of season one'
@@ -183,7 +191,7 @@ export const CODE_GEASS: FranchiseCfg = {
       year: 2018,
       releaseDate: '2018-05-26',
       chrono: 3,
-      route: 6,
+      route: 10,
       mc: 78,
       note: 'Film trilogy part 3: R2 condensed, with the changes Re;surrection builds on'
     },
@@ -196,7 +204,7 @@ export const CODE_GEASS: FranchiseCfg = {
       year: 2019,
       releaseDate: '2019-02-09',
       chrono: 4,
-      route: 7,
+      route: 11,
       mc: 77,
       note: 'Sequel film to the trilogy’s continuity: C.C. and Suzaku look for a way to bring Lelouch back'
     },
@@ -209,7 +217,7 @@ export const CODE_GEASS: FranchiseCfg = {
       year: 2024,
       releaseDate: '2024-06-21',
       chrono: 5,
-      route: 8,
+      route: 12,
       optional: true,
       spinOff: true,
       mc: 64,

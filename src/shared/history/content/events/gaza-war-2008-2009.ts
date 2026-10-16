@@ -55,7 +55,8 @@ export default defineEvent({
           loc: { section: 'World Report 2010: Israel / Occupied Palestinian Territories (OPT)' }
         }
       ]
-    }
+    },
+    { ref: 'place:gaza' }
   ],
   polities: [
     {

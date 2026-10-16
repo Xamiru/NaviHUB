@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Cetshwayo', lang: 'en', role: 'primary' },
     { text: 'Cetshwayo kaMpande', lang: 'zu', role: 'alternative' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   died: {
     alts: [
       {
@@ -20,6 +20,22 @@ export default definePerson({
   regions: ['subsaharan-africa'],
   roles: ['monarch'],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q6',
+          text: 'CETYWAYO ( ?–1884), king of the Zulus, was the eldest son of King Umpande or Panda, and a nephew of the two previous kings, Dingaan and Chaka.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-cetywayo', loc: { section: 'CETYWAYO', para: '1' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Cetywayo'
+          }
+        }
+      ]
+    },
     {
       kind: 'career',
       quotes: [
@@ -76,5 +92,18 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Cetshwayo,_King_of_the_Zulus_(d._1884),_Carl_Rudolph_Sohn,_1882.jpg',
     credit: { institution: 'Royal Collection', creator: 'Carl Rudolph Sohn' },
     license: { id: 'public-domain' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1826', approx: true },
+        cites: [
+          {
+            source: 'loc-name-authority-cetshwayo',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
   }
 })

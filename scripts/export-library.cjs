@@ -195,7 +195,7 @@ Optional, in the app's Settings page:
      OR favorite<>0 OR local_dir IS NOT NULL`)
   const hasTable = copy.prepare(`SELECT 1 FROM sqlite_master WHERE type='table' AND name=?`)
   const wiped = [
-    'list', 'list_item', 'jp_course', 'jp_lesson', 'jp_card', 'jp_review_log',
+    'list', 'list_item', 'jp_course', 'jp_lesson', 'jp_card', 'jp_review_log', 'jp_card_review',
     'music_artist', 'music_album', 'music_track', 'music_playlist',
     'music_playlist_track', 'music_play_log', 'manga_chapter'
   ].map((t) => [t, hasTable.get(t) ? one(`SELECT COUNT(*) FROM "${t}"`) : 0])

@@ -3,8 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
-import { statusesFrom, useDebouncedValue, useDialog, useSettings } from '../lib/hooks'
-import { MEDIA_CONFIGS, configFor, isCompletedStatus, pathForMedia } from '../lib/mediaConfig'
+import { useDebouncedValue, useDialog, useSettings } from '../lib/hooks'
+import { MEDIA_CONFIGS, configFor, pathForMedia } from '../lib/mediaConfig'
+import { mediaQuickActions } from '../lib/mediaQuickActions'
 import { useLogProgress } from '../lib/logProgress'
 import CoverImage from './CoverImage'
 import type { MediaItem } from '@shared/types'
@@ -270,30 +271,27 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
     onGo(item.to)
   }
 
-  // What a title offers without opening it first: the same one-click log as
-  // its detail page, and its tabs as direct jumps.
+  // What a title offers without opening it first (lib/mediaQuickActions.ts,
+  // shared with the right-click menu), after opening it.
   function actionsOf(item: PaletteItem): PaletteAction[] {
     const m = item.media
     if (!m) return []
     const cfg = configFor(m.mediaType)
-    const statuses = statusesFrom(settings, cfg)
-    const finished = isCompletedStatus(m.status, statuses) || (!!m.totalUnits && m.progress >= m.totalUnits)
     const out: PaletteAction[] = [{ key: 'open', label: `Open ${cfg.singular.toLowerCase()}`, run: () => go(item) }]
-    if (cfg.logUnitLabel && !finished) {
+    for (const action of mediaQuickActions(m, settings)) {
+      const to = action.to
       out.push({
-        key: 'log',
-        label: `Log one more ${cfg.logUnitLabel}`,
-        run: async () => {
-          onClose()
-          await logProgress(m, { announce: true })
-        }
+        key: action.key,
+        label: action.label,
+        run:
+          to == null
+            ? async () => {
+                onClose()
+                await logProgress(m, { announce: true })
+              }
+            : () => go({ ...item, to })
       })
     }
-    out.push({ key: 'cast', label: `Open ${cfg.castSectionTitle.toLowerCase()}`, run: () => go({ ...item, to: `${item.to}?tab=cast` }) })
-    if (cfg.mediaTabLabel) {
-      out.push({ key: 'media', label: `Open ${cfg.mediaTabLabel.toLowerCase()}`, run: () => go({ ...item, to: `${item.to}?tab=media` }) })
-    }
-    out.push({ key: 'art', label: 'Open art', run: () => go({ ...item, to: `${item.to}?tab=art` }) })
     return out
   }
   const actions = actionsFor ? actionsOf(actionsFor) : []

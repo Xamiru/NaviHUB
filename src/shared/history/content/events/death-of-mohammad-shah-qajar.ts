@@ -131,7 +131,7 @@ export default defineEvent({
         },
         {
           id: 'q2',
-          text: 'In late summer 1848, the Shah was overtaken by a combination of gout and erysipelas (Watson, p. 354; Elgood, p. 498).',
+          text: 'In late summer 1848, the Shah was overtaken by a combination of gout and erysipelas',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-mohammad-shah',
@@ -139,13 +139,13 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
         },
         {
           id: 'q3',
-          text: 'The shah died in the Qaṣr-e Moḥammadiya (also called Qaṣr-e Jadid), near Tehran, and was buried at Qom, close to shrine’s sanctuary (Fasāʾi, ed. Rastgār, I, pp. 786-87, tr. Busse, pp. 280-81; Ḵormuji, pp. 35-36; Sepehr, II, p. 211; Hedāyat, Rawżat al-ṣafā X, pp. 348-55).',
+          text: 'The shah died in the Qaṣr-e Moḥammadiya (also called Qaṣr-e Jadid), near Tehran, and was buried at Qom, close to shrine’s sanctuary',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-mohammad-shah',
@@ -153,7 +153,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
         }
@@ -183,7 +183,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'Rumors about his impending death, and its further confirmation, aggravated insecurity throughout the country (on disturbances at Isfahan, Kermān, Shiraz, Yazd, etc., see Watson, pp. 360 ff.).',
+          text: 'Rumors about his impending death, and its further confirmation, aggravated insecurity throughout the country',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-mohammad-shah',
@@ -191,7 +191,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
         },

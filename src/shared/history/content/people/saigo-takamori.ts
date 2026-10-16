@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Saigo Takamori', lang: 'en', role: 'primary' },
     { text: '西郷隆盛', lang: 'ja', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -36,6 +36,25 @@ export default definePerson({
   regions: ['east-asia'],
   roles: ['military', 'politician'],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q5',
+          text: 'SAIGO, TAKAMORI (1832–1877), Japanese patriot, was born in Satsuma in 1832.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-saigo-takamori',
+            loc: { section: 'SAIGO, TAKAMORI', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Saigo,_Takamori'
+          }
+        }
+      ]
+    },
     {
       kind: 'career',
       quotes: [

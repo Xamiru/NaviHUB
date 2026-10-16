@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'kashf-e-hijab-legacy',
   about: ['event:kashf-e-hijab'],
   topic: 'legacy',
-  researched: '2026-10-09',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'authoritarian-modernization',
@@ -61,7 +61,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q3',
-          text: 'Finally, in the words of a recent study, “although the establishment of the Ladies Center signaled the end of an era of women’s independent activities, nevertheless it provided much needed security to the movement of women’s emancipation” (Paidar, p. 105).',
+          text: 'Finally, in the words of a recent study, “although the establishment of the Ladies Center signaled the end of an era of women’s independent activities, nevertheless it provided much needed security to the movement of women’s emancipation”',
           lang: 'en',
           cite: {
             source: 'iranica-sedghi-feminist-movements-pahlavi',
@@ -69,7 +69,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/feminist-movements-iii/'
           }
         }
@@ -168,7 +168,7 @@ export default defineInterpretation({
         },
         {
           id: 'q9',
-          text: 'The main reaction to women’s rights came from conservative clerical establishment and the newly formed fundamentalist organization of the Devotees of Islam (Fedāʾīān-e Eslām; q.v.) who demanded a return to the veil in public and attempted to bloc women’s suffrage as initiated by left-wing groups and liberal nationalist elements in the National Front (Jabha-ye mellī; Akhavi, pp. 60-72).',
+          text: 'The main reaction to women’s rights came from conservative clerical establishment and the newly formed fundamentalist organization of the Devotees of Islam (Fedāʾīān-e Eslām; q.v.) who demanded a return to the veil in public and attempted to bloc women’s suffrage as initiated by left-wing groups and liberal nationalist elements in the National Front',
           lang: 'en',
           cite: {
             source: 'iranica-sedghi-feminist-movements-pahlavi',
@@ -176,7 +176,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-09',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/feminist-movements-iii/'
           }
         }

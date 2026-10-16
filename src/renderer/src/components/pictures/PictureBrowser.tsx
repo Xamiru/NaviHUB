@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { mediaUrl } from '@shared/mediaUrl'
 import ContextMenu from '../ContextMenu'
+import { followInternalLink } from '../../lib/browserTabs'
+import { contextMenuPoint } from '../../lib/contextMenuPoint'
 import Lightbox from '../Lightbox'
 import JustifiedGallery from './JustifiedGallery'
 import PictureCaption from './PictureCaption'
@@ -57,7 +59,7 @@ export default function PictureBrowser({
                 key={item.label}
                 className={item.danger ? 'btn-danger text-sm' : 'btn-ghost text-sm'}
                 disabled={item.disabled}
-                onClick={() => void item.onSelect()}
+                onClick={(e) => (item.to != null ? followInternalLink(item.to, e) : void item.onSelect())}
               >
                 {item.label}
               </button>
@@ -89,8 +91,7 @@ export default function PictureBrowser({
         onToggleFavorite={(img) => void actions.toggleFavorite([img])}
         onContextMenu={(img, e) =>
           setMenu({
-            x: e.clientX,
-            y: e.clientY,
+            ...contextMenuPoint(e),
             // Right-clicking inside the selection acts on all of it.
             ids: selected.has(img.id) && selected.size > 1 ? [...selected] : [img.id]
           })
@@ -117,7 +118,7 @@ export default function PictureBrowser({
           }}
           onContextMenu={(index, e) => {
             const img = images[index]
-            if (img) setMenu({ x: e.clientX, y: e.clientY, ids: [img.id] })
+            if (img) setMenu({ ...contextMenuPoint(e), ids: [img.id] })
           }}
         />
       )}

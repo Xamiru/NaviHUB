@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Ronald Reagan', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -105,7 +105,7 @@ export default definePerson({
         },
         {
           id: 'q2',
-          text: 'there is no question that Ronald Reagan and his foreign policy advisers played key roles in this remarkable turn of events.',
+          text: 'Historians and other analysts continue to debate the extent of their influence, but there is no question that Ronald Reagan and his foreign policy advisers played key roles in this remarkable turn of events.',
           lang: 'en',
           cite: {
             source: 'state-dept-milestones-1981-1988-foreword',
@@ -113,7 +113,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-16',
             url: 'https://history.state.gov/milestones/1981-1988/foreword'
           }
         }

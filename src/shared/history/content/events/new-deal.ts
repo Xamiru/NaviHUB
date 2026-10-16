@@ -89,39 +89,6 @@ export default defineEvent({
       ]
     },
     {
-      kind: 'background',
-      quotes: [
-        {
-          id: 'q3',
-          text: 'More important, a host of unemployed citizens face the grim problem of existence, and an equally great number toil with little return.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-fdr-first-inaugural-address',
-            loc: { section: 'First Inaugural Address of Franklin D. Roosevelt' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://avalon.law.yale.edu/20th_century/froos1.asp'
-          }
-        },
-        {
-          id: 'q4',
-          text: 'Our greatest primary task is to put people to work.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-fdr-first-inaugural-address',
-            loc: { section: 'First Inaugural Address of Franklin D. Roosevelt' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://avalon.law.yale.edu/20th_century/froos1.asp'
-          }
-        }
-      ]
-    },
-    {
       kind: 'consequences',
       quotes: [
         {
@@ -161,6 +128,39 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.dhm.de/lemo/jahreschronik/1933.html'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q3',
+          text: 'More important, a host of unemployed citizens face the grim problem of existence, and an equally great number toil with little return.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-fdr-first-inaugural-address',
+            loc: { section: 'First Inaugural Address of Franklin D. Roosevelt' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://avalon.law.yale.edu/20th_century/froos1.asp'
+          }
+        },
+        {
+          id: 'q4',
+          text: 'Our greatest primary task is to put people to work.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-fdr-first-inaugural-address',
+            loc: { section: 'First Inaugural Address of Franklin D. Roosevelt' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://avalon.law.yale.edu/20th_century/froos1.asp'
           }
         }
       ]

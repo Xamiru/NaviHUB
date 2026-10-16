@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'abbas-mirza-khorasan-campaign-motives',
   about: ['event:abbas-mirza-khorasan-campaign'],
   topic: 'motives',
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'safavid-reconquest',
@@ -15,7 +15,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q1',
-          text: 'The chroniclers assert that he planned the conquest of Ḵīva and Afghanistan, lands that had once formed part of the Safavid empire, and conducted negotiations with the vizier of Herat and the khan of Ḵoqand (Hedāyat, X, pp. 30-32).',
+          text: 'The chroniclers assert that he planned the conquest of Ḵīva and Afghanistan, lands that had once formed part of the Safavid empire, and conducted negotiations with the vizier of Herat and the khan of Ḵoqand',
           lang: 'en',
           cite: {
             source: 'iranica-busse-abbas-mirza',
@@ -23,7 +23,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/abbas-mirza'
           }
         }
@@ -38,7 +38,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q2',
-          text: 'In the eyes of more objective observers, however, the Khorasan expeditions were an attempt to compensate for the defeats in Azarbaijan by scoring victories over weaker enemies; he might thus reinforce his claim to the throne (Fraser, Koordistan II, pp. 25-29).',
+          text: 'In the eyes of more objective observers, however, the Khorasan expeditions were an attempt to compensate for the defeats in Azarbaijan by scoring victories over weaker enemies; he might thus reinforce his claim to the throne',
           lang: 'en',
           cite: {
             source: 'iranica-busse-abbas-mirza',
@@ -46,7 +46,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/abbas-mirza'
           }
         }
@@ -98,7 +98,7 @@ export default defineInterpretation({
         },
         {
           id: 'q5',
-          text: 'ʿAbbās Mirzā’s Herat campaign was marred from the start by this Anglo-Russian clash of interests, which formed the first major episode of colonial power rivalry in Qajar history and the prelude to what came to be known as the Great Game (Ingram, pp. 249-55).',
+          text: 'ʿAbbās Mirzā’s Herat campaign was marred from the start by this Anglo-Russian clash of interests, which formed the first major episode of colonial power rivalry in Qajar history and the prelude to what came to be known as the Great Game',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-herat-vi',
@@ -106,7 +106,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/herat-vi'
           }
         },

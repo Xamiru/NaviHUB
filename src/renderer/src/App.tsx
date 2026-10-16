@@ -6,9 +6,11 @@ import { api } from './lib/api'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
 import TabStrip from './components/TabStrip'
+import TabSwitchCue from './components/TabSwitchCue'
 import RouteFocus from './components/RouteFocus'
 import NowPlayingBar from './components/NowPlayingBar'
 import CommandPalette from './components/CommandPalette'
+import GlobalContextMenu from './components/GlobalContextMenu'
 import PlayerShortcuts from './components/PlayerShortcuts'
 import Toaster from './components/Toaster'
 import ThemeFx from './components/theme/ThemeFx'
@@ -42,6 +44,7 @@ const MediaDetailPage = lazy(() => import('./pages/MediaDetailPage'))
 const MediaFormPage = lazy(() => import('./pages/MediaFormPage'))
 const SeasonalAnimePage = lazy(() => import('./pages/SeasonalAnimePage'))
 const InstalledGamesPage = lazy(() => import('./pages/InstalledGamesPage'))
+const EmulatorsPage = lazy(() => import('./pages/EmulatorsPage'))
 const FranchisesPage = lazy(() => import('./pages/FranchisesPage'))
 const VnDiscoverPage = lazy(() => import('./pages/VnDiscoverPage'))
 const VnEditionPage = lazy(() => import('./pages/VnEditionPage'))
@@ -141,6 +144,9 @@ const HistoryArticlePage = lazy(() => import('./pages/HistoryArticlePage'))
 const HistorySourcesPage = lazy(() => import('./pages/HistorySourcesPage'))
 const HistoryThemesPage = lazy(() => import('./pages/HistoryThemesPage'))
 const HistoryMapPage = lazy(() => import('./pages/HistoryMapPage'))
+const HistoryYearPage = lazy(() => import('./pages/HistoryYearPage'))
+const HistoryQuizPage = lazy(() => import('./pages/HistoryQuizPage'))
+const HistoryQuizGamePage = lazy(() => import('./pages/HistoryQuizGamePage'))
 const HistorySourcePage = lazy(() => import('./pages/HistorySourcePage'))
 const HistoryEditPage = lazy(() => import('./pages/HistoryEditPage'))
 const HistoryMyPage = lazy(() => import('./pages/HistoryMyPage'))
@@ -259,33 +265,37 @@ export default function App() {
 
   if (isReader) {
     return (
-      <ErrorBoundary key={pageKey}>
-        <Suspense fallback={<RouteLoading label="Loading reader…" />}>
-          <Routes>
-            <Route path="/manga/:id/read/:chapterId" element={<MangaReaderPage />} />
-            <Route path="/manga/:id/book/:chapterId" element={<BookReaderPage />} />
-            {/* Books reuse the same readers; a books folder may hold CBZ volumes too. */}
-            <Route path="/books/:id/read/:chapterId" element={<MangaReaderPage />} />
-            <Route path="/books/:id/book/:chapterId" element={<BookReaderPage />} />
-            {/* "Open with NaviHUB" — a .cbz/.epub from outside the library. */}
-            <Route path="/read/manga/:token" element={<MangaReaderPage />} />
-            <Route path="/read/book/:token" element={<BookReaderPage />} />
-            {/* The in-app video player: library episodes, wrestling files,
-                wrestling clips and Football media. The kind strings are frozen. */}
-            <Route path="/watch/:kind/:id" element={<VideoPlayerPage />} />
-          </Routes>
-        </Suspense>
-        {/* Mounted in BOTH branches: a file opened while you're already in a
-            reader still has to land somewhere. */}
-        <OpenFileHandler />
-        <Toaster />
-        <ConfirmHost />
-      </ErrorBoundary>
+      <>
+        <TabSwitchCue show />
+        <ErrorBoundary key={pageKey}>
+          <Suspense fallback={<RouteLoading label="Loading reader…" />}>
+            <Routes>
+              <Route path="/manga/:id/read/:chapterId" element={<MangaReaderPage />} />
+              <Route path="/manga/:id/book/:chapterId" element={<BookReaderPage />} />
+              {/* Books reuse the same readers; a books folder may hold CBZ volumes too. */}
+              <Route path="/books/:id/read/:chapterId" element={<MangaReaderPage />} />
+              <Route path="/books/:id/book/:chapterId" element={<BookReaderPage />} />
+              {/* "Open with NaviHUB" — a .cbz/.epub from outside the library. */}
+              <Route path="/read/manga/:token" element={<MangaReaderPage />} />
+              <Route path="/read/book/:token" element={<BookReaderPage />} />
+              {/* The in-app video player: library episodes, wrestling files,
+                  wrestling clips and Football media. The kind strings are frozen. */}
+              <Route path="/watch/:kind/:id" element={<VideoPlayerPage />} />
+            </Routes>
+          </Suspense>
+          {/* Mounted in BOTH branches: a file opened while you're already in a
+              reader still has to land somewhere. */}
+          <OpenFileHandler />
+          <Toaster />
+          <ConfirmHost />
+        </ErrorBoundary>
+      </>
     )
   }
 
   return (
     <div className="flex h-full flex-col">
+    <TabSwitchCue show={false} />
     <TabStrip />
     <div className="flex min-h-0 flex-1">
       <Sidebar />
@@ -344,6 +354,7 @@ export default function App() {
             {/* Above /games/:id — the /anime/seasonal precedent. */}
             <Route path="/games/installed" element={<InstalledGamesPage />} />
             <Route path="/games/achievements" element={<AchievementsPage />} />
+            <Route path="/games/emulators" element={<EmulatorsPage />} />
             {/* Franchises moved to /franchises when they went cross-media; the
                 old game-only and guide URLs redirect (guide ids became franchise ids). */}
             <Route path="/games/franchises" element={<Navigate to="/franchises" replace />} />
@@ -615,6 +626,9 @@ export default function App() {
             <Route path="/history/sources" element={<HistorySourcesPage />} />
             <Route path="/history/themes" element={<HistoryThemesPage />} />
             <Route path="/history/map" element={<HistoryMapPage />} />
+            <Route path="/history/year/:year" element={<HistoryYearPage />} />
+            <Route path="/history/quiz" element={<HistoryQuizPage />} />
+            <Route path="/history/quiz/:game" element={<HistoryQuizGamePage />} />
             <Route path="/history/source/:id" element={<HistorySourcePage />} />
             <Route path="/history/my" element={<HistoryMyPage />} />
             <Route path="/history/my/:id/edit" element={<HistoryEditPage />} />
@@ -655,6 +669,7 @@ export default function App() {
       </div>
       <ThemeFx />
       <CommandPalette />
+      <GlobalContextMenu />
       <PlayerShortcuts />
       <OpenFileHandler />
     </div>

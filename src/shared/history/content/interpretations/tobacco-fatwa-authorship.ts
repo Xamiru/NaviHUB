@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'tobacco-fatwa-authorship',
   about: ['event:tobacco-protest', 'person:mirza-hasan-shirazi'],
   topic: 'other',
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'issued-by-shirazi',
@@ -81,10 +81,10 @@ export default defineInterpretation({
         },
         {
           id: 'q5',
-          text: 'In any event, Šīrāzī never denied the attribution to him of the fatwā, and the ruling that permitted a resumption of smoking after the rescinding of the concession to the British monopoly in February 1892 was indubitably his (Tārīḵ-e bīdārī, ed. Saʿīdī Sīrjānī, I, pp. 19-60; Teymūrī; Algar, 1969, pp. 211-15).',
+          text: 'In any event, Šīrāzī never denied the attribution to him of the fatwā, and the ruling that permitted a resumption of smoking after the rescinding of the concession to the British monopoly in February 1892 was indubitably his',
           lang: 'en',
           cite: { source: 'iranica-algar-fatwa', loc: { section: 'FATWĀ', para: '12' } },
-          provenance: { via: 'web', at: '2026-10-06', url: 'https://www.iranicaonline.org/articles/fatwa' }
+          provenance: { via: 'web', at: '2026-10-16', url: 'https://www.iranicaonline.org/articles/fatwa' }
         },
         {
           id: 'q6',

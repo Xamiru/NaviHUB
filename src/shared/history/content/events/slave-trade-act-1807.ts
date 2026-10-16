@@ -89,7 +89,12 @@ export default defineEvent({
             at: '2026-10-07',
             url: 'https://www.nationalarchives.gov.uk/help-with-your-research/research-guides/british-transatlantic-slave-trade-records/'
           }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
         {
           id: 'q1',
           text: 'The royal assent was given by commission to the Slave Trade Abolition bill, the Irish Licence bill, and the Thames Police bill, and two private bills.',
@@ -182,6 +187,17 @@ export default defineEvent({
     {
       source: 'inikori-2002-africans-and-the-industrial-revolution-in-england',
       perspective: 'african'
+    }
+  ],
+  places: [
+    {
+      ref: 'place:london',
+      cites: [
+        {
+          source: 'tna-guide-british-transatlantic-slave-trade-records',
+          loc: { section: '5. Campaign for abolition of the slave trade', para: '89' }
+        }
+      ]
     }
   ]
 })

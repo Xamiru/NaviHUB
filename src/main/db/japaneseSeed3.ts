@@ -1,4 +1,4 @@
-import type { SeedCourse } from './japaneseSeed'
+import type { SeedCourseDef } from './japaneseSeed'
 
 // Third wave of seed packs (2026-07-27): the vocabulary and kanji halves of N2
 // and N1, which the path was missing — it previously jumped from N3 kanji
@@ -12,16 +12,16 @@ import type { SeedCourse } from './japaneseSeed'
 //  · at this level the honest advice is "read, and mine what you meet" — the
 //    decks cover the unavoidable core, not the whole level.
 
-export const N2_VOCAB_COURSE: SeedCourse = {
+export const N2_VOCAB_COURSE: SeedCourseDef = {
   title: 'JLPT N2 Vocabulary',
   description:
-    'The abstract, formal and written-register words N2 turns on: degree adverbs, ' +
-    'transitive/intransitive pairs, する-compounds and the connectives that hold ' +
-    'newspaper and novel prose together.',
+    'A starter set of 120 abstract, formal and written-register words N2 turns on: degree ' +
+    'adverbs, transitive/intransitive pairs, する-compounds and the connectives of newspaper and ' +
+    'novel prose. N2 needs about 6,000 words; the core word decks on the Path supply the rest.',
   level: 'N2',
-  difficulty: 20,
   lessons: [
     {
+      key: 'n2vocab.01',
       kind: 'vocab',
       title: 'Abstract nouns I — thought & judgment',
       cards: [
@@ -43,6 +43,7 @@ export const N2_VOCAB_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n2vocab.02',
       kind: 'vocab',
       title: 'Degree & frequency adverbs',
       cards: [
@@ -64,6 +65,7 @@ export const N2_VOCAB_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n2vocab.03',
       kind: 'vocab',
       title: 'Transitive / intransitive pairs',
       cards: [
@@ -85,6 +87,7 @@ export const N2_VOCAB_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n2vocab.04',
       kind: 'vocab',
       title: 'Work, study & society',
       cards: [
@@ -106,6 +109,7 @@ export const N2_VOCAB_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n2vocab.05',
       kind: 'vocab',
       title: 'する-compounds you will actually meet',
       cards: [
@@ -127,6 +131,7 @@ export const N2_VOCAB_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n2vocab.06',
       kind: 'vocab',
       title: 'Written-register connectives',
       cards: [
@@ -148,6 +153,7 @@ export const N2_VOCAB_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n2vocab.07',
       kind: 'vocab',
       title: 'People, character & relationships',
       cards: [
@@ -169,6 +175,7 @@ export const N2_VOCAB_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n2vocab.08',
       kind: 'vocab',
       title: 'Nature, science & the physical world',
       cards: [
@@ -192,16 +199,16 @@ export const N2_VOCAB_COURSE: SeedCourse = {
   ]
 }
 
-export const N2_KANJI_COURSE: SeedCourse = {
+export const N2_KANJI_COURSE: SeedCourseDef = {
   title: 'JLPT N2 Kanji',
   description:
     'The 150 highest-value N2 characters — the ones that carry news, contracts, ' +
-    'documentation and any story with politics or money in it. Past N3, kanji stick ' +
-    'best through reading, so mine what you meet and let this cover the backbone.',
+    'documentation and any story with politics or money in it. The kanji decks on the Path ' +
+    'cover the rest of the level.',
   level: 'N2',
-  difficulty: 21,
   lessons: [
     {
+      key: 'n2kanji.01',
       kind: 'kanji',
       title: 'Government & law',
       cards: [
@@ -223,6 +230,7 @@ export const N2_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n2kanji.02',
       kind: 'kanji',
       title: 'Money & the economy',
       cards: [
@@ -244,6 +252,7 @@ export const N2_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n2kanji.03',
       kind: 'kanji',
       title: 'Work & organizations',
       cards: [
@@ -265,6 +274,7 @@ export const N2_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n2kanji.04',
       kind: 'kanji',
       title: 'Thought & judgment',
       cards: [
@@ -286,6 +296,7 @@ export const N2_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n2kanji.05',
       kind: 'kanji',
       title: 'Media & communication',
       cards: [
@@ -307,6 +318,7 @@ export const N2_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n2kanji.06',
       kind: 'kanji',
       title: 'Character & feeling',
       cards: [
@@ -328,6 +340,7 @@ export const N2_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n2kanji.07',
       kind: 'kanji',
       title: 'Environment & matter',
       cards: [
@@ -349,6 +362,7 @@ export const N2_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n2kanji.08',
       kind: 'kanji',
       title: 'Body & motion II',
       cards: [
@@ -370,6 +384,7 @@ export const N2_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n2kanji.09',
       kind: 'kanji',
       title: 'Order, degree & time',
       cards: [
@@ -391,6 +406,7 @@ export const N2_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n2kanji.10',
       kind: 'kanji',
       title: 'Quality & quantity',
       cards: [
@@ -414,16 +430,16 @@ export const N2_KANJI_COURSE: SeedCourse = {
   ]
 }
 
-export const N1_VOCAB_COURSE: SeedCourse = {
+export const N1_VOCAB_COURSE: SeedCourseDef = {
   title: 'JLPT N1 Vocabulary',
   description:
-    'Literary and editorial vocabulary: the near-synonym sets N1 tests you on, the ' +
-    'formal verbs of official prose, and the adverbs and onomatopoeia that carry tone ' +
-    'in serious fiction. Read widely alongside this — at N1 the deck can only start you off.',
+    'A starter set of 120 literary and editorial words: the near-synonym sets N1 tests you on, ' +
+    'the formal verbs of official prose, and the adverbs and onomatopoeia that carry tone in ' +
+    'serious fiction. N1 needs about 10,000 words; the core word decks and wide reading supply the rest.',
   level: 'N1',
-  difficulty: 25,
   lessons: [
     {
+      key: 'n1vocab.01',
       kind: 'vocab',
       title: 'Literary nouns',
       cards: [
@@ -445,6 +461,7 @@ export const N1_VOCAB_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n1vocab.02',
       kind: 'vocab',
       title: 'Near-synonyms — pick the right one',
       cards: [
@@ -466,6 +483,7 @@ export const N1_VOCAB_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n1vocab.03',
       kind: 'vocab',
       title: 'Formal verbs of official prose',
       cards: [
@@ -487,6 +505,7 @@ export const N1_VOCAB_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n1vocab.04',
       kind: 'vocab',
       title: 'Emotion at full strength',
       cards: [
@@ -508,6 +527,7 @@ export const N1_VOCAB_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n1vocab.05',
       kind: 'vocab',
       title: 'News & editorial',
       cards: [
@@ -529,6 +549,7 @@ export const N1_VOCAB_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n1vocab.06',
       kind: 'vocab',
       title: 'Advanced onomatopoeia',
       cards: [
@@ -550,6 +571,7 @@ export const N1_VOCAB_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n1vocab.07',
       kind: 'vocab',
       title: 'Set phrases & idiomatic verbs',
       cards: [
@@ -571,6 +593,7 @@ export const N1_VOCAB_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n1vocab.08',
       kind: 'vocab',
       title: 'Describing people & scenes (written)',
       cards: [
@@ -594,16 +617,16 @@ export const N1_VOCAB_COURSE: SeedCourse = {
   ]
 }
 
-export const N1_KANJI_COURSE: SeedCourse = {
+export const N1_KANJI_COURSE: SeedCourseDef = {
   title: 'JLPT N1 Kanji',
   description:
-    'The last 140 characters this app teaches directly: the vocabulary of law, finance, ' +
-    'medicine and literary prose. After this deck, everything new should come from what ' +
-    'you read — mine it, and let the SRS do the rest.',
+    'The last 140 characters the courses teach: the vocabulary of law, finance, medicine and ' +
+    'literary prose. With the kanji decks on the Path this reaches about 2,100 kanji, the full ' +
+    'jōyō list.',
   level: 'N1',
-  difficulty: 26,
   lessons: [
     {
+      key: 'n1kanji.01',
       kind: 'kanji',
       title: 'Law & the state',
       cards: [
@@ -624,6 +647,7 @@ export const N1_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n1kanji.02',
       kind: 'kanji',
       title: 'Finance & industry',
       cards: [
@@ -644,6 +668,7 @@ export const N1_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n1kanji.03',
       kind: 'kanji',
       title: 'Conflict & deception',
       cards: [
@@ -664,6 +689,7 @@ export const N1_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n1kanji.04',
       kind: 'kanji',
       title: 'The inner life',
       cards: [
@@ -684,6 +710,7 @@ export const N1_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n1kanji.05',
       kind: 'kanji',
       title: 'Formality & ceremony',
       cards: [
@@ -704,6 +731,7 @@ export const N1_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n1kanji.06',
       kind: 'kanji',
       title: 'Structure & abstraction',
       cards: [
@@ -724,6 +752,7 @@ export const N1_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n1kanji.07',
       kind: 'kanji',
       title: 'Health & welfare',
       cards: [
@@ -744,6 +773,7 @@ export const N1_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n1kanji.08',
       kind: 'kanji',
       title: 'Movement & handling',
       cards: [
@@ -764,6 +794,7 @@ export const N1_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n1kanji.09',
       kind: 'kanji',
       title: 'Landscape & weather',
       cards: [
@@ -784,6 +815,7 @@ export const N1_KANJI_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'n1kanji.10',
       kind: 'kanji',
       title: 'Writing & the unsaid',
       cards: [

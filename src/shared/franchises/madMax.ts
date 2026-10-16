@@ -120,7 +120,7 @@ export const MAD_MAX: FranchiseCfg = {
       role: 'Road warrior (first three films)',
       portraitUrl: `${TM}/w300_and_h450_face/jnqHMaOslt8cef2atSmOpGRvNla.jpg`,
       appearsIn: ['madmax-1', 'madmax-2', 'madmax-thunderdome'],
-      blurb: 'Mel Gibson’s highway patrolman becomes a drifter after losing his family.'
+      blurb: 'A Main Force Patrol officer whose family is run down by the Toecutter’s gang, left to drift the wasteland roads with a V8 Interceptor and nothing else. Mel Gibson plays him.'
     },
     {
       id: 'madmax-max-hardy',
@@ -128,7 +128,7 @@ export const MAD_MAX: FranchiseCfg = {
       role: 'Road warrior (Fury Road)',
       portraitUrl: `${TM}/w300_and_h450_face/d81K0RH8UX7tZj49tZaQhZ9ewH.jpg`,
       appearsIn: ['madmax-fury-road'],
-      blurb: 'Tom Hardy takes the role for Fury Road, a haunted man who speaks little.'
+      blurb: 'The same road warrior, further gone: haunted, nearly mute, captured as a War Boy’s blood bag before he throws in with Furiosa. Tom Hardy plays him.'
     },
     {
       id: 'madmax-furiosa-theron',
@@ -136,7 +136,7 @@ export const MAD_MAX: FranchiseCfg = {
       role: 'War rig driver',
       portraitUrl: `${TM}/w300_and_h450_face/gd7ShD0yt4bsR2STeQ19KQ6hvXL.jpg`,
       appearsIn: ['madmax-fury-road'],
-      blurb: 'Charlize Theron plays the one-armed driver who turns on Immortan Joe in Fury Road.'
+      blurb: 'Immortan Joe’s most trusted war rig driver, who smuggles out his five wives and runs for the Green Place she was taken from. Charlize Theron plays her.'
     },
     {
       id: 'madmax-furiosa-young',
@@ -144,7 +144,7 @@ export const MAD_MAX: FranchiseCfg = {
       role: 'Young Furiosa',
       portraitUrl: `${TM}/w300_and_h450_face/yZpghhtKM2VZHDx6JGAZqAVU4PL.jpg`,
       appearsIn: ['madmax-furiosa'],
-      blurb: 'Anya Taylor-Joy takes the title role in Furiosa.'
+      blurb: 'Taken from the Green Place as a child, she spends fifteen years inside the wasteland’s war machines learning what she needs to get home and get even. Anya Taylor-Joy plays her.'
     },
     {
       id: 'madmax-dementus',
@@ -152,7 +152,7 @@ export const MAD_MAX: FranchiseCfg = {
       role: 'Warlord',
       portraitUrl: `${TM}/w300_and_h450_face/piQGdoIQOF3C1EI5cbYZLAW1gfj.jpg`,
       appearsIn: ['madmax-furiosa'],
-      blurb: 'Chris Hemsworth plays the biker warlord who takes Furiosa from the Green Place.'
+      blurb: 'A theatrical biker warlord who kills Furiosa’s mother, keeps the girl as a trophy, and makes his own run at Immortan Joe’s Citadel. Chris Hemsworth plays him.'
     },
     {
       id: 'madmax-immortan',
@@ -160,7 +160,7 @@ export const MAD_MAX: FranchiseCfg = {
       role: 'Citadel warlord',
       portraitUrl: `${TM}/w300_and_h450_face/7XSPjKNwmyEPMnmoVSQ42ykMz6M.jpg`,
       appearsIn: ['madmax-fury-road'],
-      blurb: 'Hugh Keays-Byrne, who also played the Toecutter in the first film, plays the ruler of the Citadel.'
+      blurb: 'The masked tyrant of the Citadel, who rations water, breeds his heirs from captive wives and has the War Boys believing he will carry them to Valhalla. Hugh Keays-Byrne plays him.'
     },
     {
       id: 'madmax-aunty',
@@ -168,7 +168,7 @@ export const MAD_MAX: FranchiseCfg = {
       role: 'Ruler of Bartertown',
       portraitUrl: `${TM}/w300_and_h450_face/rqL6OCQi5IzZPYCZPvtqbKNUKGA.jpg`,
       appearsIn: ['madmax-thunderdome'],
-      blurb: 'Tina Turner plays the ruler of Bartertown in Beyond Thunderdome.'
+      blurb: 'The founder of Bartertown, a deal-maker who rebuilt trade out of the ruins and hires Max to settle her power struggle in the Thunderdome. Tina Turner plays her.'
     }
   ]
 }

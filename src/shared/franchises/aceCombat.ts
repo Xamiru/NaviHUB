@@ -3,9 +3,9 @@
 // Namco/Bandai Namco has explicitly stated is set in the real world rather
 // than the series' main fictional setting (and in three DIFFERENT real-world
 // continuities from one another) — all three are spinOff rows with no
-// chrono. Ace Combat X: Skies of Deception and Ace Combat: Assault Horizon
-// Legacy (the 3DS remake of Ace Combat 2) are not in the task's scope and
-// are excluded. Ace Combat 8: Wings of the Empire exists on Steam dated
+// chrono. Ace Combat X: Skies of Deception (PSP, added 2026-10-17) is set in
+// Strangereal's Aurelia in 2020, so it follows 7 in the story order. Ace
+// Combat: Assault Horizon Legacy (the 3DS remake of Ace Combat 2) is excluded. Ace Combat 8: Wings of the Empire exists on Steam dated
 // October 1, 2026 (verified via the Steam store API and corroborated by Ace
 // Combat Zero's own infobox, which lists a bundled PS5/Windows/Xbox
 // Series re-release alongside it on October 2, 2026) — inside this page's
@@ -76,7 +76,7 @@ export const ACE_COMBAT: FranchiseCfg = {
       title: 'Ace Combat 3: Electrosphere',
       year: 1999,
       releaseDate: '1999-05-27',
-      chrono: 8,
+      chrono: 9,
       note: 'Science-fiction detour: megacorporations Neucom and General Resource fight for control of Electrosphere'
     },
     {
@@ -104,6 +104,14 @@ export const ACE_COMBAT: FranchiseCfg = {
       releaseDate: '2006-03-23',
       chrono: 2,
       note: 'Prequel: mercenaries Cipher and Pixy defend Ustio during Belka\'s 1995 invasion'
+    },
+    {
+      id: 'acm-x',
+      title: 'Ace Combat X: Skies of Deception',
+      year: 2006,
+      releaseDate: '2006-10-24',
+      chrono: 8,
+      note: 'PSP: Gryphus Squadron frees Aurelia from Leasath’s invasion'
     },
     {
       id: 'acm-6',

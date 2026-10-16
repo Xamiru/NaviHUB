@@ -216,20 +216,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'http://countrystudies.us/caribbean-islands/10.htm'
           }
-        },
-        {
-          id: 'q11',
-          text: 'rose to call attention to the concluding paragraph of the Report of the Royal Jamaica Commission, namely— That the punishments inflicted were excessive; that the punishment of death was unnecessarily frequent; that the floggings were reckless, and at Bath positively barbarous; that the burning of 1,000 houses was wanton and cruel;',
-          lang: 'en',
-          cite: {
-            source: 'hansard-commons-1866-07-31-disturbances-in-jamaica',
-            loc: { section: 'HC Deb 31 July 1866 vol 184 cc1763-840' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://api.parliament.uk/historic-hansard/commons/1866/jul/31/resolution'
-          }
         }
       ]
     },
@@ -242,6 +228,39 @@ export default defineEvent({
           lang: 'en',
           cite: { source: 'nlj-national-heroes', loc: { section: 'National Heroes' } },
           provenance: { via: 'web', at: '2026-10-06', url: 'https://nlj.gov.jm/qcontentnational-heroes/' }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q17',
+          text: '1. "That this House deplores the excessive punishments which followed the suppression of the disturbances of October last in the parish of St. Thomas, Jamaica, and especially the unnecessary frequency with which the punishment of death was inflicted.',
+          lang: 'en',
+          cite: {
+            source: 'hansard-commons-1866-07-31-disturbances-in-jamaica',
+            loc: { section: 'HC Deb 31 July 1866 vol 184 cc1763-840' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1866/jul/31/resolution'
+          }
+        },
+        {
+          id: 'q11',
+          text: 'That the punishments inflicted were excessive; that the punishment of death was unnecessarily frequent; that the floggings were reckless, and at Bath positively barbarous; that the burning of 1,000 houses was wanton and cruel;',
+          lang: 'en',
+          cite: {
+            source: 'hansard-commons-1866-07-31-disturbances-in-jamaica',
+            loc: { section: 'HC Deb 31 July 1866 vol 184 cc1763-840' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1866/jul/31/resolution'
+          }
         }
       ]
     }
@@ -331,35 +350,6 @@ export default defineEvent({
           via: 'web',
           at: '2026-10-06',
           url: 'http://countrystudies.us/caribbean-islands/10.htm'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1866-07-31' },
-            cites: [
-              {
-                source: 'hansard-commons-1866-07-31-disturbances-in-jamaica',
-                loc: { section: 'HC Deb 31 July 1866 vol 184 cc1763-840' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q17',
-        text: '1. "That this House deplores the excessive punishments which followed the suppression of the disturbances of October last in the parish of St. Thomas, Jamaica, and especially the unnecessary frequency with which the punishment of death was inflicted.',
-        lang: 'en',
-        cite: {
-          source: 'hansard-commons-1866-07-31-disturbances-in-jamaica',
-          loc: { section: 'HC Deb 31 July 1866 vol 184 cc1763-840' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://api.parliament.uk/historic-hansard/commons/1866/jul/31/resolution'
         }
       }
     }

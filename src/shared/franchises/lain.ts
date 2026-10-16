@@ -30,7 +30,7 @@ export const SERIAL_EXPERIMENTS_LAIN: FranchiseCfg = {
     },
     {
       title: 'The PlayStation disc is not a game to beat',
-      body: 'The 1998 PlayStation release has no win state, combat or even much player agency: it presents itself as a hypertext database of diary entries, psychiatric session notes, news clippings and character profiles that the player browses in roughly chronological order, accompanied by ambient audio. It tells its own version of Lain’s story rather than adapting the anime’s script, which is why it sits beside the show as a companion piece rather than before or after it.'
+      body: 'The 1998 PlayStation release has no win state, combat or even much player agency: it presents itself as a hypertext database of diary entries, psychiatric session notes, news clippings and character profiles that the player browses in roughly chronological order, much of it delivered as voiced recordings and short video clips. It tells its own version of Lain’s story rather than adapting the anime’s script, which is why it sits beside the show as a companion piece rather than before or after it.'
     },
     {
       title: 'Protocol 7 and the Knights',
@@ -66,7 +66,7 @@ export const SERIAL_EXPERIMENTS_LAIN: FranchiseCfg = {
       releaseDate: '1998-11-26',
       spinOff: true,
       optional: true,
-      note: 'PlayStation-only Japanese release: a browsable hypertext telling of Lain’s story, no dialogue or win state'
+      note: 'PlayStation-only Japanese release: a browsable archive of voiced session recordings, diaries and video clips, with no win state'
     }
   ],
   characters: [

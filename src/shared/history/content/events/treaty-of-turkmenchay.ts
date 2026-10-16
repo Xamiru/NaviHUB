@@ -54,6 +54,18 @@ export default defineEvent({
           loc: { section: 'ʿABBĀS MĪRZĀ QAJAR', para: '6' }
         }
       ]
+    },
+    {
+      ref: 'place:tabriz',
+      cites: [
+        {
+          source: 'iranica-andreeva-russia-relations',
+          loc: {
+            section: 'RUSSIA i. Russo-Iranian Relations up to the Bolshevik Revolution',
+            para: '45'
+          }
+        }
+      ]
     }
   ],
   partOf: [

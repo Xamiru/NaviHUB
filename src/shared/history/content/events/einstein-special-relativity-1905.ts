@@ -145,5 +145,16 @@ export default defineEvent({
   },
   furtherReading: [
     { source: 'folsing-1993-albert-einstein', perspective: 'european' }
+  ],
+  places: [
+    {
+      ref: 'place:bern',
+      cites: [
+        {
+          source: 'aip-stachel-einstein-relativity',
+          loc: { section: 'Einstein\'s Discovery of Relativity', para: '9' }
+        }
+      ]
+    }
   ]
 })

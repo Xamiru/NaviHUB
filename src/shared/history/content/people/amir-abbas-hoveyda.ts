@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Amir-Abbas Hoveyda', lang: 'en', role: 'primary' },
     { text: 'امیرعباس هویدا', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -118,7 +118,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q1',
-          text: 'HOVEYDA, AMIR-ABBAS (Amir ʿAbbās Hoveydā), the longest serving prime minister in the modern history of Iran (b. 28 Bahman 1297 Š./19 February 1919; d. 18 Farvardin 1359 Š./7 April 1979; Figure 1). He was born in Tehran to a family of hybrid affinities and identity (Milani, p. 37).',
+          text: 'HOVEYDA, AMIR-ABBAS (Amir ʿAbbās Hoveydā), the longest serving prime minister in the modern history of Iran (b. 28 Bahman 1297 Š./19 February 1919; d. 18 Farvardin 1359 Š./7 April 1979; Figure 1). He was born in Tehran to a family of hybrid affinities and identity',
           lang: 'en',
           cite: {
             source: 'iranica-milani-hoveyda',
@@ -126,7 +126,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://web.archive.org/web/20261002185029/https://www.iranicaonline.org/articles/hoveyda-amir-abbas/'
           }
         }

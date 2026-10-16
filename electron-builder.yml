@@ -13,6 +13,11 @@ extraResources:
   # packaged — nativeImage path loading is not reliably asar-transparent).
   - from: assets
     to: assets
+  # Open JTalk compiled to WebAssembly (scripts/build-openjtalk-wasm.sh): the
+  # Japanese voice's worker loads it from process.resourcesPath/openjtalk.
+  - from: resources/openjtalk
+    to: openjtalk
+    filter: ['open_jtalk.js', 'open_jtalk.wasm', 'README.md']
 asar: true
 asarUnpack:
   # Native module must live on real disk, not inside the asar.

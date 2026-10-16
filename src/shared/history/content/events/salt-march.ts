@@ -164,39 +164,28 @@ export default defineEvent({
           }
         }
       ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q9',
+          text: 'Mr. Gandhi was arrested this morning and is detained under the Bombay State Prisoners\' Regulation of 1827.',
+          lang: 'en',
+          cite: {
+            source: 'hansard-commons-1930-05-05-arrest-of-mr-gandhi',
+            loc: { section: 'Civil Disobedience Campaign (Arrest of Mr. Gandhi)' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1930/may/05/civil-disobedience-campaign-arrest-of-mr'
+          }
+        }
+      ]
     }
   ],
   course: [
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1930-05-05' },
-            cites: [
-              { source: 'lemo-chronik-1930', loc: { section: 'Chronik 1930', para: '90' } },
-              {
-                source: 'hansard-commons-1930-05-05-arrest-of-mr-gandhi',
-                loc: { section: 'Civil Disobedience Campaign (Arrest of Mr. Gandhi)' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q9',
-        text: 'Mr. Gandhi was arrested this morning and is detained under the Bombay State Prisoners\' Regulation of 1827.',
-        lang: 'en',
-        cite: {
-          source: 'hansard-commons-1930-05-05-arrest-of-mr-gandhi',
-          loc: { section: 'Civil Disobedience Campaign (Arrest of Mr. Gandhi)' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-07',
-          url: 'https://api.parliament.uk/historic-hansard/commons/1930/may/05/civil-disobedience-campaign-arrest-of-mr'
-        }
-      }
-    },
     {
       date: {
         alts: [

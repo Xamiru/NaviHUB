@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'slave-trade-abolition-debate-1807',
   about: ['event:slave-trade-act-1807'],
   topic: 'other',
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'immediate-abolition',
@@ -53,7 +53,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q3',
-          text: 'he should, rather than that our colonies should remain uncultivated, wish the slave trade to be continued.',
+          text: 'Gascoyne\'s) words were to this effect; that seeing all the consequences which resulted from the slave trade, and the flourishing state of the colonies, and that no other method had been found out for bringing them into that state but the cultivation by slaves, and that under this system our navy and commerce had so flourished, he should, rather than that our colonies should remain uncultivated, wish the slave trade to be continued.',
           lang: 'en',
           cite: {
             source: 'hansard-commons-1807-02-23-slave-trade-abolition-bill',
@@ -61,7 +61,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://api.parliament.uk/historic-hansard/commons/1807/feb/23/slave-trade-abolition-bill'
           }
         }
@@ -76,7 +76,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q4',
-          text: 'he was not prepared to go so far as the policy of immediately abolishing it.',
+          text: 'He thought the present population not equal to the cultivation of the colonies, and that if the importation of negroes from Africa was immediately stopped, either the planters would suffer considerably in their proper–ties, or illegal means would be resorted to, to obtain a supply.',
           lang: 'en',
           cite: {
             source: 'hansard-commons-1807-02-23-slave-trade-abolition-bill',
@@ -84,7 +84,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://api.parliament.uk/historic-hansard/commons/1807/feb/23/slave-trade-abolition-bill'
           }
         },

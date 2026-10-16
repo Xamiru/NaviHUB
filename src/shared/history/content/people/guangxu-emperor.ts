@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Guangxu Emperor', lang: 'en', role: 'primary' },
     { text: '光緒帝', lang: 'zh', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['east-asia'],
   roles: ['monarch'],
   offices: [
@@ -49,6 +49,21 @@ export default definePerson({
   ],
   sections: [
     {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q2',
+          text: 'In the 103 days from June 11 to September 21, 1898, the Qing emperor, Guangxu (1875-1908), ordered a series of reforms aimed at making sweeping social and institutional changes.',
+          lang: 'en',
+          cite: {
+            source: 'loc-china-country-study-1987',
+            loc: { section: 'The Hundred Days\' Reform and the Aftermath', para: '1' }
+          },
+          provenance: { via: 'web', at: '2026-10-16', url: 'http://countrystudies.us/china/18.htm' }
+        }
+      ]
+    },
+    {
       kind: 'career',
       quotes: [
         {
@@ -69,5 +84,31 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:%E5%85%89%E7%BB%AA%E5%B8%9D.jpg',
     credit: { institution: 'Palace Museum' },
     license: { id: 'public-domain' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1871' },
+        cites: [
+          {
+            source: 'loc-name-authority-guangxu-emperor',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1908' },
+        cites: [
+          {
+            source: 'loc-name-authority-guangxu-emperor',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
   }
 })

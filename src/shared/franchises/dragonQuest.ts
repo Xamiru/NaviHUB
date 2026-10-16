@@ -1,6 +1,7 @@
-// Dragon Quest — curated canon. Mainline I-IX and XI (X is a Japan-first
-// MMO whose offline version never shipped in the West — excluded on the
-// FF XI logic) + Builders 1/2 (approved spin-off tier) + the HD-2D remakes.
+// Dragon Quest — curated canon. Mainline I-XI (X, the Japan-only online
+// entry, added 2026-10-17 as a mainline number) + Builders 1/2 (approved
+// spin-off tier) + the HD-2D remakes and VII Reimagined (2026), which has its
+// own row like the other remakes.
 // Heroes / Monsters / Treasures excluded. No `chrono`: mostly standalone
 // worlds; the Erdrick trilogy runs III -> I -> II and the Zenithian trilogy
 // VI -> IV -> V, and both are noted on the rows.
@@ -21,7 +22,7 @@ export const DRAGON_QUEST: FranchiseCfg = {
   trivia: [
     {
       title: 'The trinity',
-      body: 'Every mainline entry since 1986 has come from the same three men: Yuji Horii writing and designing, Akira Toriyama drawing every monster and hero, Koichi Sugiyama composing. No other 40-year series has held one creative core that long. Toriyama and Sugiyama both died in the 2020s; XII is the first game after them.'
+      body: 'Every mainline entry since 1986 has come from the same three men: Yuji Horii writing and designing, Akira Toriyama drawing every monster and hero, Koichi Sugiyama composing. No other 40-year series has held one creative core that long. Sugiyama died in 2021 and Toriyama in 2024; XII, still in development, will be the first mainline game made without them.'
     },
     {
       title: 'The Japanese RPG, defined',
@@ -60,9 +61,10 @@ export const DRAGON_QUEST: FranchiseCfg = {
     },
     { id: 'dq-5', title: 'Dragon Quest V: Hand of the Heavenly Bride', aliases: ['Dragon Quest V'], year: 1992, mc: 87, bgUrl: 'https://static.wikia.nocookie.net/dragonquest/images/5/59/Dragon_quest_v_wall_1.jpg/revision/latest?cb=20140414034522', note: 'Zenithian trilogy — a whole life, and a bride' },
     { id: 'dq-6', title: 'Dragon Quest VI: Realms of Revelation', aliases: ['Dragon Quest VI'], year: 1995, mc: 80, bgUrl: 'https://static.wikia.nocookie.net/dragonquest/images/5/50/DQVISNES.jpg/revision/latest?cb=20211030014620', note: 'Zenithian trilogy — the dream world' },
-    { id: 'dq-7', title: 'Dragon Quest VII: Fragments of the Forgotten Past', aliases: ['Dragon Quest VII', 'Dragon Warrior VII', 'Dragon Quest VII Reimagined'], externalIds: [{ source: 'steam', id: '2499860' }], year: 2000, mc: 82, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2499860/library_hero.jpg', note: 'The 100-hour one' },
+    { id: 'dq-7', title: 'Dragon Quest VII: Fragments of the Forgotten Past', aliases: ['Dragon Quest VII', 'Dragon Warrior VII'], year: 2000, mc: 82, note: 'The 100-hour one' },
     { id: 'dq-8', title: 'Dragon Quest VIII: Journey of the Cursed King', aliases: ['Dragon Quest VIII'], year: 2004, mc: 89, bgUrl: 'https://static.wikia.nocookie.net/dragonquest/images/f/f8/DQ8_party.webp/revision/latest?cb=20231110095559', note: 'Full 3D — the West finally noticed' },
     { id: 'dq-9', title: 'Dragon Quest IX: Sentinels of the Starry Skies', aliases: ['Dragon Quest IX'], year: 2009, mc: 87, bgUrl: 'https://static.wikia.nocookie.net/dragonquest/images/8/8c/DQIX_-_Promotion_Artwork_1.jpg/revision/latest?cb=20200817181955', note: 'DS — Japan played it on trains, together' },
+    { id: 'dq-10', title: 'Dragon Quest X', aliases: ['Dragon Quest X: Rise of the Five Tribes Online', 'Dragon Quest X Online'], year: 2012, releaseDate: '2012-08-02', note: 'The online one — still Japan-only, and still running' },
     { id: 'dq-builders', title: 'Dragon Quest Builders', externalIds: [{ source: 'steam', id: '2436570' }], year: 2016, mc: 83, spinOff: true, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2436570/library_hero.jpg', note: 'Block-building in a fallen Alefgard' },
     { id: 'dq-11', title: 'Dragon Quest XI: Echoes of an Elusive Age', aliases: ['Dragon Quest XI', 'Dragon Quest XI S: Echoes of an Elusive Age - Definitive Edition'], externalIds: [{ source: 'steam', id: '1295510' }, { source: 'steam', id: '742120' }], year: 2017, mc: 86, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1295510/library_hero.jpg', note: 'The modern classic' },
     { id: 'dq-builders-2', title: 'Dragon Quest Builders 2', externalIds: [{ source: 'steam', id: '1072420' }], year: 2018, mc: 86, spinOff: true, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1072420/library_hero.jpg', note: 'Bigger, kinder, better' },
@@ -88,7 +90,8 @@ export const DRAGON_QUEST: FranchiseCfg = {
       note: 'Complete 100-episode adaptation of the manga'
     },
     { id: 'dq-3-hd2d', title: 'Dragon Quest III HD-2D Remake', externalIds: [{ source: 'steam', id: '2701660' }], year: 2024, mc: 83, remake: true, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2701660/library_hero.jpg', note: 'Remake of III — start of the Erdrick trilogy in HD-2D' },
-    { id: 'dq-1-2-hd2d', title: 'Dragon Quest I & II HD-2D Remake', externalIds: [{ source: 'steam', id: '2893570' }], year: 2025, remake: true, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2893570/library_hero.jpg', note: 'Remake of I and II — the trilogy complete' }
+    { id: 'dq-1-2-hd2d', title: 'Dragon Quest I & II HD-2D Remake', externalIds: [{ source: 'steam', id: '2893570' }], year: 2025, remake: true, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2893570/library_hero.jpg', note: 'Remake of I and II — the trilogy complete' },
+    { id: 'dq-7-reimagined', title: 'Dragon Quest VII Reimagined', externalIds: [{ source: 'steam', id: '2499860' }], year: 2026, releaseDate: '2026-02-05', remake: true, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2499860/library_hero.jpg', note: 'Remake of VII — the 100 hours, trimmed and rebuilt' }
   ],
   characters: [
     { id: 'dq-slime', name: 'Slime', role: 'Mascot', portraitUrl: 'https://static.wikia.nocookie.net/dragonquest/images/6/60/Slime_Artwork.png/revision/latest?cb=20250919234447', appearsIn: ['dq-1', 'dq-2', 'dq-3', 'dq-4', 'dq-5', 'dq-6', 'dq-7', 'dq-8', 'dq-9', 'dq-builders', 'dq-11', 'dq-builders-2', 'dq-3-hd2d', 'dq-1-2-hd2d'], blurb: 'A blue teardrop with a smile — the first thing every player fights and the friendliest monster in games. Toriyama\'s most-copied design.' },

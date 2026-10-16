@@ -7,7 +7,7 @@ export default definePerson({
     { text: 'آقاخان محلاتی', lang: 'fa', role: 'native' },
     { text: 'Ḥasan-ʿAlī Šāh Āqā Khan Maḥallātī', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -70,7 +70,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q4',
-          text: 'Following the disastrous rout of the British army by the Afghans, Aga Khan and his followers settled in India, where in 1843 he abetted the British annexation of Sind in present-day Pakistan (See also Daftary, pp. 196-99; Algar, 1991, p. 729).',
+          text: 'Following the disastrous rout of the British army by the Afghans, Aga Khan and his followers settled in India, where in 1843 he abetted the British annexation of Sind in present-day Pakistan',
           lang: 'en',
           cite: {
             source: 'iranica-bonakdarian-india-relations-qajar-19th-century',
@@ -78,7 +78,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/india-viii-relations-qajar-period-the-19th-century'
           }
         },

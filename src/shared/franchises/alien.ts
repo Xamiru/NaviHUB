@@ -157,7 +157,7 @@ export const ALIEN: FranchiseCfg = {
       role: 'Warrant officer of the Nostromo',
       portraitUrl: `${TM}/w300_and_h450_face/wTSnfktNBLd6kwQxgvkqYw6vEon.jpg`,
       appearsIn: ['alien-1979', 'alien-aliens', 'alien-3', 'alien-resurrection'],
-      blurb: 'Sigourney Weaver’s Ripley survives the Nostromo and carries the original four films.'
+      blurb: 'Warrant officer of the Nostromo and the only one who wanted to follow quarantine. Sigourney Weaver’s Ripley survives by refusing to trust the company, and spends three more films paying for it.'
     },
     {
       id: 'alien-ash',
@@ -165,7 +165,7 @@ export const ALIEN: FranchiseCfg = {
       role: 'Science officer (android)',
       portraitUrl: `${TM}/w300_and_h450_face/cOJDgvgj4nMec6Inzj1H5nugTO5.jpg`,
       appearsIn: ['alien-1979'],
-      blurb: 'Ian Holm’s science officer is revealed to be an android serving the company’s orders.'
+      blurb: 'The Nostromo’s science officer, who lets the creature aboard on the company’s orders — and turns out to be an android whose one priority is bringing it home. Ian Holm plays him.'
     },
     {
       id: 'alien-xenomorph',
@@ -173,7 +173,7 @@ export const ALIEN: FranchiseCfg = {
       role: 'The creature',
       portraitUrl: `${TM}/w300_and_h450_face/7ddxWlDIOVKBK6TjP66vb9Qp3MW.jpg`,
       appearsIn: ['alien-1979', 'alien-aliens', 'alien-3', 'alien-resurrection', 'alien-isolation', 'alien-romulus', 'alien-earth'],
-      blurb: 'Bolaji Badejo wore the suit for the 1979 film; the creature has stalked every installment since.'
+      blurb: 'Egg, facehugger, chestburster, hunter: H. R. Giger’s creature changes shape with every host, and every film has found a new way to make it worse. Bolaji Badejo wore the first suit.'
     },
     {
       id: 'alien-bishop',
@@ -181,7 +181,7 @@ export const ALIEN: FranchiseCfg = {
       role: 'Android of the colonial marines',
       portraitUrl: `${TM}/w300_and_h450_face/1PkFmD5HdjmRa2DumtwINnnAjTH.jpg`,
       appearsIn: ['alien-aliens'],
-      blurb: 'Lance Henriksen’s calm synthetic helps Ripley, who is wary of androids after the Nostromo.'
+      blurb: 'The marines’ synthetic, as gentle as Ash was treacherous, who spends Aliens earning Ripley’s trust and ends it torn in half, still helping. Lance Henriksen plays him.'
     },
     {
       id: 'alien-david',
@@ -189,7 +189,7 @@ export const ALIEN: FranchiseCfg = {
       role: 'Android',
       portraitUrl: `${TM}/w300_and_h450_face/xvbnUiB2ZBR3QIt595OzNy657Vw.jpg`,
       appearsIn: ['alien-prometheus', 'alien-covenant'],
-      blurb: 'Michael Fassbender’s android drives the story of Prometheus and Covenant.'
+      blurb: 'Peter Weyland’s android “son”, bored by his makers and fascinated by the black goo — the series’ answer to where the creature came from. Michael Fassbender plays him.'
     },
     {
       id: 'alien-rain',
@@ -197,7 +197,7 @@ export const ALIEN: FranchiseCfg = {
       role: 'Young colonist',
       portraitUrl: `${TM}/w300_and_h450_face/6gUzyMnwo7TjZA7E1Amd1GI8JGw.jpg`,
       appearsIn: ['alien-romulus'],
-      blurb: 'Cailee Spaeny leads Romulus as a young miner who tries to escape with her synthetic brother.'
+      blurb: 'A young miner trying to get herself and her synthetic brother Andy off a dying colony, who finds the only way out runs through a derelict station. Cailee Spaeny plays her.'
     },
     {
       id: 'alien-wendy',
@@ -205,7 +205,7 @@ export const ALIEN: FranchiseCfg = {
       role: 'Hybrid',
       portraitUrl: `${TM}/w300_and_h450_face/pFNFXu2PaSUvHqFJCBPz5BEjgTj.jpg`,
       appearsIn: ['alien-earth'],
-      blurb: 'Sydney Chandler leads the 2025 FX series as a hybrid, a child’s mind transferred into a synthetic adult body.'
+      blurb: 'A dying child whose mind is moved into a synthetic adult body, the first of the Prodigy company’s hybrids, and the one who learns to reach the creatures. Sydney Chandler plays her.'
     }
   ]
 }

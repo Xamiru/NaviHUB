@@ -170,7 +170,7 @@ export default defineEvent({
       ]
     },
     {
-      kind: 'course',
+      kind: 'in-their-words',
       quotes: [
         {
           id: 'q4',

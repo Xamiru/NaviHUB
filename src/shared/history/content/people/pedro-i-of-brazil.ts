@@ -7,7 +7,7 @@ export default definePerson({
     { text: 'Pedro I', lang: 'pt', role: 'native' },
     { text: 'Dom Pedro', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['latin-america'],
   roles: ['monarch'],
   offices: [
@@ -135,5 +135,31 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Pedro_I_of_Brazil_1830.jpg',
     credit: { institution: 'Museu Imperial', creator: 'Simplício Rodrigues de Sá' },
     license: { id: 'public-domain' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1798' },
+        cites: [
+          {
+            source: 'loc-name-authority-pedro-i-of-brazil',
+            loc: { section: 'MARC field 100 $d: heading dates' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1834' },
+        cites: [
+          {
+            source: 'loc-name-authority-pedro-i-of-brazil',
+            loc: { section: 'MARC field 100 $d: heading dates' }
+          }
+        ]
+      }
+    ]
   }
 })

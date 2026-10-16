@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'the-holocaust-denial',
   about: ['event:the-holocaust'],
   topic: 'historiography',
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   framing: {
     id: 'q1',
     text: 'Evans argued that the term is generally understood to denote "the attempt by Nazi Germany, led by Hitler, to exterminate the Jewish population in Europe, which attempt succeeded to the extent of murdering between 5 and 6 million Jews in a variety of ways, including mass gassings in camps built for the purpose". It follows that a "Holocaust denier" is someone who, for one reason or another or for a combination of reasons, repudiates the notion that the above definition of the Holocaust is apt to describe what was sought to be done to the European Jews by the Nazis during World War 2.',
@@ -12,8 +12,7 @@ export default defineInterpretation({
     cite: {
       source: 'hdot-irving-v-penguin-books-and-lipstadt-judgment-2000',
       loc: {
-        section: 'VIII. JUSTIFICATION: THE CLAIM THAT IRVING IS A "HOLOCAUST DENIER"',
-        para: '8.3'
+        section: 'VIII. JUSTIFICATION: THE CLAIM THAT IRVING IS A "HOLOCAUST DENIER", paragraph 8.3'
       }
     },
     provenance: { via: 'web', at: '2026-10-06', url: 'https://www.hdot.org/judge/' }
@@ -41,13 +40,13 @@ export default defineInterpretation({
         label: 'mainstream',
         quote: {
           id: 'q3',
-          text: 'it is my conclusion that no objective, fair-minded historian would have serious cause to doubt that there were gas chambers at Auschwitz and that they were operated on a substantial scale to kill hundreds of thousands of Jews.',
+          text: 'Having considered the various arguments advanced by Irving to assail the effect of the convergent evidence relied on by the Defendants, it is my conclusion that no objective, fair-minded historian would have serious cause to doubt that there were gas chambers at Auschwitz and that they were operated on a substantial scale to kill hundreds of thousands of Jews.',
           lang: 'en',
           cite: {
             source: 'hdot-irving-v-penguin-books-and-lipstadt-judgment-2000',
-            loc: { section: 'XIII. FINDINGS ON JUSTIFICATION', para: '13.91' }
+            loc: { section: 'XIII. FINDINGS ON JUSTIFICATION, paragraph 13.91' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'https://www.hdot.org/judge/' }
+          provenance: { via: 'web', at: '2026-10-16', url: 'https://www.hdot.org/judge/' }
         }
       }
     },
@@ -65,8 +64,7 @@ export default defineInterpretation({
           cite: {
             source: 'hdot-irving-v-penguin-books-and-lipstadt-judgment-2000',
             loc: {
-              section: 'VIII. JUSTIFICATION: THE CLAIM THAT IRVING IS A "HOLOCAUST DENIER"',
-              para: '8.17'
+              section: 'VIII. JUSTIFICATION: THE CLAIM THAT IRVING IS A "HOLOCAUST DENIER", paragraph 8.17'
             }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'https://www.hdot.org/judge/' }
@@ -78,8 +76,7 @@ export default defineInterpretation({
           cite: {
             source: 'hdot-irving-v-penguin-books-and-lipstadt-judgment-2000',
             loc: {
-              section: 'VIII. JUSTIFICATION: THE CLAIM THAT IRVING IS A "HOLOCAUST DENIER"',
-              para: '8.17'
+              section: 'VIII. JUSTIFICATION: THE CLAIM THAT IRVING IS A "HOLOCAUST DENIER", paragraph 8.17'
             }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'https://www.hdot.org/judge/' }
@@ -92,7 +89,7 @@ export default defineInterpretation({
           lang: 'en',
           cite: {
             source: 'hdot-irving-v-penguin-books-and-lipstadt-judgment-2000',
-            loc: { section: 'XIII. FINDINGS ON JUSTIFICATION', para: '13.95' }
+            loc: { section: 'XIII. FINDINGS ON JUSTIFICATION, paragraph 13.95' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'https://www.hdot.org/judge/' }
         },
@@ -102,7 +99,7 @@ export default defineInterpretation({
           lang: 'en',
           cite: {
             source: 'hdot-irving-v-penguin-books-and-lipstadt-judgment-2000',
-            loc: { section: 'XIII. FINDINGS ON JUSTIFICATION', para: '13.142' }
+            loc: { section: 'XIII. FINDINGS ON JUSTIFICATION, paragraph 13.142' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'https://www.hdot.org/judge/' }
         }
@@ -115,7 +112,7 @@ export default defineInterpretation({
           lang: 'en',
           cite: {
             source: 'hdot-irving-v-penguin-books-and-lipstadt-judgment-2000',
-            loc: { section: 'XIII. FINDINGS ON JUSTIFICATION', para: '13.142' }
+            loc: { section: 'XIII. FINDINGS ON JUSTIFICATION, paragraph 13.142' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'https://www.hdot.org/judge/' }
         }

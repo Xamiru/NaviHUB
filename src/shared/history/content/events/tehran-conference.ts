@@ -170,16 +170,6 @@ export default defineEvent({
           }
         },
         {
-          id: 'q4',
-          text: '(4) Took note that Operation OVERLORD would be launched during May 1944, in conjunction with an operation against Southern France.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-tehran-conference-1943',
-            loc: { section: '(c) Military Conclusions of the Tehran Conference' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'https://avalon.law.yale.edu/wwii/tehran.asp' }
-        },
-        {
           id: 'q5',
           text: 'Stalin pressed for a revision of Poland’s eastern border with the Soviet Union to match the line set by British Foreign Secretary Lord Curzon in 1920. In order to compensate Poland for the resulting loss of territory, the three leaders agreed to move the German-Polish border to the Oder and Neisse rivers.',
           lang: 'en',
@@ -225,6 +215,16 @@ export default defineEvent({
           cite: {
             source: 'avalon-tehran-conference-1943',
             loc: { section: '(b) Declaration of the Three Powers Regarding Iran, December 1, 1943' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'https://avalon.law.yale.edu/wwii/tehran.asp' }
+        },
+        {
+          id: 'q4',
+          text: '(4) Took note that Operation OVERLORD would be launched during May 1944, in conjunction with an operation against Southern France.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-tehran-conference-1943',
+            loc: { section: '(c) Military Conclusions of the Tehran Conference' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'https://avalon.law.yale.edu/wwii/tehran.asp' }
         }

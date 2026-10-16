@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'soviet-famine-of-1932-1933-genocide-question',
   about: ['event:soviet-famine-of-1932-1933'],
   topic: 'nature',
-  researched: '2026-10-09',
+  researched: '2026-10-16',
   framing: {
     id: 'q1',
     text: 'There is general agreement among scholars that the Holodomor resulted from the actions of Soviet authorities and was thus man-made and avoidable.',
@@ -110,7 +110,7 @@ export default defineInterpretation({
         },
         {
           id: 'q5',
-          text: 'calls on the Russian Federation, as the primary successor of the Soviet Union, to officially recognise the Holodomor and to apologise for those crimes;',
+          text: 'Calls on all the countries and international organisations which have not yet recognised the Holodomor as a genocide to do so; calls on the Russian Federation, as the primary successor of the Soviet Union, to officially recognise the Holodomor and to apologise for those crimes;',
           lang: 'en',
           cite: {
             source: 'european-parliament-2022-12-15-holodomor-resolution',
@@ -118,7 +118,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://web.archive.org/web/20241229203021/https://www.europarl.europa.eu/doceo/document/TA-9-2022-0449_EN.html'
           }
         }

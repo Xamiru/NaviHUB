@@ -379,7 +379,7 @@ export default defineEvent({
         },
         {
           id: 'q9',
-          text: 'Connections between the Persian war and the Indian mutiny remain inconclusive (Standish, “The Persian War,” p. 39).',
+          text: 'Connections between the Persian war and the Indian mutiny remain inconclusive',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-anglo-persian-war',
@@ -387,7 +387,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/anglo-persian-war-1856-57'
           }
         },
@@ -508,7 +508,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q14',
-        text: 'To avoid public outcry against Palmerston’s government, the British declared war from Calcutta, on 1 Novernber 1856 (Wright, The English, p. 56).',
+        text: 'To avoid public outcry against Palmerston’s government, the British declared war from Calcutta, on 1 Novernber 1856',
         lang: 'en',
         cite: {
           source: 'iranica-calmard-anglo-persian-war',
@@ -516,7 +516,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/anglo-persian-war-1856-57'
         }
       }
@@ -537,7 +537,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q15',
-        text: 'A naval expedition under the command of Major-General Stalker occupied Ḵārg island on 4 December; on 10 December Bushire surrendered and was placed under British administration (Fasāʾī, pp. 313f.).',
+        text: 'A naval expedition under the command of Major-General Stalker occupied Ḵārg island on 4 December; on 10 December Bushire surrendered and was placed under British administration',
         lang: 'en',
         cite: {
           source: 'iranica-calmard-anglo-persian-war',
@@ -545,7 +545,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/anglo-persian-war-1856-57'
         }
       }
@@ -566,7 +566,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q16',
-        text: 'At dawn, the British cavalry and artillery look the offensive and inflicted a massive defeat on the Persians (who lost 700 men to 16 on the British side; see Outram’s report in The Annual Register, 1857, p. 444; Sir J. Outram, Lieutenant-General Sir James Outram’s Persian Campaign in 1857, London, 1860, pp. 33-35; Wylly, “Our War,” p. 648; different figures given by Fasāʾī, I, p. 317; A. D. Hytier, ed., Les dépêches diplomatiques du Comte de Gobineau en Perse, Paris and Geneva, 1959, p.71, n. 95, et al.).',
+        text: 'At dawn, the British cavalry and artillery look the offensive and inflicted a massive defeat on the Persians',
         lang: 'en',
         cite: {
           source: 'iranica-calmard-anglo-persian-war',
@@ -574,7 +574,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/anglo-persian-war-1856-57'
         }
       }

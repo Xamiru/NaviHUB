@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Ali-Akbar Davar', lang: 'en', role: 'primary' },
     { text: 'علی‌اکبر داور', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -47,12 +47,12 @@ export default definePerson({
       quotes: [
         {
           id: 'q1',
-          text: 'journalist, politician, statesman, and founder of the modern Persian judicial system, as well as of several state enterprises in the time of Reżā Shah',
+          text: 'Tehran, 21 Bahman 1315 Š./10 February 1937), journalist, politician, statesman, and founder of the modern Persian judicial system, as well as of several state enterprises in the time of Reżā Shah',
           lang: 'en',
           cite: { source: 'iranica-aqeli-davar', loc: { section: 'DĀVAR, ʿALĪ-AKBAR', para: '1' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/davar-ali-akbar/'
           }
         },

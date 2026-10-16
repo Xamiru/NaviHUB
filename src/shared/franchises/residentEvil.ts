@@ -1,7 +1,8 @@
 // Resident Evil — curated canon. Mainline + the Revelations pair; the
 // Outbreak/Umbrella Chronicles/Resistance tier is excluded. Remakes are
-// separate entries; in Story order a remake sits directly after its
-// original (same events, retold). Steam names are bare ("Resident Evil 2"
+// separate entries; in Story order a remake shares its original's slot
+// (same events, retold), with release order breaking the tie. Requiem (2026)
+// added 2026-10-17. Steam names are bare ("Resident Evil 2"
 // IS the 2019 remake), so the plain titles belong to the remake entries and
 // the originals carry a year disambiguator.
 // All art URLs curl-verified 2026-08-15. The four pre-Steam games (1996-2000)
@@ -53,7 +54,7 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       id: 're-2',
       title: 'Resident Evil 2 (1998)',
       year: 1998,
-      chrono: 4,
+      chrono: 3,
       mc: 89,
       bgUrl:
         'https://static.wikia.nocookie.net/residentevil/images/c/c5/Characters_from_RE2_-_HD.png/revision/latest?cb=20150106193552',
@@ -63,7 +64,7 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       id: 're-3',
       title: 'Resident Evil 3: Nemesis',
       year: 1999,
-      chrono: 6,
+      chrono: 4,
       mc: 91,
       bgUrl:
         'https://static.wikia.nocookie.net/residentevil/images/e/e5/RE3_NEMESIS_PROMO_AD_POSTER.png/revision/latest?cb=20151127083858',
@@ -74,7 +75,7 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       title: 'Resident Evil Code: Veronica',
       aliases: ['Resident Evil Code: Veronica X', 'Resident Evil Code: Veronica X HD'],
       year: 2000,
-      chrono: 8,
+      chrono: 5,
       mc: 94,
       bgUrl:
         'https://static.wikia.nocookie.net/residentevil/images/5/5a/RESIDENTEVILCODEVERONICAXPS2COVER.jpg/revision/latest?cb=20161206201503',
@@ -97,7 +98,7 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       externalIds: [{ source: 'steam', id: '304240' }],
       year: 2002,
       releaseDate: '2002-03-22',
-      chrono: 3,
+      chrono: 2,
       mc: 91,
       remake: true,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/304240/library_hero.jpg',
@@ -131,7 +132,7 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       aliases: ['Resident Evil 4: Ultimate HD Edition'],
       externalIds: [{ source: 'steam', id: '254700' }],
       year: 2005,
-      chrono: 9,
+      chrono: 6,
       mc: 96,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/254700/library_hero.jpg',
       note: 'The reinvention'
@@ -154,7 +155,7 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '3446' }],
       year: 2008,
       releaseDate: '2008-10-18',
-      chrono: 9,
+      chrono: 6,
       spinOff: true,
       note: 'Game-canon CG film: Leon and Claire at a T-virus outbreak in Harvardville airport'
     },
@@ -164,7 +165,7 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       aliases: ['Resident Evil 5 Gold Edition'],
       externalIds: [{ source: 'steam', id: '21690' }],
       year: 2009,
-      chrono: 12,
+      chrono: 8,
       mc: 86,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/21690/library_hero.jpg',
       note: 'Co-op action era peaks'
@@ -185,7 +186,7 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       externalIds: [{ source: 'steam', id: '222480' }],
       year: 2012,
       releaseDate: '2012-01-26',
-      chrono: 11,
+      chrono: 7,
       mc: 82,
       spinOff: true,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/222480/library_hero.jpg',
@@ -209,7 +210,7 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '9544' }],
       year: 2012,
       releaseDate: '2012-09-15',
-      chrono: 12,
+      chrono: 8,
       spinOff: true,
       note: 'Game-canon CG film: Leon in an Eastern European civil war fought with Plagas'
     },
@@ -219,7 +220,7 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       externalIds: [{ source: 'steam', id: '221040' }],
       year: 2012,
       releaseDate: '2012-10-02',
-      chrono: 14,
+      chrono: 10,
       mc: 74,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/221040/library_hero.jpg',
       note: 'The action era overreaches'
@@ -229,7 +230,7 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       title: 'Resident Evil: Revelations 2',
       externalIds: [{ source: 'steam', id: '287290' }],
       year: 2015,
-      chrono: 13,
+      chrono: 9,
       mc: 75,
       spinOff: true,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/287290/library_hero.jpg',
@@ -250,7 +251,7 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       title: 'Resident Evil 7: Biohazard',
       externalIds: [{ source: 'steam', id: '418370' }],
       year: 2017,
-      chrono: 15,
+      chrono: 11,
       mc: 86,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/418370/library_hero.jpg',
       note: 'The second reinvention — welcome to the family'
@@ -263,7 +264,7 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '21464' }],
       year: 2017,
       releaseDate: '2017-05-27',
-      chrono: 14,
+      chrono: 10,
       spinOff: true,
       note: 'Game-canon CG film: Chris, Leon and Rebecca against a bioterrorist in New York'
     },
@@ -273,7 +274,7 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       aliases: ['Resident Evil 2'],
       externalIds: [{ source: 'steam', id: '883710' }],
       year: 2019,
-      chrono: 5,
+      chrono: 3,
       mc: 91,
       remake: true,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/883710/library_hero.jpg',
@@ -285,7 +286,7 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       aliases: ['Resident Evil 3'],
       externalIds: [{ source: 'steam', id: '952060' }],
       year: 2020,
-      chrono: 7,
+      chrono: 4,
       mc: 84,
       remake: true,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/952060/library_hero.jpg',
@@ -297,7 +298,7 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       aliases: ['Resident Evil 8: Village'],
       externalIds: [{ source: 'steam', id: '1196590' }],
       year: 2021,
-      chrono: 16,
+      chrono: 12,
       mc: 84,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1196590/library_hero.jpg',
       note: 'RE7\'s gothic sequel'
@@ -310,7 +311,7 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '124494' }],
       year: 2021,
       releaseDate: '2021-07-08',
-      chrono: 11,
+      chrono: 7,
       spinOff: true,
       note: 'Game-canon CG series: Leon and Claire uncover a White House cover-up in 2006'
     },
@@ -340,7 +341,7 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       aliases: ['Resident Evil 4'],
       externalIds: [{ source: 'steam', id: '2050650' }],
       year: 2023,
-      chrono: 10,
+      chrono: 6,
       mc: 93,
       remake: true,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2050650/library_hero.jpg',
@@ -354,9 +355,20 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '161441' }],
       year: 2023,
       releaseDate: '2023-07-07',
-      chrono: 14,
+      chrono: 10,
       spinOff: true,
       note: 'Game-canon CG film: Leon, Chris, Jill, Claire and Rebecca together on Alcatraz'
+    },
+    {
+      id: 're-requiem',
+      title: 'Resident Evil Requiem',
+      aliases: ['Resident Evil 9', 'Biohazard Requiem'],
+      externalIds: [{ source: 'steam', id: '3764200' }],
+      year: 2026,
+      releaseDate: '2026-02-27',
+      chrono: 13,
+      bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3764200/library_hero.jpg',
+      note: 'FBI analyst Grace Ashcroft, Leon, and a return to Raccoon City'
     },
     {
       id: 're-film-2026',

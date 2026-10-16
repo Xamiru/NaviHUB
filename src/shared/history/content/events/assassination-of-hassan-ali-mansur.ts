@@ -183,7 +183,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'Originally, the Armed Branch assessed the possibility of assassinating the Shah, the prime minister Manṣur, two ex-prime ministers and Shah’s confidants, Amir Assad-Allāh ʿAlam and Manučehr Eqbāl (q.v.), the police chief, General Neʿmat-Allāh Naṣiri, and General ʿAbd-al-Karim Ayādi, the Shah’s special physician who was also known to be a Bahai (ʿErāqi, p. 209; Moqaddam, p. 366). Even though there seems to have been a consensus on the assassination of the Shah, the Armed Branch reached the conclusion that in view of the Coalition’s organizational weakness and un-preparedness to take power, such an act may either lead to anarchy or enable other more disciplined and structured organizations to benefit from the situation. Afraid of the consequences of eliminating the Shah, it was therefore decided not to assassinate the Shah and focus on Manṣur (ʿErāqi, pp. 209-10).',
+          text: 'Originally, the Armed Branch assessed the possibility of assassinating the Shah, the prime minister Manṣur, two ex-prime ministers and Shah’s confidants, Amir Assad-Allāh ʿAlam and Manučehr Eqbāl (q.v.), the police chief, General Neʿmat-Allāh Naṣiri, and General ʿAbd-al-Karim Ayādi, the Shah’s special physician who was also known to be a Bahai (ʿErāqi, p. 209; Moqaddam, p. 366). Even though there seems to have been a consensus on the assassination of the Shah, the Armed Branch reached the conclusion that in view of the Coalition’s organizational weakness and un-preparedness to take power, such an act may either lead to anarchy or enable other more disciplined and structured organizations to benefit from the situation. Afraid of the consequences of eliminating the Shah, it was therefore decided not to assassinate the Shah and focus on Manṣur',
           lang: 'en',
           cite: {
             source: 'iranica-rahnema-jamiyat-e-motalefa-ye-eslami',
@@ -194,7 +194,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://web.archive.org/web/20260407183707/https://www.iranicaonline.org/articles/jamiyat-e-motalefa-i/'
           }
         }
@@ -222,7 +222,7 @@ export default defineEvent({
         },
         {
           id: 'q5',
-          text: 'The operational team of Boḵrāʾi, Niknežād and Ṣaffār Harandi, in addition to the Amāni brothers and ʿErāqi were sentenced to death and the remaining seven, including Anwāri were given prison terms. On 15 June ʿErāqi and Hāšem Amāni’s death sentences were commuted to life imprisonment, while the other four were executed on 16 June 1965 (Moqaddam, p. 384-85).',
+          text: 'The operational team of Boḵrāʾi, Niknežād and Ṣaffār Harandi, in addition to the Amāni brothers and ʿErāqi were sentenced to death and the remaining seven, including Anwāri were given prison terms. On 15 June ʿErāqi and Hāšem Amāni’s death sentences were commuted to life imprisonment, while the other four were executed on 16 June 1965',
           lang: 'en',
           cite: {
             source: 'iranica-rahnema-jamiyat-e-motalefa-ye-eslami',
@@ -233,7 +233,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://web.archive.org/web/20260407183707/https://www.iranicaonline.org/articles/jamiyat-e-motalefa-i/'
           }
         },

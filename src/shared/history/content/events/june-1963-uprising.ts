@@ -172,7 +172,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'On 22 March, paratroopers were sent to the Fayżiya in Qom, the site where Khomeini delivered his public speeches. They killed a number of students, beat and arrested a number of others, and ransacked the building (for more on these events, see Moin, pp. 92-106).',
+          text: 'On 22 March, paratroopers were sent to the Fayżiya in Qom, the site where Khomeini delivered his public speeches. They killed a number of students, beat and arrested a number of others, and ransacked the building',
           lang: 'en',
           cite: {
             source: 'iranica-algar-khomeini-life',
@@ -180,7 +180,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/'
           }
         },
@@ -205,7 +205,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'The spectacular show of force of the mourning groups in Tehran on 3 June 1963, the day of āšurā, started at 8 in the morning. Soon the religious procession of the mourning groups turned into a political demonstration. The crowd chanted anti-Shah and pro-Khomeini slogans, formulated by Ṣādeq Amāni, one of the Coalition leaders (Moqaddam, pp. 95-96). Around noon, ʿErāqi, another one of the leaders of the Coalition, addressed the large rally in front of Tehran University. Subsequently, the demonstrators/mourning groups moved to the vicinity of Marmar Palace, the Shah’s residence, ending their march at the bazaar around three in the afternoon (Moqaddam, p. 96).',
+          text: 'The spectacular show of force of the mourning groups in Tehran on 3 June 1963, the day of āšurā, started at 8 in the morning. Soon the religious procession of the mourning groups turned into a political demonstration. The crowd chanted anti-Shah and pro-Khomeini slogans, formulated by Ṣādeq Amāni, one of the Coalition leaders (Moqaddam, pp. 95-96). Around noon, ʿErāqi, another one of the leaders of the Coalition, addressed the large rally in front of Tehran University. Subsequently, the demonstrators/mourning groups moved to the vicinity of Marmar Palace, the Shah’s residence, ending their march at the bazaar around three in the afternoon',
           lang: 'en',
           cite: {
             source: 'iranica-rahnema-jamiyat-e-motalefa-ye-eslami',
@@ -216,7 +216,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://web.archive.org/web/20260407183707/https://www.iranicaonline.org/articles/jamiyat-e-motalefa-i/'
           }
         },

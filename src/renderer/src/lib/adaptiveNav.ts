@@ -1,5 +1,7 @@
 import { WRESTLING_PROMOTIONS } from '@shared/wrestling'
 import { MEDIA_CONFIGS } from './mediaConfig'
+import { JP_HUBS } from './japaneseHubs'
+import { JP_TOOLS } from './japaneseTools'
 
 export type ArchiveArea = 'home' | 'library' | 'local' | 'archives' | 'learn' | 'quiz' | 'system'
 
@@ -108,6 +110,28 @@ export function bestArchiveRoute(pathname: string, routes: string[]): string | n
       )
       .sort((a, b) => b.length - a.length)[0] ?? null
   )
+}
+
+// Pages whose contextual Topbar tab is not their URL prefix: every Japanese
+// practice tool (hub pages and standalone tools) sits under Tools, and course
+// and lesson pages under Path, rather than all falling back to Today.
+const CONTEXT_TAB_PARENTS: [prefix: string, tab: string][] = [
+  ...[...new Set([...JP_HUBS.flatMap((h) => h.tools.map((t) => t.to)), ...JP_TOOLS.flatMap((t) => (t.to ? [t.to] : []))])]
+    .filter((to) => to !== '/japanese/dictionary')
+    .map((to): [string, string] => [to, '/japanese/tools']),
+  ['/japanese/courses', '/japanese/roadmap'],
+  ['/japanese/lessons', '/japanese/roadmap']
+]
+
+// The contextual tab a page belongs to: its most specific tab route, unless a
+// parent entry above is more specific than that match.
+export function contextTabForPath(pathname: string, routes: string[]): string | null {
+  const direct = bestArchiveRoute(pathname, routes)
+  const parent = CONTEXT_TAB_PARENTS.filter(
+    ([prefix, tab]) => routes.includes(tab) && (pathname === prefix || pathname.startsWith(`${prefix}/`))
+  ).sort((a, b) => b[0].length - a[0].length)[0]
+  if (parent && (!direct || parent[0].length > direct.length)) return parent[1]
+  return direct
 }
 
 // Routes with no drawer entry of their own, and the entry that stands for them.
@@ -225,6 +249,7 @@ function mediaContext(pathname: string): ArchiveContext | null {
         { to: '/games', label: 'Games' },
         { to: '/games/installed', label: 'Installed' },
         { to: '/games/achievements', label: 'Achievements' },
+        { to: '/games/emulators', label: 'Emulators' },
         { to: '/franchises', label: 'Franchises' }
       ]
     }
@@ -268,6 +293,7 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
         { to: '/history', label: 'Timeline' },
         { to: '/history/map', label: 'Map' },
         { to: '/history/themes', label: 'Themes' },
+        { to: '/history/quiz', label: 'Quiz' },
         { to: '/history/sources', label: 'Sources' },
         { to: '/history/my', label: 'My additions' },
         { to: '/history/corrections', label: 'Corrections' }

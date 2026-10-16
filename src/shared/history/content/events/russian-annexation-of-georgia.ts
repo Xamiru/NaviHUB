@@ -194,5 +194,19 @@ export default defineEvent({
       source: 'dubrovin-2019-istoriia-voiny-i-vladychestva-russkikh-na-kavkaze',
       perspective: 'russian-soviet'
     }
+  ],
+  places: [
+    {
+      ref: 'place:tbilisi',
+      cites: [
+        {
+          source: 'iranica-andreeva-russia-relations',
+          loc: {
+            section: 'RUSSIA i. Russo-Iranian Relations up to the Bolshevik Revolution',
+            para: '11'
+          }
+        }
+      ]
+    }
   ]
 })

@@ -4,12 +4,16 @@ import {
   activeTab,
   closeTab,
   cycleTab,
+  duplicateTab,
+  followInternalLink,
+  jumpToLastTab,
   jumpToTab,
   openTab,
   reopenClosedTab,
   TabIdContext,
   useBrowserTabs
 } from '../lib/browserTabs'
+import { internalLinkPath } from '../lib/internalLink'
 
 // The app's router: ONE react-router <Router>, fed by the active browser tab's
 // own history (lib/tabHistory.ts). Switching tabs swaps the location and
@@ -37,7 +41,8 @@ export default function TabbedRouter({ children }: { children: ReactNode }) {
   )
 }
 
-const DIGIT_CODES = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5']
+// Ctrl+1..8 pick a tab by position; Ctrl+9 is always the last one.
+const DIGIT_CODES = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8']
 
 // Mounted before the pages so its window-capture listeners run first. Matched
 // on e.code so Persian/Japanese layouts still work. Nothing fires while a modal
@@ -54,12 +59,13 @@ function TabInput() {
       if (ctrl && !e.altKey) {
         if (e.code === 'KeyT') run = e.shiftKey ? reopenClosedTab : () => openTab('/')
         else if (e.code === 'KeyW' && !e.shiftKey) run = () => closeTab(activeTab().id)
+        else if (e.code === 'KeyK' && e.shiftKey) run = () => duplicateTab()
         else if (e.code === 'Tab') run = () => cycleTab(e.shiftKey ? -1 : 1)
         else if (e.code === 'PageDown' && !e.shiftKey) run = () => cycleTab(1)
         else if (e.code === 'PageUp' && !e.shiftKey) run = () => cycleTab(-1)
         else if (DIGIT_CODES.includes(e.code) && !e.shiftKey) {
           run = () => jumpToTab(DIGIT_CODES.indexOf(e.code) + 1)
-        }
+        } else if (e.code === 'Digit9' && !e.shiftKey) run = jumpToLastTab
       } else if (e.altKey && !ctrl && !e.shiftKey) {
         if (e.code === 'ArrowLeft') run = () => activeTab().history.go(-1)
         else if (e.code === 'ArrowRight') run = () => activeTab().history.go(1)
@@ -82,18 +88,13 @@ function TabInput() {
     // background tab (Ctrl+Shift+click switches to it). react-router's <Link>
     // ignores modified clicks, and the browser default would try to open a
     // window, so every modified click on an in-app link is handled here.
-    const internalLink = (e: MouseEvent): string | null => {
-      const target = e.target instanceof Element ? e.target : null
-      const href = target?.closest('a[href^="#/"]')?.getAttribute('href')
-      return href ? href.slice(1) : null
-    }
+    const internalLink = (e: MouseEvent): string | null => internalLinkPath(e.target)
     const onClick = (e: MouseEvent): void => {
       if (e.button !== 0 || !(e.ctrlKey || e.metaKey || e.shiftKey || e.altKey)) return
       const path = internalLink(e)
       if (!path) return
       e.preventDefault()
-      if (e.ctrlKey || e.metaKey) void openTab(path, { activate: e.shiftKey })
-      else activeTab().history.push(path)
+      followInternalLink(path, e)
     }
     const onAuxClick = (e: MouseEvent): void => {
       if (e.button !== 1) return

@@ -1,11 +1,14 @@
 import { getSqlite } from '../db/connection'
 import { rarityTier } from '../achievementsCore'
+import { MAX_RECENT_UNLOCKS } from '@shared/achievements'
+import { isPlatformKey } from '@shared/emulation/platforms'
 import type {
   AchievementGameProgress,
   AchievementListPayload,
   AchievementNameStatus,
   AchievementProvider,
   AchievementRow,
+  AchievementSchemaSource,
   AchievementSummary,
   AchievementTracking,
   AchievementUnlockEvent,
@@ -67,6 +70,7 @@ function mapEvent(r: any): AchievementUnlockEvent {
     description: r.description ?? null,
     iconPath: r.icon_path ?? null,
     rarity: rarityTier(r.global_pct),
+    globalPct: r.global_pct ?? null,
     points: r.points ?? null,
     unlockedAt: r.unlocked_at
   }
@@ -75,16 +79,23 @@ function mapEvent(r: any): AchievementUnlockEvent {
 export function getTracking(mediaId: number): AchievementTracking | null {
   const r = getSqlite()
     .prepare(
-      'SELECT provider, provider_game_id, schema_fetched_at FROM achievement_game WHERE media_id = ?'
+      `SELECT provider, provider_game_id, schema_fetched_at, schema_source
+         FROM achievement_game WHERE media_id = ?`
     )
     .get(mediaId) as
-    | { provider: string; provider_game_id: string; schema_fetched_at: string | null }
+    | {
+        provider: string
+        provider_game_id: string
+        schema_fetched_at: string | null
+        schema_source: string | null
+      }
     | undefined
   return r
     ? {
         provider: r.provider as AchievementProvider,
         providerGameId: r.provider_game_id,
-        schemaFetchedAt: r.schema_fetched_at
+        schemaFetchedAt: r.schema_fetched_at,
+        schemaSource: (r.schema_source as AchievementSchemaSource | null) ?? null
       }
     : null
 }
@@ -97,15 +108,16 @@ export function exePathOf(mediaId: number): string | null {
   return row?.exe_path ?? null
 }
 
-// Exe linked NOW, or a session proving it once was, or tracking already set up.
-// exe_path is nulled outright by games:clearExe and keeps no history, so the
-// other two clauses are what make "or ever" true.
+// Exe or game file linked NOW, or a session proving it once was, or tracking
+// already set up. exe_path is nulled outright by games:clearExe and keeps no
+// history, so the last two clauses are what make "or ever" true.
 export function isEligible(mediaId: number): boolean {
   const r = getSqlite()
     .prepare(
       `SELECT 1 AS ok FROM media_item m
         WHERE m.id = ?
           AND (m.exe_path IS NOT NULL
+               OR EXISTS (SELECT 1 FROM game_rom r WHERE r.media_id = m.id)
                OR EXISTS (SELECT 1 FROM game_session g WHERE g.media_id = m.id)
                OR EXISTS (SELECT 1 FROM achievement_game a WHERE a.media_id = m.id))`
     )
@@ -171,7 +183,8 @@ function upsertSchemaInDb(
   providerGameId: string,
   incoming: readonly AchievementInput[],
   exactNames: boolean,
-  prune = true
+  prune = true,
+  schemaSource: AchievementSchemaSource | null = null
 ): void {
   let rows = incoming
   if (!rows.length) throw new Error('Cannot replace an achievement set with an empty schema')
@@ -187,13 +200,15 @@ function upsertSchemaInDb(
   }
 
   db.prepare(
-    `INSERT INTO achievement_game (media_id, provider, provider_game_id, schema_fetched_at)
-     VALUES (?, ?, ?, datetime('now'))
+    `INSERT INTO achievement_game
+       (media_id, provider, provider_game_id, schema_fetched_at, schema_source)
+     VALUES (?, ?, ?, datetime('now'), ?)
      ON CONFLICT(media_id) DO UPDATE SET
        provider = excluded.provider,
        provider_game_id = excluded.provider_game_id,
-       schema_fetched_at = excluded.schema_fetched_at`
-  ).run(mediaId, provider, providerGameId)
+       schema_fetched_at = excluded.schema_fetched_at,
+       schema_source = excluded.schema_source`
+  ).run(mediaId, provider, providerGameId, schemaSource)
 
   if (!exactNames) rows = carryManualSwaps(db, mediaId, rows)
 
@@ -454,7 +469,12 @@ export function replaceSchemaWithUnlocks(
   unlocks: readonly UnlockInput[],
   source: AchievementUnlockSource,
   fallbackMs: number,
-  opts: { exactNames?: boolean; prune?: boolean; emu?: EmuState } = {}
+  opts: {
+    exactNames?: boolean
+    prune?: boolean
+    emu?: EmuState
+    schemaSource?: AchievementSchemaSource
+  } = {}
 ): AchievementRow[] {
   const db = getSqlite()
   return db.transaction(() => {
@@ -465,7 +485,8 @@ export function replaceSchemaWithUnlocks(
       providerGameId,
       rows,
       opts.exactNames ?? true,
-      opts.prune ?? true
+      opts.prune ?? true,
+      opts.schemaSource ?? null
     )
     const priorEmu = emuUnlockNames(db, mediaId)
     const fresh = insertUnlocksInDb(db, mediaId, unlocks, source, fallbackMs)
@@ -663,10 +684,13 @@ const FEED_SQL = `SELECT a.id, a.media_id, a.name, a.description, a.icon_path, a
                     JOIN achievement a ON a.id = u.achievement_id
                     JOIN media_item m ON m.id = a.media_id`
 
+// The archive's full history asks for everything, so the limit is clamped
+// rather than trusted: a renderer value is never a reason to read without end.
 export function recentUnlocks(limit: number): AchievementUnlockEvent[] {
+  const n = Number.isFinite(limit) ? Math.min(Math.max(1, Math.floor(limit)), MAX_RECENT_UNLOCKS) : 12
   return getSqlite()
     .prepare(`${FEED_SQL} ORDER BY u.unlocked_at DESC, a.id DESC LIMIT ?`)
-    .all(limit)
+    .all(n)
     .map(mapEvent)
 }
 
@@ -685,7 +709,8 @@ export function overview(): AchievementsOverview {
   const games = db
     .prepare(
       `SELECT m.id AS media_id, m.title, m.media_type, m.cover_path, g.provider,
-              COUNT(a.id) AS total, COUNT(u.achievement_id) AS unlocked
+              COUNT(a.id) AS total, COUNT(u.achievement_id) AS unlocked,
+              MAX(u.unlocked_at) AS last_unlocked_at
          FROM achievement_game g
          JOIN media_item m ON m.id = g.media_id
          LEFT JOIN achievement a ON a.media_id = g.media_id
@@ -704,7 +729,8 @@ export function overview(): AchievementsOverview {
         coverPath: r.cover_path ?? null,
         provider: r.provider as AchievementProvider,
         unlocked: r.unlocked,
-        total: r.total
+        total: r.total,
+        lastUnlockedAt: r.last_unlocked_at ?? null
       })
     )
   const totals = games.reduce(
@@ -724,6 +750,8 @@ export function installedGames(): InstalledGame[] {
   return getSqlite()
     .prepare(
       `SELECT m.id, m.title, m.media_type, m.cover_path, m.exe_path,
+              (SELECT r.platform FROM game_rom r WHERE r.media_id = m.id
+                ORDER BY r.preferred DESC, r.id LIMIT 1) AS rom_platform,
               COALESCE(SUM(s.duration), 0) AS total_seconds,
               MAX(s.started_at) AS last_played,
               (SELECT duration FROM game_session latest
@@ -736,6 +764,7 @@ export function installedGames(): InstalledGame[] {
          FROM media_item m
          LEFT JOIN game_session s ON s.media_id = m.id
         WHERE m.exe_path IS NOT NULL
+           OR EXISTS (SELECT 1 FROM game_rom r WHERE r.media_id = m.id)
         GROUP BY m.id
         ORDER BY (MAX(s.started_at) IS NULL), MAX(s.started_at) DESC, m.title COLLATE NOCASE`
     )
@@ -746,7 +775,8 @@ export function installedGames(): InstalledGame[] {
         title: r.title,
         mediaType: r.media_type as MediaType,
         coverPath: r.cover_path ?? null,
-        exePath: r.exe_path,
+        exePath: r.exe_path ?? null,
+        platform: isPlatformKey(r.rom_platform) ? r.rom_platform : null,
         totalSeconds: r.total_seconds,
         lastPlayedAt: r.last_played ?? null,
         lastSessionSeconds: r.last_session_seconds ?? null,

@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Wilhelm Conrad Röntgen', lang: 'en', role: 'primary' },
     { text: 'Wilhelm Conrad Röntgen', lang: 'de', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -36,6 +36,25 @@ export default definePerson({
   regions: ['europe'],
   roles: ['scientist'],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q7',
+          text: 'RÖNTGEN, WILHELM KONRAD (1845–). German physicist, was born at Lennep on the 27th of March 1845.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-rontgen-wilhelm-konrad',
+            loc: { section: 'RÖNTGEN, WILHELM KONRAD', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/R%C3%B6ntgen,_Wilhelm_Konrad'
+          }
+        }
+      ]
+    },
     {
       kind: 'career',
       quotes: [

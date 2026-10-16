@@ -260,41 +260,31 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/india/18.htm' }
         }
       ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q9',
+          text: 'We were on the point of going to the evening service, when the disturbance commenced on the Native Parade ground.',
+          lang: 'en',
+          cite: {
+            source: 'greathed-1858-opening-of-the-mutiny-at-meerut',
+            loc: {
+              section: 'An Account of the Opening of the Indian Mutiny at Meerut, 1857',
+              para: '1'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://sourcebooks.fordham.edu/halsall/mod/1857greathed.asp'
+          }
+        }
+      ]
     }
   ],
   course: [
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1857-05-10' },
-            cites: [
-              {
-                source: 'loc-india-country-study-1995',
-                loc: { section: 'Sepoy Rebellion, 1857-59', para: '1' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q9',
-        text: 'We were on the point of going to the evening service, when the disturbance commenced on the Native Parade ground.',
-        lang: 'en',
-        cite: {
-          source: 'greathed-1858-opening-of-the-mutiny-at-meerut',
-          loc: {
-            section: 'An Account of the Opening of the Indian Mutiny at Meerut, 1857',
-            para: '1'
-          }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://sourcebooks.fordham.edu/halsall/mod/1857greathed.asp'
-        }
-      }
-    },
     {
       date: {
         alts: [

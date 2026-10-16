@@ -466,6 +466,22 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-10', url: 'https://www.hrw.org/reports/1992/Iraq926.htm' }
         }
       ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q13',
+          text: 'Gravely concerned by the repression of the Iraqi civilian population in many parts of Iraq, including most recently in Kurdish populated areas, which led to a massive flow of refugees towards and across international frontiers and to cross-border incursions, which threaten international peace and security in the region,',
+          lang: 'en',
+          cite: { source: 'unsc-resolution-688-1991', loc: { section: 'Resolution 688 (1991)' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-10',
+            url: 'https://en.wikisource.org/wiki/United_Nations_Security_Council_Resolution_688'
+          }
+        }
+      ]
     }
   ],
   course: [
@@ -498,29 +514,6 @@ export default defineEvent({
           }
         },
         provenance: { via: 'web', at: '2026-10-10', url: 'https://www.hrw.org/reports/1992/Iraq926.htm' }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1991-04-05' },
-            cites: [
-              { source: 'unsc-resolution-688-1991', loc: { section: 'Resolution 688 (1991)' } }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q13',
-        text: 'Gravely concerned by the repression of the Iraqi civilian population in many parts of Iraq, including most recently in Kurdish populated areas, which led to a massive flow of refugees towards and across international frontiers and to cross-border incursions, which threaten international peace and security in the region,',
-        lang: 'en',
-        cite: { source: 'unsc-resolution-688-1991', loc: { section: 'Resolution 688 (1991)' } },
-        provenance: {
-          via: 'web',
-          at: '2026-10-10',
-          url: 'https://en.wikisource.org/wiki/United_Nations_Security_Council_Resolution_688'
-        }
       }
     },
     {

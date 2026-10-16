@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'fascism-interpretations',
   about: ['event:march-on-rome', 'period:fascist-italy'],
   topic: 'nature',
-  researched: '2026-10-09',
+  researched: '2026-10-16',
   framing: {
     id: 'q1',
     text: 'Dès son apparition, les interprétations des contemporains se multiplient sur les origines du fascisme.',
@@ -84,7 +84,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q10',
-          text: 'fascism in power was correctly described by the Thirteenth Plenum of the Executive Committee of the Communist International as the open terrorist dictatorship of the most reactionary, most chauvinistic and most imperialist elements of finance capital.',
+          text: 'Comrades, fascism in power was correctly described by the Thirteenth Plenum of the Executive Committee of the Communist International as the open terrorist dictatorship of the most reactionary, most chauvinistic and most imperialist elements of finance capital.',
           lang: 'en',
           cite: {
             source: 'dimitrov-1935-fascist-offensive',
@@ -94,7 +94,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.marxists.org/reference/archive/dimitrov/works/1935/08_02.htm'
           }
         }

@@ -11,6 +11,7 @@ things that were tried and rejected, and the gotchas that were paid for once alr
 |---|---|
 | Adding or changing a media type; wallpapers/fan art; books; game launching and playtime; seasonal shelves; list filtering and sorting | [media-types.md](media-types.md) |
 | A games importer, or wondering why RAWG/IGDB/Steam all appear in the tree | [importers.md](importers.md) |
+| Emulators, linked game files, the game-folder scan, native ports, session screenshots, GameBanana mods and the install ledger | [emulation.md](emulation.md) |
 | The manga scanner, EPUB books, the manga/book readers, mokuro OCR | [readers.md](readers.md) |
 | Linked local videos, the in-app player and its decode gate, external playback, metadata, subtitles and mining | [video.md](video.md) |
 | "Open with NaviHUB", double-click handling, desktop registration | [file-associations.md](file-associations.md) |

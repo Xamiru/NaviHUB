@@ -120,23 +120,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1830-1860/oregon-territory'
           }
-        },
-        {
-          id: 'q2',
-          text: 'From the point on the forty-ninth parallel of north latitude, where the boundary laid down in existing treaties and conventions between the United States and Great Britain terminates, the line of boundary between the territories of the United States and those of her Britannic Majesty shall be continued westward along the said forty-ninth parallel of north latitude to the middle of the channel which separates the continent from Vancouver\'s Island, and thence southerly through the middle of the said channel, and of Fuca\'s Straits, to the Pacific Ocean: Provided, however, That the navigation of the whole of the said channel and straits, south of the forty-ninth parallel of north latitude, remain free and open to both parties.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-oregon-treaty-1846',
-            loc: {
-              section: 'Treaty with Great Britain, in Regard to Limits Westward of the Rocky Mountains',
-              para: '3'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://avalon.law.yale.edu/19th_century/br-1846.asp'
-          }
         }
       ]
     },
@@ -174,6 +157,28 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1830-1860/oregon-territory'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q2',
+          text: 'From the point on the forty-ninth parallel of north latitude, where the boundary laid down in existing treaties and conventions between the United States and Great Britain terminates, the line of boundary between the territories of the United States and those of her Britannic Majesty shall be continued westward along the said forty-ninth parallel of north latitude to the middle of the channel which separates the continent from Vancouver\'s Island, and thence southerly through the middle of the said channel, and of Fuca\'s Straits, to the Pacific Ocean: Provided, however, That the navigation of the whole of the said channel and straits, south of the forty-ninth parallel of north latitude, remain free and open to both parties.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-oregon-treaty-1846',
+            loc: {
+              section: 'Treaty with Great Britain, in Regard to Limits Westward of the Rocky Mountains',
+              para: '3'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://avalon.law.yale.edu/19th_century/br-1846.asp'
           }
         }
       ]

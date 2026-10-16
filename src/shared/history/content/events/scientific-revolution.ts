@@ -291,5 +291,16 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Newton%27s_Philosophiae_Naturalis_Principia_Mathematica_1687_(presentation_copy_to_James_II).jpg',
     credit: { creator: 'Joseph Streater' },
     license: { id: 'public-domain' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:florence',
+      cites: [
+        {
+          source: 'britannica-1911-galileo-galilei',
+          loc: { section: 'Galileo Galilei', para: '3' }
+        }
+      ]
+    }
+  ]
 })

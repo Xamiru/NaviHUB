@@ -7,7 +7,7 @@ export default definePerson({
     { text: 'عبدالحسین تیمورتاش', lang: 'fa', role: 'native' },
     { text: 'ʿAbd-al-Ḥosayn Teymūrtāš', lang: 'fa-Latn', role: 'alternative' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   died: {
     alts: [
       {
@@ -105,7 +105,7 @@ export default definePerson({
         },
         {
           id: 'q3',
-          text: 'His commands were considered to be those of the shah, who announced at one cabinet meeting: “Teymūr speaks for me” (Hedāyat, p. 472).',
+          text: 'His commands were considered to be those of the shah, who announced at one cabinet meeting: “Teymūr speaks for me”',
           lang: 'en',
           cite: {
             source: 'iranica-sheikholeslami-courts-and-courtiers-reza-shah',
@@ -116,7 +116,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/courts-and-courtiers-viii'
           }
         }
@@ -228,5 +228,33 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Abdolhossein_Teymourtash.jpg',
     credit: { institution: 'Institute for Iranian Contemporary Historical Studies' },
     license: { id: 'public-domain' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1881' },
+        cites: [
+          {
+            source: 'loc-name-authority-abdolhossein-teymourtash',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ],
+        heldBy: [
+          { kind: 'organization', name: 'Library of Congress Name Authority File' }
+        ]
+      },
+      {
+        value: { d: '1882' },
+        cites: [
+          {
+            source: 'loc-name-authority-abdolhossein-teymourtash',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ],
+        heldBy: [
+          { kind: 'organization', name: 'Library of Congress Name Authority File' }
+        ]
+      }
+    ]
   }
 })

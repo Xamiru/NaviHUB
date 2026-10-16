@@ -19,7 +19,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   regions: ['iran', 'europe'],
   roles: ['diplomat', 'other'],
   offices: [
@@ -54,7 +54,7 @@ export default definePerson({
   ],
   sections: [
     {
-      kind: 'career',
+      kind: 'overview',
       quotes: [
         {
           id: 'q2',
@@ -72,7 +72,12 @@ export default definePerson({
             at: '2026-10-09',
             url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
           }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'career',
+      quotes: [
         {
           id: 'q1',
           text: 'The crown prince was constantly treated by his personal physicians, the Englishman MacNeill and Cormick; in 1238/1822-23 a Persian doctor, Moḥammad Mīrzā Eṣfahānī, was also consulted.',
@@ -103,7 +108,7 @@ export default definePerson({
         },
         {
           id: 'q4',
-          text: 'Soon after John McNeill’s return to Tehran as minister, a commercial treaty was signed on 28 October 1841 (Lambton, 1988, pp. 127-28).',
+          text: 'Soon after John McNeill’s return to Tehran as minister, a commercial treaty was signed on 28 October 1841',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-mohammad-shah',
@@ -111,7 +116,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
         }
@@ -122,7 +127,7 @@ export default definePerson({
       quotes: [
         {
           id: 'q5',
-          text: 'In the wake of his disastrous defeat, the crown prince ʿAbbās Mirzā and his Tabriz administration had to rely even more heavily on the British envoy, John Macdonald Kinneir, for financial and diplomatic assistance. This led to a great enhancement of the British status and later prompted British envoys, John McNeill and Justin Sheil, to adopt a condescending attitude toward Persia at a time when Persian confidence was at its nadir (Watson, pp. 234-35; Yapp, pp. 110-12).',
+          text: 'In the wake of his disastrous defeat, the crown prince ʿAbbās Mirzā and his Tabriz administration had to rely even more heavily on the British envoy, John Macdonald Kinneir, for financial and diplomatic assistance. This led to a great enhancement of the British status and later prompted British envoys, John McNeill and Justin Sheil, to adopt a condescending attitude toward Persia at a time when Persian confidence was at its nadir',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-great-britain-ii',
@@ -133,7 +138,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-09',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
           }
         }
@@ -161,5 +166,31 @@ export default definePerson({
       license: { id: 'public-domain' },
       bytes: 10144418
     }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1795-08-12' },
+        cites: [
+          {
+            source: 'loc-name-authority-john-mcneill',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1883-05-17' },
+        cites: [
+          {
+            source: 'loc-name-authority-john-mcneill',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
+  }
 })

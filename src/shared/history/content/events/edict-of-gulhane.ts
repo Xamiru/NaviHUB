@@ -98,12 +98,12 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'It was therefore no sudden revolution when, on the 15th of November 1839 Abd-ul-Mejid signalized his accession by promulgating the Tanzimāt, or Hatt-i-Sherīf of Gulhané, a decree abolishing the arbitrary and unlimited power hitherto exercised by the state and its officials, laying down the doctrine of the perfect equality of all Ottoman subjects of whatever race or creed, and providing for the regular, orderly and legal government of the country and the security of life, property and honour for all its inhabitants.',
+          text: 'Abd-ul-Mejid signalized his accession by promulgating the Tanzimāt, or Hatt-i-Sherīf of Gulhané, a decree abolishing the arbitrary and unlimited power hitherto exercised by the state and its officials, laying down the doctrine of the perfect equality of all Ottoman subjects of whatever race or creed, and providing for the regular, orderly and legal government of the country and the security of life, property and honour for all its inhabitants.',
           lang: 'en',
           cite: { source: 'britannica-1911-turkey', loc: { section: 'TURKEY', para: '1423' } },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-16',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Turkey'
           }
         }
@@ -122,16 +122,6 @@ export default defineEvent({
             at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Turkey'
           }
-        },
-        {
-          id: 'q3',
-          text: 'In the last one hundred and fifty years a succession of accidents and divers causes have arisen which have brought about a disregard for the sacred code of laws and the regulations flowing therefrom, and the former strength and prosperity have changed into weakness and poverty; an empire in fact loses all its stability so soon as it ceases to observe its laws.',
-          lang: 'en',
-          cite: {
-            source: 'rescript-of-gulhane-1839-english',
-            loc: { section: 'The Rescript of Gülhane', para: '4' }
-          },
-          provenance: { via: 'web', at: '2026-10-08', url: 'https://anayasa.gen.tr/gulhane.htm' }
         }
       ]
     },
@@ -210,11 +200,21 @@ export default defineEvent({
         },
         {
           id: 'q10',
-          text: 'a rigorous law shall be passed against the traffic of favoritism and bribery (rüşvet), which the Divine law reprobates, and which is one of the principal causes of the decay of the empire.',
+          text: 'As all the public servants of the empire receive a suitable salary, and as the salaries of those whose duties have not up to the present time been sufficiently remunerated are to be fixed, a rigorous law shall be passed against the traffic of favoritism and bribery (rüşvet), which the Divine law reprobates, and which is one of the principal causes of the decay of the empire.',
           lang: 'en',
           cite: {
             source: 'rescript-of-gulhane-1839-english',
             loc: { section: 'The Rescript of Gülhane', para: '26' }
+          },
+          provenance: { via: 'web', at: '2026-10-16', url: 'https://anayasa.gen.tr/gulhane.htm' }
+        },
+        {
+          id: 'q3',
+          text: 'In the last one hundred and fifty years a succession of accidents and divers causes have arisen which have brought about a disregard for the sacred code of laws and the regulations flowing therefrom, and the former strength and prosperity have changed into weakness and poverty; an empire in fact loses all its stability so soon as it ceases to observe its laws.',
+          lang: 'en',
+          cite: {
+            source: 'rescript-of-gulhane-1839-english',
+            loc: { section: 'The Rescript of Gülhane', para: '4' }
           },
           provenance: { via: 'web', at: '2026-10-08', url: 'https://anayasa.gen.tr/gulhane.htm' }
         }

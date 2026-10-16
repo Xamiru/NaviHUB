@@ -362,5 +362,16 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Joseph_Mallord_William_Turner_(1775-1851)_-_The_Prince_of_Orange,_William_III,_Embarked_from_Holland,_and_Landed_at_Torbay,_November_4th,_1688,_after_a_Stormy_Passage_-_N00369_-_National_Gallery.jpg',
     credit: { institution: 'Tate', creator: 'J. M. W. Turner' },
     license: { id: 'public-domain' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:london',
+      cites: [
+        {
+          source: 'britannica-1911-william-iii-king-of-england',
+          loc: { section: 'William III., King of England', para: '12' }
+        }
+      ]
+    }
+  ]
 })

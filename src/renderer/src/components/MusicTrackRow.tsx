@@ -1,6 +1,6 @@
 import MusicTrackPersonalDialog from './MusicTrackPersonalDialog'
 import { useCallback, useEffect, useId, useState, type ReactNode } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -14,6 +14,7 @@ import type { MusicTrack } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
 import { usePopover } from '../lib/hooks'
 import ContextMenu, { type ContextMenuItem } from './ContextMenu'
+import { contextMenuPoint } from '../lib/contextMenuPoint'
 import { useLeaveEmptiedPage, useTrackSelection } from './music/TrackListScope'
 import ArtistCredit from './music/ArtistCredit'
 
@@ -61,7 +62,6 @@ export default function MusicTrackRow({
   menuItems?: { label: string; onSelect: () => void }[]
 }) {
   const qc = useQueryClient()
-  const navigate = useNavigate()
   const { pathname } = useLocation()
   const player = usePlayerControls()
   const selection = useTrackSelection()
@@ -104,7 +104,7 @@ export default function MusicTrackRow({
 
   // Hidden on the page it would open, which would only stack a duplicate history entry.
   const goTo = (label: string, to: string): ContextMenuItem[] =>
-    pathname === to ? [] : [{ label, onSelect: () => navigate(to) }]
+    pathname === to ? [] : [{ label, to }]
 
   const contextItems: ContextMenuItem[] = [
     { label: 'Play', onSelect: onPlay },
@@ -130,7 +130,7 @@ export default function MusicTrackRow({
       }`}
       onContextMenu={(e) => {
         e.preventDefault()
-        setContextAt({ x: e.clientX, y: e.clientY })
+        setContextAt(contextMenuPoint(e))
       }}
     >
       {selection && (

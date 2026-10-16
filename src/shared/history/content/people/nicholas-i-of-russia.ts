@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Nicholas I of Russia', lang: 'en', role: 'primary' },
     { text: 'Николай I', lang: 'ru', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['russia-central-asia'],
   roles: ['monarch'],
   offices: [
@@ -136,5 +136,31 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Franz_Kr%C3%BCger_-_Portrait_of_Emperor_Nicholas_I_-_WGA12289.jpg',
     credit: { institution: 'State Hermitage Museum', creator: 'Franz Krüger' },
     license: { id: 'public-domain' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1796-07-06' },
+        cites: [
+          {
+            source: 'loc-name-authority-nicholas-i-of-russia',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1855-03-02' },
+        cites: [
+          {
+            source: 'loc-name-authority-nicholas-i-of-russia',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
   }
 })

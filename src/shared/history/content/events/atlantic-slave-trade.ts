@@ -300,5 +300,16 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:2_views_of_the_Gold_Coast_of_Africa-_%22Prospect_of_the_Coast_from_Elmina_to_Mowri%22,_showing_slaves_being_loaded_on_ship_in_foreground;_%22Prospect_of_St._Georges_Castle_at_Elmina%22_LCCN2007677174.jpg',
     credit: { institution: 'Library of Congress' },
     license: { id: 'public-domain' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:lisbon',
+      cites: [
+        {
+          source: 'loc-portugal-country-study-1993',
+          loc: { section: 'Sea Route to India', para: '6' }
+        }
+      ]
+    }
+  ]
 })

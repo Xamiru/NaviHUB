@@ -70,6 +70,15 @@ export default defineEvent({
           loc: { section: 'The India-Pakistan War of 1965', para: '4' }
         }
       ]
+    },
+    {
+      ref: 'place:tashkent',
+      cites: [
+        {
+          source: 'state-dept-milestones-india-pakistan-war-1965',
+          loc: { section: 'The India-Pakistan War of 1965', para: '8' }
+        }
+      ]
     }
   ],
   sides: [

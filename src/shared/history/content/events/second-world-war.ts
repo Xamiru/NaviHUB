@@ -492,6 +492,61 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/japan/33.htm' }
         }
       ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q15',
+          text: 'You ask, what is our aim? I can answer in one word: It is victory, victory at all costs, victory in spite of all terror, victory, however long and hard the road may be; for without victory, there is no survival.',
+          lang: 'en',
+          cite: {
+            source: 'hansard-commons-1940-05-13-his-majestys-government',
+            loc: { section: 'HC Deb 13 May 1940 vol 360 cc1501-25', para: '6' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1940/may/13/his-majestys-government-1'
+          }
+        },
+        {
+          id: 'q16',
+          text: 'What General Weygand called the "Battle of France" is over. I expect that the battle of Britain is about to begin.',
+          lang: 'en',
+          cite: {
+            source: 'hansard-commons-1940-06-18-war-situation',
+            loc: { section: 'HC Deb 18 June 1940 vol 362 cc51-64', para: '21' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1940/jun/18/war-situation'
+          }
+        },
+        {
+          id: 'q23',
+          text: '1. We the undersigned, acting by authority of the German High Command, hereby surrender unconditionally to the Supreme Commander, Allied Expeditionary Force and simultaneously to the Supreme High Command of the Red Army all forces on land, at sea, and in the air who are at this date under German control.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-german-act-of-military-surrender-1945',
+            loc: {
+              section: 'Act of Military Surrender Signed at Berlin on the 8th day of May, 1945'
+            }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'https://avalon.law.yale.edu/wwii/gs11.asp' }
+        },
+        {
+          id: 'q24',
+          text: 'We hereby proclaim the unconditional surrender to the Allied Powers of the Japanese Imperial General Headquarters and of all Japanese armed forces and all armed forces under the Japanese control wherever situated.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-japanese-instrument-of-surrender-1945',
+            loc: { section: 'First Instrument of Surrender' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'https://avalon.law.yale.edu/wwii/j4.asp' }
+        }
+      ]
     }
   ],
   course: [
@@ -518,64 +573,6 @@ export default defineEvent({
           loc: { section: 'The Outbreak of World War II', para: '1' }
         },
         provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/germany/41.htm' }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1940-05-13' },
-            cites: [
-              {
-                source: 'hansard-commons-1940-05-13-his-majestys-government',
-                loc: { section: 'HC Deb 13 May 1940 vol 360 cc1501-25' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q15',
-        text: 'You ask, what is our aim? I can answer in one word: It is victory, victory at all costs, victory in spite of all terror, victory, however long and hard the road may be; for without victory, there is no survival.',
-        lang: 'en',
-        cite: {
-          source: 'hansard-commons-1940-05-13-his-majestys-government',
-          loc: { section: 'HC Deb 13 May 1940 vol 360 cc1501-25', para: '6' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://api.parliament.uk/historic-hansard/commons/1940/may/13/his-majestys-government-1'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1940-06-18' },
-            cites: [
-              {
-                source: 'hansard-commons-1940-06-18-war-situation',
-                loc: { section: 'HC Deb 18 June 1940 vol 362 cc51-64' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q16',
-        text: 'What General Weygand called the "Battle of France" is over. I expect that the battle of Britain is about to begin.',
-        lang: 'en',
-        cite: {
-          source: 'hansard-commons-1940-06-18-war-situation',
-          loc: { section: 'HC Deb 18 June 1940 vol 362 cc51-64', para: '21' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://api.parliament.uk/historic-hansard/commons/1940/jun/18/war-situation'
-        }
       }
     },
     {
@@ -737,59 +734,6 @@ export default defineEvent({
           at: '2026-10-07',
           url: 'https://www.eisenhowerlibrary.gov/research/online-documents/world-war-ii-d-day-invasion-normandy'
         }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1945-05-08' },
-            cites: [
-              {
-                source: 'avalon-german-act-of-military-surrender-1945',
-                loc: {
-                  section: 'Act of Military Surrender Signed at Berlin on the 8th day of May, 1945'
-                }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q23',
-        text: '1. We the undersigned, acting by authority of the German High Command, hereby surrender unconditionally to the Supreme Commander, Allied Expeditionary Force and simultaneously to the Supreme High Command of the Red Army all forces on land, at sea, and in the air who are at this date under German control.',
-        lang: 'en',
-        cite: {
-          source: 'avalon-german-act-of-military-surrender-1945',
-          loc: { section: 'Act of Military Surrender Signed at Berlin on the 8th day of May, 1945' }
-        },
-        provenance: { via: 'web', at: '2026-10-06', url: 'https://avalon.law.yale.edu/wwii/gs11.asp' }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1945-09-02' },
-            cites: [
-              { source: 'lemo-chronik-1945', loc: { section: 'Chronik 1945', para: '215' } },
-              {
-                source: 'loc-japan-country-study-1994',
-                loc: { section: 'WORLD WAR II AND THE OCCUPATION', para: '1' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q24',
-        text: 'We hereby proclaim the unconditional surrender to the Allied Powers of the Japanese Imperial General Headquarters and of all Japanese armed forces and all armed forces under the Japanese control wherever situated.',
-        lang: 'en',
-        cite: {
-          source: 'avalon-japanese-instrument-of-surrender-1945',
-          loc: { section: 'First Instrument of Surrender' }
-        },
-        provenance: { via: 'web', at: '2026-10-06', url: 'https://avalon.law.yale.edu/wwii/j4.asp' }
       }
     }
   ],

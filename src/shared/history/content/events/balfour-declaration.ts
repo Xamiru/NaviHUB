@@ -127,20 +127,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://encyclopedia.1914-1918-online.net/article/balfour-declaration/'
           }
-        },
-        {
-          id: 'q1',
-          text: '"His Majesty\'s Government view with favour the establishment in Palestine of a national home for the Jewish people, and will use their best endeavours to facilitate the achievement of this object, it being clearly understood that nothing shall be done which may prejudice the civil and religious rights of existing non-Jewish communities in Palestine, or the rights and political status enjoyed by Jews in any other country."',
-          lang: 'en',
-          cite: {
-            source: 'avalon-balfour-declaration-1917',
-            loc: { section: 'Balfour Declaration November 2, 1917', para: '3' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://avalon.law.yale.edu/20th_century/balfour.asp'
-          }
         }
       ]
     },
@@ -192,6 +178,25 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://encyclopedia.1914-1918-online.net/article/balfour-declaration/'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q1',
+          text: '"His Majesty\'s Government view with favour the establishment in Palestine of a national home for the Jewish people, and will use their best endeavours to facilitate the achievement of this object, it being clearly understood that nothing shall be done which may prejudice the civil and religious rights of existing non-Jewish communities in Palestine, or the rights and political status enjoyed by Jews in any other country."',
+          lang: 'en',
+          cite: {
+            source: 'avalon-balfour-declaration-1917',
+            loc: { section: 'Balfour Declaration November 2, 1917', para: '3' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://avalon.law.yale.edu/20th_century/balfour.asp'
           }
         }
       ]

@@ -7,7 +7,7 @@ export default definePerson({
     { text: 'مظفرالدین شاه', lang: 'fa', role: 'native' },
     { text: 'Muzaffar ad Din', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   died: {
     alts: [
       {
@@ -76,5 +76,18 @@ export default definePerson({
   furtherReading: [
     { source: 'nazem-al-eslam-1983-tarikh-e-bidari-ye-iranian', perspective: 'iranian' },
     { source: 'bamdad-1968-sharh-e-hal-e-rejal-e-iran', perspective: 'iranian' }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1853' },
+        cites: [
+          {
+            source: 'loc-name-authority-mozaffar-al-din-shah',
+            loc: { section: 'MARC field 100 $d: heading dates' }
+          }
+        ]
+      }
+    ]
+  }
 })

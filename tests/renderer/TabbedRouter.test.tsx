@@ -1,18 +1,23 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, expect, it } from 'vitest'
 import ConfirmHost from '@/components/ConfirmHost'
 import TabbedRouter from '@/components/TabbedRouter'
 import TabStrip from '@/components/TabStrip'
+import TabSwitchCue from '@/components/TabSwitchCue'
 import {
   activeTab,
+  closeOtherTabs,
   getTabsSnapshot,
+  openTab,
   resetBrowserTabs,
   useEditLeaveGuard,
   usePageKey,
-  useTabLeaveGuard
+  useTabLeaveGuard,
+  useTabTitle,
+  useTabTitleOverride
 } from '@/lib/browserTabs'
 import { usePersistedState } from '@/lib/navState'
 import { expectNoAxeViolations } from './accessibility'
@@ -202,3 +207,96 @@ it('labels the tab strip accessibly', async () => {
   expect(strip.querySelector('[aria-current="true"]')).not.toBeNull()
   await expectNoAxeViolations(container)
 })
+
+it('duplicates the tab with Ctrl+Shift+K, persisted state included, without sharing it', async () => {
+  const user = userEvent.setup()
+  renderTabs()
+  await user.click(screen.getByRole('button', { name: 'Filter: all' }))
+  await key('KeyK', { shiftKey: true })
+  expect(tabCount()).toBe(2)
+  expect(getTabsSnapshot().activeId).toBe(getTabsSnapshot().tabs[1].id)
+  expect(path()).toBe('/music')
+  expect(screen.getByRole('button', { name: 'Filter: liked' })).toBeInTheDocument()
+
+  await user.click(screen.getByRole('link', { name: 'Games' }))
+  await act(async () => activeTab().history.go(-1))
+  expect(screen.getByRole('button', { name: 'Filter: liked' })).toBeInTheDocument()
+
+  await act(async () => activeTab().history.go(1))
+  await user.click(screen.getByRole('button', { name: 'Filter: all' }))
+  await key('Digit1')
+  expect(screen.getByRole('button', { name: 'Filter: liked' })).toBeInTheDocument()
+})
+
+it('jumps to the last tab with Ctrl+9', async () => {
+  renderTabs()
+  await key('KeyT')
+  await act(async () => activeTab().history.push('/games'))
+  await key('KeyT')
+  await key('Digit1')
+  expect(path()).toBe('/music')
+  await key('Digit9')
+  expect(path()).toBe('/')
+  expect(getTabsSnapshot().activeId).toBe(getTabsSnapshot().tabs[2].id)
+})
+
+function ReaderLike() {
+  useTabTitleOverride('Berserk · Vol. 3')
+  return <h1>Page heading</h1>
+}
+
+function TitledShell() {
+  const ref = useRef<HTMLDivElement>(null)
+  useTabTitle(ref, 'Section')
+  return (
+    <div ref={ref}>
+      <Routes>
+        <Route path="/read" element={<ReaderLike />} />
+        <Route path="*" element={<h1>Library page</h1>} />
+      </Routes>
+    </div>
+  )
+}
+
+it('lets a page name its tab over the heading while it is mounted', async () => {
+  resetBrowserTabs('/read')
+  render(
+    <TabbedRouter>
+      <TitledShell />
+    </TabbedRouter>
+  )
+  expect(activeTab().title).toBe('Berserk · Vol. 3')
+  await act(async () => activeTab().history.push('/games'))
+  expect(activeTab().title).toBe('Library page')
+})
+
+it('names the tab now in front after a switch into a reader, and only then', async () => {
+  resetBrowserTabs('/read')
+  await openTab('/games', { activate: false })
+  render(
+    <TabbedRouter>
+      <TabSwitchCue show />
+      <TitledShell />
+    </TabbedRouter>
+  )
+  expect(screen.getByRole('status')).toHaveTextContent('')
+  await key('Digit2')
+  expect(screen.getByRole('status')).toHaveTextContent('Tab 2 of 2 · Library page')
+})
+
+it('asks before a bulk close takes the active tab with progress in it', async () => {
+  const user = userEvent.setup()
+  renderTabs({ guarded: true })
+  await act(async () => {
+    await openTab('/games', { activate: false })
+  })
+  const background = getTabsSnapshot().tabs[1].id
+  await act(async () => {
+    void closeOtherTabs(background)
+  })
+  expect(screen.getByText('Leave this tab? Progress in this round will be lost.')).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Cancel' }))
+  expect(tabCount()).toBe(2)
+  expect(path()).toBe('/music')
+})
+

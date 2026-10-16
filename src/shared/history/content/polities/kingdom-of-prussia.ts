@@ -5,7 +5,7 @@ export default definePolity({
   names: [
     { text: 'Kingdom of Prussia', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   polityType: 'kingdom',
   start: {
     alts: [
@@ -92,6 +92,16 @@ export default definePolity({
       kind: 'overview',
       quotes: [
         {
+          id: 'q4',
+          text: 'Brandenburg became known as Prussia in 1701 when its ruler crowned himself King Frederick I of Prussia.',
+          lang: 'en',
+          cite: {
+            source: 'loc-germany-country-study-1995',
+            loc: { section: 'Austria and Prussia', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/germany/20.htm' }
+        },
+        {
           id: 'q1',
           text: 'PRUSSIA (Ger. Preussen; Lat. Borussia), a kingdom of Germany, and the largest, most populous and most important state of the German Empire.',
           lang: 'en',
@@ -127,16 +137,6 @@ export default definePolity({
             at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Prussia'
           }
-        },
-        {
-          id: 'q4',
-          text: 'Brandenburg became known as Prussia in 1701 when its ruler crowned himself King Frederick I of Prussia.',
-          lang: 'en',
-          cite: {
-            source: 'loc-germany-country-study-1995',
-            loc: { section: 'Austria and Prussia', para: '2' }
-          },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/germany/20.htm' }
         }
       ]
     },

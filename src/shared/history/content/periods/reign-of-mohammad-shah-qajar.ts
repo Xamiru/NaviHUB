@@ -5,7 +5,7 @@ export default definePeriod({
   names: [
     { text: 'Reign of Mohammad Shah Qajar', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   periodType: 'reign',
   start: {
     alts: [
@@ -42,7 +42,7 @@ export default definePeriod({
       quotes: [
         {
           id: 'q1',
-          text: 'Moḥammad Shah’s reign was, in many ways, a period of renewed Sufi activities and a subsequent decline of the Oṣuli Imami clerical influence (Amanat, 1988, p. 109).',
+          text: 'Moḥammad Shah’s reign was, in many ways, a period of renewed Sufi activities and a subsequent decline of the Oṣuli Imami clerical influence',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-mohammad-shah',
@@ -50,7 +50,7 @@ export default definePeriod({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
         },
@@ -106,7 +106,7 @@ export default definePeriod({
         },
         {
           id: 'q4',
-          text: 'Soon after, the terms of the 1841 Treaty of Commerce gave Britain capitulatory advantages in custom duties and other areas on a par with those enjoyed by Russia after 27 years of Persian resistance (Hurewitz, II, p. 280).',
+          text: 'Soon after, the terms of the 1841 Treaty of Commerce gave Britain capitulatory advantages in custom duties and other areas on a par with those enjoyed by Russia after 27 years of Persian resistance',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-great-britain-ii',
@@ -117,7 +117,7 @@ export default definePeriod({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
           }
         }

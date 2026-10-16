@@ -127,34 +127,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://encyclopedia.1914-1918-online.net/article/sykes-picot-agreement/'
           }
-        },
-        {
-          id: 'q4',
-          text: 'That in the blue area France, and in the red area Great Britain, shall be allowed to establish such direct or indirect administration or control as they desire and as they may think fit to arrange with the Arab state or confederation of Arab states.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-sykes-picot-agreement-1916',
-            loc: { section: 'The Sykes-Picot Agreement : 1916', para: '3' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://avalon.law.yale.edu/20th_century/sykes.asp'
-          }
-        },
-        {
-          id: 'q5',
-          text: 'That in the brown area there shall be established an international administration, the form of which is to be decided upon after consultation with Russia, and subsequently in consultation with the other allies, and the representatives of the Shereef of Mecca.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-sykes-picot-agreement-1916',
-            loc: { section: 'The Sykes-Picot Agreement : 1916', para: '4' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://avalon.law.yale.edu/20th_century/sykes.asp'
-          }
         }
       ]
     },
@@ -209,6 +181,39 @@ export default defineEvent({
           }
         }
       ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q4',
+          text: 'That in the blue area France, and in the red area Great Britain, shall be allowed to establish such direct or indirect administration or control as they desire and as they may think fit to arrange with the Arab state or confederation of Arab states.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-sykes-picot-agreement-1916',
+            loc: { section: 'The Sykes-Picot Agreement : 1916', para: '3' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://avalon.law.yale.edu/20th_century/sykes.asp'
+          }
+        },
+        {
+          id: 'q5',
+          text: 'That in the brown area there shall be established an international administration, the form of which is to be decided upon after consultation with Russia, and subsequently in consultation with the other allies, and the representatives of the Shereef of Mecca.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-sykes-picot-agreement-1916',
+            loc: { section: 'The Sykes-Picot Agreement : 1916', para: '4' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://avalon.law.yale.edu/20th_century/sykes.asp'
+          }
+        }
+      ]
     }
   ],
   hero: {
@@ -216,5 +221,8 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:MPK1-426_Sykes_Picot_Agreement_Map_signed_8_May_1916.jpg',
     credit: { institution: 'The National Archives (United Kingdom)' },
     license: { id: 'public-domain' }
-  }
+  },
+  places: [
+    { ref: 'place:london' }
+  ]
 })

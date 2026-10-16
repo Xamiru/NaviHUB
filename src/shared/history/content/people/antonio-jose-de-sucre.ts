@@ -16,7 +16,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   regions: ['latin-america'],
   roles: ['military'],
   sections: [
@@ -86,5 +86,31 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Antonio_Jos%C3%A9_de_Sucre._Michelena,_Arturo._1895,_Legislative_Palace,_La_Paz.png',
     credit: { institution: 'Palacio Legislativo, La Paz', creator: 'Arturo Michelena' },
     license: { id: 'public-domain' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1795-02-03' },
+        cites: [
+          {
+            source: 'loc-name-authority-antonio-jose-de-sucre',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1830-06-04' },
+        cites: [
+          {
+            source: 'loc-name-authority-antonio-jose-de-sucre',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
   }
 })

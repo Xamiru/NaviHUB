@@ -1,7 +1,8 @@
 """Session checks over spec modules that expose ENTITIES = [(kind, entity), ...].
 
 usage: checks.py dates   spec_a [spec_b ...]   every dated claim beside the words that support it
-       checks.py repeats spec_a [spec_b ...]   quotes repeated or nested on one article page
+       checks.py repeats spec_a [spec_b ...]   quotes repeated or nested on one article page, the same
+                                               passage on two pages, and quotes that open mid-story
        checks.py json    spec out.json         dump for validate_spec.ts (entities, plus SOURCES)
 """
 import importlib, json, re, sys
@@ -97,6 +98,52 @@ def repeats(mods):
             for b in counts:
                 if a != b and a in b:
                     print(f'{ref}: nested: {a[:60]!r} inside {b[:40]!r}')
+
+    # The same passage on two pages: a passage belongs to the one page it is most about.
+    owners = defaultdict(set)
+    for kind, e in ents:
+        if kind in ('source', 'media'):
+            continue
+        qs = []
+        quotes(e, qs)
+        for t in qs:
+            owners[t].add(f"{kind}:{e['id']}")
+    for t, refs in owners.items():
+        if len(refs) > 1:
+            print(f'on {len(refs)} pages ({", ".join(sorted(refs))}): {t[:90]}')
+    openers(ents)
+
+
+# A quote that must stand alone (a section's first, a course item, a position's statement) and
+# opens on a pronoun, a connective or a relative time reads as the middle of a story.
+MIDSTORY = re.compile(
+    r"^(?:[a-z]|(?:He|She|It|They|This|These|That|Those|His|Her|Their|Its|Him|Them|But|However|"
+    r"Although|Though|Yet|Thus|Hence|Therefore|So|And|Or|Nor|Also|Then|Meanwhile|Moreover|"
+    r"Furthermore|Nevertheless|Nonetheless|Instead|Afterwards|Later|Once|Such|Both|Neither|"
+    r"By contrast|In contrast|In turn|In response|As a result|After this|After that|At this|"
+    r"The following|The next|The latter|The former|Less than|More than|A few|Shortly)\b|"
+    r"(?:\w+ (?:years?|months?|weeks?|days?|decades?) (?:later|after|earlier|before))\b)")
+
+
+def openers(ents):
+    def flag(ref, where, q):
+        if MIDSTORY.match(q['text'].lstrip('"“‘\'( ')):
+            print(f"{ref} {where} {q.get('id')}: opens mid-story: {q['text'][:80]}")
+    for kind, e in ents:
+        ref = f"{kind}:{e.get('id')}"
+        for s in e.get('sections') or []:
+            if s.get('quotes') and s.get('kind') != 'in-their-words':
+                flag(ref, f"section {s.get('kind')} first", s['quotes'][0])
+        for c in e.get('course') or []:
+            if c.get('quote'):
+                flag(ref, 'course', c['quote'])
+        if kind == 'interpretation':
+            if e.get('framing'):
+                flag(ref, 'framing', e['framing'])
+            for pos in e.get('positions') or []:
+                for q in (pos.get('statements') or [])[:1] + (pos.get('reception') or [])[:1]:
+                    flag(ref, f"position {pos.get('id')}", q)
+
 
 if __name__ == '__main__':
     {'dates': dates, 'repeats': repeats, 'json': dump}[sys.argv[1]](sys.argv[2:])

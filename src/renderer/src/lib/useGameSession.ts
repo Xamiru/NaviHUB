@@ -36,7 +36,9 @@ export function useGameSession(): GameSessionHook {
     queryFn: () => api.games.sessionStatus(),
     // Self-gating off the polled data rather than a local flag, so a session
     // that is already running keeps reporting after navigating away and back.
-    refetchInterval: (q) => (q.state.data && ACTIVE.has(q.state.data.state) ? 1000 : false)
+    // Also while an ended emulated session's screenshot folder is being read.
+    refetchInterval: (q) =>
+      q.state.data && (ACTIVE.has(q.state.data.state) || q.state.data.shotsPending) ? 1000 : false
   })
 
   useEffect(() => {

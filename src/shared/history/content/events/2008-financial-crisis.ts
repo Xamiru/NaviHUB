@@ -462,5 +462,16 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Lehman_Brothers-NYC-20080915.jpg',
     credit: { creator: 'Robert Scoble' },
     license: { id: 'cc-by', version: '2.0', url: 'https://creativecommons.org/licenses/by/2.0' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:new-york-city',
+      cites: [
+        {
+          source: 'european-union-history-of-the-european-union-2000-09',
+          loc: { section: 'History of the European Union 2000-09', para: '1' }
+        }
+      ]
+    }
+  ]
 })

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
+import JapaneseHubTabs from '../components/japanese/JapaneseHubTabs'
 import Tabs, { TabPanel } from '../components/Tabs'
 import QuizRecord from '../components/QuizRecord'
 import { Group, Pill } from '../components/PillGroup'
@@ -55,6 +56,7 @@ export default function JapaneseArcadePage() {
 
   return (
     <div className="p-6 max-w-[1320px] mx-auto">
+      <JapaneseHubTabs />
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Arcade"

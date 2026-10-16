@@ -214,22 +214,6 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/iran/16.htm' }
         },
         {
-          id: 'q1',
-          text: 'In the meantime, the Soviet Union was pressing toobtain oil concessions in northern Persia, a demand that was generally opposed, except by the Tudeh party. The pressure was particularly threatening because of the continued presence of Soviet troops in Azarbaijan and northern Persia, even after the war had ended and contrary to an agreement signed by Josef Stalin, Winston Churchill, and Franklin D. Roosevelt in their Tehran Conference of 1943.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-yarshater-iranian-history-islamic-period-6',
-            loc: {
-              section: 'IRAN ii. IRANIAN HISTORY (2) Islamic period, Moḥammad Reza Shah (1941-79)'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/iran-ii2-islamic-period-page-6/'
-          }
-        },
-        {
           id: 'q2',
           text: 'Subsequent developments are subject to differing interpretations.',
           lang: 'en',

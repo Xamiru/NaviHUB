@@ -178,13 +178,6 @@ export default defineEvent({
       ]
     }
   ],
-  hero: {
-    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cb/Mohammad_Ali_Shah_Qajar.png/1280px-Mohammad_Ali_Shah_Qajar.png',
-    page: 'https://commons.wikimedia.org/wiki/File:Mohammad_Ali_Shah_Qajar.png',
-    title: 'Shah of Persia, Mohammed Ali Mirzi, Dec. 19, 1907',
-    credit: { institution: 'Library of Congress', creator: 'Bain News Service' },
-    license: { id: 'public-domain' }
-  },
   furtherReading: [
     { source: 'kasravi-1939-tarikh-e-hejdah-saleh-ye-azarbayjan', perspective: 'iranian' },
     { source: 'malekzadeh-1949-tarikh-e-enqelab-e-mashrutiyat', perspective: 'iranian' }

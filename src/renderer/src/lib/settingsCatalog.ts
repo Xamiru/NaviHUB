@@ -116,6 +116,21 @@ export const SETTINGS_CATALOG: readonly SettingsCard[] = [
     keywords: ['daily', 'new cards', 'srs', 'kana keyboard', 'romaji', 'flick']
   },
   {
+    title: 'Review scheduler',
+    tab: 'learning',
+    keywords: ['fsrs', 'srs', 'retention', 'intervals', 'reviews', 'anki', 'japanese', 'english']
+  },
+  {
+    title: 'Japanese review directions',
+    tab: 'learning',
+    keywords: ['production', 'reading', 'kanji', 'english to japanese', 'reverse', 'cards', 'srs']
+  },
+  {
+    title: 'Built-in course updates',
+    tab: 'learning',
+    keywords: ['japanese', 'courses', 'lessons', 'restore', 'built-in', 'corrections']
+  },
+  {
     title: 'Japanese dictionaries',
     tab: 'learning',
     keywords: ['jmdict', 'kanjidic', 'pitch', 'tatoeba', 'kanjivg', 'frequency', 'offline']
@@ -149,6 +164,7 @@ export const SETTINGS_CATALOG: readonly SettingsCard[] = [
   },
   { title: 'ffmpeg (video library tools)', tab: 'tools', keywords: ['video', 'subtitles', 'ffprobe'] },
   { title: 'mokuro (manga OCR)', tab: 'tools', keywords: ['ocr', 'manga', 'japanese'] },
+  { title: '7-Zip (game mods)', tab: 'tools', keywords: ['7z', 'rar', 'archive', 'gamebanana', 'mods', 'emulator'] },
   { title: 'Jackett (torrent search)', tab: 'tools', keywords: ['torrents', 'indexers'] },
   { title: 'qBittorrent (torrent hand-off)', tab: 'tools', keywords: ['torrents', 'download client'] },
 

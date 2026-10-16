@@ -177,7 +177,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'Even though by this time signs of disagreement and irritation were manifest between the two, on 18 July Kāšāni issued a powerful communiqué in which he declared that Moṣaddeq’s government was “the strongest barrier against colonial atrocities” and asserted that his removal and Qavām’s appointment was “the result of colonial policies.” He ordered Iranians to engage in a jihad (see islam in iran xi. jihad in islam) against Qavām’s government and warned that the Muslim people of Iran would not allow foreigners to threaten their independence and sovereignty (Dehnavi, II, p. 206). At five in the afternoon of the 30th of Tir (20 July), after the tanks rolled into the streets of Tehran and the military opened fire on the crowd, killing some 25 people, Tehran radio announced the resignation of Qavām (ʿĀqeli, I, p. 468).',
+          text: 'Even though by this time signs of disagreement and irritation were manifest between the two, on 18 July Kāšāni issued a powerful communiqué in which he declared that Moṣaddeq’s government was “the strongest barrier against colonial atrocities” and asserted that his removal and Qavām’s appointment was “the result of colonial policies.” He ordered Iranians to engage in a jihad (see islam in iran xi. jihad in islam) against Qavām’s government and warned that the Muslim people of Iran would not allow foreigners to threaten their independence and sovereignty (Dehnavi, II, p. 206). At five in the afternoon of the 30th of Tir (20 July), after the tanks rolled into the streets of Tehran and the military opened fire on the crowd, killing some 25 people, Tehran radio announced the resignation of Qavām',
           lang: 'en',
           cite: {
             source: 'iranica-rahnema-kashani',
@@ -185,7 +185,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/kasani-abul-qasem/'
           }
         }

@@ -157,12 +157,12 @@ export default defineEvent({
       },
       quote: {
         id: 'q5',
-        text: 'One of them was Mīrzā Ṣāleḥ Šīrāzī, who, according to his own report (pp. 344-45), apprenticed himself to a London publishing house that specialized in printing the New Testament in Persian, Hindi, Syriac, Arabic, and other languages. He returned to Iran in 1234/1819, taking with him a small printing press and some other materials (p. 353).',
+        text: 'One of them was Mīrzā Ṣāleḥ Šīrāzī, who, according to his own report (pp. 344-45), apprenticed himself to a London publishing house that specialized in printing the New Testament in Persian, Hindi, Syriac, Arabic, and other languages. He returned to Iran in 1234/1819, taking with him a small printing press and some other materials',
         lang: 'en',
         cite: { source: 'iranica-floor-cap', loc: { section: 'ČĀP', para: '11' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/cap-print-printing-a-persian-word-probably-derived-from-hindi-chapna/'
         }
       }

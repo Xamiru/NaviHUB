@@ -1,4 +1,4 @@
-import type { SeedCourse } from './japaneseSeed'
+import type { SeedCourseDef } from './japaneseSeed'
 
 // Wave-4 seeded courses (2026-08-15): the set phrases you meet constantly in
 // anime and manga, and the vocabulary of visual novels, games and Japanese
@@ -7,14 +7,14 @@ import type { SeedCourse } from './japaneseSeed'
 // pack; fronts must not collide with any existing seeded course
 // (tests/japaneseSeed.test.ts enforces it across the whole catalog).
 
-export const SET_PHRASES_COURSE: SeedCourse = {
+export const SET_PHRASES_COURSE: SeedCourseDef = {
   title: 'Anime & Manga Set Phrases',
   description:
     'The stock lines you hear in every episode — greetings at the door, apologies, battle talk, reactions — with the register that decides who may say them to whom.',
   level: 'N5–N4',
-  difficulty: 5,
   lessons: [
     {
+      key: 'setphrases.01',
       kind: 'vocab',
       title: 'Coming and going: the doorway lines',
       cards: [
@@ -153,6 +153,7 @@ export const SET_PHRASES_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'setphrases.02',
       kind: 'vocab',
       title: 'Meals, work and thanks',
       cards: [
@@ -291,6 +292,7 @@ export const SET_PHRASES_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'setphrases.03',
       kind: 'vocab',
       title: 'Apologies, excuses and taking the blame',
       cards: [
@@ -429,6 +431,7 @@ export const SET_PHRASES_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'setphrases.04',
       kind: 'vocab',
       title: 'Battle talk and resolve',
       cards: [
@@ -567,6 +570,7 @@ export const SET_PHRASES_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'setphrases.05',
       kind: 'vocab',
       title: 'Reactions and interjections',
       cards: [
@@ -705,6 +709,7 @@ export const SET_PHRASES_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'setphrases.06',
       kind: 'vocab',
       title: 'Refusals and telling someone off',
       cards: [
@@ -843,6 +848,7 @@ export const SET_PHRASES_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'setphrases.07',
       kind: 'vocab',
       title: 'Comfort and encouragement',
       cards: [
@@ -981,6 +987,7 @@ export const SET_PHRASES_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'setphrases.08',
       kind: 'vocab',
       title: 'Partings and promises',
       cards: [
@@ -1119,6 +1126,7 @@ export const SET_PHRASES_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'setphrases.09',
       kind: 'vocab',
       title: 'Narration and the connectives manga runs on',
       cards: [
@@ -1259,14 +1267,14 @@ export const SET_PHRASES_COURSE: SeedCourse = {
   ]
 }
 
-export const VN_SLANG_COURSE: SeedCourse = {
+export const VN_SLANG_COURSE: SeedCourseDef = {
   title: 'VN, Gaming & Net Slang',
   description:
     'Menu text, route talk, gacha vocabulary and the slang of Japanese chat and streaming — the words a dictionary lists late and a visual novel uses on screen one.',
   level: 'N4–N3',
-  difficulty: 12,
   lessons: [
     {
+      key: 'vnslang.01',
       kind: 'vocab',
       title: 'Saving, loading and the config menu',
       cards: [
@@ -1416,6 +1424,7 @@ export const VN_SLANG_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'vnslang.02',
       kind: 'vocab',
       title: 'Choices, routes and endings',
       cards: [
@@ -1565,6 +1574,7 @@ export const VN_SLANG_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'vnslang.03',
       kind: 'vocab',
       title: 'Heroines, tropes and flags',
       cards: [
@@ -1714,6 +1724,7 @@ export const VN_SLANG_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'vnslang.04',
       kind: 'vocab',
       title: 'RPG systems and battle',
       cards: [
@@ -1852,6 +1863,7 @@ export const VN_SLANG_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'vnslang.05',
       kind: 'vocab',
       title: 'Gacha',
       cards: [
@@ -1990,6 +2002,7 @@ export const VN_SLANG_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'vnslang.06',
       kind: 'vocab',
       title: 'Grinding and play patterns',
       cards: [
@@ -2128,6 +2141,7 @@ export const VN_SLANG_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'vnslang.07',
       kind: 'vocab',
       title: 'Online play and matches',
       cards: [
@@ -2266,6 +2280,7 @@ export const VN_SLANG_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'vnslang.08',
       kind: 'vocab',
       title: 'Net slang',
       cards: [
@@ -2404,6 +2419,7 @@ export const VN_SLANG_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'vnslang.09',
       kind: 'vocab',
       title: 'Streaming and chat',
       cards: [
@@ -2542,6 +2558,7 @@ export const VN_SLANG_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'vnslang.10',
       kind: 'vocab',
       title: 'Reactions and reviews',
       cards: [

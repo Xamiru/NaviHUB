@@ -340,23 +340,6 @@ export default defineEvent({
           }
         },
         {
-          id: 'q11',
-          text: 'The numbers alone demonstrate the value of this agreement. On the Soviet side, over 1,500 deployed warheads will be removed, and all ground-launched intermediate-range missiles, including the SS - 20\'s, will be destroyed. On our side, our entire complement of Pershing II and ground-launched cruise missiles, with some 400 deployed warheads, will all be destroyed.',
-          lang: 'en',
-          cite: {
-            source: 'reagan-lib-1987-12-08-remarks-on-signing-the-inf-treaty',
-            loc: {
-              section: 'Remarks on Signing the Intermediate-Range Nuclear Forces Treaty',
-              para: '4'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://www.reaganlibrary.gov/archives/speech/remarks-signing-intermediate-range-nuclear-forces-treaty'
-          }
-        },
-        {
           id: 'q12',
           text: 'Soviet relations with Europe improved markedly during the Gorbachev period, mainly because of the INF Treaty',
           lang: 'en',
@@ -404,43 +387,45 @@ export default defineEvent({
             at: '2026-10-08',
             url: 'https://www.reaganlibrary.gov/archives/speech/remarks-signing-intermediate-range-nuclear-forces-treaty'
           }
+        },
+        {
+          id: 'q11',
+          text: 'The numbers alone demonstrate the value of this agreement. On the Soviet side, over 1,500 deployed warheads will be removed, and all ground-launched intermediate-range missiles, including the SS - 20\'s, will be destroyed. On our side, our entire complement of Pershing II and ground-launched cruise missiles, with some 400 deployed warheads, will all be destroyed.',
+          lang: 'en',
+          cite: {
+            source: 'reagan-lib-1987-12-08-remarks-on-signing-the-inf-treaty',
+            loc: {
+              section: 'Remarks on Signing the Intermediate-Range Nuclear Forces Treaty',
+              para: '4'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.reaganlibrary.gov/archives/speech/remarks-signing-intermediate-range-nuclear-forces-treaty'
+          }
+        },
+        {
+          id: 'q15',
+          text: 'It was over 6 years ago, November 18, 1981, that I first proposed what would come to be called the zero option.',
+          lang: 'en',
+          cite: {
+            source: 'reagan-lib-1987-12-08-remarks-on-signing-the-inf-treaty',
+            loc: {
+              section: 'Remarks on Signing the Intermediate-Range Nuclear Forces Treaty',
+              para: '1'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.reaganlibrary.gov/archives/speech/remarks-signing-intermediate-range-nuclear-forces-treaty'
+          }
         }
       ]
     }
   ],
   course: [
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1981-11-18' },
-            cites: [
-              {
-                source: 'state-dept-avc-intermediate-range-nuclear-forces-treaty',
-                loc: { section: 'Intermediate-Range Nuclear Forces Treaty (INF Treaty)', para: '7' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q15',
-        text: 'It was over 6 years ago, November 18, 1981, that I first proposed what would come to be called the zero option.',
-        lang: 'en',
-        cite: {
-          source: 'reagan-lib-1987-12-08-remarks-on-signing-the-inf-treaty',
-          loc: {
-            section: 'Remarks on Signing the Intermediate-Range Nuclear Forces Treaty',
-            para: '1'
-          }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-08',
-          url: 'https://www.reaganlibrary.gov/archives/speech/remarks-signing-intermediate-range-nuclear-forces-treaty'
-        }
-      }
-    },
     {
       date: {
         alts: [

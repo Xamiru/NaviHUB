@@ -80,20 +80,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1914-1920/league'
           }
-        },
-        {
-          id: 'q3',
-          text: 'The Members of the League undertake to respect and preserve as against external aggression the territorial integrity and existing political independence of all Members of the League.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-covenant-of-the-league-of-nations',
-            loc: { section: 'The Covenant of the League of Nations' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://avalon.law.yale.edu/20th_century/leagcov.asp'
-          }
         }
       ]
     },
@@ -142,6 +128,25 @@ export default defineEvent({
             loc: { section: 'WORLD WAR I AND THE BRITISH MANDATE', para: '6' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/iraq/19.htm' }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q3',
+          text: 'The Members of the League undertake to respect and preserve as against external aggression the territorial integrity and existing political independence of all Members of the League.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-covenant-of-the-league-of-nations',
+            loc: { section: 'The Covenant of the League of Nations' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://avalon.law.yale.edu/20th_century/leagcov.asp'
+          }
         }
       ]
     }

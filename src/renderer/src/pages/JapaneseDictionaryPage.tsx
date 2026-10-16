@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import PageHeader from '../components/PageHeader'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -14,9 +14,11 @@ import StrokeOrderDiagram from '../components/japanese/StrokeOrderDiagram'
 import { flattenGlossary } from '@shared/dictContent'
 import { mediaUrl } from '@shared/mediaUrl'
 import { transitivityPartner } from '@shared/transitivity'
-import type { DictEntry, GlossaryItem, KanjiInfo } from '@shared/types'
+import type { DictEntry, DictTagInfo, GlossaryItem, JpFrontStatus, KanjiInfo } from '@shared/types'
+import { describeTags, isSenseNumberTag, tagLabel } from '@shared/japanese/dictTags'
 import EditorialDetailFrame from '../components/EditorialDetailFrame'
-import ContextPanel, { ContextFact } from '../components/ContextPanel'
+import SpeakButton from '../components/japanese/SpeakButton'
+import ContextPanel from '../components/ContextPanel'
 
 // Standalone offline dictionary: search JMdict / KANJIDIC / pitch / grammar dicts
 // at once, see definitions with pitch and a kanji breakdown, and mine any entry
@@ -61,19 +63,55 @@ export default function JapaneseDictionaryPage() {
         ? `No results found for ${debounced}.`
         : `${entries.length} result${entries.length === 1 ? '' : 's'} found for ${debounced}.`
 
+  // Tag descriptions (v1 = Ichidan verb, …), read once for the whole page.
+  const { data: tagInfo = [] } = useQuery({ queryKey: qk.dict.tagInfo, queryFn: () => api.dict.tagInfo() })
+  const tagIndex = useMemo(() => new Map(tagInfo.map((t) => [t.name, t])), [tagInfo])
+
+  // Which results the learner already has a card for.
+  const words = entries.filter((e) => !e.isName).slice(0, 30)
+  const frontsKey = words.map((e) => e.expression).join('|')
+  const { data: inDecks = [] } = useQuery({
+    queryKey: qk.japanese.cardsForFronts(frontsKey),
+    queryFn: () => api.japanese.cardsForFronts(words.map((e) => e.expression)),
+    enabled: words.length > 0
+  })
+  const deckIndex = useMemo(() => new Map(inDecks.map((d) => [d.front, d])), [inDecks])
+
   return (
     <EditorialDetailFrame
       width="wide"
       aside={
-        <ContextPanel title="Reference evidence" identity={debounced || 'dictionary-idle'}>
-          <ContextFact label="Dictionary packs">{dicts.length} installed</ContextFact>
-          <ContextFact label="Current lookup">
-            {debounced ? `${entries.length} matching entries` : 'Waiting for a search'}
-          </ContextFact>
-          <ContextFact label="Sentence evidence">
-            {sentenceBank ? 'Offline examples available' : 'Sentence bank not installed'}
-          </ContextFact>
-          <ContextFact label="Capture path">Open Mine on any result to add it to review.</ContextFact>
+        <ContextPanel title="In your decks" identity={debounced || 'dictionary-idle'}>
+          {words.length === 0 ? (
+            <p className="text-sm text-gray-400">
+              Search a word to see whether it is already in your decks. Anything that is not can be
+              added with Mine.
+            </p>
+          ) : (
+            <ul className="space-y-2.5 text-sm">
+              {[...new Map(words.map((e) => [e.expression, e])).values()].slice(0, 8).map((e, i) => {
+                const hit = deckIndex.get(e.expression)
+                return (
+                  <li key={`${e.expression}${i}`} className="flex items-baseline justify-between gap-3">
+                    <span lang="ja" className="text-base text-gray-200">
+                      {e.expression}
+                    </span>
+                    {hit ? (
+                      <Link
+                        to={`/japanese/lessons/${hit.lessonId}`}
+                        className="truncate text-right text-xs text-signal-link hover:underline"
+                        title={`${hit.courseTitle} · ${hit.lessonTitle}`}
+                      >
+                        {deckStatusLabel(hit)}
+                      </Link>
+                    ) : (
+                      <span className="text-xs text-gray-500">Not in a deck</span>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </ContextPanel>
       }
     >
@@ -111,7 +149,13 @@ export default function JapaneseDictionaryPage() {
         ) : entries.length === 0 ? (
           <p className="text-sm text-gray-500">Nothing found for &ldquo;{debounced}&rdquo;.</p>
         ) : (
-          <ResultsList entries={entries} onSearch={setQuery} hasSentences={!!sentenceBank} />
+          <ResultsList
+            entries={entries}
+            onSearch={setQuery}
+            hasSentences={!!sentenceBank}
+            tagIndex={tagIndex}
+            deckIndex={deckIndex}
+          />
         )}
       </div>
     </EditorialDetailFrame>
@@ -121,15 +165,27 @@ export default function JapaneseDictionaryPage() {
 // Words render as always; JMnedict-only results group under a collapsed Names
 // disclosure — auto-expanded when names are ALL there is, which is the whole
 // point (name lookups stop being misses without burying real words).
+function deckStatusLabel(hit: JpFrontStatus): string {
+  if (!hit.learned) return 'In a deck, not started'
+  return hit.status === 'review' ? 'In review' : hit.status === 'new' ? 'Waiting to learn' : 'Learning'
+}
+
+interface EntryContext {
+  tagIndex: ReadonlyMap<string, DictTagInfo>
+  deckIndex: ReadonlyMap<string, JpFrontStatus>
+}
+
 function ResultsList({
   entries,
   onSearch,
-  hasSentences
+  hasSentences,
+  tagIndex,
+  deckIndex
 }: {
   entries: DictEntry[]
   onSearch: (q: string) => void
   hasSentences: boolean
-}) {
+} & EntryContext) {
   const words = entries.filter((e) => !e.isName)
   const names = entries.filter((e) => e.isName)
   const [showNames, setShowNames] = useState(false)
@@ -143,6 +199,8 @@ function ResultsList({
           entry={entry}
           onSearch={onSearch}
           hasSentences={hasSentences}
+          tagIndex={tagIndex}
+          deckIndex={deckIndex}
         />
       ))}
       {names.length > 0 && (
@@ -164,6 +222,8 @@ function ResultsList({
                   entry={entry}
                   onSearch={onSearch}
                   hasSentences={hasSentences}
+                  tagIndex={tagIndex}
+                  deckIndex={deckIndex}
                 />
               ))}
             </div>
@@ -177,15 +237,25 @@ function ResultsList({
 function EntryCard({
   entry,
   onSearch,
-  hasSentences
+  hasSentences,
+  tagIndex,
+  deckIndex
 }: {
   entry: DictEntry
   onSearch: (q: string) => void
   hasSentences: boolean
-}) {
-  const [showKanji, setShowKanji] = useState(false)
+} & EntryContext) {
+  // The breakdown starts open for short words, where it is the useful part.
+  const [showKanji, setShowKanji] = useState(
+    () => [...entry.expression].filter((ch) => /[一-鿿]/.test(ch)).length <= 2
+  )
   const [showExamples, setShowExamples] = useState(false)
   const [mining, setMining] = useState(false)
+
+  const termTags = describeTags(entry.tags, tagIndex)
+  const deck = entry.isName ? undefined : deckIndex.get(entry.expression)
+  const mixedDicts = new Set(entry.defs.map((d) => d.dictTitle)).size > 1
+  let sense = 0
 
   const kanjiChars = [...entry.expression].filter((ch) => {
     const c = ch.codePointAt(0)!
@@ -199,6 +269,7 @@ function EntryCard({
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <span className="text-2xl font-semibold">{entry.expression}</span>
             {entry.reading && <span className="text-base text-gray-400">{entry.reading}</span>}
+            <SpeakButton className="self-center" text={entry.expression} reading={entry.reading} />
             {entry.pitches.map((p, i) => (
               <span key={i} className="text-base text-gray-300">
                 <PitchAccent reading={p.reading || entry.reading || entry.expression} position={p.position} />
@@ -207,7 +278,23 @@ function EntryCard({
           </div>
           <div className="mt-1 flex flex-wrap gap-1">
             {entry.isName && <span className="chip bg-base-700 text-gray-400">name</span>}
-            {entry.isCommon && <span className="chip bg-signal-affirmative/20 text-signal-affirmative">common</span>}
+            {(entry.isCommon || termTags.common) && (
+              <span
+                className="chip bg-signal-affirmative/20 text-signal-affirmative"
+                title="Listed as a common word by the dictionary's frequency sources"
+              >
+                Common
+              </span>
+            )}
+            {deck && (
+              <Link
+                to={`/japanese/lessons/${deck.lessonId}`}
+                className="chip bg-signal-link/15 text-signal-link hover:underline"
+                title={`${deck.courseTitle} · ${deck.lessonTitle}`}
+              >
+                {deckStatusLabel(deck)}
+              </Link>
+            )}
             {(() => {
               // Pure shared lookup, no IPC: the classic transitivity partner.
               const hit = transitivityPartner(entry.expression)
@@ -232,9 +319,9 @@ function EntryCard({
                 rank {entry.frequency.display ?? `#${entry.frequency.rank.toLocaleString()}`}
               </span>
             )}
-            {entry.tags.map((t) => (
-              <span key={t} className="chip bg-base-700 text-gray-400">
-                {t}
+            {termTags.labels.map((t) => (
+              <span key={t.label} className="chip bg-base-700 text-gray-400" title={t.title}>
+                {t.label}
               </span>
             ))}
           </div>
@@ -248,21 +335,38 @@ function EntryCard({
         </button>
       </div>
 
-      <div className="mt-3 space-y-3">
-        {entry.defs.map((def, i) => (
-          <div key={i}>
-            <div className="mb-0.5 text-[11px] uppercase tracking-widest text-gray-500">
-              {def.dictTitle}
-              {def.tags.length > 0 && (
-                <span className="ml-2 normal-case tracking-normal text-gray-500">
-                  {def.tags.join(' · ')}
-                </span>
+      <ol className="mt-3 space-y-2.5">
+        {entry.defs.map((def, i) => {
+          // Jisho-style: the part of speech heads a sense only when it changes,
+          // and the dictionary is named only when an entry mixes dictionaries.
+          const senseLabels = (tags: string[]) =>
+            tags.filter((t) => !isSenseNumberTag(t)).map((t) => tagLabel(t, tagIndex.get(t)))
+          const labels = senseLabels(def.tags)
+          const pos = labels.map((l) => l.label).join(', ')
+          const prevPos = i > 0 ? senseLabels(entry.defs[i - 1].tags).map((l) => l.label).join(', ') : null
+          const showDict = mixedDicts && (i === 0 || entry.defs[i - 1].dictTitle !== def.dictTitle)
+          const isForms = def.tags.includes('forms')
+          return (
+            <li key={i}>
+              {showDict && (
+                <p className="mb-0.5 text-[11px] uppercase tracking-widest text-gray-500">{def.dictTitle}</p>
               )}
-            </div>
-            <GlossaryBlock items={def.glossary} onSearch={onSearch} />
-          </div>
-        ))}
-      </div>
+              {pos && pos !== prevPos && (
+                <p className="mb-0.5 text-xs text-gray-400" title={labels.map((l) => l.title).join('; ')}>
+                  {isForms ? 'Other forms' : pos}
+                </p>
+              )}
+              <div className="flex gap-2">
+                {!isForms && <span className="w-4 shrink-0 text-right text-sm text-gray-500">{++sense}.</span>}
+                {/* A one-gloss list reads as plain text beside the number; longer lists keep their markers inside the column. */}
+                <div className="min-w-0 flex-1 [&_ul]:pl-5 [&_ul:has(>li:only-child)]:pl-0 [&_li:only-child]:list-none">
+                  <GlossaryBlock items={def.glossary} onSearch={onSearch} />
+                </div>
+              </div>
+            </li>
+          )
+        })}
+      </ol>
 
       {hasSentences && (
         <div className="mt-3 border-t border-base-700 pt-2">
@@ -369,6 +473,8 @@ function ExampleSentences({ term }: { term: string }) {
                 Play
               </button>
             )}
+            {/* A native recording wins; the synthetic voice covers the rest. */}
+            {!s.audioPath && <SpeakButton className="ml-1" text={s.jp} />}
           </p>
           <p className="text-xs text-gray-500">{s.en}</p>
         </li>

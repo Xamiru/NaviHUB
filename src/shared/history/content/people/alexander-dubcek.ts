@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Alexander Dubček', lang: 'en', role: 'primary' },
     { text: 'Alexander Dubcek', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-16',
   regions: ['europe'],
   roles: ['politician'],
   offices: [
@@ -122,5 +122,31 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1921-11-27' },
+        cites: [
+          {
+            source: 'loc-name-authority-alexander-dubcek',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1992-11-07' },
+        cites: [
+          {
+            source: 'loc-name-authority-alexander-dubcek',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
+  }
 })

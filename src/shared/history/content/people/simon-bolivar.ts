@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Simón Bolívar', lang: 'en', role: 'primary' },
     { text: 'Simón Bolívar', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -71,7 +71,7 @@ export default definePerson({
   ],
   sections: [
     {
-      kind: 'early-life',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',

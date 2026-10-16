@@ -109,7 +109,7 @@ export default defineEvent({
       ]
     },
     {
-      name: 'Moḥammad Šaybāni Khan',
+      ref: 'person:muhammad-shaybani',
       role: 'commander',
       side: 'uzbek',
       cites: [

@@ -44,7 +44,7 @@ export default defineInterpretation({
         },
         {
           id: 'q3',
-          text: 'On the morning of 19 August a crowd wielding clubs, apparently hired by Kāšānī and Sayyed Moḥammad Behbahānī and paid by the C.I.A., began to gather at Meydān-e Amīn-al-Solṭān in southern Tehran (Najātī, pp. 404, 407, 410).',
+          text: 'On the morning of 19 August a crowd wielding clubs, apparently hired by Kāšānī and Sayyed Moḥammad Behbahānī and paid by the C.I.A., began to gather at Meydān-e Amīn-al-Solṭān in southern Tehran',
           lang: 'en',
           cite: {
             source: 'iranica-gasiorowski-coup-detat-1953',
@@ -52,7 +52,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/coup-detat-1953/'
           }
         },
@@ -81,7 +81,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q5',
-          text: 'In the midst of organizing crowds following the failure of the first coup attempt on 16 August 1953, Asad-Allāh Rašidiān, a main MI6 operative, suggested that the CIA team “seek help from Ayatollah Kashani and said he could be contacted through their ally Ahmad Aramesh. In the early morning of August 19, two CIA officers therefore went to Aramesh’s home and gave him ten thousand dollars to give to Kashani to organize demonstrations. It is not clear whether Kashani [or his son Mostafa] received this money and, if so, whether he used it for this purpose” (Gasiorowski, p. 254).',
+          text: 'In the midst of organizing crowds following the failure of the first coup attempt on 16 August 1953, Asad-Allāh Rašidiān, a main MI6 operative, suggested that the CIA team “seek help from Ayatollah Kashani and said he could be contacted through their ally Ahmad Aramesh. In the early morning of August 19, two CIA officers therefore went to Aramesh’s home and gave him ten thousand dollars to give to Kashani to organize demonstrations. It is not clear whether Kashani [or his son Mostafa] received this money and, if so, whether he used it for this purpose”',
           lang: 'en',
           cite: {
             source: 'iranica-rahnema-kashani',
@@ -89,7 +89,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/kasani-abul-qasem/'
           }
         },
@@ -189,5 +189,5 @@ export default defineInterpretation({
       ]
     }
   ],
-  researched: '2026-10-09'
+  researched: '2026-10-16'
 })

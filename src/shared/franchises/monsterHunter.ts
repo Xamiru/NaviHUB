@@ -2,10 +2,8 @@
 // Hunter, Freedom 2 (the definitive portable release of the second
 // generation), Tri, 4, Generations, World (+ Iceborne as its own row), Rise
 // (+ Sunbreak as its own row) and Wilds, plus both Monster Hunter Stories
-// games and the 2020 live-action film. Monster Hunter Stories 3 released in
-// March 2026 but is left out: the task's scope names only "Stories 1-2," and
-// a third entry arriving mid-scope is a reason to confirm before adding, not
-// to add unprompted. No chrono and no route — these are standalone hunts, not
+// games and the 2020 live-action film. Monster Hunter Stories 3 (March 2026)
+// was added on 2026-10-17 at the user's request. No chrono and no route — these are standalone hunts, not
 // a continuous story, and the task does not call for either here. Steam only
 // carries the post-World/Rise/Wilds era plus both Stories games; every
 // pre-World mainline entry (MH1, Freedom 2, Tri, 4, Generations) stayed on
@@ -151,6 +149,16 @@ export const MONSTER_HUNTER: FranchiseCfg = {
       year: 2025,
       releaseDate: '2025-02-28',
       note: 'The Forbidden Lands and a shifting-season ecosystem, built around the Seikret mount'
+    },
+    {
+      id: 'mh-stories-3',
+      title: 'Monster Hunter Stories 3: Twisted Reflection',
+      externalIds: [{ source: 'steam', id: '2852190' }],
+      year: 2026,
+      releaseDate: '2026-03-13',
+      spinOff: true,
+      bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2852190/library_hero.jpg',
+      note: 'The third Stories: twin Rathalos and a crystal blight spreading across the land'
     }
   ],
   characters: [

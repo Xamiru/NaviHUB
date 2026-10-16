@@ -288,7 +288,7 @@ export default defineEvent({
         },
         {
           id: 'q9',
-          text: 'Final confrontation of the Babi movement with the ulema and the Qajar state and its bloody repression was left to Mirzā Taqi Khan Amir Kabir in the next reign (Amanat, 1989, pp. 372 ff.).',
+          text: 'Final confrontation of the Babi movement with the ulema and the Qajar state and its bloody repression was left to Mirzā Taqi Khan Amir Kabir in the next reign',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-mohammad-shah',
@@ -296,7 +296,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
         }

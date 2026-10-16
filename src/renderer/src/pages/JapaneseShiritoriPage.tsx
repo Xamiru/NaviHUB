@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
+import JapaneseHubTabs from '../components/japanese/JapaneseHubTabs'
 import Section from '../components/Section'
 import JpKeyboardInput from '../components/japanese/keyboard/JpKeyboardInput'
 import { api } from '../lib/api'
@@ -145,6 +146,7 @@ export default function JapaneseShiritoriPage() {
 
   return (
     <div className="p-6 max-w-[1320px] mx-auto">
+      <JapaneseHubTabs />
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Shiritori"

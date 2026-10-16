@@ -135,7 +135,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: '1898 Joseph Naus, the Belgian financial advisor, and his team arrive in Tehran to modernize customs administration and increase its revenues.',
+          text: 'Joseph Naus, the Belgian financial advisor, and his team arrive in Tehran to modernize customs administration and increase its revenues.',
           lang: 'en',
           cite: {
             source: 'iranica-yarshater-chronology-part-2',
@@ -143,7 +143,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
           }
         },
@@ -221,7 +221,7 @@ export default defineEvent({
         },
         {
           id: 'q8',
-          text: 'Their leader, Joseph Naus, succumbed to attacks mounted by the Constitutionalists and the British and was forced to leave Persia in the aftermath of the revolution and the installation of a parliamentary regime (see MAE 2981.VI-VII; and Browne, 1910, p. 137; for the typical, unfavorable view of Belgian officials in Persian sources, see Kasrawī, Mašrūṭa3, and Tārīḵ-ebīdārī, ed. Saʿīdī Sīrjānī, indices, s.v. Nūz).',
+          text: 'Their leader, Joseph Naus, succumbed to attacks mounted by the Constitutionalists and the British and was forced to leave Persia in the aftermath of the revolution and the installation of a parliamentary regime',
           lang: 'en',
           cite: {
             source: 'iranica-destree-belgian-iranian-relations',
@@ -229,7 +229,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/belgian-iranian-relations'
           }
         }

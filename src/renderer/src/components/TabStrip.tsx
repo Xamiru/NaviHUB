@@ -1,4 +1,19 @@
-import { activateTab, closeTab, MAX_TABS, openTab, useBrowserTabs } from '../lib/browserTabs'
+import { useState } from 'react'
+import {
+  activateTab,
+  closeOtherTabs,
+  closeTab,
+  closeTabsToRight,
+  duplicateTab,
+  hasClosedTabs,
+  MAX_TABS,
+  openTab,
+  reopenClosedTab,
+  useBrowserTabs,
+  type BrowserTab
+} from '../lib/browserTabs'
+import { contextMenuPoint } from '../lib/contextMenuPoint'
+import ContextMenu, { type ContextMenuItem } from './ContextMenu'
 
 // The browser-tab strip across the top of the window. Hidden with a single tab,
 // so the app looks exactly as it did before tabs existed; Ctrl+T, Ctrl+click
@@ -6,6 +21,8 @@ import { activateTab, closeTab, MAX_TABS, openTab, useBrowserTabs } from '../lib
 // <nav> with aria-current), not an ARIA tablist.
 export default function TabStrip() {
   const { tabs, activeId } = useBrowserTabs()
+  // The right-click menu of one tab (also the Menu key on a focused tab).
+  const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null)
   if (tabs.length < 2) return null
 
   return (
@@ -28,6 +45,10 @@ export default function TabStrip() {
               if (e.button !== 1) return
               e.preventDefault()
               void closeTab(tab.id)
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault()
+              setMenu({ id: tab.id, ...contextMenuPoint(e) })
             }}
           >
             <button
@@ -61,6 +82,26 @@ export default function TabStrip() {
       >
         +
       </button>
+      {menu && (
+        <ContextMenu
+          key={menu.id}
+          x={menu.x}
+          y={menu.y}
+          items={tabMenuItems(tabs, menu.id)}
+          onClose={() => setMenu(null)}
+        />
+      )}
     </nav>
   )
+}
+
+function tabMenuItems(tabs: readonly BrowserTab[], id: string): ContextMenuItem[] {
+  const at = tabs.findIndex((tab) => tab.id === id)
+  return [
+    { label: 'Duplicate', disabled: tabs.length >= MAX_TABS, onSelect: () => void duplicateTab(id) },
+    { label: 'Close', disabled: tabs.length < 2, onSelect: () => closeTab(id) },
+    { label: 'Close other tabs', disabled: tabs.length < 2, onSelect: () => closeOtherTabs(id) },
+    { label: 'Close tabs to the right', disabled: at < 0 || at === tabs.length - 1, onSelect: () => closeTabsToRight(id) },
+    { label: 'Reopen closed tab', separatorBefore: true, disabled: !hasClosedTabs(), onSelect: reopenClosedTab }
+  ]
 }

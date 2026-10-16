@@ -487,5 +487,16 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:2005_Iranian_presidential_election_second_round_results.png',
     credit: { creator: 'Jasper Chu' },
     license: { id: 'cc0' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:tehran',
+      cites: [
+        {
+          source: 'hrw-2005-06-access-denied-irans-exclusionary-elections-summary',
+          loc: { section: 'Access Denied: I. Summary and Recommendations', para: '5' }
+        }
+      ]
+    }
+  ]
 })

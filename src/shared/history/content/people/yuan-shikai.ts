@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Yuan Shikai', lang: 'en', role: 'primary' },
     { text: '袁世凱', lang: 'zh', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   died: {
     alts: [
       {
@@ -49,6 +49,21 @@ export default definePerson({
   ],
   sections: [
     {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q3',
+          text: 'In November Yuan Shikai, legally president, ordered the Guomindang dissolved and its members removed from parliament.',
+          lang: 'en',
+          cite: {
+            source: 'loc-china-country-study-1987',
+            loc: { section: 'REPUBLICAN CHINA', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-16', url: 'http://countrystudies.us/china/20.htm' }
+        }
+      ]
+    },
+    {
       kind: 'career',
       quotes: [
         {
@@ -79,5 +94,18 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Hubert_Vos%27s_painting_of_Yuan_Shikai.jpg',
     credit: { creator: 'Hubert Vos' },
     license: { id: 'public-domain' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1859' },
+        cites: [
+          {
+            source: 'loc-name-authority-yuan-shikai',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
   }
 })

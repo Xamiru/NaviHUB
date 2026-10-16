@@ -131,7 +131,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q2',
-          text: '1889 Establishment of the Imperial Bank of Persia; it becomes a focal point of British interests with the right to issue currency and exploit the mineral deposits (excluding gold or silver) of Persia.',
+          text: 'Establishment of the Imperial Bank of Persia; it becomes a focal point of British interests with the right to issue currency and exploit the mineral deposits (excluding gold or silver) of Persia.',
           lang: 'en',
           cite: {
             source: 'iranica-yarshater-chronology-part-2',
@@ -139,7 +139,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
           }
         },
@@ -177,7 +177,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'The first modern bank to start operations in Iran was the British-owned New Oriental Bank which in 1888 opened branches and established agencies in Tehran, Mašhad, Tabrīz, Rašt, Isfahan, Shiraz, and Būšehr (Curzon, I, p. 474).',
+          text: 'The first modern bank to start operations in Iran was the British-owned New Oriental Bank which in 1888 opened branches and established agencies in Tehran, Mašhad, Tabrīz, Rašt, Isfahan, Shiraz, and Būšehr',
           lang: 'en',
           cite: {
             source: 'iranica-basseer-banking-history',
@@ -185,7 +185,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/banking-in-iran/banking-i-history-of-banking-in-iran'
           }
         },
@@ -227,7 +227,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q7',
-          text: 'The principal points of Reuter’s new concession were: (1) the grant of an Imperial Bank Concession for 60 years which would (2) have the exclusive right to issue banknotes [Art. 3], (3) provide the service of the treasury, (4) have a monopoly of all mines, except gold and silver, not already conceded and worked (ibid.).',
+          text: 'The principal points of Reuter’s new concession were: (1) the grant of an Imperial Bank Concession for 60 years which would (2) have the exclusive right to issue banknotes [Art. 3], (3) provide the service of the treasury, (4) have a monopoly of all mines, except gold and silver, not already conceded and worked',
           lang: 'en',
           cite: {
             source: 'iranica-shahnavaz-karun-river-opening',
@@ -235,7 +235,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/karun-river/karun_3'
           }
         },
@@ -398,7 +398,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q15',
-        text: 'the launching, in September, 1889, of the British-owned Imperial Bank of Persia (which took over in 1890 the New Oriental Banking Corporation opened up in 1888); this last concern was part of a concession which granted Reuter exclusive banking and mining rights for sixty years',
+        text: 'Under Wolff’s ministry at Tehran (1887-90), in close cooperation with Amīn-al-solṭān, important concessions were granted: […] the launching, in September, 1889, of the British-owned Imperial Bank of Persia (which took over in 1890 the New Oriental Banking Corporation opened up in 1888); this last concern was part of a concession which granted Reuter exclusive banking and mining rights for sixty years',
         lang: 'en',
         cite: {
           source: 'iranica-calmard-atabak-e-azam',
@@ -406,7 +406,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/atabak-e-azam'
         }
       }

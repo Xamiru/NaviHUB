@@ -25,7 +25,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -52,6 +52,17 @@ export default definePerson({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q6',
+          text: 'In 1881 Mahommed Ahmed ibn Seyyid Abdullah (q.v.), a Dongolese, proclaimed himself al-mahdi and founded in the eastern Sudan the short-lived empire overthrown by an Anglo-Egyptian force at the battle of Omdurman in 1898.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-mahdi', loc: { section: 'MAHDI', para: '1' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Mahdi'
+          }
+        },
         {
           id: 'q1',
           text: 'In this troubled atmosphere, Muhammad Ahmad ibn as Sayyid Abd Allah, a faqir or holy man who combined personal magnetism with religious zealotry, emerged, determined to expel the Turks and restore Islam to its primitive purity.',
@@ -116,17 +127,6 @@ export default definePerson({
             loc: { section: 'THE MAHDIYAH, 1884-98', para: '4' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/sudan/12.htm' }
-        },
-        {
-          id: 'q6',
-          text: 'In 1881 Mahommed Ahmed ibn Seyyid Abdullah (q.v.), a Dongolese, proclaimed himself al-mahdi and founded in the eastern Sudan the short-lived empire overthrown by an Anglo-Egyptian force at the battle of Omdurman in 1898.',
-          lang: 'en',
-          cite: { source: 'britannica-1911-mahdi', loc: { section: 'MAHDI', para: '1' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Mahdi'
-          }
         }
       ]
     }

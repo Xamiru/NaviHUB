@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Miguel Hidalgo', lang: 'en', role: 'primary' },
     { text: 'Miguel Hidalgo y Costilla', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -40,6 +40,20 @@ export default definePerson({
       kind: 'overview',
       quotes: [
         {
+          id: 'q4',
+          text: 'HIDALGO Y COSTILLA, MIGUEL (1753–1811), Mexican patriot, was born on the 8th of May 1753, on a farm at Corralejos, near Guanajuato.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-hidalgo-y-costilla-miguel',
+            loc: { section: 'HIDALGO Y COSTILLA, MIGUEL', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Hidalgo_y_Costilla,_Miguel'
+          }
+        },
+        {
           id: 'q1',
           text: 'It was in this context that a radical criollo parish priest, Miguel Hidalgo y Costilla, was able to lead the first truly widespread insurrection for Mexican independence.',
           lang: 'en',
@@ -66,13 +80,13 @@ export default definePerson({
       quotes: [
         {
           id: 'q3',
-          text: 'Hidalgo was tried as a priest by the Holy Office of the Inquisition and found guilty of heresy and treason. He was later condemned to death. On July 31, 1811, Hidalgo was executed by firing squad. His body was mutilated, and his head was displayed in Guanajuato as a warning to other would- be insurgents.',
+          text: 'Hidalgo was tried as a priest by the Holy Office of the Inquisition and found guilty of heresy and treason. He was later condemned to death. On July 31, 1811, Hidalgo was executed by firing squad.',
           lang: 'en',
           cite: {
             source: 'loc-mexico-country-study-1996',
             loc: { section: 'Hidalgo and Morelos', para: '3' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/mexico/12.htm' }
+          provenance: { via: 'web', at: '2026-10-16', url: 'http://countrystudies.us/mexico/12.htm' }
         }
       ]
     }

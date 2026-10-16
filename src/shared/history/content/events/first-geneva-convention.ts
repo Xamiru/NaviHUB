@@ -201,6 +201,22 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://avalon.law.yale.edu/19th_century/geneva04.asp'
           }
+        },
+        {
+          id: 'q10',
+          text: 'Done at Geneva, the twenty-second day of the month of August of the year one thousand eight hundred and Sixty-four.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-geneva-convention-1864',
+            loc: {
+              section: 'Amelioration of the Condition of the Wounded on the Field of Battle (Red Cross Convention); August 22, 1864'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://avalon.law.yale.edu/19th_century/geneva04.asp'
+          }
         }
       ]
     },
@@ -263,39 +279,6 @@ export default defineEvent({
           via: 'web',
           at: '2026-10-06',
           url: 'https://ehne.fr/en/encyclopedia/themes/international-relations/cultures-peace/spirit-geneva'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1864-08-22' },
-            cites: [
-              {
-                source: 'avalon-geneva-convention-1864',
-                loc: {
-                  section: 'Amelioration of the Condition of the Wounded on the Field of Battle (Red Cross Convention); August 22, 1864'
-                }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q10',
-        text: 'Done at Geneva, the twenty-second day of the month of August of the year one thousand eight hundred and Sixty-four.',
-        lang: 'en',
-        cite: {
-          source: 'avalon-geneva-convention-1864',
-          loc: {
-            section: 'Amelioration of the Condition of the Wounded on the Field of Battle (Red Cross Convention); August 22, 1864'
-          }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://avalon.law.yale.edu/19th_century/geneva04.asp'
         }
       }
     }

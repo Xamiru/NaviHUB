@@ -1,6 +1,18 @@
-import type { AchievementRow } from '@shared/types'
+import type {
+  AchievementGameProgress,
+  AchievementRarity,
+  AchievementRow,
+  AchievementTracking
+} from '@shared/types'
 
-export type TrophyFilter = 'all' | 'earned' | 'locked' | 'ultra-rare'
+export type TrophyFilter =
+  | 'all'
+  | 'earned'
+  | 'locked'
+  | 'ultra-rare'
+  | 'in-progress'
+  | 'hidden'
+  | 'manual'
 export type TrophySort = 'default' | 'unlock-date' | 'rarity' | 'name'
 
 export interface TrophySummary {
@@ -8,8 +20,50 @@ export interface TrophySummary {
   earned: number
   locked: number
   ultraRare: number
+  inProgress: number
+  hidden: number
+  manual: number
   completionPct: number
   earnedPoints: number | null
+}
+
+export const RARITY_LABEL: Record<AchievementRarity, string> = {
+  common: 'Common',
+  uncommon: 'Uncommon',
+  rare: 'Rare',
+  'ultra-rare': 'Ultra rare'
+}
+
+// "4.2% of players" when the provider reports a share, the tier otherwise.
+export function rarityText(globalPct: number | null, rarity: AchievementRarity | null): string | null {
+  if (globalPct != null) return `${globalPct.toFixed(1)}% of players`
+  return rarity ? RARITY_LABEL[rarity] : null
+}
+
+// What the tab says about where its list came from. The community page pairs
+// names by rank, and a set fetched before the source was kept is unknown —
+// both are worth a re-fetch now that Steam's exact keyless list comes first.
+export function schemaSourceInfo(tracking: Pick<AchievementTracking, 'provider' | 'schemaSource'>): {
+  label: string
+  suggestRefetch: boolean
+} {
+  switch (tracking.schemaSource) {
+    case 'local':
+      return { label: 'list from the game’s own files', suggestRefetch: false }
+    case 'public-api':
+      return { label: 'exact list from Steam', suggestRefetch: false }
+    case 'webapi':
+      return { label: 'exact list from the Steam Web API', suggestRefetch: false }
+    case 'community':
+      return { label: 'Steam community page, names matched by rank', suggestRefetch: true }
+    case 'ra':
+      return { label: 'list from RetroAchievements', suggestRefetch: false }
+    default:
+      // RetroAchievements has one source, so an unrecorded RA set still knows it.
+      return tracking.provider === 'ra'
+        ? { label: 'list from RetroAchievements', suggestRefetch: false }
+        : { label: 'list source not recorded', suggestRefetch: true }
+  }
 }
 
 export interface TrophyDisplayDecision {
@@ -18,6 +72,9 @@ export interface TrophyDisplayDecision {
   dimLockedArt: boolean
   description: string
   protectsHiddenDescription: boolean
+  // The protected text itself, for a reveal the user asks for; null when the
+  // provider never supplied one (nothing to reveal).
+  hiddenDescription: string | null
 }
 
 export function summarizeTrophies(rows: readonly AchievementRow[]): TrophySummary {
@@ -28,6 +85,9 @@ export function summarizeTrophies(rows: readonly AchievementRow[]): TrophySummar
     earned: earned.length,
     locked: rows.length - earned.length,
     ultraRare: rows.filter((row) => row.rarity === 'ultra-rare').length,
+    inProgress: rows.filter((row) => row.unlockedAt == null && row.progress != null).length,
+    hidden: rows.filter((row) => row.hidden).length,
+    manual: rows.filter((row) => row.unlockedAt != null && row.unlockSource === 'manual').length,
     completionPct: rows.length ? Math.round((earned.length / rows.length) * 100) : 0,
     earnedPoints: pointRows.length
       ? pointRows.reduce((total, row) => total + (row.points ?? 0), 0)
@@ -43,7 +103,8 @@ export function trophyDisplayDecision(row: AchievementRow): TrophyDisplayDecisio
     iconPath: unlocked ? row.iconPath : (row.iconGrayPath ?? row.iconPath),
     dimLockedArt: !unlocked && row.iconGrayPath == null && row.iconPath != null,
     description: protectsHiddenDescription ? 'Hidden achievement' : (row.description ?? ''),
-    protectsHiddenDescription
+    protectsHiddenDescription,
+    hiddenDescription: protectsHiddenDescription ? (row.description ?? null) : null
   }
 }
 
@@ -54,7 +115,26 @@ export function filterTrophies(
   if (filter === 'earned') return rows.filter((row) => row.unlockedAt != null)
   if (filter === 'locked') return rows.filter((row) => row.unlockedAt == null)
   if (filter === 'ultra-rare') return rows.filter((row) => row.rarity === 'ultra-rare')
+  if (filter === 'in-progress') {
+    return rows.filter((row) => row.unlockedAt == null && row.progress != null)
+  }
+  if (filter === 'hidden') return rows.filter((row) => row.hidden)
+  if (filter === 'manual') {
+    return rows.filter((row) => row.unlockedAt != null && row.unlockSource === 'manual')
+  }
   return [...rows]
+}
+
+// Name and the description the row shows. A locked hidden achievement's text
+// is not searched, so a match cannot give away what it says.
+export function searchTrophies(rows: readonly AchievementRow[], query: string): AchievementRow[] {
+  const q = query.trim().toLocaleLowerCase()
+  if (!q) return [...rows]
+  return rows.filter((row) => {
+    if (row.name.toLocaleLowerCase().includes(q)) return true
+    const shown = row.hidden && row.unlockedAt == null ? null : row.description
+    return shown != null && shown.toLocaleLowerCase().includes(q)
+  })
 }
 
 // Who a name could have been swapped with: the rest of the set, closest global
@@ -114,7 +194,49 @@ export function sortTrophies(rows: readonly AchievementRow[], sort: TrophySort):
 export function selectTrophies(
   rows: readonly AchievementRow[],
   filter: TrophyFilter,
-  sort: TrophySort
+  sort: TrophySort,
+  query = ''
 ): AchievementRow[] {
-  return sortTrophies(filterTrophies(rows, filter), sort)
+  return sortTrophies(searchTrophies(filterTrophies(rows, filter), query), sort)
+}
+
+// ---- The archive page ----
+
+export type GameSetSort = 'completion' | 'recent' | 'title'
+
+function completion(game: AchievementGameProgress): number {
+  return game.total ? game.unlocked / game.total : 0
+}
+
+// The overview arrives most complete first; the other orders are re-sorted
+// here, ties broken by title so the grid never shuffles between polls.
+export function sortGameSets(
+  games: readonly AchievementGameProgress[],
+  sort: GameSetSort
+): AchievementGameProgress[] {
+  const byTitle = (a: AchievementGameProgress, b: AchievementGameProgress): number =>
+    a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
+  return [...games].sort((a, b) => {
+    if (sort === 'recent') {
+      const at = a.lastUnlockedAt ?? ''
+      const bt = b.lastUnlockedAt ?? ''
+      return at === bt ? byTitle(a, b) : at < bt ? 1 : -1
+    }
+    if (sort === 'title') return byTitle(a, b)
+    return completion(b) - completion(a) || byTitle(a, b)
+  })
+}
+
+// Average per-game completion (one huge set cannot swamp it) and the number
+// of sets finished. A set not fetched yet has nothing to complete, so it
+// counts toward neither.
+export function archiveStats(games: readonly AchievementGameProgress[]): {
+  averagePct: number
+  perfect: number
+} {
+  const fetched = games.filter((game) => game.total > 0)
+  const averagePct = fetched.length
+    ? Math.round((fetched.reduce((sum, game) => sum + completion(game), 0) / fetched.length) * 100)
+    : 0
+  return { averagePct, perfect: fetched.filter((game) => game.unlocked === game.total).length }
 }

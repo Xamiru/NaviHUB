@@ -9,6 +9,7 @@ import CoverImage from './CoverImage'
 import Lightbox from './Lightbox'
 import ImageBrowseDialog from './ImageBrowseDialog'
 import ContextMenu from './ContextMenu'
+import { contextMenuPoint } from '../lib/contextMenuPoint'
 import FavoriteButton from './FavoriteButton'
 import { usePictureActions } from './pictures/PictureActions'
 import type { ImageKind, MediaDetail } from '@shared/types'
@@ -92,7 +93,7 @@ export default function MediaImagesSection({
               className="group relative aspect-video overflow-hidden rounded-lg cursor-zoom-in"
               onContextMenu={(e) => {
                 e.preventDefault()
-                setMenu({ x: e.clientX, y: e.clientY, imageId: img.id })
+                setMenu({ ...contextMenuPoint(e), imageId: img.id })
               }}
             >
               <button
@@ -216,7 +217,7 @@ export default function MediaImagesSection({
           }}
           onContextMenu={(i, e) => {
             const img = images[i]
-            if (img) setMenu({ x: e.clientX, y: e.clientY, imageId: img.id })
+            if (img) setMenu({ ...contextMenuPoint(e), imageId: img.id })
           }}
         />
       )}

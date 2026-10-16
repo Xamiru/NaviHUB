@@ -75,20 +75,6 @@ export default defineEvent({
             loc: { section: 'Khedive Ismail, 1863-79', para: '5' }
           },
           provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/egypt/24.htm' }
-        },
-        {
-          id: 'q3',
-          text: 'I have agreed to purchase, subject to your sanction, the shares which belonged to the Khedive of Egypt in the Suez Canal, and I rely with confidence on your enabling me to complete a transaction in which the public interests are deeply involved.',
-          lang: 'en',
-          cite: {
-            source: 'hansard-lords-1876-02-08-queens-speech',
-            loc: { section: 'HL Deb 08 February 1876 vol 227 cc1-6', para: '9' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://api.parliament.uk/historic-hansard/lords/1876/feb/08/the-queens-speech'
-          }
         }
       ]
     },
@@ -114,6 +100,25 @@ export default defineEvent({
             loc: { section: 'From Intervention to Occupation, 1876-82', para: '2' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/egypt/25.htm' }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q3',
+          text: 'I have agreed to purchase, subject to your sanction, the shares which belonged to the Khedive of Egypt in the Suez Canal, and I rely with confidence on your enabling me to complete a transaction in which the public interests are deeply involved.',
+          lang: 'en',
+          cite: {
+            source: 'hansard-lords-1876-02-08-queens-speech',
+            loc: { section: 'HL Deb 08 February 1876 vol 227 cc1-6', para: '9' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://api.parliament.uk/historic-hansard/lords/1876/feb/08/the-queens-speech'
+          }
         }
       ]
     }

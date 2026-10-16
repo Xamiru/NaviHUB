@@ -444,6 +444,28 @@ export default defineEvent({
           }
         }
       ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q25',
+          text: 'A few months ago I told the American people I did not trade arms for hostages. My heart and my best intentions still tell me that\'s true, but the facts and the evidence tell me it is not.',
+          lang: 'en',
+          cite: {
+            source: 'reagan-library-1987-03-04-address-iran-arms-and-contra-aid-controversy',
+            loc: {
+              section: 'Address to the Nation on the Iran Arms and Contra Aid Controversy March 4, 1987',
+              para: '7'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.reaganlibrary.gov/archives/speech/address-nation-iran-arms-and-contra-aid-controversy-0'
+          }
+        }
+      ]
     }
   ],
   course: [
@@ -711,41 +733,6 @@ export default defineEvent({
           loc: { section: 'Chronology of Key Public Events', para: '16' }
         },
         provenance: { via: 'web', at: '2026-10-08', url: 'https://irp.fas.org/offdocs/walsh/chron.htm' }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1987-03-04' },
-            cites: [
-              {
-                source: 'reagan-library-1987-03-04-address-iran-arms-and-contra-aid-controversy',
-                loc: {
-                  section: 'Address to the Nation on the Iran Arms and Contra Aid Controversy March 4, 1987',
-                  para: '1'
-                }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q25',
-        text: 'A few months ago I told the American people I did not trade arms for hostages. My heart and my best intentions still tell me that\'s true, but the facts and the evidence tell me it is not.',
-        lang: 'en',
-        cite: {
-          source: 'reagan-library-1987-03-04-address-iran-arms-and-contra-aid-controversy',
-          loc: {
-            section: 'Address to the Nation on the Iran Arms and Contra Aid Controversy March 4, 1987',
-            para: '7'
-          }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-08',
-          url: 'https://www.reaganlibrary.gov/archives/speech/address-nation-iran-arms-and-contra-aid-controversy-0'
-        }
       }
     },
     {

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'tobacco-protest-leadership',
   about: ['event:tobacco-protest'],
   topic: 'nature',
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'led-by-the-ulama',
@@ -155,7 +155,7 @@ export default defineInterpretation({
         },
         {
           id: 'q8',
-          text: 'The letter he sent from Baṣra to the marǰaʿ-e taqlīd Mīrzā Ḥasan Šīrāzī at Samarra probably influenced the latter’s intervention over the tobacco monopoly (see main references in Bakhash, Iran, p. 242 n. 105).',
+          text: 'The letter he sent from Baṣra to the marǰaʿ-e taqlīd Mīrzā Ḥasan Šīrāzī at Samarra probably influenced the latter’s intervention over the tobacco monopoly',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-atabak-e-azam',
@@ -163,7 +163,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/atabak-e-azam'
           }
         }

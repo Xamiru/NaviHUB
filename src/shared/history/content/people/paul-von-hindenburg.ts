@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Paul von Hindenburg', lang: 'en', role: 'primary' },
     { text: 'Paul von Beneckendorff und von Hindenburg', lang: 'de', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -173,7 +173,7 @@ export default definePerson({
         },
         {
           id: 'q5',
-          text: 'his testimony to the Parliamentary Investigation Committee on the Causes of the Collapse in November 1919 popularized the “stab-in-the-back” legend, which associated republican forces with defeat and treason.',
+          text: 'Despite the key role he had played during the transition, his testimony to the Parliamentary Investigation Committee on the Causes of the Collapse in November 1919 popularized the “stab-in-the-back” legend, which associated republican forces with defeat and treason.',
           lang: 'en',
           cite: {
             source: 'eo1418-von-der-goltz-hindenburg',
@@ -181,7 +181,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-16',
             url: 'https://encyclopedia.1914-1918-online.net/article/hindenburg-paul-von/'
           }
         },

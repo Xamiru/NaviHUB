@@ -218,7 +218,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q8',
-          text: 'Bahai accounts, however, state that the remains were at one point removed from the Emāmzāda on the instructions of Mīrzā Ḥosayn-ʿAlī Bahāʾ-Allāh and transferred from hiding-place to hiding-place for almost fifty years before being brought to Palestine in 1899. A shrine to house the remains was begun on Mt. Carmel by ʿAbbās Effendī ʿAbd-al-Bahāʾ, who interred them there in 1908 (Balyuzi, The Báb, pp. 189-92).',
+          text: 'Bahai accounts, however, state that the remains were at one point removed from the Emāmzāda on the instructions of Mīrzā Ḥosayn-ʿAlī Bahāʾ-Allāh and transferred from hiding-place to hiding-place for almost fifty years before being brought to Palestine in 1899. A shrine to house the remains was begun on Mt. Carmel by ʿAbbās Effendī ʿAbd-al-Bahāʾ, who interred them there in 1908',
           lang: 'en',
           cite: {
             source: 'iranica-maceoin-bab',
@@ -226,7 +226,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/bab-ali-mohammad-sirazi'
           }
         },

@@ -93,13 +93,13 @@ export default defineEvent({
         },
         {
           id: 'q4',
-          text: 'Unlike the UGCC call for self- government "in the shortest possible time," Nkrumah and the CPP asked for "self-government now."',
+          text: 'Later, after the other members of the UGCC were invited to make recommendations to the Coussey Committee, which was advising the governor on the path to independence, Nkrumah broke with the UGCC and founded the CPP.',
           lang: 'en',
           cite: {
             source: 'loc-ghana-country-study-1994',
             loc: { section: 'The Politics of the Independence Movements', para: '4' }
           },
-          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/ghana/13.htm' }
+          provenance: { via: 'web', at: '2026-10-16', url: 'http://countrystudies.us/ghana/13.htm' }
         },
         {
           id: 'q5',
@@ -162,5 +162,16 @@ export default defineEvent({
   },
   furtherReading: [
     { source: 'nkrumah-1957-ghana', perspective: 'african' }
+  ],
+  places: [
+    {
+      ref: 'place:accra',
+      cites: [
+        {
+          source: 'loc-ghana-country-study-1994',
+          loc: { section: 'The Politics of the Independence Movements', para: '7' }
+        }
+      ]
+    }
   ]
 })

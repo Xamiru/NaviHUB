@@ -442,46 +442,28 @@ export default defineEvent({
           }
         }
       ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q12',
+          text: 'ACCORDINGLY WE, MEMBERS OF THE PEOPLE\'S COUNCIL, REPRESENTATIVES OF THE JEWISH COMMUNITY OF ERETZ-ISRAEL AND OF THE ZIONIST MOVEMENT, ARE HERE ASSEMBLED ON THE DAY OF THE TERMINATION OF THE BRITISH MANDATE OVER ERETZ-ISRAEL AND, BY VIRTUE OF OUR NATURAL AND HISTORIC RIGHT AND ON THE STRENGTH OF THE RESOLUTION OF THE UNITED NATIONS GENERAL ASSEMBLY, HEREBY DECLARE THE ESTABLISHMENT OF A JEWISH STATE IN ERETZ-ISRAEL, TO BE KNOWN AS THE STATE OF ISRAEL.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-israeli-declaration-of-independence',
+            loc: { section: 'Declaration of Israel\'s Independence 1948' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://avalon.law.yale.edu/20th_century/israel.asp'
+          }
+        }
+      ]
     }
   ],
   course: [
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1948-05-14' },
-            cites: [
-              {
-                source: 'state-dept-milestones-creation-of-israel',
-                loc: { section: 'Creation of Israel, 1948', para: '1' }
-              },
-              {
-                source: 'loc-israel-country-study-1988',
-                loc: { section: 'Prelude to Statehood', para: '7' }
-              },
-              {
-                source: 'avalon-israeli-declaration-of-independence',
-                loc: { section: 'Declaration of Israel\'s Independence 1948' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q12',
-        text: 'ACCORDINGLY WE, MEMBERS OF THE PEOPLE\'S COUNCIL, REPRESENTATIVES OF THE JEWISH COMMUNITY OF ERETZ-ISRAEL AND OF THE ZIONIST MOVEMENT, ARE HERE ASSEMBLED ON THE DAY OF THE TERMINATION OF THE BRITISH MANDATE OVER ERETZ-ISRAEL AND, BY VIRTUE OF OUR NATURAL AND HISTORIC RIGHT AND ON THE STRENGTH OF THE RESOLUTION OF THE UNITED NATIONS GENERAL ASSEMBLY, HEREBY DECLARE THE ESTABLISHMENT OF A JEWISH STATE IN ERETZ-ISRAEL, TO BE KNOWN AS THE STATE OF ISRAEL.',
-        lang: 'en',
-        cite: {
-          source: 'avalon-israeli-declaration-of-independence',
-          loc: { section: 'Declaration of Israel\'s Independence 1948' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://avalon.law.yale.edu/20th_century/israel.asp'
-        }
-      }
-    },
     {
       date: {
         alts: [

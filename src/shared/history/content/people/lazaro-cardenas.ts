@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Lázaro Cárdenas', lang: 'en', role: 'primary' },
     { text: 'Lázaro Cárdenas del Río', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['latin-america'],
   roles: ['head-of-state', 'politician', 'military'],
   offices: [
@@ -108,5 +108,31 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:L%C3%A1zaro_C%C3%A1rdenas,_Retrato.png',
     credit: { institution: 'Secretaría de Cultura (México), Mexicana' },
     license: { id: 'cc-by', version: '4.0', url: 'https://creativecommons.org/licenses/by/4.0' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1895' },
+        cites: [
+          {
+            source: 'loc-name-authority-lazaro-cardenas',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1970' },
+        cites: [
+          {
+            source: 'loc-name-authority-lazaro-cardenas',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
   }
 })

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'tobacco-protest-foreign-role',
   about: ['event:tobacco-protest', 'event:tobacco-regie-concession'],
   topic: 'foreign-role',
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'forced-by-russia',
@@ -70,7 +70,7 @@ export default defineInterpretation({
         },
         {
           id: 'q4',
-          text: 'Russian officials used all their influence, notably in Tabrīz and Tehran where the movement reached revolutionary proportions (Ṣafāʾī, op. cit., p. 63).',
+          text: 'Russian officials used all their influence, notably in Tabrīz and Tehran where the movement reached revolutionary proportions',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-atabak-e-azam',
@@ -78,7 +78,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/atabak-e-azam'
           }
         }

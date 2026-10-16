@@ -199,7 +199,8 @@ function articleView(): HistoryArticleView {
     mark: { read: null, favorite: false },
     note: null,
     solarHijri: true,
-    lunarHijri: true
+    lunarHijri: true,
+    datedNarration: { share: 0.75, oldest: 1911 }
   }
 }
 
@@ -221,6 +222,8 @@ describe('History article page', () => {
     // A government's words are a claim, answered by an independent assessment.
     expect(screen.getByText('Government claim')).toBeTruthy()
     expect(screen.getByText('Independent assessment')).toBeTruthy()
+    // Most of the narrative rests on older scholarship: the Sources section says so.
+    expect(screen.getByText(/rests on works published before 1950, the oldest from 1911/)).toBeTruthy()
     expect(screen.getByText('The first quoted passage.')).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Mark as read' }))
     await waitFor(() => expect(apiMock.history.setMark).toHaveBeenCalledWith('event:sample', 'read', true))

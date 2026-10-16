@@ -166,5 +166,25 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Oil_on_Canvas_Portrait_of_Dred_Scott_(cropped).jpg',
     credit: { institution: 'Missouri History Museum', creator: 'Louis Schultze' },
     license: { id: 'public-domain' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:washington-dc',
+      cites: [
+        {
+          source: 'nara-milestone-dred-scott-v-sandford',
+          loc: { section: 'Dred Scott v. Sandford (1857)', para: '179' }
+        }
+      ]
+    },
+    {
+      ref: 'place:st-louis',
+      cites: [
+        {
+          source: 'nara-milestone-dred-scott-v-sandford',
+          loc: { section: 'Dred Scott v. Sandford (1857)', para: '2' }
+        }
+      ]
+    }
+  ]
 })

@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'David Ben-Gurion', lang: 'en', role: 'primary' },
     { text: 'דוד בן-גוריון', lang: 'he', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['mena'],
   roles: ['politician'],
   offices: [
@@ -24,18 +24,8 @@ export default definePerson({
   ],
   sections: [
     {
-      kind: 'career',
+      kind: 'overview',
       quotes: [
-        {
-          id: 'q1',
-          text: 'Under Ben-Gurion\'s direction, the Jewish Agency decided in October 1945 to unite with Jewish dissident groups in a combined rebellion against the British administration in Palestine.',
-          lang: 'en',
-          cite: {
-            source: 'loc-israel-country-study-1988',
-            loc: { section: 'Prelude to Statehood', para: '3' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/israel/20.htm' }
-        },
         {
           id: 'q2',
           text: 'On May 14, 1948, David Ben-Gurion, the head of the Jewish Agency, proclaimed the establishment of the State of Israel.',
@@ -49,6 +39,21 @@ export default definePerson({
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1945-1952/creation-israel'
           }
+        }
+      ]
+    },
+    {
+      kind: 'career',
+      quotes: [
+        {
+          id: 'q1',
+          text: 'Under Ben-Gurion\'s direction, the Jewish Agency decided in October 1945 to unite with Jewish dissident groups in a combined rebellion against the British administration in Palestine.',
+          lang: 'en',
+          cite: {
+            source: 'loc-israel-country-study-1988',
+            loc: { section: 'Prelude to Statehood', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/israel/20.htm' }
         },
         {
           id: 'q3',
@@ -68,5 +73,31 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Flickr_-_Government_Press_Office_(GPO)_-_Portrait_of_PM_David_Ben_Gurion.jpg',
     credit: { institution: 'Israel Government Press Office / National Photo Collection of Israel' },
     license: { id: 'cc-by-sa', version: '3.0' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1886' },
+        cites: [
+          {
+            source: 'loc-name-authority-david-ben-gurion',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1973' },
+        cites: [
+          {
+            source: 'loc-name-authority-david-ben-gurion',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
   }
 })

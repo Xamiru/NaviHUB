@@ -17,13 +17,27 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['iran'],
   roles: ['revolutionary'],
   sections: [
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q4',
+          text: 'Mīrzā Reżā returned and on 1 May 1896, as Nāṣer-al-dīn Shah was preparing for the 50th lunar anniversary of his accession, Mīrzā Reżā pretended to offer a petition but instead shot the shah dead. He was hanged and the Iranian government tried to extradite Afḡānī; but the sultan, probably fearful of the secrets of his court Afḡānī knew, insisted Afḡānī was an Afghan and not extraditable.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-keddie-afgani-jamal-al-din',
+            loc: { section: 'AFḠĀNĪ, JAMĀL-AL-DĪN', para: '17' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
+            url: 'https://www.iranicaonline.org/articles/afgani-jamal-al-din'
+          }
+        },
         {
           id: 'q1',
           text: 'Meanwhile, an ex-servant and disciple of Afḡānī, Mīrzā Reżā, after being freed from jail in Iran, came to Istanbul and found Afḡānī.',
@@ -66,25 +80,6 @@ export default definePerson({
           }
         }
       ]
-    },
-    {
-      kind: 'death',
-      quotes: [
-        {
-          id: 'q4',
-          text: 'Mīrzā Reżā returned and on 1 May 1896, as Nāṣer-al-dīn Shah was preparing for the 50th lunar anniversary of his accession, Mīrzā Reżā pretended to offer a petition but instead shot the shah dead. He was hanged and the Iranian government tried to extradite Afḡānī; but the sultan, probably fearful of the secrets of his court Afḡānī knew, insisted Afḡānī was an Afghan and not extraditable.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-keddie-afgani-jamal-al-din',
-            loc: { section: 'AFḠĀNĪ, JAMĀL-AL-DĪN', para: '17' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-09',
-            url: 'https://www.iranicaonline.org/articles/afgani-jamal-al-din'
-          }
-        }
-      ]
     }
   ],
   portrait: {
@@ -95,5 +90,18 @@ export default definePerson({
   },
   furtherReading: [
     { source: 'nateq-1984-karnameh-va-zamaneh-ye-mirza-reza-kermani', perspective: 'iranian' }
-  ]
+  ],
+  died: {
+    alts: [
+      {
+        value: { d: '1896' },
+        cites: [
+          {
+            source: 'loc-name-authority-mirza-reza-kermani',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
+  }
 })

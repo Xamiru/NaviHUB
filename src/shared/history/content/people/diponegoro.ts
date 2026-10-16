@@ -16,7 +16,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -51,13 +51,13 @@ export default definePerson({
       quotes: [
         {
           id: 'q1',
-          text: 'Its central figure was Pangeran Diponegoro (ca. 1785-1855), eldest son of the sultan of Yogyakarta.',
+          text: 'The Java War of 1825-30 constituted the last resistance of the Javanese aristocracy to Dutch rule. Its central figure was Pangeran Diponegoro (ca. 1785-1855), eldest son of the sultan of Yogyakarta.',
           lang: 'en',
           cite: {
             source: 'loc-indonesia-country-study-1993',
             loc: { section: 'The Java War and Cultivation System', para: '2' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/indonesia/11.htm' }
+          provenance: { via: 'web', at: '2026-10-16', url: 'http://countrystudies.us/indonesia/11.htm' }
         },
         {
           id: 'q2',

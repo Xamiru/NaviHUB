@@ -263,5 +263,16 @@ export default defineEvent({
     { source: 'ccp-2011-zhongguo-gongchandang-lishi-di-er-juan', perspective: 'chinese' },
     { source: 'yang-2008-mubei', perspective: 'chinese' },
     { source: 'lin-2008-wutuobang-yundong', perspective: 'chinese' }
+  ],
+  places: [
+    {
+      ref: 'place:beijing',
+      cites: [
+        {
+          source: 'loc-china-country-study-1987',
+          loc: { section: 'The Great Leap Forward, 1958-60', para: '6' }
+        }
+      ]
+    }
   ]
 })

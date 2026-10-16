@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'fath-ali-shah-character',
   about: ['person:fath-ali-shah-qajar'],
   topic: 'character',
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   framing: {
     id: 'q1',
     text: 'Despite his posthumous image of carnal debauchery and irresponsible pleasure-seeking, in his own time Fatḥ-ʿAli Shah was regarded as a man of “elegant manners and many accomplishments” who was “very regular in the execution of his public duties.”',
@@ -56,7 +56,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q3',
-          text: 'the shah possessed “not only a very strong, but a very amiable mind; and the remarks which he made, and the inferences he drew from time to time, manifested very considerable power of reflection.”',
+          text: 'Jones may have hidden from the shah the occurrence of the American Revolution and the fact that it was no longer a British colony, but the shah must have extracted enough information out of Jones to make him acknowledge that the shah possessed “not only a very strong, but a very amiable mind; and the remarks which he made, and the inferences he drew from time to time, manifested very considerable power of reflection.”',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-fath-ali-shah',
@@ -64,7 +64,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/fath-ali-shah'
           }
         }

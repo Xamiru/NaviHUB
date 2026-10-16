@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Francisco Solano López', lang: 'en', role: 'primary' },
     { text: 'Francisco Solano López', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -78,7 +78,7 @@ export default definePerson({
   ],
   sections: [
     {
-      kind: 'early-life',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',
@@ -89,7 +89,12 @@ export default definePerson({
             loc: { section: 'Francisco Solano Lopez', para: '1' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/paraguay/10.htm' }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'early-life',
+      quotes: [
         {
           id: 'q2',
           text: 'His 1853 trip to Europe to buy arms was undoubtedly the most important experience of his life; his stay in Paris proved to be a turning point for him.',

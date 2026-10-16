@@ -203,12 +203,12 @@ export default defineEvent({
         },
         {
           id: 'q6',
-          text: 'During 1911 he had begun to organize a gendarmerie to be under his own direct orders which was to assist the civilian officers of the Treasury in the collection of revenue throughout the country (Shuster, pp. 69-70).',
+          text: 'During 1911 he had begun to organize a gendarmerie to be under his own direct orders which was to assist the civilian officers of the Treasury in the collection of revenue throughout the country',
           lang: 'en',
           cite: { source: 'iranica-cronin-gendarmerie', loc: { section: 'GENDARMERIE', para: '3' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/gendarmerie'
           }
         }
@@ -219,7 +219,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q7',
-          text: 'In December 1911, Baḵtiāri khans and conservative ministers dissolved the Majles and dismissed Shuster, an event often viewed as the end of the Constitutional Revolution (Shuster, pp. 214-15; Kasravi, pp. 234-39).',
+          text: 'In December 1911, Baḵtiāri khans and conservative ministers dissolved the Majles and dismissed Shuster, an event often viewed as the end of the Constitutional Revolution',
           lang: 'en',
           cite: {
             source: 'iranica-andreeva-russia-relations',
@@ -230,7 +230,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/russia-i-relations/'
           }
         },
@@ -534,7 +534,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q16',
-        text: 'The summary execution of a number of prominent Persian constitutionalists, including the highest ranking cleric, Ṯeqat-al-Eslām, in the city of Tabriz on Christmas Day 1911 by Russian forces and their Persian henchmen loyal to the ex-shah, further amplified the “Grey must go” campaign in Britain, which got underway in early 1912 due to a broad array of objections to Grey’s over-all handling of foreign affairs (Steiner, 1977, pp. 142-43; Browne, 1912b, pp. 3-15).',
+        text: 'The summary execution of a number of prominent Persian constitutionalists, including the highest ranking cleric, Ṯeqat-al-Eslām, in the city of Tabriz on Christmas Day 1911 by Russian forces and their Persian henchmen loyal to the ex-shah, further amplified the “Grey must go” campaign in Britain, which got underway in early 1912 due to a broad array of objections to Grey’s over-all handling of foreign affairs',
         lang: 'en',
         cite: {
           source: 'iranica-bonakdarian-great-britain-iii',
@@ -542,7 +542,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/great-britain-iii'
         }
       }

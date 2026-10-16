@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'constitutional-revolution-causes',
   about: ['event:persian-constitutional-revolution'],
   topic: 'causes',
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'fiscal-crisis',
@@ -150,7 +150,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q8',
-          text: 'This movement is often regarded as a prelude to the Constitutional Revolution as well as the first instance in the modern period when the ulema managed to successfully rally the urban populace against the government (Lambton, pp. 223-76).',
+          text: 'This movement is often regarded as a prelude to the Constitutional Revolution as well as the first instance in the modern period when the ulema managed to successfully rally the urban populace against the government',
           lang: 'en',
           cite: {
             source: 'iranica-yarshater-iranian-history-islamic-period-5',
@@ -158,7 +158,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/iran-ii2-islamic-period-page-5/'
           }
         },

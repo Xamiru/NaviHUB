@@ -2,8 +2,19 @@
 // this machine knows (marks, library matches, archive rows), all passed in.
 // historyService.ts wires the real lookups; tests pass fakes.
 
+import { datedNarration } from '@shared/history/sourceAge'
 import { bucketLabel, bucketOf, inBucket } from '@shared/history/buckets'
-import { formatHistDate } from '@shared/history/calendars'
+import {
+  decimalYear,
+  formatHistDate,
+  gregorianToJdn,
+  isValidSolarHijriYear,
+  jdnToLunarHijri,
+  jdnToSolarHijri,
+  julianToJdn,
+  SOLAR_HIJRI_ADOPTED,
+  yearLabel
+} from '@shared/history/calendars'
 import { lookup } from '@shared/history/model'
 import {
   REGIONS,
@@ -27,6 +38,7 @@ import type {
   HistoryArchiveItem,
   HistoryArticleView,
   HistoryDecade,
+  HistoryYear,
   HistoryMark,
   HistoryMediaBacklink,
   HistoryMediaCard,
@@ -244,6 +256,85 @@ function mediaCards(
 
 function startOf(t: TimelineEntry): number {
   return t.s
+}
+
+/** Which calendar a year's stored days are counted in (schema.ts HistDate). */
+function yearCalendar(y: number): HistoryYear['calendar'] {
+  return y < 1582 ? 'julian' : y === 1582 ? 'reform' : 'gregorian'
+}
+
+/** The year's first and last day as Julian day numbers, in the calendar its dates use. */
+function yearDays(y: number): [number, number] {
+  const first = y <= 1582 ? julianToJdn(y, 1, 1) : gregorianToJdn(y, 1, 1)
+  const last = y < 1582 ? julianToJdn(y, 12, 31) : gregorianToJdn(y, 12, 31)
+  return [first, last]
+}
+
+/** The world in one year: what was under way, which states stood, who held office. */
+export function yearView(index: HistoryIndex, y: number, ctx: Pick<ViewContext, 'cached'>): HistoryYear {
+  const from = y
+  const to = y + 1
+  // A range's end is exclusive (an event ending in 1925 ends at 1926.0); a point counts in its own year.
+  const during = (t: TimelineEntry): boolean => t.s < to && (t.e === null ? t.s >= from : t.e > from)
+  const info = (ref: string): HistoryRefInfo => refInfo(index, ref, ctx.cached)
+  const ordered = (ts: TimelineEntry[]): TimelineEntry[] => [...ts].sort((a, b) => a.prominence - b.prominence || a.s - b.s)
+
+  const events = index.events.filter(during)
+  const byRegion = REGIONS.map((r) => ({
+    region: r.key as RegionKey,
+    items: ordered(events.filter((t) => t.lane === r.key)).map((t) => info(t.ref))
+  })).filter((g) => g.items.length > 0)
+
+  // A state with no end date still stands; on the timeline it is a point.
+  const standing = (t: TimelineEntry): boolean => {
+    if (t.kind !== 'polity') return during(t)
+    const p = index.catalog.polities.get(parseRef(t.ref)!.id)
+    return p?.end ? during(t) : t.s < to
+  }
+  const spans = index.periods.filter(standing)
+  const periods = ordered(spans.filter((t) => t.kind === 'period')).map((t) => info(t.ref))
+  const states = ordered(spans.filter((t) => t.kind === 'polity')).map((t) => {
+    const holders = (index.rulersOf.get(t.ref) ?? []).flatMap(({ ref, office }) => {
+      const p = lookup(index.catalog, ref)
+      const o = p?.kind === 'person' ? p.offices?.[office] : undefined
+      const sv = firstValue(o?.start)
+      const ev = firstValue(o?.end)
+      const s = sv ? decimalYear(sv.d) : null
+      if (!o || s === null) return []
+      const e = ev ? decimalYear(ev.notAfter ?? ev.d, 'end') : null
+      // An office with no end date counts only in the year it began.
+      const inPost = s < to && (e === null ? s >= from : e > from)
+      return inPost ? [{ s, person: info(ref), title: o.title }] : []
+    })
+    holders.sort((a, b) => a.s - b.s)
+    return { state: info(t.ref), holders: holders.map(({ person, title }) => ({ person, title })) }
+  })
+
+  const born: HistoryRefInfo[] = []
+  const died: HistoryRefInfo[] = []
+  const yearPart = (d?: string): number | null => (d ? Number(d.slice(0, d.startsWith('-') ? 5 : 4)) : null)
+  for (const p of index.catalog.people.values()) {
+    const ref = refOf('person', p.id)
+    if (yearPart(firstValue(p.born)?.d) === y) born.push(info(ref))
+    if (yearPart(firstValue(p.died)?.d) === y) died.push(info(ref))
+  }
+
+  const [first, last] = yearDays(y)
+  const lh = [jdnToLunarHijri(first), jdnToLunarHijri(last)]
+  const sh = [jdnToSolarHijri(first), jdnToSolarHijri(last)]
+  const shOk = sh[0] && sh[1] && isValidSolarHijriYear(sh[0].y) && sh[0].y >= 1
+  return {
+    year: y,
+    label: yearLabel(y),
+    calendar: yearCalendar(y),
+    lunarHijri: lh[0] && lh[1] ? [lh[0].y, lh[1].y] : lh[1] ? [lh[1].y, lh[1].y] : null,
+    solarHijri: shOk ? { from: sh[0]!.y, to: sh[1]!.y, proleptic: y < Number(SOLAR_HIJRI_ADOPTED.slice(0, 4)) } : null,
+    events: byRegion,
+    periods,
+    states,
+    born,
+    died
+  }
 }
 
 /** A front page; `start` is any year inside it (normally its first). */
@@ -542,6 +633,7 @@ export function article(
     mark: ctx.marks.get(ref) ?? { read: null, favorite: false },
     note: ctx.note,
     solarHijri: 'regions' in e && (e.regions as string[]).includes('iran'),
+    datedNarration: datedNarration(e, (id) => index.catalog.sources.get(id)),
     lunarHijri: 'regions' in e && (e.regions as string[]).some((r) => r === 'iran' || r === 'mena'),
     mapYear: mapYearOf(index, e),
     rulers,

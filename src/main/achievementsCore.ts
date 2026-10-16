@@ -413,13 +413,17 @@ export function rarityTier(globalPct: number | null | undefined): RarityTier | n
 // ---------------------------------------------------------------------------
 // Keyless schema sources. Steam only hands out Web API keys to accounts that
 // have spent money, and this user's account never will — so the achievement
-// LIST has to come from somewhere that needs no key. Two sources, in the order
-// achievements.ts tries them:
+// LIST has to come from somewhere that needs no key. Three sources, in the
+// order achievements.ts tries them (the keyed Web API sits between the last
+// two when a key exists):
 //
 //   1. The crack's own steam_settings/achievements.json (Goldberg/GSE ship it
 //      beside the exe). Full schema, INCLUDING the api names the emulator
 //      writes unlocks under, and it needs no network at all.
-//   2. Steam's public community stats page, which lists names/art/global % but
+//   2. Steam's keyless IPlayerService/GetGameAchievements, which the Steam
+//      client itself uses: api names, names, descriptions (hidden ones
+//      included), both icons and the global % in one exact list.
+//   3. Steam's public community stats page, which lists names/art/global % but
 //      NOT api names — those are joined in from the keyless percentages
 //      endpoint by matching percentages (both are sorted by % desc).
 // ---------------------------------------------------------------------------
@@ -524,6 +528,45 @@ export function parseCommunityAchievementsPage(html: string): CommunityRow[] {
       description: decodeEntities(desc.replace(/<[^>]+>/g, '')) || null,
       iconUrl: img,
       percent: Number.isFinite(pct) ? pct : null
+    })
+  }
+  return out
+}
+
+// Icons come back from GetGameAchievements as bare file names under this path.
+const STEAM_ACHIEVEMENT_ICONS = 'https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps'
+
+// IPlayerService/GetGameAchievements — `{ response: { achievements: [...] } }`,
+// each with internal_name (the api name), localized_name/_desc, hidden, icon,
+// icon_gray and player_percent_unlocked (a string). A game with no
+// achievements answers `{ response: {} }`. Never throws; anything that is not
+// that shape → [].
+export function parsePlayerServiceAchievements(data: unknown, appid: string): SchemaRow[] {
+  const list = (data as { response?: { achievements?: unknown } } | null)?.response?.achievements
+  if (!Array.isArray(list)) return []
+  const icon = (v: unknown): string | null => {
+    const file = str(v)
+    return file && /^[\w.-]+$/.test(file) ? `${STEAM_ACHIEVEMENT_ICONS}/${appid}/${file}` : null
+  }
+  const out: SchemaRow[] = []
+  const seen = new Set<string>()
+  for (const raw of list) {
+    const e = (raw ?? {}) as Record<string, unknown>
+    const apiName = str(e.internal_name)
+    if (!apiName || seen.has(apiName)) continue
+    seen.add(apiName)
+    // A string ("12.3") or a number; a blank string is no figure, not 0%.
+    const rawPct = e.player_percent_unlocked
+    const pct =
+      typeof rawPct === 'number' ? rawPct : str(rawPct) != null ? Number(rawPct) : Number.NaN
+    out.push({
+      apiName,
+      name: str(e.localized_name) ?? apiName,
+      description: str(e.localized_desc),
+      hidden: isTruthyFlag(e.hidden),
+      icon: icon(e.icon),
+      iconGray: icon(e.icon_gray),
+      globalPct: Number.isFinite(pct) ? pct : null
     })
   }
   return out

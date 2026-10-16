@@ -352,7 +352,12 @@ export default defineEvent({
             at: '2026-10-08',
             url: 'https://www.hrw.org/reports/1993/iraqanfal/ANFAL3.htm'
           }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
         {
           id: 'q11',
           text: 'On March 16, 1988, the Iraqi air force dropped a devastating mix of mustard and nerve gas on citizens in this city - 5,000 were killed immediately, several thousand died later, and an estimated 10,000 people are maimed or still suffering the effects of this attack.',

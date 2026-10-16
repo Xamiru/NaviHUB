@@ -242,9 +242,13 @@ export default function HistoryMapPage() {
       <div className="history-stage relative overflow-hidden rounded-2xl border border-black/40 shadow-2xl">
         {/* header */}
         <div className="relative z-30 flex flex-wrap items-center gap-3 border-b border-white/[0.06] px-5 py-2.5">
-          <span className="hist-display text-3xl font-semibold tabular-nums tracking-tight text-ink">
+          <Link
+            to={`/history/year/${year}`}
+            title={`The world in ${mapYearLabel(year)}`}
+            className="hist-display text-3xl font-semibold tabular-nums tracking-tight text-ink hover:text-accent"
+          >
             {mapYearLabel(year)}
-          </span>
+          </Link>
           <span className="text-[10px] uppercase tracking-[0.2em] text-ink-muted">
             {layers.states.length} states
             {pinsQuery.isSuccess && ` · ${pins.length} events within ${PIN_WINDOW} years`}

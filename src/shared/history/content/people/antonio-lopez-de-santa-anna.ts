@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Antonio López de Santa Anna', lang: 'en', role: 'primary' },
     { text: 'Antonio López de Santa Anna', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -45,6 +45,25 @@ export default definePerson({
   regions: ['latin-america'],
   roles: ['military', 'politician'],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q6',
+          text: 'SANTA-ANNA, ANTONIO LOPEZ DE (1795–1876), Mexican soldier and politician, was born at Jalapa in the province of Vera Cruz on the 21st of February 1795.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-santa-anna-antonio-lopez-de',
+            loc: { section: 'SANTA-ANNA, ANTONIO LOPEZ DE', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Santa-Anna,_Antonio_Lopez_de'
+          }
+        }
+      ]
+    },
     {
       kind: 'career',
       quotes: [

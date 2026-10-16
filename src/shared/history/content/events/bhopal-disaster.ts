@@ -192,6 +192,72 @@ export default defineEvent({
           }
         },
         {
+          id: 'q4',
+          text: 'UCC’s initial investigation showed that a large volume of water had been introduced into the MIC tank and caused a chemical reaction that forced the pressure release valve to open and allowed the gas to leak. A committee of experts, working on behalf of the Indian government, conducted its own investigation and reached the same conclusion.',
+          lang: 'en',
+          cite: {
+            source: 'union-carbide-overview-of-bhopal-tragedy',
+            loc: { section: 'Overview of Bhopal Tragedy', para: '8' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://web.archive.org/web/20251226023756/https://www.bhopal.com/en-us/overview-of-bhopal-tragedy.html'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'consequences',
+      quotes: [
+        {
+          id: 'q6',
+          text: 'The basic consideration motivating the conclusion of the settlement was the compelling need for urgent relief. The suffering of the victims has been intense and unrelieved.',
+          lang: 'en',
+          cite: {
+            source: 'supreme-court-of-india-1989-union-carbide-v-union-of-india-reasons',
+            loc: { section: 'Order of 4 May 1989', para: '12' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://web.archive.org/web/20221226025151/https://indiankanoon.org/doc/1344892/'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q5',
+          text: 'The settlement proposals were considered on the premise that Government had the exclusive statutory authority to represent and act on behalf of the victims and neither counsel had any reservation as to this.',
+          lang: 'en',
+          cite: {
+            source: 'supreme-court-of-india-1989-union-carbide-v-union-of-india-reasons',
+            loc: { section: 'Order of 4 May 1989', para: '15' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://web.archive.org/web/20221226025151/https://indiankanoon.org/doc/1344892/'
+          }
+        },
+        {
+          id: 'q8',
+          text: 'This Court by its order dated 14 February, 1989 made in those appeals directed that there be an overall settlement of the claims in the suit, for 470 million US dollars and termination of all civil and criminal proceedings.',
+          lang: 'en',
+          cite: {
+            source: 'supreme-court-of-india-1989-union-carbide-v-union-of-india-reasons',
+            loc: { section: 'Order of 4 May 1989', para: '3' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://web.archive.org/web/20221226025151/https://indiankanoon.org/doc/1344892/'
+          }
+        },
+        {
           id: 'q9',
           text: 'The tragedy took an immediate toll of 2,660 innocent human lives and left tens of thousands of innocent citizens of Bhopal physically impaired or affected in various degrees.',
           lang: 'en',
@@ -212,58 +278,6 @@ export default defineEvent({
           cite: {
             source: 'supreme-court-of-india-1989-union-carbide-v-union-of-india-reasons',
             loc: { section: 'Order of 4 May 1989', para: '1' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://web.archive.org/web/20221226025151/https://indiankanoon.org/doc/1344892/'
-          }
-        },
-        {
-          id: 'q4',
-          text: 'UCC’s initial investigation showed that a large volume of water had been introduced into the MIC tank and caused a chemical reaction that forced the pressure release valve to open and allowed the gas to leak. A committee of experts, working on behalf of the Indian government, conducted its own investigation and reached the same conclusion.',
-          lang: 'en',
-          cite: {
-            source: 'union-carbide-overview-of-bhopal-tragedy',
-            loc: { section: 'Overview of Bhopal Tragedy', para: '8' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://web.archive.org/web/20251226023756/https://www.bhopal.com/en-us/overview-of-bhopal-tragedy.html'
-          }
-        }
-      ]
-    },
-    {
-      kind: 'aftermath',
-      quotes: [
-        {
-          id: 'q5',
-          text: 'The settlement proposals were considered on the premise that Government had the exclusive statutory authority to represent and act on behalf of the victims and neither counsel had any reservation as to this.',
-          lang: 'en',
-          cite: {
-            source: 'supreme-court-of-india-1989-union-carbide-v-union-of-india-reasons',
-            loc: { section: 'Order of 4 May 1989', para: '15' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://web.archive.org/web/20221226025151/https://indiankanoon.org/doc/1344892/'
-          }
-        }
-      ]
-    },
-    {
-      kind: 'consequences',
-      quotes: [
-        {
-          id: 'q6',
-          text: 'The basic consideration motivating the conclusion of the settlement was the compelling need for urgent relief. The suffering of the victims has been intense and unrelieved.',
-          lang: 'en',
-          cite: {
-            source: 'supreme-court-of-india-1989-union-carbide-v-union-of-india-reasons',
-            loc: { section: 'Order of 4 May 1989', para: '12' }
           },
           provenance: {
             via: 'web',
@@ -301,35 +315,6 @@ export default defineEvent({
           via: 'web',
           at: '2026-10-08',
           url: 'https://web.archive.org/web/20251226023756/https://www.bhopal.com/en-us/overview-of-bhopal-tragedy.html'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1989-02-14' },
-            cites: [
-              {
-                source: 'supreme-court-of-india-1989-union-carbide-v-union-of-india-reasons',
-                loc: { section: 'Order of 4 May 1989', para: '3' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q8',
-        text: 'This Court by its order dated 14 February, 1989 made in those appeals directed that there be an overall settlement of the claims in the suit, for 470 million US dollars and termination of all civil and criminal proceedings.',
-        lang: 'en',
-        cite: {
-          source: 'supreme-court-of-india-1989-union-carbide-v-union-of-india-reasons',
-          loc: { section: 'Order of 4 May 1989', para: '3' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-08',
-          url: 'https://web.archive.org/web/20221226025151/https://indiankanoon.org/doc/1344892/'
         }
       }
     }

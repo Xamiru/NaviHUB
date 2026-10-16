@@ -135,7 +135,7 @@ export default defineEvent({
         },
         {
           id: 'q3',
-          text: 'This date is mentioned by the Bāb in several places, notably his Persian Bayān (2:7, p. 30).',
+          text: 'This date is mentioned by the Bāb in several places, notably his Persian Bayān',
           lang: 'en',
           cite: {
             source: 'iranica-maceoin-bab',
@@ -143,7 +143,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/bab-ali-mohammad-sirazi'
           }
         }
@@ -168,7 +168,7 @@ export default defineEvent({
         },
         {
           id: 'q5',
-          text: 'A second such experience occurred on 15 Rabīʿ II 1260/4 May 1844, which he describes as “the first day on which the spirit descended into his heart” (Ketāb al-fehrest, p. 286)',
+          text: 'A second such experience occurred on 15 Rabīʿ II 1260/4 May 1844, which he describes as “the first day on which the spirit descended into his heart”',
           lang: 'en',
           cite: {
             source: 'iranica-maceoin-bab',
@@ -176,7 +176,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/bab-ali-mohammad-sirazi'
           }
         },
@@ -247,13 +247,13 @@ export default defineEvent({
       },
       quote: {
         id: 'q9',
-        text: 'Leaving Kūfa with a brother and cousin on or just after 12 Rabīʿ I 1260/1 April 1844, Bošrūʾī set out for Kermān, where he planned to consult with Moḥammad Karīm Khan (for references see MacEoin, “From Shaykhism,” p. 144).',
+        text: 'Leaving Kūfa with a brother and cousin on or just after 12 Rabīʿ I 1260/1 April 1844, Bošrūʾī set out for Kermān, where he planned to consult with Moḥammad Karīm Khan',
         lang: 'en',
         cite: {
           source: 'iranica-maceoin-babism-i',
           loc: { section: 'BABISM i. The Babi movement', para: '5' }
         },
-        provenance: { via: 'web', at: '2026-10-06', url: 'https://www.iranicaonline.org/articles/babism' }
+        provenance: { via: 'web', at: '2026-10-16', url: 'https://www.iranicaonline.org/articles/babism' }
       }
     },
     {

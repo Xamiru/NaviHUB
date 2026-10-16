@@ -36,16 +36,19 @@ const games: InstalledGame[] = [
   {
     mediaId: 1, title: 'Elden Ring', mediaType: 'game', coverPath: 'media/elden.jpg',
     exePath: 'C:\\elden.exe', totalSeconds: 36000, lastPlayedAt: '2026-09-18 20:00:00',
+    platform: null,
     lastSessionSeconds: 3600, achievements: { unlocked: 2, total: 4 }
   },
   {
     mediaId: 2, title: 'Journey', mediaType: 'game', coverPath: 'media/journey.jpg',
     exePath: 'C:\\journey.exe', totalSeconds: 18000, lastPlayedAt: '2026-09-14 20:00:00',
+    platform: null,
     lastSessionSeconds: 1200, achievements: null
   },
   {
     mediaId: 3, title: 'Hollow Knight', mediaType: 'game', coverPath: 'media/hollow.jpg',
     exePath: 'C:\\hollow.exe', totalSeconds: 72000, lastPlayedAt: null,
+    platform: null,
     lastSessionSeconds: null, achievements: null
   }
 ]
@@ -142,7 +145,7 @@ describe('Installed games launcher', () => {
     session.status = {
       id: 'run-1', state: 'running', mediaId: 1, mediaType: 'game', title: 'Elden Ring',
       startedAt: '2026-09-18 20:00:00', elapsedSec: 42, durationSec: null,
-      discarded: false, progressDelta: null, message: null
+      discarded: false, progressDelta: null, message: null, shotsPending: false, screenshotCount: 0
     }
     view.rerender(
       <QueryClientProvider client={view.client}>
@@ -160,5 +163,24 @@ describe('Installed games launcher', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not load installed games.')
     await user.click(screen.getByRole('button', { name: 'Try again' }))
     expect(await screen.findByRole('heading', { name: 'Continue playing' })).toBeInTheDocument()
+  })
+
+  it('shelves the collection by console and remembers the choice', async () => {
+    localStorage.removeItem('installed.groupByConsole')
+    installed.mockResolvedValue([
+      { ...games[0], platform: null },
+      { ...games[1], platform: 'ps2' },
+      { ...games[2], platform: 'ps2' }
+    ])
+    renderPage()
+    await screen.findByRole('heading', { name: 'All linked games' })
+    // Page state is per history entry, and the search test above typed into it.
+    await userEvent.clear(screen.getByRole('searchbox', { name: 'Search linked games' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Group by console', pressed: false }))
+    await waitFor(() =>
+      expect(within(screen.getByRole('region', { name: /PlayStation 2/ })).getAllByRole('listitem')).toHaveLength(2)
+    )
+    expect(screen.getByRole('region', { name: /^PC/ })).toBeInTheDocument()
+    expect(localStorage.getItem('installed.groupByConsole')).toBe('1')
   })
 })

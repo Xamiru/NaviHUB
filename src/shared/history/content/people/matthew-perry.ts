@@ -16,7 +16,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -56,7 +56,7 @@ export default definePerson({
   roles: ['military', 'diplomat'],
   sections: [
     {
-      kind: 'career',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',
@@ -71,7 +71,12 @@ export default definePerson({
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1830-1860/opening-to-japan'
           }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'career',
+      quotes: [
         {
           id: 'q2',
           text: 'Although he is often credited with opening Japan to the western world, Perry was not the first westerner to visit the islands.',

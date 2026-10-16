@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Chiang Kai-shek', lang: 'en', role: 'primary' },
     { text: '蔣介石', lang: 'zh', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -38,6 +38,21 @@ export default definePerson({
   regions: ['east-asia'],
   roles: ['military', 'politician'],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q5',
+          text: 'During the summer of 1925, Chiang, as commander-in-chief of the National Revolutionary Army, set out on the long-delayed Northern Expedition against the northern warlords.',
+          lang: 'en',
+          cite: {
+            source: 'loc-china-country-study-1987',
+            loc: { section: 'Nationalism and Communism', para: '5' }
+          },
+          provenance: { via: 'web', at: '2026-10-16', url: 'http://countrystudies.us/china/21.htm' }
+        }
+      ]
+    },
     {
       kind: 'career',
       quotes: [

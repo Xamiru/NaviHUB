@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'faramush-khana-purpose',
   about: ['event:faramush-khana', 'person:malkom-khan'],
   topic: 'motives',
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   framing: {
     id: 'q1',
     text: 'Malkom’s purpose in assembling these dignitaries was varyingly presented by himself and interpreted by others.',
@@ -29,7 +29,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q2',
-          text: 'In a treatise written apparently while the farāmūš-ḵāna was still functioning, he defended it against actual or anticipated charges of subverting religion; if secrecy characterized its functioning, he explained, this was precisely because prudential concealment (ketmān) was a well-established principle of Shiʿite Islam, and the goal of masonry was nothing other than establishing fraternity among the believers (Resāla-ye farāmūš-ḵāna, cited in Rāʾīn, 1969, I, pp. 545-54).',
+          text: 'In a treatise written apparently while the farāmūš-ḵāna was still functioning, he defended it against actual or anticipated charges of subverting religion; if secrecy characterized its functioning, he explained, this was precisely because prudential concealment (ketmān) was a well-established principle of Shiʿite Islam, and the goal of masonry was nothing other than establishing fraternity among the believers',
           lang: 'en',
           cite: {
             source: 'iranica-algar-freemasonry-qajar',
@@ -37,13 +37,13 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/freemasonry-ii-in-the-qajar-period'
           }
         },
         {
           id: 'q3',
-          text: 'Instead, he ascribed to Freemasonry straightforward worldly purposes such as the fostering of modern learning, civic virtue, and social solidarity (Āḵūndzāda, pp. 294-95).',
+          text: 'Instead, he ascribed to Freemasonry straightforward worldly purposes such as the fostering of modern learning, civic virtue, and social solidarity',
           lang: 'en',
           cite: {
             source: 'iranica-algar-freemasonry-qajar',
@@ -51,7 +51,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/freemasonry-ii-in-the-qajar-period'
           }
         }
@@ -104,7 +104,7 @@ export default defineInterpretation({
         },
         {
           id: 'q6',
-          text: 'It is, in fact, important to remember that the farāmūš-ḵānas were regarded by many as centers for Babi recruitment and proselytizing (Gobineau, Religions et philosophies, p. 274).',
+          text: 'It is, in fact, important to remember that the farāmūš-ḵānas were regarded by many as centers for Babi recruitment and proselytizing',
           lang: 'en',
           cite: {
             source: 'iranica-maceoin-azali-babism',
@@ -112,7 +112,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/azali-babism'
           }
         }

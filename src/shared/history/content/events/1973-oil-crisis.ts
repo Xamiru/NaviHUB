@@ -482,7 +482,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q6',
-        text: 'the prospect of a negotiated end to hostilities between Israel and Syria proved sufficient to convince the relevant parties to lift the embargo in March 1974.',
+        text: 'Though a finalized peace deal failed to materialize, the prospect of a negotiated end to hostilities between Israel and Syria proved sufficient to convince the relevant parties to lift the embargo in March 1974.',
         lang: 'en',
         cite: {
           source: 'state-dept-milestones-oil-embargo',
@@ -490,7 +490,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-09',
+          at: '2026-10-16',
           url: 'https://history.state.gov/milestones/1969-1976/oil-embargo'
         }
       }

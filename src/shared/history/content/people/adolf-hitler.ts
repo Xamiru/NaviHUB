@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Adolf Hitler', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -51,7 +51,7 @@ export default definePerson({
   ],
   sections: [
     {
-      kind: 'early-life',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',
@@ -110,5 +110,18 @@ export default definePerson({
       version: '3.0 de',
       url: 'https://creativecommons.org/licenses/by-sa/3.0/de/deed.en'
     }
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1945-04-30' },
+        cites: [
+          {
+            source: 'loc-name-authority-adolf-hitler',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
   }
 })

@@ -96,6 +96,24 @@ export default defineEvent({
           loc: { section: 'October 1973 War', para: '4' }
         }
       ]
+    },
+    {
+      ref: 'place:cairo',
+      cites: [
+        {
+          source: 'loc-israel-country-study-1988',
+          loc: { section: 'The October 1973 War', para: '1' }
+        }
+      ]
+    },
+    {
+      ref: 'place:damascus',
+      cites: [
+        {
+          source: 'loc-israel-country-study-1988',
+          loc: { section: 'The October 1973 War', para: '1' }
+        }
+      ]
     }
   ],
   sides: [

@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   buildTutorPlan,
   historyEvidence,
-  tutorPhaseForStep,
+  tutorPhase,
   type TutorEvidence
 } from '../src/shared/japanese/tutor'
+import { coursePhase } from '../src/shared/japanese/coursePhases'
 
 function evidence(patch: Partial<TutorEvidence> = {}): TutorEvidence {
   return {
@@ -12,7 +13,7 @@ function evidence(patch: Partial<TutorEvidence> = {}): TutorEvidence {
     unseen: 0,
     introducedToday: 4,
     dailyTarget: 10,
-    frontierStep: 8,
+    frontierPhase: 'bridge',
     strictRetention30: 87,
     phonology: { sessions: 8, accuracy: 90 },
     listening: { sessions: 12, accuracy: 82 },
@@ -28,12 +29,32 @@ function evidence(patch: Partial<TutorEvidence> = {}): TutorEvidence {
 }
 
 describe('Japanese Tutor plan', () => {
+  it('alternates new material between the next lesson and the deck tracks', () => {
+    const deckStep = { title: 'Build your next core word deck', detail: 'd', route: '/japanese/roadmap' }
+    const nextLesson = { id: 3, title: 'Particles' }
+    const last = (patch: Partial<TutorEvidence>) => buildTutorPlan(evidence(patch)).tasks.at(-1)!
+    // Weakness-free evidence so the last slot is new material, not a repair block.
+    const calm = { phonology: { sessions: 8, accuracy: 95 }, strictRetention30: 95 }
+    expect(last({ ...calm, nextLesson, deckStep, deckDay: false }).title).toBe('Read the next lesson')
+    expect(last({ ...calm, nextLesson, deckStep, deckDay: true }).title).toBe(deckStep.title)
+    // With no course lesson left, the deck step takes every day.
+    expect(last({ ...calm, nextLesson: null, deckStep, deckDay: false }).title).toBe(deckStep.title)
+    // Unseen cards waiting: no new material of either kind.
+    expect(last({ ...calm, unseen: 12, nextLesson, deckStep, deckDay: true }).title).toBe('Hold the next lesson')
+  })
+
   it('maps the stepped curriculum onto five honest phases', () => {
-    expect(tutorPhaseForStep(1).id).toBe('foundation')
-    expect(tutorPhaseForStep(4).id).toBe('bridge')
-    expect(tutorPhaseForStep(10).id).toBe('immersion')
-    expect(tutorPhaseForStep(18).id).toBe('independent')
-    expect(tutorPhaseForStep(26).id).toBe('advanced')
+    // Built-in courses map by seed key, so renumbering steps cannot move a phase.
+    expect(coursePhase({ seedKey: 'n5', level: 'N5' })).toBe('foundation')
+    expect(coursePhase({ seedKey: 'casual', level: 'N5–N4' })).toBe('bridge')
+    expect(coursePhase({ seedKey: 'sfx', level: 'N5+' })).toBe('immersion')
+    expect(coursePhase({ seedKey: 'idioms', level: 'N3–N2' })).toBe('independent')
+    expect(coursePhase({ seedKey: 'n1kanji', level: 'N1' })).toBe('advanced')
+    // A user course falls back to its level label, or to nothing.
+    expect(coursePhase({ seedKey: null, level: 'N3' })).toBe('immersion')
+    expect(coursePhase({ seedKey: null, level: 'my notes', difficulty: 20 })).toBe('independent')
+    expect(coursePhase({ seedKey: null, level: null })).toBeNull()
+    expect(tutorPhase('bridge').title).toBe('Controlled reading bridge')
   })
 
   it('prescribes a balanced sixty-minute loop and local media routes', () => {
@@ -52,7 +73,7 @@ describe('Japanese Tutor plan', () => {
   })
 
   it('moves listening into local-media immersion from step ten', () => {
-    const plan = buildTutorPlan(evidence({ frontierStep: 12 }))
+    const plan = buildTutorPlan(evidence({ frontierPhase: 'immersion' }))
     expect(plan.tasks.find((task) => task.skill === 'listening')?.route).toBe('/japanese/immersion')
   })
 
@@ -96,7 +117,7 @@ describe('Japanese Tutor plan', () => {
     const fresh = evidence({
       due: 0,
       unseen: 0,
-      frontierStep: 1,
+      frontierPhase: 'foundation',
       totalReviews: 0,
       kanaNeeded: true,
       nextLesson: { id: 5, title: 'Greetings' }
@@ -119,7 +140,7 @@ describe('Japanese Tutor plan', () => {
       evidence({
         due: 0,
         unseen: 0,
-        frontierStep: 1,
+        frontierPhase: 'foundation',
         totalReviews: 0,
         budgetMinutes: 20,
         nextLesson: { id: 9, title: 'Particles' }
@@ -135,7 +156,7 @@ describe('Japanese Tutor plan', () => {
   })
 
   it('reads graded passages instead of native media during the foundation phase', () => {
-    const plan = buildTutorPlan(evidence({ frontierStep: 2 }))
+    const plan = buildTutorPlan(evidence({ frontierPhase: 'foundation' }))
     expect(plan.tasks.find((task) => task.skill === 'reading')?.route).toBe('/japanese/reading')
   })
 
@@ -159,7 +180,7 @@ describe('Japanese Tutor plan', () => {
   it('uses long-form evidence after the immersion bridge and does not mistake unsampled retention for a repair', () => {
     const plan = buildTutorPlan(
       evidence({
-        frontierStep: 12,
+        frontierPhase: 'immersion',
         strictRetention30: null,
         phonology: { sessions: 5, accuracy: 90 },
         listening: { sessions: 10, accuracy: 90 },

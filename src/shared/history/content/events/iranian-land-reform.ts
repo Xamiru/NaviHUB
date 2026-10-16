@@ -245,5 +245,16 @@ export default defineEvent({
   ],
   furtherReading: [
     { source: 'pahlavi-1967-enqelab-e-sefid', perspective: 'iranian' }
+  ],
+  places: [
+    {
+      ref: 'place:tehran',
+      cites: [
+        {
+          source: 'iranica-ehlers-agriculture-in-iran',
+          loc: { section: 'AGRICULTURE in Iran', para: '32' }
+        }
+      ]
+    }
   ]
 })

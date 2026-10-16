@@ -1,6 +1,8 @@
 import { useQueries, useQuery } from '@tanstack/react-query'
 import type { QuizHistory, QuizKind } from '@shared/types'
 import { buildTutorPlan, historyEvidence, type TutorBudget } from '@shared/japanese/tutor'
+import { coursePhase } from '@shared/japanese/coursePhases'
+import { nextDeckStep } from '@shared/japanese/pathTracks'
 import { api } from './api'
 import { qk } from './queryKeys'
 import { statusesFrom, useSettings } from './hooks'
@@ -130,6 +132,8 @@ export function useJapaneseTutorModel(budget: TutorBudget = 60) {
 
   const frontier = roadmap.steps.find((course) => course.id === roadmap.frontierCourseId)
   const frontierStep = frontier?.difficulty ?? roadmap.steps.at(-1)?.difficulty ?? 1
+  const frontierCourse = frontier ?? roadmap.steps.at(-1)
+  const frontierPhase = (frontierCourse && coursePhase(frontierCourse)) ?? 'foundation'
   const nextChapter =
     mangaLibrary?.chapters.find((chapter) => !chapter.readAt) ?? mangaLibrary?.chapters[0] ?? null
   const readingRoute =
@@ -141,12 +145,16 @@ export function useJapaneseTutorModel(budget: TutorBudget = 60) {
   const history = Object.fromEntries(
     TUTOR_HISTORY_KINDS.map((kind, index) => [kind, historyQueries[index].data as QuizHistory])
   ) as Record<(typeof TUTOR_HISTORY_KINDS)[number], QuizHistory>
+  // Local calendar day number: alternates new material between the course path
+  // and the deck tracks from one day to the next.
+  const now = new Date()
+  const dayIndex = Math.floor((now.getTime() - now.getTimezoneOffset() * 60000) / 86400000)
   const plan = buildTutorPlan({
     due: stats.dueCount,
     unseen: stats.newAvailableCount,
     introducedToday: stats.introducedToday,
     dailyTarget: loadJpDailyTarget(),
-    frontierStep,
+    frontierPhase,
     strictRetention30:
       detail.retention.strict30 == null ? null : Math.round(detail.retention.strict30 * 100),
     phonology: historyEvidence(history.jpPhonology),
@@ -161,7 +169,9 @@ export function useJapaneseTutorModel(budget: TutorBudget = 60) {
     budgetMinutes: budget,
     kanaNeeded: kanaNeeded(settings, history.kana),
     totalReviews: detail.totalReviews,
-    nextLesson: roadmap.nextLesson ? { id: roadmap.nextLesson.id, title: roadmap.nextLesson.title } : null
+    nextLesson: roadmap.nextLesson ? { id: roadmap.nextLesson.id, title: roadmap.nextLesson.title } : null,
+    deckStep: nextDeckStep(roadmap.tracks, dayIndex),
+    deckDay: dayIndex % 2 === 1
   })
 
   return {

@@ -88,6 +88,14 @@ describe('Upgrade games', () => {
     await expectNoAxeViolations(container)
   })
 
+  it('offers an update when a catalog is already installed', async () => {
+    mocked.gameCatalog.install.mockResolvedValue({ installed: true, gameCount: 148272, snapshot: '2026-10-08' })
+    const user = userEvent.setup()
+    wrap(<GamesUpgradeSection />)
+    await user.click(await screen.findByRole('button', { name: 'Update catalog' }))
+    expect(mocked.gameCatalog.install).toHaveBeenCalled()
+  })
+
   it('asks for the catalog before anything else', async () => {
     mocked.gameCatalog.status.mockResolvedValue({ installed: false, gameCount: 0, snapshot: null })
     wrap(<GamesUpgradeSection />)

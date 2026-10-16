@@ -4,7 +4,7 @@ import { useCanGoBack } from '../lib/navState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
-import { useReaderSource } from '../lib/readerSource'
+import { useReaderSource, useReaderTabTitle } from '../lib/readerSource'
 import { readerPath } from '../lib/readerPath'
 import BookContent from '../components/reader/BookContent'
 import MiningPanel from '../components/reader/MiningPanel'
@@ -46,7 +46,9 @@ function splitBookRelPath(relPath: string): { prefix: string; entryPath: string 
 }
 
 export default function BookReaderPage() {
-  const { doc, library, chapterId, mediaId, adhoc } = useReaderSource()
+  const reader = useReaderSource()
+  const { doc, library, chapterId, mediaId, adhoc } = reader
+  useReaderTabTitle(reader)
   const navigate = useNavigate()
   const canGoBack = useCanGoBack()
   const location = useLocation()

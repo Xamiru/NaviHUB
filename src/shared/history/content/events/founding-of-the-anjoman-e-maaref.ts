@@ -129,7 +129,7 @@ export default defineEvent({
         },
         {
           id: 'q2',
-          text: 'Rošdīya had already established the first Persian school in Erevan in 1300/1883 and the first modern primary school in Tabrīz in 1305/1888, though in the latter city he had met with continued resistance from conservative religious authorities (ʿolamāʾ; Rošdīya, pp. 23, 31-35).',
+          text: 'Rošdīya had already established the first Persian school in Erevan in 1300/1883 and the first modern primary school in Tabrīz in 1305/1888, though in the latter city he had met with continued resistance from conservative religious authorities',
           lang: 'en',
           cite: {
             source: 'iranica-al-e-dawud-education-primary-schools',
@@ -137,7 +137,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/education-ix-primary-schools'
           }
         }
@@ -162,7 +162,7 @@ export default defineEvent({
         },
         {
           id: 'q4',
-          text: 'The establishment of the quasi-governmental Council on education (Anjoman-e maʿāref) and the founding of modern schools under its auspices were among the most important measures affecting the growth of a new proconstitutional constituency (Rošdīya; Dawlatābādī, Ḥayāt-e Yaḥyā I, pp. 245-349).',
+          text: 'The establishment of the quasi-governmental Council on education (Anjoman-e maʿāref) and the founding of modern schools under its auspices were among the most important measures affecting the growth of a new proconstitutional constituency',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-constitutional-revolution-intellectual-background',
@@ -170,7 +170,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/constitutional-revolution-i'
           }
         }
@@ -181,7 +181,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'Nāẓem-al-Eslām Kermānīcounted forty-nine modern elementary schools established during the period 1315-25/1897-1907 (Tārīḵ-e bīdārī, ed. Saʿīdī Sīrjānī, I, pp. 413-15).',
+          text: 'Nāẓem-al-Eslām Kermānīcounted forty-nine modern elementary schools established during the period 1315-25/1897-1907',
           lang: 'en',
           cite: {
             source: 'iranica-al-e-dawud-education-primary-schools',
@@ -189,7 +189,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/education-ix-primary-schools'
           }
         }
@@ -269,7 +269,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q7',
-        text: 'This new school, called ʿElmīya, was officially dedicated in Ḏu’l-ḥeǰǰa, 1315/May, 1898, and soon led to the opening of other schools (Dawlatābādī, op. cit., pp. 193-98).',
+        text: 'This new school, called ʿElmīya, was officially dedicated in Ḏu’l-ḥeǰǰa, 1315/May, 1898, and soon led to the opening of other schools',
         lang: 'en',
         cite: {
           source: 'iranica-anwar-anjoman-e-maaref',
@@ -277,7 +277,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/anjoman-e-maaref'
         }
       }

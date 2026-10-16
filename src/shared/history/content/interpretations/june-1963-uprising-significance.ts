@@ -87,7 +87,7 @@ export default defineInterpretation({
         },
         {
           id: 'q10',
-          text: 'repeatedly castigated the British for having instigated the riots of Ḵordād 1342 Š./June 1963, which Prime Minister ʿAlam had violently suppressed',
+          text: 'He even attributed the recent failed attempt on his life (21 Farvardin 1344 Š./10 April 1965) to “British inspired communists (ʿAlam, I, p. 374) and repeatedly castigated the British for having instigated the riots of Ḵordād 1342 Š./June 1963, which Prime Minister ʿAlam had violently suppressed',
           lang: 'en',
           cite: {
             source: 'iranica-azimi-great-britain-v',
@@ -95,7 +95,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-09',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/great-britain-v/'
           }
         }
@@ -147,7 +147,7 @@ export default defineInterpretation({
       reception: [
         {
           id: 'q11',
-          text: 'But the above measures combined with the overall discontent of the traditional forces met with severe resistance from the religious establishment leading to major urban riots on 5 June 1963 in Tehran and a number of major provincial cities (Akhavi, pp. 117-29; Farmayan, pp. 104-6, 109).',
+          text: 'But the above measures combined with the overall discontent of the traditional forces met with severe resistance from the religious establishment leading to major urban riots on 5 June 1963 in Tehran and a number of major provincial cities',
           lang: 'en',
           cite: {
             source: 'iranica-sedghi-feminist-movements-pahlavi',
@@ -155,7 +155,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-09',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/feminist-movements-iii/'
           }
         },
@@ -221,5 +221,5 @@ export default defineInterpretation({
       ]
     }
   ],
-  researched: '2026-10-09'
+  researched: '2026-10-16'
 })

@@ -72,8 +72,8 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'The following eleven months of civil war in Tabriz and the siege of the town by government troops can be divided into three stages: The first stage is characterized by street fighting in the city in late June and early July 1908, when the Mojāhedin succeeded in preventing the royalist forces from gaining control over the city. During the second stage, the royalist forces were stationed in the outskirts of the town and attacked it repeatedly, but to no avail. Beginning in early February 1909, the third stage is marked by the siege of Tabriz, which brought hunger, disease and death.',
+          id: 'q2',
+          text: 'By then, the central venue of the Constitutionalist cause and its resistance against the shah and his government had moved from Tehran to Tabriz. Owing to the courage and stamina of a large part of the population of Tabriz as well as to the determination of some of its leaders, Sattār Khan among them, the Constitution was “salvaged.”',
           lang: 'en',
           cite: {
             source: 'iranica-pistor-hatam-sattar-khan',
@@ -86,8 +86,8 @@ export default defineEvent({
           }
         },
         {
-          id: 'q2',
-          text: 'By then, the central venue of the Constitutionalist cause and its resistance against the shah and his government had moved from Tehran to Tabriz. Owing to the courage and stamina of a large part of the population of Tabriz as well as to the determination of some of its leaders, Sattār Khan among them, the Constitution was “salvaged.”',
+          id: 'q1',
+          text: 'The following eleven months of civil war in Tabriz and the siege of the town by government troops can be divided into three stages: The first stage is characterized by street fighting in the city in late June and early July 1908, when the Mojāhedin succeeded in preventing the royalist forces from gaining control over the city. During the second stage, the royalist forces were stationed in the outskirts of the town and attacked it repeatedly, but to no avail. Beginning in early February 1909, the third stage is marked by the siege of Tabriz, which brought hunger, disease and death.',
           lang: 'en',
           cite: {
             source: 'iranica-pistor-hatam-sattar-khan',
@@ -181,7 +181,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q6',
-        text: 'in the major battle of Sārīdāḡ (29 Ṣafar 1327/22 March 1909), one of the highlights of his career, he led the mojāhedīn forces to capture the positions overlooking Tabrīz and tried, though suffering high casualties, to open the supply routes to the starving city.',
+        text: 'In the next prolonged phase of the conflict (Šaʿbān, 1326-Rabīʿ I, 1327/August, 1908-May, 1909), Bāqer Khan’s skill in street battles was further extended to open-field combat; in the major battle of Sārīdāḡ (29 Ṣafar 1327/22 March 1909), one of the highlights of his career, he led the mojāhedīn forces to capture the positions overlooking Tabrīz and tried, though suffering high casualties, to open the supply routes to the starving city.',
         lang: 'en',
         cite: {
           source: 'iranica-amanat-baqer-khan',
@@ -189,7 +189,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/baqer-khan-salar-melli/'
         }
       }

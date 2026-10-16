@@ -65,7 +65,7 @@ export const AKIRA: FranchiseCfg = {
       role: 'Biker gang leader',
       portraitUrl: `${AL}/character/large/b2588-OfACKXYm2lkV.png`,
       appearsIn: ['akira-manga', 'akira-film'],
-      blurb: 'The leader of a Neo-Tokyo biker gang, drawn into the secret of his childhood friend Tetsuo.'
+      blurb: 'Leader of the Capsules biker gang, rider of the most famous red motorcycle in animation, and Tetsuo’s protector since the orphanage — a role Tetsuo has come to hate.'
     },
     {
       id: 'akira-tetsuo',
@@ -73,7 +73,7 @@ export const AKIRA: FranchiseCfg = {
       role: 'Psychic',
       portraitUrl: `${AL}/character/large/b2589-HR4oPhkLGq6q.png`,
       appearsIn: ['akira-manga', 'akira-film'],
-      blurb: 'Kaneda\'s friend, whose awakening psychic power makes him an object of the military and a danger to the city.'
+      blurb: 'The smallest of Kaneda’s gang, forever rescued and resentful of it. A crash outside the ruins of old Tokyo wakes a psychic power that grows faster than he can hold it.'
     },
     {
       id: 'akira-kei',
@@ -81,7 +81,7 @@ export const AKIRA: FranchiseCfg = {
       role: 'Resistance activist',
       portraitUrl: `${AL}/character/large/b9875-8eHWcOTvtTQB.png`,
       appearsIn: ['akira-manga', 'akira-film'],
-      blurb: 'A strong-willed young woman Kaneda meets on his search for Tetsuo, loyal to an anti-government resistance group.'
+      blurb: 'A resistance operative Kaneda chases mostly to impress, who turns out to be the coolest head in Neo-Tokyo — and, in the manga, a medium for the psychics’ power.'
     },
     {
       id: 'akira-shikishima',
@@ -89,7 +89,7 @@ export const AKIRA: FranchiseCfg = {
       role: 'Army officer',
       portraitUrl: `${AL}/character/large/b16288-fCbFrPrvtlvC.jpg`,
       appearsIn: ['akira-manga', 'akira-film'],
-      blurb: 'A senior military officer who oversees research into psychic abilities and seeks to capture Tetsuo to exploit his powers.'
+      blurb: 'The Colonel runs the secret psychic project and is one of the few adults who knows what Akira did to the old city; he would rather burn the new one than let it happen twice.'
     },
     {
       id: 'akira-kaori',
@@ -97,7 +97,7 @@ export const AKIRA: FranchiseCfg = {
       role: 'Resistance member',
       portraitUrl: `${AL}/character/large/b16289-1PsWTr11jxQg.png`,
       appearsIn: ['akira-manga', 'akira-film'],
-      blurb: 'A timid young girl who becomes Tetsuo\'s companion and, in the manga, Akira\'s babysitter.'
+      blurb: 'Tetsuo’s girlfriend, gentle and frightened, and the one person his growing power never quite stops reaching for.'
     },
     {
       id: 'akira-yamagata',
@@ -105,7 +105,7 @@ export const AKIRA: FranchiseCfg = {
       role: 'Gang member',
       portraitUrl: `${AL}/character/large/b20463-wa6RVPshbPZC.png`,
       appearsIn: ['akira-manga', 'akira-film'],
-      blurb: 'One of the most prominent members of Kaneda\'s gang, whose habit of deriding Tetsuo breeds harsh feelings between them.'
+      blurb: 'Kaneda’s loudest lieutenant, who never let Tetsuo forget he was the gang’s little brother — and pays for it when Tetsuo stops being little.'
     }
   ]
 }

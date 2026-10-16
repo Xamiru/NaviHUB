@@ -38,7 +38,7 @@ export const XENO: FranchiseCfg = {
     },
     {
       title: 'Xenoblade found its own identity',
-      body: 'Where Xenogears and Xenosaga leaned on dense philosophy and FMV-heavy drama, the Xenoblade trilogy built its reputation on open, walkable worlds you can see across — the titans of Bionis and Mechonis in the first game, the endless ocean of Xenoblade X, the cloud sea of Alrest in 2, and the blended, time-eroded landscapes of Aionios in 3.'
+      body: 'Where Xenogears and Xenosaga leaned on dense philosophy and FMV-heavy drama, the Xenoblade games built their reputation on open, walkable worlds you can see across — the titans of Bionis and Mechonis in the first game, the alien continents of Mira in the separate Xenoblade X, the cloud sea of Alrest in 2, and the blended, time-eroded landscapes of Aionios in 3.'
     }
   ],
   entries: [

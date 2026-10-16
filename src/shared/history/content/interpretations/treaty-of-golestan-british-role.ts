@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'treaty-of-golestan-british-role',
   about: ['event:treaty-of-golestan', 'event:battle-of-aslanduz'],
   topic: 'foreign-role',
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   framing: {
     id: 'q1',
     text: 'The cost-conscious Foreign Office, and the EIC, preferred mediation for peace both for the Golestān (q.v.) and later the Torkmānčāy treaties, and in both instances the English envoys pressured Persia to comply with the harsh terms imposed by Russia, Britain’s ally in 1813 against Napoleon and by 1819 an awesome contender.',
@@ -32,7 +32,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q2',
-          text: 'Ouseley did little more than use his influence to keep up the momentum for an agreement (and protect British interests), as the actual terms of the settlement were essentially dictated by Rtischev (Atkin, p. 143; Pakravan, p. 156).',
+          text: 'Ouseley did little more than use his influence to keep up the momentum for an agreement (and protect British interests), as the actual terms of the settlement were essentially dictated by Rtischev',
           lang: 'en',
           cite: {
             source: 'iranica-daniel-golestan-treaty',
@@ -40,7 +40,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/golestan-treaty/'
           }
         }

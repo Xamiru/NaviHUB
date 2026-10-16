@@ -72,12 +72,101 @@ export const gameSession = sqliteTable(
       .references(() => mediaItem.id, { onDelete: 'cascade' }),
     startedAt: text('started_at').notNull(), // UTC
     endedAt: text('ended_at').notNull(), // UTC
-    duration: integer('duration').notNull() // seconds
+    duration: integer('duration').notNull(), // seconds
+    via: text('via'), // 'native' | 'emu:<preset>' — frozen; NULL before 2026-10-16
+    platform: text('platform') // @shared/emulation/platforms key
   },
   (t) => ({
     byMedia: index('idx_game_session_media').on(t.mediaId),
     byStarted: index('idx_game_session_started').on(t.startedAt)
   })
+)
+
+// ---------------------------------------------------------------------------
+// Emulation — emulators installed on this machine, platform defaults, and game
+// files linked to library games (emulation.ts). Machine paths; wiped on export.
+// ---------------------------------------------------------------------------
+export const emulator = sqliteTable('emulator', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  presetKey: text('preset_key').notNull(),
+  name: text('name').notNull(),
+  exePath: text('exe_path').notNull(),
+  corePath: text('core_path'),
+  argsJson: text('args_json'),
+  dataDir: text('data_dir'),
+  screenshotDir: text('screenshot_dir'),
+  platforms: text('platforms').notNull().default('[]'),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`)
+})
+
+export const emulatorDefault = sqliteTable(
+  'emulator_default',
+  {
+    platform: text('platform').primaryKey(),
+    emulatorId: integer('emulator_id')
+      .notNull()
+      .references(() => emulator.id, { onDelete: 'cascade' })
+  },
+  (t) => ({ byEmulator: index('idx_emulator_default_emulator').on(t.emulatorId) })
+)
+
+export const gameRom = sqliteTable(
+  'game_rom',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    mediaId: integer('media_id')
+      .notNull()
+      .references(() => mediaItem.id, { onDelete: 'cascade' }),
+    romPath: text('rom_path').notNull(),
+    platform: text('platform').notNull(),
+    emulatorId: integer('emulator_id').references(() => emulator.id, { onDelete: 'set null' }),
+    gameCode: text('game_code'),
+    gameCodeSource: text('game_code_source'), // 'file' | 'manual'
+    preferred: integer('preferred').notNull().default(0),
+    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byPath: uniqueIndex('idx_game_rom_path').on(t.mediaId, t.romPath),
+    byEmulator: index('idx_game_rom_emulator').on(t.emulatorId)
+  })
+)
+
+// mod_install — mods NaviHUB put into an emulator's folder; the ledger that
+// uninstall/disable act on (mods.ts). mod_install_file lists every file.
+export const modInstall = sqliteTable(
+  'mod_install',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    mediaId: integer('media_id').references(() => mediaItem.id, { onDelete: 'set null' }),
+    emulatorId: integer('emulator_id').references(() => emulator.id, { onDelete: 'set null' }),
+    gbModId: integer('gb_mod_id').notNull(),
+    gbFileId: integer('gb_file_id').notNull(),
+    name: text('name').notNull(),
+    version: text('version'),
+    kind: text('kind').notNull(), // 'folder' | 'files'
+    targetRoot: text('target_root').notNull(),
+    installDir: text('install_dir'),
+    enabled: integer('enabled').notNull().default(1),
+    installedAt: text('installed_at').notNull().default(sql`(datetime('now'))`),
+    sourceUpdatedAt: integer('source_updated_at')
+  },
+  (t) => ({
+    byMedia: index('idx_mod_install_media').on(t.mediaId),
+    byEmulator: index('idx_mod_install_emulator').on(t.emulatorId)
+  })
+)
+
+export const modInstallFile = sqliteTable(
+  'mod_install_file',
+  {
+    installId: integer('install_id')
+      .notNull()
+      .references(() => modInstall.id, { onDelete: 'cascade' }),
+    relPath: text('rel_path').notNull(),
+    size: integer('size').notNull(),
+    mtimeMs: integer('mtime_ms').notNull()
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.installId, t.relPath] }) })
 )
 
 // ---------------------------------------------------------------------------
@@ -93,6 +182,7 @@ export const achievementGame = sqliteTable('achievement_game', {
   provider: text('provider').notNull(), // 'steam' | 'ra'
   providerGameId: text('provider_game_id').notNull(),
   schemaFetchedAt: text('schema_fetched_at'),
+  schemaSource: text('schema_source'), // AchievementSchemaSource; NULL = before it was kept
   createdAt: text('created_at')
     .notNull()
     .default(sql`(datetime('now'))`)
@@ -756,6 +846,9 @@ export const jpCourse = sqliteTable('jp_course', {
   level: text('level'),
   difficulty: integer('difficulty'),
   sortOrder: integer('sort_order').notNull().default(0),
+  // built-in content sync (japaneseSeedSync.ts); NULL on user-made rows
+  seedKey: text('seed_key'),
+  seedHash: text('seed_hash'),
   createdAt: text('created_at')
     .notNull()
     .default(sql`(datetime('now'))`),
@@ -777,6 +870,8 @@ export const jpLesson = sqliteTable(
     sortOrder: integer('sort_order').notNull().default(0),
     learned: integer('learned').notNull().default(0),
     learnedAt: text('learned_at'),
+    seedKey: text('seed_key'),
+    seedHash: text('seed_hash'),
     createdAt: text('created_at')
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -818,6 +913,11 @@ export const jpCard = sqliteTable(
     reps: integer('reps').notNull().default(0),
     lapses: integer('lapses').notNull().default(0),
     lastReviewedAt: text('last_reviewed_at'),
+    // FSRS memory state (src/shared/srs.ts); null until the first answer
+    stability: real('stability'),
+    fsrsDifficulty: real('fsrs_difficulty'),
+    seedKey: text('seed_key'),
+    seedHash: text('seed_hash'),
     createdAt: text('created_at')
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -829,6 +929,33 @@ export const jpCard = sqliteTable(
     byLesson: index('idx_jp_card_lesson').on(t.lessonId),
     byDue: index('idx_jp_card_due').on(t.status, t.dueAt),
     byFront: index('idx_jp_card_front').on(t.front)
+  })
+)
+
+// Extra review directions per card (see init.sql); recognition stays on jp_card.
+export const jpCardReview = sqliteTable(
+  'jp_card_review',
+  {
+    cardId: integer('card_id')
+      .notNull()
+      .references(() => jpCard.id, { onDelete: 'cascade' }),
+    direction: text('direction').notNull(),
+    status: text('status').notNull().default('new'),
+    learningStep: integer('learning_step').notNull().default(0),
+    dueAt: text('due_at'),
+    intervalDays: real('interval_days').notNull().default(0),
+    reps: integer('reps').notNull().default(0),
+    lapses: integer('lapses').notNull().default(0),
+    lastReviewedAt: text('last_reviewed_at'),
+    stability: real('stability'),
+    fsrsDifficulty: real('fsrs_difficulty'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.cardId, t.direction] }),
+    byDue: index('idx_jp_card_review_due').on(t.status, t.dueAt)
   })
 )
 
@@ -844,7 +971,11 @@ export const jpReviewLog = sqliteTable(
       .notNull()
       .default(sql`(datetime('now'))`),
     intervalDays: real('interval_days').notNull(),
-    ease: real('ease').notNull()
+    ease: real('ease').notNull(),
+    stateBefore: text('state_before'),
+    elapsedDays: real('elapsed_days'),
+    scheduledDays: real('scheduled_days'),
+    direction: text('direction').notNull().default('recognition')
   },
   (t) => ({
     byCard: index('idx_jp_review_log_card').on(t.cardId),
@@ -1437,7 +1568,9 @@ export const enWord = sqliteTable(
     ease: real('ease').notNull().default(2.5),
     reps: integer('reps').notNull().default(0),
     lapses: integer('lapses').notNull().default(0),
-    lastReviewedAt: text('last_reviewed_at')
+    lastReviewedAt: text('last_reviewed_at'),
+    stability: real('stability'),
+    fsrsDifficulty: real('fsrs_difficulty')
   },
   // idx_en_word_due is deliberately ABSENT here, matching init.sql:804: it must
   // be created only by runMigrations (connection.ts:140), after the 8 SRS
@@ -1460,7 +1593,10 @@ export const enReviewLog = sqliteTable(
       .notNull()
       .default(sql`(datetime('now'))`),
     intervalDays: real('interval_days').notNull(),
-    ease: real('ease').notNull()
+    ease: real('ease').notNull(),
+    stateBefore: text('state_before'),
+    elapsedDays: real('elapsed_days'),
+    scheduledDays: real('scheduled_days')
   },
   (t) => ({
     byWord: index('idx_en_review_log_word').on(t.wordId),
@@ -1545,6 +1681,16 @@ export const progSolve = sqliteTable(
 // Ghost reviews — echoes of lapsed cards (see japaneseRepo ghostQueue). No FK
 // by design; cleanup is manual (the jp_card.source_media_id precedent).
 // ---------------------------------------------------------------------------
+// Built-in lessons/cards the content sync skips (see init.sql).
+export const jpSeedTombstone = sqliteTable('jp_seed_tombstone', {
+  seedKey: text('seed_key').primaryKey(),
+  // 'user' (deleted in the app) | 'backfill' (missing when keys were assigned)
+  source: text('source').notNull().default('user'),
+  removedAt: text('removed_at')
+    .notNull()
+    .default(sql`(datetime('now'))`)
+})
+
 export const jpGhost = sqliteTable('jp_ghost', {
   cardId: integer('card_id').primaryKey(),
   remaining: integer('remaining').notNull().default(3),

@@ -27,6 +27,7 @@ import CoverImage from '../components/CoverImage'
 import FranchiseBackground from '../components/FranchiseBackground'
 import { HeartIcon } from '../components/PlayerIcons'
 import FranchiseMusic from '../components/music/FranchiseMusic'
+import ImportDialog from '../components/ImportDialog'
 
 type SortKey = 'release' | 'year' | 'story' | 'route' | 'score' | 'meta'
 type SortState = { key: SortKey; dir: 'asc' | 'desc' }
@@ -58,6 +59,11 @@ function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
   const { items, isLoading, error, refetch, isFinished } = useFranchiseLibrary(types)
   const { data: settings } = useSettings()
   const matched = useMemo(() => matchLibrary(cfg.entries, items), [cfg, items])
+  // A greyed entry opens the import dialog prefilled with its title. The
+  // dialog's media invalidation refetches the library lists, so the row and
+  // its timeline tile light up in place once the import lands.
+  const [importing, setImporting] = useState<FranchiseEntry | null>(null)
+  const importCfg = importing ? configFor(entryMediaType(importing)) : null
   const musicEntries = useMemo(
     () => cfg.entries.flatMap((e) => {
       const item = matched.get(e.id)
@@ -321,6 +327,7 @@ function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
                   showType={types.length > 1}
                   finished={isFinished}
                   accent={cfg.color}
+                  onImport={setImporting}
                 />
               ))}
             </div>
@@ -328,7 +335,13 @@ function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
 
           {/* Right half: vertical timeline | vertical character list */}
           <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-            <Timeline cfg={cfg} entries={visible} matched={matched} isFinished={isFinished} />
+            <Timeline
+              cfg={cfg}
+              entries={visible}
+              matched={matched}
+              isFinished={isFinished}
+              onImport={setImporting}
+            />
             {cfg.characters.length > 0 && (
               <section className="min-w-0">
                 <h2 className="mb-3 text-lg font-semibold">Characters</h2>
@@ -343,6 +356,15 @@ function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
         </div>
 
         <FranchiseMusic entries={musicEntries} accent={cfg.color} />
+
+        {importing != null && importCfg?.importSource && (
+          <ImportDialog
+            cfg={importCfg}
+            initialQuery={importing.title}
+            onClose={() => setImporting(null)}
+            onImported={() => setImporting(null)}
+          />
+        )}
 
         {/* Trivia */}
         {cfg.trivia.length > 0 && (
@@ -375,7 +397,8 @@ function EntryRow({
   showRoute,
   showType,
   finished,
-  accent
+  accent,
+  onImport
 }: {
   entry: FranchiseEntry
   item: MediaItem | null
@@ -385,6 +408,7 @@ function EntryRow({
   showType: boolean
   finished: (m: MediaItem) => boolean
   accent: string
+  onImport: (entry: FranchiseEntry) => void
 }) {
   const meta = communityScoreFor(entry, item)
   const done = item != null && finished(item)
@@ -416,9 +440,15 @@ function EntryRow({
               {entry.title}
             </Link>
           ) : (
-            <span className="truncate font-medium" title={entry.title}>
+            <button
+              type="button"
+              className="truncate text-left font-medium"
+              title={`Import ${entry.title}`}
+              aria-label={`Import ${entry.title}`}
+              onClick={() => onImport(entry)}
+            >
               {entry.title}
-            </span>
+            </button>
           )}
           {done && (
             <span title="Finished" style={{ color: accent }}>
@@ -479,12 +509,14 @@ function Timeline({
   cfg,
   entries,
   matched,
-  isFinished
+  isFinished,
+  onImport
 }: {
   cfg: FranchiseCfg
   entries: FranchiseEntry[]
   matched: Map<string, MediaItem>
   isFinished: (m: MediaItem) => boolean
+  onImport: (entry: FranchiseEntry) => void
 }) {
   const sorted = [...entries].sort((a, b) => a.year - b.year)
   return (
@@ -551,7 +583,15 @@ function Timeline({
                   {body}
                 </Link>
               ) : (
-                <div title={label}>{body}</div>
+                <button
+                  type="button"
+                  className="block w-full text-left"
+                  title={`Import ${label}`}
+                  aria-label={`Import ${label}`}
+                  onClick={() => onImport(e)}
+                >
+                  {body}
+                </button>
               )}
             </div>
           )

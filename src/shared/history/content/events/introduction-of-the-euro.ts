@@ -392,5 +392,16 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Euro_coins_and_banknotes.jpg',
     credit: { creator: 'Avij' },
     license: { id: 'public-domain' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:maastricht',
+      cites: [
+        {
+          source: 'ecb-economic-and-monetary-union-emu',
+          loc: { section: 'Economic and Monetary Union (EMU)', para: '35' }
+        }
+      ]
+    }
+  ]
 })

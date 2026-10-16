@@ -100,34 +100,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://parks.canada.ca/culture/designation/evenement-event/conferences-charlottetown-quebec'
           }
-        },
-        {
-          id: 'q2',
-          text: 'An Act for the Union of Canada, Nova Scotia, and New Brunswick, and the Government thereof; and for Purposes connected therewith.',
-          lang: 'en',
-          cite: {
-            source: 'british-north-america-act-1867',
-            loc: { section: 'British North America Act, 1867 - Enactment no. 1' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://justice.canada.ca/eng/rp-pr/csj-sjc/constitution/lawreg-loireg/p1t11.html'
-          }
-        },
-        {
-          id: 'q3',
-          text: 'Whereas the Provinces of Canada, Nova Scotia, and New Brunswick have expressed their Desire to be federally united into One Dominion under the Crown of the United Kingdom of Great Britain and Ireland, with a Constitution similar in Principle to that of the United Kingdom:',
-          lang: 'en',
-          cite: {
-            source: 'british-north-america-act-1867',
-            loc: { section: 'British North America Act, 1867 - Enactment no. 1' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://justice.canada.ca/eng/rp-pr/csj-sjc/constitution/lawreg-loireg/p1t11.html'
-          }
         }
       ]
     },
@@ -212,6 +184,39 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-09',
             url: 'https://history.state.gov/milestones/1861-1865/victory'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q2',
+          text: 'An Act for the Union of Canada, Nova Scotia, and New Brunswick, and the Government thereof; and for Purposes connected therewith.',
+          lang: 'en',
+          cite: {
+            source: 'british-north-america-act-1867',
+            loc: { section: 'British North America Act, 1867 - Enactment no. 1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://justice.canada.ca/eng/rp-pr/csj-sjc/constitution/lawreg-loireg/p1t11.html'
+          }
+        },
+        {
+          id: 'q3',
+          text: 'Whereas the Provinces of Canada, Nova Scotia, and New Brunswick have expressed their Desire to be federally united into One Dominion under the Crown of the United Kingdom of Great Britain and Ireland, with a Constitution similar in Principle to that of the United Kingdom:',
+          lang: 'en',
+          cite: {
+            source: 'british-north-america-act-1867',
+            loc: { section: 'British North America Act, 1867 - Enactment no. 1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://justice.canada.ca/eng/rp-pr/csj-sjc/constitution/lawreg-loireg/p1t11.html'
           }
         }
       ]

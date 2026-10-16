@@ -124,11 +124,54 @@ export function alignFurigana(word: string, reading: string | null | undefined):
     if (last && last.kanji === kanji) last.text += ch
     else runs.push({ text: ch, kanji })
   }
-  const escape = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const pattern = new RegExp(
-    `^${runs.map((run) => (run.kanji ? '(.+?)' : `(${escape(toHiragana(run.text))})`)).join('')}$`
-  )
-  const match = pattern.exec(toHiragana(clean))
-  if (!match) return runs.length === 1 ? [{ text: word, ruby: clean }] : [{ text: word, ruby: null }]
-  return runs.map((run, i) => ({ text: run.text, ruby: run.kanji ? match[i + 1] : null }))
+  // Every way to give each kanji run a non-empty slice of the reading with the
+  // kana runs matching in place. A kana anchor that also occurs inside a
+  // reading allows more than one (母は料理 → はは|は|りょうり or は|は|はりょうり),
+  // and nothing in the text says which is right, so only a unique split is
+  // used; otherwise the caller shows the reading whole.
+  const kana = toHiragana(clean)
+  // ways(run, at): how many ways runs[run..] can consume kana[at..], capped at 2.
+  const memo = new Map<number, number>()
+  const ways = (run: number, at: number): number => {
+    if (run === runs.length) return at === kana.length ? 1 : 0
+    const key = run * (kana.length + 1) + at
+    const hit = memo.get(key)
+    if (hit !== undefined) return hit
+    let n = 0
+    if (!runs[run].kanji) {
+      const lit = toHiragana(runs[run].text)
+      n = kana.startsWith(lit, at) ? ways(run + 1, at + lit.length) : 0
+    } else {
+      for (let end = at + 1; end <= kana.length && n < 2; end++) n += ways(run + 1, end)
+    }
+    n = Math.min(n, 2)
+    memo.set(key, n)
+    return n
+  }
+  const total = ways(0, 0)
+  if (total === 0) return runs.length === 1 ? [{ text: word, ruby: clean }] : [{ text: word, ruby: null }]
+  if (total > 1) return [{ text: word, ruby: null }]
+  const split: string[] = []
+  let at = 0
+  for (let run = 0; run < runs.length; run++) {
+    if (!runs[run].kanji) {
+      split.push('')
+      at += toHiragana(runs[run].text).length
+      continue
+    }
+    let end = at + 1
+    while (ways(run + 1, end) === 0) end++
+    split.push(kana.slice(at, end))
+    at = end
+  }
+  return runs.map((run, i) => ({ text: run.text, ruby: run.kanji ? split[i] : null }))
+}
+
+// The whole reading of a notation string: every annotated kanji run replaced by
+// its bracket, kana and punctuation kept — 今日[きょう]は雨[あめ] → きょうは雨…
+// → きょうはあめ. What the offline voice needs to read a passage right.
+export function furiganaReading(text: string): string {
+  return parseFurigana(text)
+    .map((seg) => seg.ruby ?? seg.text)
+    .join('')
 }

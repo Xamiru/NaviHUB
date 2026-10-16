@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Fidel Castro', lang: 'en', role: 'primary' },
     { text: 'Fidel Castro Ruz', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-16',
   regions: ['latin-america'],
   roles: ['revolutionary', 'head-of-state'],
   portrait: {
@@ -68,5 +68,31 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1926-08-13' },
+        cites: [
+          {
+            source: 'loc-name-authority-fidel-castro',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '2016-11-25' },
+        cites: [
+          {
+            source: 'loc-name-authority-fidel-castro',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
+  }
 })

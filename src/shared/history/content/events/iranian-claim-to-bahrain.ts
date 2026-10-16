@@ -45,6 +45,15 @@ export default defineEvent({
           loc: { section: 'BAHRAIN iii. History of Political Relations with Iran', para: '1' }
         }
       ]
+    },
+    {
+      ref: 'place:tehran',
+      cites: [
+        {
+          source: 'iranica-kechichian-bahrain-political-relations-with-iran',
+          loc: { section: 'BAHRAIN iii. History of Political Relations with Iran', para: '3' }
+        }
+      ]
     }
   ],
   partOf: [

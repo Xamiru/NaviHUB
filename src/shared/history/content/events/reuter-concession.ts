@@ -156,7 +156,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q2',
-          text: 'The most comprehensive economic concession was granted in 1289/1872 to a British subject. Baron Julius de Router (q.v.); for a period of seventy years he was to have the sole right to exploit most of Persia’s natural resources; to build dams, bridges, roads, railways, and factories; to farm the customs; and to exercise the first option should the government decide to establish a national bank (Kazemzadeh, pp. 100-24; Teymūrī, pp. 97-150).',
+          text: 'The most comprehensive economic concession was granted in 1289/1872 to a British subject. Baron Julius de Router (q.v.); for a period of seventy years he was to have the sole right to exploit most of Persia’s natural resources; to build dams, bridges, roads, railways, and factories; to farm the customs; and to exercise the first option should the government decide to establish a national bank',
           lang: 'en',
           cite: {
             source: 'iranica-ettehadiyeh-concessions-qajar',
@@ -164,7 +164,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/concessions/concessions-ii-in-the-qajar-period'
           }
         },
@@ -350,7 +350,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q9',
-        text: 'The combination of a palace coup, conservative princes and mojtaheds opposed to Westernizing reforms, and possible Russian intrigue brought down Mošir-al-Dawla’s government and put a halt to his program of reforms. In due course, the Foreign Office’s lukewarm attitude towards Reuter encouraged the humiliated shah to cancel the embarrassing concession.',
+        text: 'The combination of a palace coup, conservative princes and mojtaheds opposed to Westernizing reforms, and possible Russian intrigue brought down Mošir-al-Dawla’s government and put a halt to his program of reforms.',
         lang: 'en',
         cite: {
           source: 'iranica-amanat-great-britain-ii',
@@ -361,7 +361,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-08',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
         }
       }

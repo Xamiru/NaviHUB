@@ -88,6 +88,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'In 1602, however, these companies merged to form the United East India Company (VOC) under a charter issued by the Dutch parliament, the Staten-Generaal.',
+          lang: 'en',
+          cite: {
+            source: 'loc-indonesia-country-study-1992',
+            loc: { section: 'The United East India Company', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-13', url: 'http://countrystudies.us/indonesia/7.htm' }
+        },
+        {
           id: 'q1',
           text: 'Largely at the suggestion of Jan van Oldenbarneveldt, and in full accordance with the economic principles of the time, the states-general decided to combine the existing separate companies into one united Dutch East India Company, which could discharge the functions of a government in those remote seas, prosecute the war with Spain and Portugal, and regulate the trade.',
           lang: 'en',
@@ -100,16 +110,6 @@ export default defineEvent({
             at: '2026-10-13',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Dutch_East_India_Company,_The'
           }
-        },
-        {
-          id: 'q2',
-          text: 'In 1602, however, these companies merged to form the United East India Company (VOC) under a charter issued by the Dutch parliament, the Staten-Generaal.',
-          lang: 'en',
-          cite: {
-            source: 'loc-indonesia-country-study-1992',
-            loc: { section: 'The United East India Company', para: '2' }
-          },
-          provenance: { via: 'web', at: '2026-10-13', url: 'http://countrystudies.us/indonesia/7.htm' }
         },
         {
           id: 'q3',
@@ -280,5 +280,16 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Allegorische_voorstelling_van_de_Amsterdamse_Kamer_van_de_Verenigde_Oost-Indische_Compagnie,_SK-A-4290.jpg',
     credit: { institution: 'Rijksmuseum', creator: 'Rijksmuseum' },
     license: { id: 'cc0' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:amsterdam',
+      cites: [
+        {
+          source: 'britannica-1911-dutch-east-india-company-the',
+          loc: { section: 'Dutch East India Company, The', para: '2' }
+        }
+      ]
+    }
+  ]
 })

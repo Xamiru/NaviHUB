@@ -129,5 +129,16 @@ export default defineEvent({
   furtherReading: [
     { source: 'ogawara-2007-seinan-senso', perspective: 'japanese' },
     { source: 'ikai-1992-saigo-takamori', perspective: 'japanese' }
+  ],
+  places: [
+    {
+      ref: 'place:kagoshima',
+      cites: [
+        {
+          source: 'loc-japan-country-study-1994',
+          loc: { section: 'Opposition to the Meiji Oligarchy', para: '1' }
+        }
+      ]
+    }
   ]
 })

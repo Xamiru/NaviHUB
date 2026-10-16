@@ -183,7 +183,7 @@ export default defineEvent({
         },
         {
           id: 'q5',
-          text: 'it was British diplomacy which helped to pave the way for a settlement and the conclusion of the Treaty of 4 July 1937 between Iran and Iraq.',
+          text: 'After fruitless consideration by the Council of […] the League of Nations of Iranian and Iraqi claims, it was British diplomacy which helped to pave the way for a settlement and the conclusion of the Treaty of 4 July 1937 between Iran and Iraq.',
           lang: 'en',
           cite: {
             source: 'iranica-ferrier-anglo-iranian-relations-pahlavi',
@@ -191,7 +191,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/anglo-iranian-relations-iii/'
           }
         }

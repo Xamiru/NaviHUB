@@ -271,7 +271,9 @@ function Leeches() {
             <span className="shrink-0 text-xs text-signal-anomaly">
               {l.lapses} lapses{l.agains > 0 ? ` · ${l.agains} misses` : ''}
             </span>
-            <span className="shrink-0 text-xs text-gray-500">ease {l.ease.toFixed(2)}</span>
+            {l.difficulty != null && (
+              <span className="shrink-0 text-xs text-gray-500">difficulty {l.difficulty.toFixed(1)}</span>
+            )}
             <Link
               to={`/japanese/lessons/${l.lessonId}`}
               className="btn-ghost shrink-0 py-1 px-2 text-xs"

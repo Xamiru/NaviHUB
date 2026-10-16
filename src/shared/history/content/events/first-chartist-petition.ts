@@ -116,25 +116,6 @@ export default defineEvent({
   ],
   sections: [
     {
-      kind: 'background',
-      quotes: [
-        {
-          id: 'q2',
-          text: 'The petition originated in the town of Birmingham.',
-          lang: 'en',
-          cite: {
-            source: 'hansard-commons-1839-06-14-national-petition',
-            loc: { section: 'HC Deb 14 June 1839 vol 48 cc222-7' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://api.parliament.uk/historic-hansard/commons/1839/jun/14/national-petition-the-chartists'
-          }
-        }
-      ]
-    },
-    {
       kind: 'overview',
       quotes: [
         {
@@ -149,6 +130,25 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.nationalarchives.gov.uk/explore-the-collection/stories/william-cuffey/'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q2',
+          text: 'The petition originated in the town of Birmingham.',
+          lang: 'en',
+          cite: {
+            source: 'hansard-commons-1839-06-14-national-petition',
+            loc: { section: 'HC Deb 14 June 1839 vol 48 cc222-7' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1839/jun/14/national-petition-the-chartists'
           }
         },
         {
@@ -192,12 +192,7 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://api.parliament.uk/historic-hansard/commons/1839/jun/14/national-petition-the-chartists'
           }
-        }
-      ]
-    },
-    {
-      kind: 'consequences',
-      quotes: [
+        },
         {
           id: 'q6',
           text: 'The House divided: Ayes 46; Noes 235; Majority 189.',

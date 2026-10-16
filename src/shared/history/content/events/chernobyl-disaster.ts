@@ -280,20 +280,6 @@ export default defineEvent({
           }
         },
         {
-          id: 'q9',
-          text: 'In his first public remarks on Chernobyl Gorbachev blasted U.S. and Western leaders for exploiting the accident to divert attention from Soviet arms control initiatives.',
-          lang: 'en',
-          cite: {
-            source: 'frus-1981-88-v05-d230-gorbachev-speech-on-chernobyl',
-            loc: { section: 'Document 230', para: '1' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://history.state.gov/historicaldocuments/frus1981-88v05/d230'
-          }
-        },
-        {
           id: 'q10',
           text: 'The Soviet nuclear power authorities presented their initial accident report to an International Atomic Energy Agency meeting in Vienna, Austria, in August 1986.',
           lang: 'en',
@@ -458,6 +444,34 @@ export default defineEvent({
             at: '2026-10-08',
             url: 'https://www.gorby.ru/en/presscenter/2006/04/view-turning-point-at-chernobyl-mikhail-s-gorbachev-kopiya'
           }
+        },
+        {
+          id: 'q9',
+          text: 'In his first public remarks on Chernobyl Gorbachev blasted U.S. and Western leaders for exploiting the accident to divert attention from Soviet arms control initiatives.',
+          lang: 'en',
+          cite: {
+            source: 'frus-1981-88-v05-d230-gorbachev-speech-on-chernobyl',
+            loc: { section: 'Document 230', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://history.state.gov/historicaldocuments/frus1981-88v05/d230'
+          }
+        },
+        {
+          id: 'q23',
+          text: 'Claiming that the worst was over, he said that the fire in reactor four was out and the other three reactors at the site had been shut down.',
+          lang: 'en',
+          cite: {
+            source: 'frus-1981-88-v05-d230-gorbachev-speech-on-chernobyl',
+            loc: { section: 'Document 230', para: '7' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://history.state.gov/historicaldocuments/frus1981-88v05/d230'
+          }
         }
       ]
     }
@@ -521,39 +535,6 @@ export default defineEvent({
           via: 'web',
           at: '2026-10-08',
           url: 'https://www.gorby.ru/en/presscenter/2006/04/view-turning-point-at-chernobyl-mikhail-s-gorbachev-kopiya'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1986-05-14' },
-            cites: [
-              {
-                source: 'frus-1981-88-v05-d230-gorbachev-speech-on-chernobyl',
-                loc: { section: 'Document 230', para: '-2' }
-              },
-              {
-                source: 'reagan-lib-1986-05-14-speakes-statement-on-gorbachev-chernobyl-address',
-                loc: { section: 'Statement on Gorbachev’s Address on Chernobyl', para: '0' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q23',
-        text: 'Claiming that the worst was over, he said that the fire in reactor four was out and the other three reactors at the site had been shut down.',
-        lang: 'en',
-        cite: {
-          source: 'frus-1981-88-v05-d230-gorbachev-speech-on-chernobyl',
-          loc: { section: 'Document 230', para: '7' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-08',
-          url: 'https://history.state.gov/historicaldocuments/frus1981-88v05/d230'
         }
       }
     }

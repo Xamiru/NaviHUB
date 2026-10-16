@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'reuter-concession-motives',
   about: ['event:reuter-concession'],
   topic: 'motives',
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'safeguard-and-gain',
@@ -58,7 +58,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q3',
-          text: 'Their interests often coincided with those of the shah, who was in need of money and did not fully understand the implications of such concessions, as well as those of some corrupt courtiers (Keddie, p. 7).',
+          text: 'Their interests often coincided with those of the shah, who was in need of money and did not fully understand the implications of such concessions, as well as those of some corrupt courtiers',
           lang: 'en',
           cite: {
             source: 'iranica-ettehadiyeh-concessions-qajar',
@@ -66,7 +66,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/concessions/concessions-ii-in-the-qajar-period'
           }
         }

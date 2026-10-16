@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import PageHeader from '../components/PageHeader'
+import JapaneseHubTabs from '../components/japanese/JapaneseHubTabs'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -41,6 +42,7 @@ export default function JapaneseWritingPage() {
 
   return (
     <div className="mx-auto max-w-[1320px] p-6">
+      <JapaneseHubTabs />
       <PageHeader
         back={{ to: "/japanese", label: "Japanese" }}
         title="Writing drill"

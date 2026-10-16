@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Mohammad Ali Shah Qajar', lang: 'en', role: 'primary' },
     { text: 'محمدعلی شاه قاجار', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   died: {
     alts: [
       {
@@ -100,5 +100,18 @@ export default definePerson({
   furtherReading: [
     { source: 'malekzadeh-1949-tarikh-e-enqelab-e-mashrutiyat', perspective: 'iranian' },
     { source: 'bamdad-1968-sharh-e-hal-e-rejal-e-iran', perspective: 'iranian' }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1872' },
+        cites: [
+          {
+            source: 'loc-name-authority-mohammad-ali-shah-qajar',
+            loc: { section: 'MARC field 100 $d: heading dates' }
+          }
+        ]
+      }
+    ]
+  }
 })

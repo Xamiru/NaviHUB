@@ -31,7 +31,8 @@ export default defineEvent({
           loc: { section: 'The California Gold Rush', para: '3' }
         }
       ]
-    }
+    },
+    { ref: 'place:san-francisco' }
   ],
   participants: [
     {

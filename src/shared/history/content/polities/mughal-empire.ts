@@ -13,7 +13,7 @@ export default definePolity({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   polityType: 'empire',
   start: {
     alts: [
@@ -84,6 +84,16 @@ export default definePolity({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'In the early sixteenth century, descendants of the Mongol, Turkish, Iranian, and Afghan invaders of South Asia--the Mughals--invaded India under the leadership of Zahir-ud-Din Babur.',
+          lang: 'en',
+          cite: {
+            source: 'loc-india-country-study-1995',
+            loc: { section: 'The Mughals', para: '1' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/india/12.htm' }
+        },
+        {
           id: 'q1',
           text: 'MOGUL, Moghal, or Mughal, the Arabic and Persian form of the word Mongol, usually applied to the Mahommedan Empire in India, which was founded by Baber.',
           lang: 'en',
@@ -93,16 +103,6 @@ export default definePolity({
             at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Mogul'
           }
-        },
-        {
-          id: 'q2',
-          text: 'In the early sixteenth century, descendants of the Mongol, Turkish, Iranian, and Afghan invaders of South Asia--the Mughals--invaded India under the leadership of Zahir-ud-Din Babur.',
-          lang: 'en',
-          cite: {
-            source: 'loc-india-country-study-1995',
-            loc: { section: 'The Mughals', para: '1' }
-          },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/india/12.htm' }
         },
         {
           id: 'q3',

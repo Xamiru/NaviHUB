@@ -273,9 +273,11 @@ export function reportSetup(result: AchievementSetupResult): void {
   const from =
     result.schemaSource === 'local'
       ? ' from the game’s own files'
-      : result.schemaSource === 'community'
-        ? ' from Steam’s public page'
-        : ''
+      : result.schemaSource === 'public-api' || result.schemaSource === 'webapi'
+        ? ' from Steam'
+        : result.schemaSource === 'community'
+          ? ' from Steam’s community page (names matched by rank)'
+          : ''
   const found =
     result.importedFromFiles > 0
       ? ` · ${result.importedFromFiles} already earned`

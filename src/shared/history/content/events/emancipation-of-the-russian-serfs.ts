@@ -237,5 +237,16 @@ export default defineEvent({
       source: 'zaionchkovskii-1958-provedenie-v-zhizn-krestianskoi-reformy',
       perspective: 'russian-soviet'
     }
+  ],
+  places: [
+    {
+      ref: 'place:saint-petersburg',
+      cites: [
+        {
+          source: 'loc-russia-country-study-1996',
+          loc: { section: 'Transformation of Russia in the Nineteenth Century', para: '4' }
+        }
+      ]
+    }
   ]
 })

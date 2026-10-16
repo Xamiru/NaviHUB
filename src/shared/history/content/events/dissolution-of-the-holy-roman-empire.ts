@@ -105,5 +105,8 @@ export default defineEvent({
   },
   furtherReading: [
     { source: 'aretin-1967-heiliges-romisches-reich', perspective: 'european' }
+  ],
+  places: [
+    { ref: 'place:vienna' }
   ]
 })

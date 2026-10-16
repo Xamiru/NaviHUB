@@ -92,12 +92,12 @@ export default defineEvent({
         },
         {
           id: 'q4',
-          text: 'He took very seriously a widely believed Muslim prophecy that the Mahdī or Jesus Christ would appear in 1280/1863-64, and put off making any public announcement until then, though evidence abounds that he kept a “messianic secret” for years before (for the wave of millenarianism that swept the Muslims of Arabia and India in the years just before 1280, see O. Pearson, Islamic Reform and Revival in Nineteenth Century India: the Tariqah-i Muhammadiyyah, Ph.D. dissertation, Duke University, 1979, pp. 211-12).',
+          text: 'He took very seriously a widely believed Muslim prophecy that the Mahdī or Jesus Christ would appear in 1280/1863-64, and put off making any public announcement until then, though evidence abounds that he kept a “messianic secret” for years before',
           lang: 'en',
           cite: { source: 'iranica-cole-baha-allah', loc: { section: 'BAHĀʾ-ALLĀH', para: '11' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/baha-allah'
           }
         }
@@ -182,12 +182,12 @@ export default defineEvent({
       },
       quote: {
         id: 'q5',
-        text: 'Before he left Baghdad, Bahāʾ-Allāh camped for twelve days at the Garden of Necip Paşa, where a large number of friends came to bid him farewell. During these days, to intimates, “he would speak of the Bāb’s Cause and declare his own” (Salmānī, Ḵāṭerāt, tr. p. 22; see also Dahajī, “Resāla,” pp. 65-70, 153-54; Qazvīnī, “Resāla,” p. 16).',
+        text: 'Before he left Baghdad, Bahāʾ-Allāh camped for twelve days at the Garden of Necip Paşa, where a large number of friends came to bid him farewell. During these days, to intimates, “he would speak of the Bāb’s Cause and declare his own”',
         lang: 'en',
         cite: { source: 'iranica-cole-baha-allah', loc: { section: 'BAHĀʾ-ALLĀH', para: '13' } },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/baha-allah'
         }
       }

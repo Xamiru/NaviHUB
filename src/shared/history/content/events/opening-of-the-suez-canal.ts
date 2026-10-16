@@ -25,7 +25,8 @@ export default defineEvent({
       cites: [
         { source: 'loc-egypt-country-study-1990', loc: { section: 'Suez Canal', para: '1' } }
       ]
-    }
+    },
+    { ref: 'place:port-said' }
   ],
   related: [
     { ref: 'event:suez-canal-concession', rel: 'preceded-by' }

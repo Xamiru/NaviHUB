@@ -13,7 +13,7 @@ export default definePolity({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   polityType: 'empire',
   start: {
     alts: [
@@ -67,6 +67,16 @@ export default definePolity({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'In 1644 the Manchus took Beijing from the north and became masters of north China, establishing the last imperial dynasty, the Qing (1644- 1911).',
+          lang: 'en',
+          cite: {
+            source: 'loc-china-country-study-1987',
+            loc: { section: 'The Chinese Regain Power', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/china/11.htm' }
+        },
+        {
           id: 'q1',
           text: 'CHINA, a country of eastern Asia, the principal division of the Chinese empire. In addition to China proper the Chinese Empire includes Manchuria, Mongolia, Tibet and Sin-kiang (East Turkestan, Kulja, Dzungaria, &c., i.e. all the Chinese dependencies lying between Mongolia on the north and Tibet on the south).',
           lang: 'en',
@@ -76,16 +86,6 @@ export default definePolity({
             at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/China'
           }
-        },
-        {
-          id: 'q2',
-          text: 'In 1644 the Manchus took Beijing from the north and became masters of north China, establishing the last imperial dynasty, the Qing (1644- 1911).',
-          lang: 'en',
-          cite: {
-            source: 'loc-china-country-study-1987',
-            loc: { section: 'The Chinese Regain Power', para: '3' }
-          },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/china/11.htm' }
         }
       ]
     },

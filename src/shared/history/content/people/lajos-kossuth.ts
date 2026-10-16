@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Lajos Kossuth', lang: 'en', role: 'primary' },
     { text: 'Kossuth Lajos', lang: 'hu', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -87,6 +87,22 @@ export default definePerson({
     }
   ],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q6',
+          text: 'KOSSUTH, LAJOS [Louis] (1802–1894), Hungarian patriot, was born at Monok, a small town in the county of Zemplin, on the 19th of September 1802.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-kossuth', loc: { section: 'KOSSUTH, LAJOS', para: '1' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Kossuth,_Lajos'
+          }
+        }
+      ]
+    },
     {
       kind: 'career',
       quotes: [

@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Hasan Arsanjani', lang: 'en', role: 'primary' },
     { text: 'حسن ارسنجانی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['iran'],
   roles: ['politician', 'journalist'],
   offices: [
@@ -53,5 +53,31 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1922' },
+        cites: [
+          {
+            source: 'iranica-azimi-arsanjani-hasan',
+            loc: { section: 'ARSANJĀNĪ, ḤASAN', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1969' },
+        cites: [
+          {
+            source: 'iranica-azimi-arsanjani-hasan',
+            loc: { section: 'ARSANJĀNĪ, ḤASAN', para: '1' }
+          }
+        ]
+      }
+    ]
+  }
 })

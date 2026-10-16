@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Kang Youwei', lang: 'en', role: 'primary' },
     { text: '康有為', lang: 'zh', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -37,7 +37,7 @@ export default definePerson({
   roles: ['scholar', 'activist'],
   sections: [
     {
-      kind: 'later-life',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',

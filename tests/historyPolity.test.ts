@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildIndex } from '../src/main/history/historyIndex'
-import { article, mapPolities, onThisDay, type LibraryPort } from '../src/main/history/historyViews'
+import { article, mapPolities, onThisDay, yearView, type LibraryPort } from '../src/main/history/historyViews'
 import type { CatalogEntry } from '../src/shared/history/model'
 import { territoryOf } from '../src/shared/history/mapGeometry'
 import {
@@ -196,5 +196,33 @@ describe('History other sources (further reading)', () => {
     ]
     const codes = errorsOnly(validateCatalog(entries, lock(entries))).map((i) => i.code)
     expect(codes).toEqual(expect.arrayContaining(['dangling-source', 'bad-enum', 'duplicate-reading']))
+  })
+})
+
+describe('History year page', () => {
+  it('lists what was under way, the states standing and who held office', () => {
+    const index = buildIndex(catalog())
+    const y = yearView(index, 1941, ctx)
+    expect(y.label).toBe('1941')
+    expect(y.events).toEqual([{ region: 'iran', items: [expect.objectContaining({ ref: 'event:a-war' })] }])
+    expect(y.states.map((s) => s.state.ref)).toEqual(['polity:new-state', 'polity:a-colony'])
+    expect(y.states[0].holders).toEqual([{ person: expect.objectContaining({ ref: 'person:a-ruler' }), title: 'Shah' }])
+    // The ruler left office in 1941 and was not yet in post in 1925.
+    expect(yearView(index, 1942, ctx).states[0].holders).toEqual([])
+    expect(yearView(index, 1925, ctx).states.map((s) => s.state.ref)).toEqual(['polity:old-state', 'polity:new-state'])
+    // Old State ended in 1925: gone the year after.
+    expect(yearView(index, 1926, ctx).states.map((s) => s.state.ref)).not.toContain('polity:old-state')
+  })
+
+  it('lists births and gives the calendars the year spans', () => {
+    const index = buildIndex(catalog())
+    expect(yearView(index, 1902, ctx).born.map((p) => p.ref)).toEqual(['person:sample-person'])
+    const early = yearView(index, 1514, ctx)
+    expect(early.calendar).toBe('julian')
+    expect(early.lunarHijri).toEqual([919, 920])
+    expect(early.solarHijri).toEqual({ from: 892, to: 893, proleptic: true })
+    expect(yearView(index, 1582, ctx).calendar).toBe('reform')
+    expect(yearView(index, 2000, ctx).solarHijri).toEqual({ from: 1378, to: 1379, proleptic: false })
+    expect(yearView(index, -479, ctx)).toMatchObject({ label: '480 BCE', lunarHijri: null, solarHijri: null })
   })
 })

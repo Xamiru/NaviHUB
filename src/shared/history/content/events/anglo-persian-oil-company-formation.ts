@@ -79,5 +79,25 @@ export default defineEvent({
   },
   furtherReading: [
     { source: 'fateh-1979-panjah-sal-naft-e-iran', perspective: 'iranian' }
+  ],
+  places: [
+    {
+      ref: 'place:london',
+      cites: [
+        {
+          source: 'iranica-mina-oil-agreements',
+          loc: { section: 'OIL AGREEMENTS IN IRAN', para: '124' }
+        }
+      ]
+    },
+    {
+      ref: 'place:masjed-soleyman',
+      cites: [
+        {
+          source: 'iranica-mina-oil-agreements',
+          loc: { section: 'OIL AGREEMENTS IN IRAN', para: '5' }
+        }
+      ]
+    }
   ]
 })

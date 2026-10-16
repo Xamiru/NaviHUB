@@ -24,7 +24,7 @@ export default definePolity({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   polityType: 'empire',
   start: {
     alts: [
@@ -112,6 +112,16 @@ export default definePolity({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'Joint Austro-Hungarian affairs were managed through "common" ministries of foreign affairs, defense, and finance. The respective ministers were responsible to delegations representing separate Austrian and Hungarian parliaments.',
+          lang: 'en',
+          cite: {
+            source: 'loc-hungary-country-study-1989',
+            loc: { section: 'DUAL MONARCHY', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/hungary/23.htm' }
+        },
+        {
           id: 'q1',
           text: 'Das österreichische Kaisertum wird als österreichisch-ungarische Doppelmonarchie neu organisiert: Die nach dem Fluss Leitha benannten Reichsteile Cisleithanien (Österreich) und Transleithanien (Ungarn) erhalten eigene Parlamente und Verwaltungen. Außenpolitik, Verteidigung und Finanzen werden gesamtstaatlich wahrgenommen.',
           lang: 'de',
@@ -121,16 +131,6 @@ export default definePolity({
             at: '2026-10-06',
             url: 'https://www.dhm.de/lemo/jahreschronik/1867.html'
           }
-        },
-        {
-          id: 'q2',
-          text: 'Joint Austro-Hungarian affairs were managed through "common" ministries of foreign affairs, defense, and finance. The respective ministers were responsible to delegations representing separate Austrian and Hungarian parliaments.',
-          lang: 'en',
-          cite: {
-            source: 'loc-hungary-country-study-1989',
-            loc: { section: 'DUAL MONARCHY', para: '3' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/hungary/23.htm' }
         }
       ]
     },

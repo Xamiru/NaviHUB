@@ -77,6 +77,15 @@ export default defineEvent({
           loc: { section: 'Tsunami Wave Heights: Indian Ocean - December 26, 2004', para: '3' }
         }
       ]
+    },
+    {
+      ref: 'place:banda-aceh',
+      cites: [
+        {
+          source: 'usgs-2024-the-night-the-earth-shook',
+          loc: { section: 'The Night the Earth Shook', para: '85' }
+        }
+      ]
     }
   ],
   sections: [

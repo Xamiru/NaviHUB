@@ -140,13 +140,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'Arbenz was elected President of Guatemala in 1950 to continue a process of socio- economic reforms',
+          text: 'The first CIA effort to overthrow the Guatemalan president--a CIA collaboration with Nicaraguan dictator Anastacio Somoza to support a disgruntled general named Carlos Castillo Armas and codenamed Operation PBFORTUNE--was authorized by President Truman in 1952.',
           lang: 'en',
           cite: {
             source: 'nsarchive-ebb-4-cia-and-assassinations-guatemala-1954',
             loc: { section: 'CIA and Assassinations: The Guatemala 1954 Documents', para: '3' }
           },
-          provenance: { via: 'web', at: '2026-10-08', url: 'https://nsarchive2.gwu.edu/NSAEBB/NSAEBB4/' }
+          provenance: { via: 'web', at: '2026-10-16', url: 'https://nsarchive2.gwu.edu/NSAEBB/NSAEBB4/' }
         },
         {
           id: 'q4',
@@ -280,13 +280,13 @@ export default defineEvent({
       },
       quote: {
         id: 'q11',
-        text: 'up until the day Arbenz resigned on June 27, 1954, "the option of assassination was still being considered."',
+        text: 'But, according to the CIA\'s own internal study of the agency\'s so-called "K program," up until the day Arbenz resigned on June 27, 1954, "the option of assassination was still being considered."',
         lang: 'en',
         cite: {
           source: 'nsarchive-ebb-4-cia-and-assassinations-guatemala-1954',
           loc: { section: 'CIA and Assassinations: The Guatemala 1954 Documents', para: '4' }
         },
-        provenance: { via: 'web', at: '2026-10-08', url: 'https://nsarchive2.gwu.edu/NSAEBB/NSAEBB4/' }
+        provenance: { via: 'web', at: '2026-10-16', url: 'https://nsarchive2.gwu.edu/NSAEBB/NSAEBB4/' }
       }
     }
   ],

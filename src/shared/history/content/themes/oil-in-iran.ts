@@ -5,7 +5,7 @@ export default defineTheme({
   names: [
     { text: 'Oil in Iran', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['iran', 'europe'],
   thread: [
     { ref: 'event:reuter-concession' },
@@ -15,10 +15,7 @@ export default defineTheme({
         id: 'q5',
         text: 'Under this new concession the bank had the right to exploit all mineral resources throughout the country, except gold, silver, and other precious metals.',
         lang: 'en',
-        cite: {
-          source: 'iranica-mina-oil-agreements',
-          loc: { section: 'OIL AGREEMENTS IN IRAN', para: '-1' }
-        },
+        cite: { source: 'iranica-mina-oil-agreements', loc: { section: 'Introduction', para: '1' } },
         provenance: {
           via: 'web',
           at: '2026-10-08',
@@ -215,7 +212,7 @@ export default defineTheme({
           lang: 'en',
           cite: {
             source: 'iranica-mina-oil-agreements',
-            loc: { section: 'OIL AGREEMENTS IN IRAN', para: '-1' }
+            loc: { section: 'Introduction', para: '1' }
           },
           provenance: {
             via: 'web',
@@ -229,7 +226,7 @@ export default defineTheme({
           lang: 'en',
           cite: {
             source: 'iranica-mina-oil-agreements',
-            loc: { section: 'OIL AGREEMENTS IN IRAN', para: '0' }
+            loc: { section: 'Introduction', para: '2' }
           },
           provenance: {
             via: 'web',

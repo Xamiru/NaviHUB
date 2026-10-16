@@ -37,6 +37,8 @@ vi.mock('../src/main/files', () => ({
 vi.mock('electron', () => ({ dialog: { showOpenDialog: async () => ({ canceled: true, filePaths: [] }) } }))
 
 let schemaPayload: unknown
+let playerPayload: unknown
+let playerStatus = 200
 let percentPayload: unknown
 let storeSearchPayload: unknown
 let raGamePayload: unknown
@@ -60,12 +62,15 @@ vi.mock('../src/main/http', () => ({
       ? communityStatus
       : url.includes('GetGlobalAchievementPercentages')
         ? percentStatus
-        : schemaStatus
+        : url.includes('GetGameAchievements')
+          ? playerStatus
+          : schemaStatus
     return {
       ok: status === 200,
       status,
       text: async () => (isCommunity ? communityHtml : ''),
       json: async () => {
+        if (url.includes('GetGameAchievements')) return playerPayload
         if (url.includes('GetSchemaForGame')) return schemaPayload
         if (url.includes('GetGlobalAchievementPercentages')) return percentPayload
         if (url.includes('/storesearch/')) return storeSearchPayload
@@ -123,6 +128,10 @@ beforeEach(() => {
   db = createTestDb()
   settings = { 'steam.web_api_key': 'KEY', 'ra.username': 'me', 'ra.api_key': 'RAKEY' }
   schemaStatus = 200
+  playerStatus = 200
+  // A game Steam's keyless list does not know, so the older sources below it
+  // are what most tests exercise; the keyless suite sets its own payload.
+  playerPayload = { response: {} }
   percentStatus = 200
   communityStatus = 200
   communityHtml = ''
@@ -250,6 +259,107 @@ describe('Steam schema fetch', () => {
   })
 })
 
+describe("Steam's keyless list", () => {
+  function playerList(rows: Record<string, unknown>[]): unknown {
+    return { response: { achievements: rows } }
+  }
+
+  beforeEach(() => {
+    playerPayload = playerList([
+      {
+        internal_name: 'ACH_WIN',
+        localized_name: 'Winner',
+        localized_desc: 'Win a round',
+        hidden: false,
+        icon: 'win.jpg',
+        icon_gray: 'win_gray.jpg',
+        player_percent_unlocked: '42.5'
+      },
+      {
+        internal_name: 'ACH_SECRET',
+        localized_name: 'Secret',
+        localized_desc: 'Find the hidden room',
+        hidden: true,
+        icon: 'secret.jpg',
+        icon_gray: 'secret_gray.jpg',
+        player_percent_unlocked: '2.1'
+      }
+    ])
+  })
+
+  it('is tried before the Web API and stores the exact list, hidden text included', async () => {
+    const id = addGame()
+    const res = await achievements.fetchSteamSchema(id, '440')
+
+    expect(res.schemaSource).toBe('public-api')
+    expect(fetched.some((u) => u.includes('GetSchemaForGame'))).toBe(false)
+    // The list carries its own percentages, so the rarity endpoint is not asked.
+    expect(fetched.some((u) => u.includes('GetGlobalAchievementPercentages'))).toBe(false)
+    const [win, secret] = repo.listForMedia(id)
+    expect(win).toMatchObject({
+      apiName: 'ACH_WIN',
+      name: 'Winner',
+      globalPct: 42.5,
+      iconPath: 'media/dl-win.jpg',
+      iconGrayPath: 'media/dl-win_gray.jpg'
+    })
+    expect(secret).toMatchObject({
+      apiName: 'ACH_SECRET',
+      hidden: true,
+      description: 'Find the hidden room',
+      rarity: 'ultra-rare'
+    })
+    expect(repo.getTracking(id)).toMatchObject({ schemaSource: 'public-api' })
+  })
+
+  it('falls through to the Web API when the keyless list is unavailable', async () => {
+    playerStatus = 500
+    const id = addGame()
+    const res = await achievements.fetchSteamSchema(id, '440')
+    expect(res.schemaSource).toBe('webapi')
+    expect(repo.getTracking(id)).toMatchObject({ schemaSource: 'webapi' })
+  })
+
+  it('corrects a rank-paired community set on re-fetch and keeps its unlocks', async () => {
+    settings = {}
+    playerPayload = { response: {} }
+    // A near-tie the rank pairing gets wrong: the page lists the names in the
+    // opposite order to the ids the percentages endpoint ranks.
+    communityHtml = communityPage([
+      ['Secret', '', 'https://cdn/secret.jpg', '2.2'],
+      ['Winner', 'Win a round', 'https://cdn/win.jpg', '2.1']
+    ])
+    percentPayload = {
+      achievementpercentages: {
+        achievements: [
+          { name: 'ACH_WIN', percent: 2.2 },
+          { name: 'ACH_SECRET', percent: 2.1 }
+        ]
+      }
+    }
+    const id = addGame()
+    await achievements.fetchSteamSchema(id, '440')
+    expect(repo.getTracking(id)).toMatchObject({ schemaSource: 'community' })
+    const guessed = repo.listForMedia(id).find((r) => r.apiName === 'ACH_WIN')!
+    expect(guessed.name).toBe('Secret')
+    repo.setManual(guessed.id, true)
+
+    playerPayload = playerList([
+      { internal_name: 'ACH_WIN', localized_name: 'Winner', localized_desc: 'Win a round', hidden: false },
+      { internal_name: 'ACH_SECRET', localized_name: 'Secret', localized_desc: 'Find the hidden room', hidden: true }
+    ])
+    const res = await achievements.refresh(id)
+
+    expect(res.schemaSource).toBe('public-api')
+    const rows = repo.listForMedia(id)
+    const win = rows.find((r) => r.apiName === 'ACH_WIN')!
+    const secret = rows.find((r) => r.apiName === 'ACH_SECRET')!
+    expect(win).toMatchObject({ id: guessed.id, name: 'Winner', nameStatus: 'ok' })
+    expect(win.unlockedAt).toBeTruthy()
+    expect(secret).toMatchObject({ name: 'Secret', hidden: true, description: 'Find the hidden room' })
+  })
+})
+
 describe('Steam app id resolution', () => {
   it('offers the stored app id as an exact match for a Steam-imported row', async () => {
     const candidates = await achievements.resolveSteamCandidates(addGame())
@@ -353,6 +463,12 @@ describe('RetroAchievements', () => {
     expect(rows.map((r) => r.name)).toEqual(['First Star', 'All Stars'])
     expect(rows[0].unlockedAt).toBeTruthy()
     expect(rows[1].unlockedAt).toBeNull()
+  })
+
+  it('records RetroAchievements as the set source', async () => {
+    const id = addGame(null, null)
+    await retro.fetchRaGame(id, '4321')
+    expect(repo.getTracking(id)).toMatchObject({ provider: 'ra', schemaSource: 'ra' })
   })
 
   it('keeps RA points, which RA actually awards', async () => {

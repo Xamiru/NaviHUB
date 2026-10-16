@@ -203,7 +203,7 @@ export default function JapaneseHomePage() {
 
       <div className="mb-8 grid gap-6 md:grid-cols-2">
         <StreakCard detail={detail} />
-        <ReviewLoad detail={detail} due={stats.dueCount} waiting={stats.newAvailableCount} />
+        <ReviewLoad detail={detail} due={stats.dueCount} waiting={stats.newAvailableCount + stats.newDirectionCount} />
       </div>
 
       {roadmap.steps.length > 0 ? (

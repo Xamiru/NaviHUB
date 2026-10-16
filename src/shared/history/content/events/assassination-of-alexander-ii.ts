@@ -172,10 +172,15 @@ export default defineEvent({
             at: '2026-10-09',
             url: 'https://history.state.gov/historicaldocuments/frus1881/d617'
           }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
         {
-          id: 'q18',
-          text: 'It has pleased the Lord, in His inscrutable ways, to inflict a fatal blow upon Russia, and to call suddenly to Himself the benefactor of Russia, the Emperor Alexander II.',
+          id: 'q13',
+          text: 'Emperor wounded in carriage to-day by bomb. Extent injury not yet known.',
           lang: 'en',
           cite: {
             source: 'frus-1881-foster-to-blaine-assassination-of-alexander-ii',
@@ -185,7 +190,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-09',
+            at: '2026-10-06',
             url: 'https://history.state.gov/historicaldocuments/frus1881/d617'
           }
         },
@@ -202,6 +207,70 @@ export default defineEvent({
           provenance: {
             via: 'web',
             at: '2026-10-06',
+            url: 'https://history.state.gov/historicaldocuments/frus1881/d617'
+          }
+        },
+        {
+          id: 'q14',
+          text: 'Just before crossing the stable bridge of the Catharine Canal, at 1.45 p.m., a hand-bomb was thrown by a young man, dressed in the garb of a street-cleaner, directly under the Emperor’s carriage, shattering in its explosion the rear of the vehicle, but without injuring the Emperor. His Majesty jumped from the carriage, and while the guards were arresting the assailant a second bomb, thrown by another person, was exploded at the feet of the Emperor, shattering both his legs below the knees and inflicting other serious wounds on his person. He was placed in the sleigh of the military officer who accompanied him and driven immediately to the Winter Palace. The loss of blood was so great and the wounds so severe that he expired at 3.35 p.m., within less than two hours after this explosion.',
+          lang: 'en',
+          cite: {
+            source: 'frus-1881-foster-to-blaine-assassination-of-alexander-ii',
+            loc: {
+              section: 'Document 613: Mr. Foster to Mr. Blaine, St. Petersburg, March 14, 1881'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://history.state.gov/historicaldocuments/frus1881/d617'
+          }
+        },
+        {
+          id: 'q15',
+          text: 'It is understood that one Cossack of the Emperor’s guard was killed, and one officer and a number of soldiers and civilians (variously estimated) were wounded by the explosion. The two authors of the assassination are believed to have been arrested.',
+          lang: 'en',
+          cite: {
+            source: 'frus-1881-foster-to-blaine-assassination-of-alexander-ii',
+            loc: {
+              section: 'Document 613: Mr. Foster to Mr. Blaine, St. Petersburg, March 14, 1881'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://history.state.gov/historicaldocuments/frus1881/d617'
+          }
+        },
+        {
+          id: 'q16',
+          text: 'At a late hour last night the Czarevitch, the heir apparent, assumed the supreme power of the empire as Alexander III, and his proclamation of ascension of the throne, of which I inclose herewith a translation, was published this morning.',
+          lang: 'en',
+          cite: {
+            source: 'frus-1881-foster-to-blaine-assassination-of-alexander-ii',
+            loc: {
+              section: 'Document 613: Mr. Foster to Mr. Blaine, St. Petersburg, March 14, 1881'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://history.state.gov/historicaldocuments/frus1881/d617'
+          }
+        },
+        {
+          id: 'q18',
+          text: 'It has pleased the Lord, in His inscrutable ways, to inflict a fatal blow upon Russia, and to call suddenly to Himself the benefactor of Russia, the Emperor Alexander II.',
+          lang: 'en',
+          cite: {
+            source: 'frus-1881-foster-to-blaine-assassination-of-alexander-ii',
+            loc: {
+              section: 'Document 613: Mr. Foster to Mr. Blaine, St. Petersburg, March 14, 1881'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-09',
             url: 'https://history.state.gov/historicaldocuments/frus1881/d617'
           }
         }
@@ -241,130 +310,6 @@ export default defineEvent({
           via: 'web',
           at: '2026-10-08',
           url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Alexander_III._(tsar)'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1881-03-13', julian: true },
-            cites: [
-              {
-                source: 'frus-1881-foster-to-blaine-assassination-of-alexander-ii',
-                loc: {
-                  section: 'Document 613: Mr. Foster to Mr. Blaine, St. Petersburg, March 14, 1881'
-                }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q13',
-        text: 'Emperor wounded in carriage to-day by bomb. Extent injury not yet known.',
-        lang: 'en',
-        cite: {
-          source: 'frus-1881-foster-to-blaine-assassination-of-alexander-ii',
-          loc: { section: 'Document 613: Mr. Foster to Mr. Blaine, St. Petersburg, March 14, 1881' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://history.state.gov/historicaldocuments/frus1881/d617'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1881-03-13', julian: true },
-            cites: [
-              {
-                source: 'frus-1881-foster-to-blaine-assassination-of-alexander-ii',
-                loc: {
-                  section: 'Document 613: Mr. Foster to Mr. Blaine, St. Petersburg, March 14, 1881'
-                }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q14',
-        text: 'Just before crossing the stable bridge of the Catharine Canal, at 1.45 p.m., a hand-bomb was thrown by a young man, dressed in the garb of a street-cleaner, directly under the Emperor’s carriage, shattering in its explosion the rear of the vehicle, but without injuring the Emperor. His Majesty jumped from the carriage, and while the guards were arresting the assailant a second bomb, thrown by another person, was exploded at the feet of the Emperor, shattering both his legs below the knees and inflicting other serious wounds on his person. He was placed in the sleigh of the military officer who accompanied him and driven immediately to the Winter Palace. The loss of blood was so great and the wounds so severe that he expired at 3.35 p.m., within less than two hours after this explosion.',
-        lang: 'en',
-        cite: {
-          source: 'frus-1881-foster-to-blaine-assassination-of-alexander-ii',
-          loc: { section: 'Document 613: Mr. Foster to Mr. Blaine, St. Petersburg, March 14, 1881' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://history.state.gov/historicaldocuments/frus1881/d617'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1881-03-13', julian: true },
-            cites: [
-              {
-                source: 'frus-1881-foster-to-blaine-assassination-of-alexander-ii',
-                loc: {
-                  section: 'Document 613: Mr. Foster to Mr. Blaine, St. Petersburg, March 14, 1881'
-                }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q15',
-        text: 'It is understood that one Cossack of the Emperor’s guard was killed, and one officer and a number of soldiers and civilians (variously estimated) were wounded by the explosion. The two authors of the assassination are believed to have been arrested.',
-        lang: 'en',
-        cite: {
-          source: 'frus-1881-foster-to-blaine-assassination-of-alexander-ii',
-          loc: { section: 'Document 613: Mr. Foster to Mr. Blaine, St. Petersburg, March 14, 1881' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://history.state.gov/historicaldocuments/frus1881/d617'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1881-03-13', julian: true },
-            cites: [
-              {
-                source: 'frus-1881-foster-to-blaine-assassination-of-alexander-ii',
-                loc: {
-                  section: 'Document 613: Mr. Foster to Mr. Blaine, St. Petersburg, March 14, 1881'
-                }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q16',
-        text: 'At a late hour last night the Czarevitch, the heir apparent, assumed the supreme power of the empire as Alexander III, and his proclamation of ascension of the throne, of which I inclose herewith a translation, was published this morning.',
-        lang: 'en',
-        cite: {
-          source: 'frus-1881-foster-to-blaine-assassination-of-alexander-ii',
-          loc: { section: 'Document 613: Mr. Foster to Mr. Blaine, St. Petersburg, March 14, 1881' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-06',
-          url: 'https://history.state.gov/historicaldocuments/frus1881/d617'
         }
       }
     },

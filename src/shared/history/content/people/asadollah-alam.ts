@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Asadollah Alam', lang: 'en', role: 'primary' },
     { text: 'اسدالله علم', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['iran'],
   roles: ['politician'],
   offices: [
@@ -106,7 +106,7 @@ export default definePerson({
         },
         {
           id: 'q3',
-          text: 'Watchful control and manipulation continued to extend to the local and municipal elections, whenever they were held, despite the arguments of royalists such as ʿAlam, who underlined the expediency of allowing free elections at those levels (ʿAlam, I, pp. 339-41).',
+          text: 'Watchful control and manipulation continued to extend to the local and municipal elections, whenever they were held, despite the arguments of royalists such as ʿAlam, who underlined the expediency of allowing free elections at those levels',
           lang: 'en',
           cite: {
             source: 'iranica-azimi-bakhash-kakar-elections',
@@ -117,11 +117,37 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/elections/'
           }
         }
       ]
     }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1919-08' },
+        cites: [
+          {
+            source: 'loc-name-authority-asadollah-alam',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1978-04-13' },
+        cites: [
+          {
+            source: 'loc-name-authority-asadollah-alam',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
+  }
 })

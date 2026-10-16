@@ -125,7 +125,7 @@ export const COWBOY_BEBOP: FranchiseCfg = {
       role: 'Hacker',
       portraitUrl: `${AL}/character/large/b16-80wd87nl1Rue.png`,
       appearsIn: ['bebop-anime', 'bebop-film'],
-      blurb: 'An eccentric young genius hacker who joins the Bebop crew.'
+      blurb: 'Radical Edward: a barefoot, thirteen-year-old hacking genius who invites herself aboard the Bebop, names herself, and is the only crew member who ever looks happy.'
     },
     {
       id: 'bebop-ein',
@@ -133,7 +133,7 @@ export const COWBOY_BEBOP: FranchiseCfg = {
       role: 'Data dog',
       portraitUrl: `${AL}/character/large/4.jpg`,
       appearsIn: ['bebop-anime', 'bebop-film', 'bebop-netflix'],
-      blurb: 'A Pembroke Welsh Corgi with a talent for data, the crew\'s unlikely fourth member.'
+      blurb: 'A Welsh Corgi bred in a lab as a “data dog”, smarter than everyone aboard and only ever understood by Ed.'
     },
     {
       id: 'bebop-vicious',
@@ -141,7 +141,7 @@ export const COWBOY_BEBOP: FranchiseCfg = {
       role: 'Syndicate killer',
       portraitUrl: `${AL}/character/large/b2734-aglO8RKNVxnn.jpg`,
       appearsIn: ['bebop-anime', 'bebop-netflix'],
-      blurb: 'Spike\'s former partner in the Red Dragon Syndicate and his lasting rival.'
+      blurb: 'Spike’s former partner in the Red Dragon Syndicate, with a katana, a cormorant and a grudge; he wants the syndicate’s throne as much as he wants Spike dead.'
     },
     {
       id: 'bebop-julia',
@@ -149,7 +149,7 @@ export const COWBOY_BEBOP: FranchiseCfg = {
       role: 'Spike\'s past',
       portraitUrl: `${AL}/character/large/b2735-0NRiXHK4PSWs.png`,
       appearsIn: ['bebop-anime', 'bebop-netflix'],
-      blurb: 'The woman from Spike\'s past whom both he and Vicious are tied to.'
+      blurb: 'The woman Spike once planned to run away with, who belonged to Vicious first. The whole series is Spike’s past catching up with him through her.'
     }
   ]
 }

@@ -1,5 +1,7 @@
 import type { TestableKey } from './keyTests'
+import type { PlatformKey } from './emulation/platforms'
 import type { GameRun, GameRunInput, GameRunHistory, GameRunNoteInput, MusicTrackPersonal, MusicSmartInput, MusicSmartPlaylist, MusicSmartRules, MusicSmartPreview } from './types'
+import type { JpReviewDirection } from './japanese/reviewDirections'
 import type { VnDiscoverFilter, VnDiscoverPage, VnTagResult, VnEditionDetail } from './types'
 import type { VnCaptureInput, VnCapture, VnCaptureSummary } from './types'
 import type { SavedQuote, QuoteFilter, QuoteInput } from './types'
@@ -63,6 +65,11 @@ import type {
   HistoryArchiveJob,
   HistoryArticleView,
   HistoryDecade,
+  HistoryYear,
+  HistoryQuizCounts,
+  HistoryQuizQuestion,
+  HistoryQuizRequest,
+  HistoryQuizScope,
   HistoryImageStatus,
   HistoryMark,
   HistoryMediaBacklink,
@@ -133,6 +140,23 @@ import type {
   HltbTimes,
   GameLaunchOverview,
   GameLaunchStatus,
+  GameLaunchChoice,
+  GamePlayOptions,
+  GameRom,
+  EmulatorInfo,
+  EmulatorUpdate,
+  EmulationStats,
+  GbGame,
+  GbLink,
+  GbModDetail,
+  GbModPage,
+  GbSort,
+  ModInstallInfo,
+  ModJobStatus,
+  ModRemoveResult,
+  ModTarget,
+  RomScanStatus,
+  RomScanAcceptResult,
   InstalledGame,
   AchievementEmuImport,
   GoldbergState,
@@ -198,6 +222,9 @@ import type {
   SqlTable,
   DictInfo,
   DictEntry,
+  DictTagInfo,
+  JpFrontStatus,
+  JpGrammarIndexEntry,
   DictImportStatus,
   StarterInstallStatus,
   DictImportSummary,
@@ -250,6 +277,7 @@ import type {
   PrepDeckSummary,
   CoreDeckStatus,
   CoreDeckSummary,
+  KanjiDeckSummary,
   JpCoverageDetail,
   JpCoverageListRow,
   JpCoverageScanStatus,
@@ -258,6 +286,8 @@ import type {
   JpReviewQueue,
   JpLeech,
   JpRoadmap,
+  JpBuiltInStatus,
+  JpVoiceInfo,
   JpStats,
   JpJlptLadder,
   JpStatsDetail,
@@ -614,10 +644,77 @@ export interface NaviApi {
     // Main-side file picker; persists the choice and returns it (null = cancel).
     pickExe(mediaId: number): Promise<string | null>
     clearExe(mediaId: number): Promise<void>
-    launch(mediaId: number): Promise<{ id: string }>
+    // Without a choice the preferred way to play is used (a linked game file
+    // marked preferred, else the executable, else the only game file).
+    launch(mediaId: number, choice?: GameLaunchChoice | null): Promise<{ id: string }>
     sessionStatus(): Promise<GameLaunchStatus | null>
-    // Titles with an exe linked right now — the Installed page.
+    // Titles with an exe or a game file linked right now — the Installed page.
     installed(): Promise<InstalledGame[]>
+    // The executable plus every linked game file and who plays it.
+    playOptions(mediaId: number): Promise<GamePlayOptions>
+    // Main-side picker; reads the file's id and platform (null = cancel).
+    pickRom(mediaId: number): Promise<GameRom | null>
+    unlinkRom(romId: number): Promise<void>
+    // null makes the executable the way to play.
+    setPreferredRom(mediaId: number, romId: number | null): Promise<void>
+    updateRom(
+      romId: number,
+      upd: { platform?: PlatformKey; emulatorId?: number | null; gameCode?: string | null }
+    ): Promise<GameRom>
+    // Copies the last emulated session's screenshots into the game's Art tab.
+    importSessionShots(sessionId: string): Promise<{ added: number; skipped: number }>
+    // "Find game files": folder picker in main, then a polled read-only walk.
+    romScanStart(): Promise<{ id: string } | null>
+    romScanStatus(): Promise<RomScanStatus | null>
+    romScanCancel(): Promise<void>
+    romScanAccept(items: { resultId: number; mediaId: number }[]): Promise<RomScanAcceptResult>
+    emulationStats(): Promise<EmulationStats>
+  }
+
+  // ---- GameBanana mods (gamebanana.ts) ----
+  // Every call is a user action (Search, Load mods, opening a mod); adult
+  // content is filtered out in main and never reaches these results.
+  mods: {
+    searchGames(query: string): Promise<GbGame[]>
+    link(mediaId: number): Promise<GbLink | null>
+    // null removes the link.
+    setLink(mediaId: number, gameId: number | null): Promise<GbLink | null>
+    list(gameId: number, sort: GbSort, page: number): Promise<GbModPage>
+    // null when the mod is hidden, private or rated for adults.
+    detail(modId: number): Promise<GbModDetail | null>
+    // Linked game files whose emulator can take mods, and why not otherwise.
+    targets(mediaId: number): Promise<ModTarget[]>
+    // Download + unpack + plan, then the job waits in 'awaiting' until
+    // confirm() (the user saw the destination) or cancel().
+    install(req: { mediaId: number; romId: number; modId: number; fileId: number }): Promise<{ id: string }>
+    status(): Promise<ModJobStatus | null>
+    // installId null = the user cancelled during the copy.
+    confirm(jobId: string, variantIndex?: number): Promise<{ installId: number | null }>
+    cancel(jobId: string): Promise<void>
+    // null = mods whose game was deleted from the library.
+    installed(mediaId: number | null): Promise<ModInstallInfo[]>
+    // Both touch only the files NaviHUB recorded, unchanged since.
+    uninstall(installId: number): Promise<ModRemoveResult>
+    setEnabled(installId: number, enabled: boolean): Promise<ModRemoveResult>
+    // Install ids GameBanana has updated since (network, user action).
+    checkUpdates(mediaId: number): Promise<number[]>
+    // The 7-Zip program in use, or null when none is found.
+    sevenZip(): Promise<string | null>
+  }
+
+  // ---- Emulators (emulation.ts) ----
+  // Emulators installed on this machine. Pickers live in main, so nothing
+  // the renderer sends is ever executed as a path.
+  emulators: {
+    list(): Promise<EmulatorInfo[]>
+    add(): Promise<EmulatorInfo | null>
+    update(id: number, upd: EmulatorUpdate): Promise<EmulatorInfo>
+    remove(id: number): Promise<void>
+    // null clears the platform's default.
+    setDefault(platform: PlatformKey, emulatorId: number | null): Promise<void>
+    locate(id: number): Promise<EmulatorInfo | null>
+    pickCore(id: number): Promise<EmulatorInfo | null>
+    pickFolder(id: number, which: 'data' | 'screenshots'): Promise<EmulatorInfo | null>
   }
   achievements: {
     // Tracking is opt-in per title and only offered where an exe is (or once
@@ -1000,6 +1097,12 @@ export interface NaviApi {
     /** Events dated to this month and day (Home's "On this day"). */
     onThisDay(month: number, day: number): Promise<HistoryOnThisDay[]>
     decade(start: number): Promise<HistoryDecade>
+    /** A History quiz round, dealt from read pages or every page. */
+    quizDeal(request: HistoryQuizRequest): Promise<HistoryQuizQuestion[]>
+    /** Questions each History quiz kind can deal from. */
+    quizCounts(scope: HistoryQuizScope): Promise<HistoryQuizCounts>
+    /** The world in one year (astronomical: 0 is 1 BCE). */
+    year(year: number): Promise<HistoryYear>
     // ref = `event:<slug>`, `person:<slug>`, `period:<slug>` or `place:<slug>`.
     article(ref: string): Promise<HistoryArticleView | null>
     sources(): Promise<HistorySourceRow[]>
@@ -1063,7 +1166,8 @@ export interface NaviApi {
     updateCard(id: number, patch: Partial<JpCardInput>): Promise<void>
     removeCard(id: number): Promise<void>
     reviewQueue(newLimit: number): Promise<JpReviewQueue>
-    submitReview(cardId: number, grade: SrsGrade): Promise<JpReviewOutcome>
+    // direction defaults to 'recognition' (the card's own schedule)
+    submitReview(cardId: number, grade: SrsGrade, direction?: JpReviewDirection): Promise<JpReviewOutcome>
     quizPool(scope: JpQuizScope): Promise<JpQuizItem[]>
     // End-of-lesson self-check: lesson cards + same-course distractors,
     // available before the lesson is marked learned.
@@ -1076,6 +1180,9 @@ export interface NaviApi {
     // sourced from an installed frequency dictionary. Poll coreDeckStatus.
     buildCoreDeck(limit: number): Promise<CoreDeckSummary>
     coreDeckStatus(): Promise<CoreDeckStatus>
+    // The next N kanji no card covers yet, from the offline KANJIDIC. Poll kanjiDeckStatus.
+    buildKanjiDeck(limit: number): Promise<KanjiDeckSummary>
+    kanjiDeckStatus(): Promise<CoreDeckStatus>
     // Comprehension: scan a series' text once, then read the score any time —
     // known/learning splits are recomputed against jp_card on every read.
     scanCoverage(mediaId: number): Promise<JpCoverageDetail>
@@ -1087,6 +1194,19 @@ export interface NaviApi {
     analyzeText(text: string): Promise<JpTextAnalysis>
     // The study path: stepped courses + unscheduled decks + "you are here".
     roadmap(): Promise<JpRoadmap>
+    // Which of these words already have a card, and where.
+    cardsForFronts(fronts: string[]): Promise<JpFrontStatus[]>
+    // Every grammar lesson in the learner's courses, in path order.
+    grammarIndex(): Promise<JpGrammarIndexEntry[]>
+    builtInStatus(): Promise<JpBuiltInStatus>
+    // Offline voice (Open JTalk): a cached ttscache/ clip for text, or null
+    // when the voice pack is missing or the text has nothing to say. `reading`
+    // holds the engine to the reading the card or entry shows.
+    voiceInfo(): Promise<JpVoiceInfo>
+    speak(text: string, reading?: string | null): Promise<string | null>
+    installVoice(): Promise<JpVoiceInfo>
+    removeVoice(): Promise<JpVoiceInfo>
+    restoreBuiltIn(): Promise<JpBuiltInStatus>
     // Cards that keep lapsing (>= LEECH_LAPSES), and a full SRS reset for one.
     listLeeches(): Promise<JpLeech[]>
     resetCard(id: number): Promise<void>
@@ -1171,6 +1291,8 @@ export interface NaviApi {
     list(): Promise<DictInfo[]>
     lookup(query: string): Promise<DictEntry[]>
     kanji(text: string): Promise<KanjiInfo[]>
+    // Tag descriptions from the installed dictionaries' tag banks.
+    tagInfo(): Promise<DictTagInfo[]>
     // Download + import a freely-hosted preset (JMdict / KANJIDIC / frequency /
     // JMnedict names).
     importPreset(

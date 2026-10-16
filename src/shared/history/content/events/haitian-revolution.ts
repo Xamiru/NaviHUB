@@ -59,6 +59,15 @@ export default defineEvent({
           loc: { section: 'Colonial Society', para: '1' }
         }
       ]
+    },
+    {
+      ref: 'place:port-au-prince',
+      cites: [
+        {
+          source: 'loc-haiti-country-study-1989',
+          loc: { section: 'Toussaint Louverture', para: '5' }
+        }
+      ]
     }
   ],
   polities: [

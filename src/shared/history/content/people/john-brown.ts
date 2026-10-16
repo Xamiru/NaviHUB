@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'John Brown', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -29,6 +29,18 @@ export default definePerson({
   regions: ['north-america'],
   roles: ['activist'],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q6',
+          text: 'John Brown was born May 9, 1800 in Torrington, Connecticut.',
+          lang: 'en',
+          cite: { source: 'nps-people-john-brown', loc: { section: 'John Brown' } },
+          provenance: { via: 'web', at: '2026-10-16', url: 'https://www.nps.gov/people/john-brown.htm' }
+        }
+      ]
+    },
     {
       kind: 'early-life',
       quotes: [

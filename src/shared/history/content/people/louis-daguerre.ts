@@ -13,7 +13,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -43,6 +43,25 @@ export default definePerson({
   regions: ['europe'],
   roles: ['artist', 'scientist'],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q2',
+          text: 'DAGUERRE, LOUIS JACQUES MANDÉ (1789–1851), French, painter and physicist, inventor of the daguerreotype, was born at Cormeilles, in the department of Seine-et-Oise, and died on the 12th of July 1851 at Petit-Brie-sur-Marne, near Paris.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-daguerre-louis-jacques-mande',
+            loc: { section: 'DAGUERRE, LOUIS JACQUES MANDÉ', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Daguerre,_Louis_Jacques_Mand%C3%A9'
+          }
+        }
+      ]
+    },
     {
       kind: 'works',
       quotes: [

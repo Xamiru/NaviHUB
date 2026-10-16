@@ -187,7 +187,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q6',
-          text: 'In a separate note to the treaty, the terms of Murray’s return to Tehran were set out in “humiliating detail” (Wright, The English, p. 24).',
+          text: 'In a separate note to the treaty, the terms of Murray’s return to Tehran were set out in “humiliating detail”',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-anglo-persian-war',
@@ -195,13 +195,13 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/anglo-persian-war-1856-57'
           }
         },
         {
           id: 'q7',
-          text: 'Otherwise, no guarantees, no indemnities, and no concessions were exacted; there was no demand for the ṣadr-e aʿẓam’s dismissal (Standish, “The Persian War,” p. 39), and the shah’s note of December 1855 insulting Murray was even annexed (see Aitchison, A Collection XIII, no. XVIII, pp. 81-86).',
+          text: 'Otherwise, no guarantees, no indemnities, and no concessions were exacted; there was no demand for the ṣadr-e aʿẓam’s dismissal (Standish, “The Persian War,” p. 39), and the shah’s note of December 1855 insulting Murray was even annexed',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-anglo-persian-war',
@@ -209,13 +209,13 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/anglo-persian-war-1856-57'
           }
         },
         {
           id: 'q9',
-          text: 'One of the few concessions, however, in the 1857 treaty won by the Persian negotiator, Farroḵ Khan Amin-al-Dawla, was the undertaking by Britain not to admit Persian subjects as protégés arbitrarily (Hurewitz, II, pp. 341-43).',
+          text: 'One of the few concessions, however, in the 1857 treaty won by the Persian negotiator, Farroḵ Khan Amin-al-Dawla, was the undertaking by Britain not to admit Persian subjects as protégés arbitrarily',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-great-britain-ii',
@@ -226,13 +226,13 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
           }
         },
         {
           id: 'q10',
-          text: 'Before they withdrew, the Persians installed Solṭān Aḥmad Khan, the nephew and son-in-law of Dōst Moḥammad, as Herat’s ruler. Effectively a vassal to the Persian crown (though this was never officially proclaimed), he enjoyed de facto British recognition as well. He was overthrown by Dōst Moḥammad in May, 1863; until then the Persian government managed to keep control over Herat while adhering to the Treaty of Paris (Standish, “The Persian War,” p. 35).',
+          text: 'Before they withdrew, the Persians installed Solṭān Aḥmad Khan, the nephew and son-in-law of Dōst Moḥammad, as Herat’s ruler. Effectively a vassal to the Persian crown (though this was never officially proclaimed), he enjoyed de facto British recognition as well. He was overthrown by Dōst Moḥammad in May, 1863; until then the Persian government managed to keep control over Herat while adhering to the Treaty of Paris',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-anglo-persian-war',
@@ -240,7 +240,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/anglo-persian-war-1856-57'
           }
         }

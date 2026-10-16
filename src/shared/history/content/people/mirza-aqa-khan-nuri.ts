@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['iran'],
   roles: ['politician'],
   offices: [
@@ -128,5 +128,61 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:MirzaAghaKhanNuri-BySaniolmolk.jpg',
     credit: { institution: 'Golestan Palace Museum', creator: 'Sani ol-Molk' },
     license: { id: 'cc-by-sa', version: '4.0', url: 'https://creativecommons.org/licenses/by-sa/4.0' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1806' },
+        cites: [
+          {
+            source: 'loc-name-authority-mirza-aqa-khan-nuri',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ],
+        heldBy: [
+          { kind: 'organization', name: 'Library of Congress Name Authority File' }
+        ]
+      },
+      {
+        value: { d: '1807' },
+        cites: [
+          {
+            source: 'loc-name-authority-mirza-aqa-khan-nuri',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ],
+        heldBy: [
+          { kind: 'organization', name: 'Library of Congress Name Authority File' }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1864' },
+        cites: [
+          {
+            source: 'loc-name-authority-mirza-aqa-khan-nuri',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ],
+        heldBy: [
+          { kind: 'organization', name: 'Library of Congress Name Authority File' }
+        ]
+      },
+      {
+        value: { d: '1865' },
+        cites: [
+          {
+            source: 'loc-name-authority-mirza-aqa-khan-nuri',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ],
+        heldBy: [
+          { kind: 'organization', name: 'Library of Congress Name Authority File' }
+        ]
+      }
+    ]
   }
 })

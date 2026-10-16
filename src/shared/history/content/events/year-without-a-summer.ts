@@ -113,5 +113,19 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:CH-KBAR_-_Denkmaal_von_der_sehr_merkw%C3%BCrdigen_und_nie_erh%C3%B6rten_Theurung_des_Jahres_1817_-_KB-032500.tif',
     credit: { institution: 'Kantonsbibliothek Appenzell Ausserrhoden', creator: 'Johannes Gmünder' },
     license: { id: 'public-domain' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:mount-tambora',
+      cites: [
+        {
+          source: 'noaa-nesdis-tambora-1815',
+          loc: {
+            section: 'This Day In History: Mount Tambora Explosively Erupts in 1815',
+            para: '1'
+          }
+        }
+      ]
+    }
+  ]
 })

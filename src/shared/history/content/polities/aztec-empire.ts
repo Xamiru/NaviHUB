@@ -13,7 +13,7 @@ export default definePolity({
       ]
     }
   ],
-  researched: '2026-10-13',
+  researched: '2026-10-16',
   polityType: 'empire',
   start: {
     alts: [
@@ -62,6 +62,13 @@ export default definePolity({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'By the early sixteenth century, Aztec domination reached into most of central and southern Mexico (with the exception of the Mayan areas in the southeast).',
+          lang: 'en',
+          cite: { source: 'loc-mexico-country-study-1996', loc: { section: 'The Aztec', para: '2' } },
+          provenance: { via: 'web', at: '2026-10-13', url: 'http://countrystudies.us/mexico/5.htm' }
+        },
+        {
           id: 'q1',
           text: 'About 1430 took place the triple alliance of the Acolhua, Aztec and Tepanec kings, whose capitals were Tezcuco, Mexico and Tlacopan, the latter standing much below the other two.',
           lang: 'en',
@@ -71,13 +78,6 @@ export default definePolity({
             at: '2026-10-13',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Mexico'
           }
-        },
-        {
-          id: 'q2',
-          text: 'By the early sixteenth century, Aztec domination reached into most of central and southern Mexico (with the exception of the Mayan areas in the southeast).',
-          lang: 'en',
-          cite: { source: 'loc-mexico-country-study-1996', loc: { section: 'The Aztec', para: '2' } },
-          provenance: { via: 'web', at: '2026-10-13', url: 'http://countrystudies.us/mexico/5.htm' }
         }
       ]
     },

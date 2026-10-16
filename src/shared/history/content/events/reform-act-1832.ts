@@ -57,20 +57,6 @@ export default defineEvent({
             at: '2026-10-07',
             url: 'https://www.nationalarchives.gov.uk/explore-the-collection/stories/the-1866-mass-womens-suffrage-petition/'
           }
-        },
-        {
-          id: 'q1',
-          text: 'Bills. Received the Royal Assent:—Reform of Parliament (England.)',
-          lang: 'en',
-          cite: {
-            source: 'hansard-lords-1832-06-07-minutes',
-            loc: { section: 'HL Deb 07 June 1832 vol 13 c497' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://api.parliament.uk/historic-hansard/lords/1832/jun/07/minutes'
-          }
         }
       ]
     },
@@ -103,6 +89,25 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.nationalarchives.gov.uk/explore-the-collection/stories/the-1866-mass-womens-suffrage-petition/'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q1',
+          text: 'Bills. Received the Royal Assent:—Reform of Parliament (England.)',
+          lang: 'en',
+          cite: {
+            source: 'hansard-lords-1832-06-07-minutes',
+            loc: { section: 'HL Deb 07 June 1832 vol 13 c497' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://api.parliament.uk/historic-hansard/lords/1832/jun/07/minutes'
           }
         }
       ]

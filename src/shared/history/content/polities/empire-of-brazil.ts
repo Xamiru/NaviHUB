@@ -5,7 +5,7 @@ export default definePolity({
   names: [
     { text: 'Empire of Brazil', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   polityType: 'empire',
   start: {
     alts: [
@@ -58,6 +58,16 @@ export default definePolity({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'The constitution of 1824 had created the usual three governmental powers--executive, legislative, and judicial--and a fourth, the moderating power. The emperor held this power, which gave him the right to name senators, to dismiss the legislature, and to shift control of the government from one party to the other. In theory, he was to act as the political balance wheel.',
+          lang: 'en',
+          cite: {
+            source: 'loc-brazil-country-study-1997',
+            loc: { section: 'The Second Empire, 1840-89', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/brazil/13.htm' }
+        },
+        {
           id: 'q1',
           text: 'Under the long reign of Dom Pedro II. progress and material prosperity made steady advancement in Brazil.',
           lang: 'en',
@@ -67,16 +77,6 @@ export default definePolity({
             at: '2026-10-08',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Brazil'
           }
-        },
-        {
-          id: 'q2',
-          text: 'The constitution of 1824 had created the usual three governmental powers--executive, legislative, and judicial--and a fourth, the moderating power. The emperor held this power, which gave him the right to name senators, to dismiss the legislature, and to shift control of the government from one party to the other. In theory, he was to act as the political balance wheel.',
-          lang: 'en',
-          cite: {
-            source: 'loc-brazil-country-study-1997',
-            loc: { section: 'The Second Empire, 1840-89', para: '2' }
-          },
-          provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/brazil/13.htm' }
         }
       ]
     },

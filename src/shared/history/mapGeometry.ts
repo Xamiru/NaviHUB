@@ -175,3 +175,41 @@ export function territoryOf(
   }
   return out.sort((a, b) => a.from - b.from)
 }
+
+/** Is [lon, lat] inside a shape? Even-odd across its rings, so holes count. */
+export function shapeContains(rings: number[][], quantum: number, lon: number, lat: number): boolean {
+  let inside = false
+  for (const ring of rings) {
+    const pts = decodeRing(ring, quantum)
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const [xi, yi] = pts[i]
+      const [xj, yj] = pts[j]
+      if (yi > lat !== yj > lat && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside
+    }
+  }
+  return inside
+}
+
+/**
+ * The state drawn over a point in `year`, and the other states standing that
+ * year nearest it by label point. Null when no border holds the point (the sea,
+ * or a year with no borders). Units drawn later win, as on the map.
+ */
+export function stateAtPoint(
+  data: Pick<HistoryBorders, 'units' | 'worldFrom' | 'shapes' | 'quantum'>,
+  year: number,
+  lon: number,
+  lat: number
+): { unit: HistoryMapUnit; others: HistoryMapUnit[]; approximate: boolean } | null {
+  const layers = layersAt(data, year + 0.5)
+  if (layers.noBorders) return null
+  let unit: HistoryMapUnit | null = null
+  for (const u of layers.states) {
+    if (shapeContains(data.shapes[u.shape], data.quantum, lon, lat)) unit = u
+  }
+  if (!unit) return null
+  const hit = unit
+  const distance = (u: HistoryMapUnit): number => (u.label[0] - lon) ** 2 + (u.label[1] - lat) ** 2
+  const others = layers.states.filter((u) => u.name !== hit.name).sort((a, b) => distance(a) - distance(b))
+  return { unit: hit, others, approximate: hit.set === 'early' }
+}

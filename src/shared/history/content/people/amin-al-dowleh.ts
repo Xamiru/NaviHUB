@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -159,7 +159,7 @@ export default definePerson({
         },
         {
           id: 'q5',
-          text: 'His failure to obtain a foreign loan, even from his British supporters, was decisive in his dismissal (Moḥarram, 1316/mid-June, 1898; see Bakhash, pp. 19ff.; Algar, Religion and State, p. 225; Amīrī, pp. 345ff.).',
+          text: 'His failure to obtain a foreign loan, even from his British supporters, was decisive in his dismissal',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-atabak-e-azam',
@@ -167,7 +167,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/atabak-e-azam'
           }
         }
@@ -192,7 +192,7 @@ export default definePerson({
         },
         {
           id: 'q7',
-          text: 'But his most lasting reformist effort was his patronage of modern education (Maḥbūbī, Tārīḵ-e moʾassasāt I, pp. 369f., 375f.).',
+          text: 'But his most lasting reformist effort was his patronage of modern education',
           lang: 'en',
           cite: {
             source: 'iranica-farmayan-amin-al-dawla',
@@ -200,7 +200,7 @@ export default definePerson({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/amin-al-dawla-mirza-ali-khan'
           }
         }

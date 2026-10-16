@@ -91,7 +91,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q2',
-          text: 'One of the worst developments for Khorasan during the last three decades of Nāṣer-al-Din Shah’s reign was the Great Famine that began 1285/1869 and lasted until 1288/1873. It was so severe that people were reduced to eating grass, animals, and religiously forbidden meats, or even digging up corpses for food (Eʿtemād-al-Salṭana, Matlaʿ, II, p. 377; Majd, 2018, pp. 53-68).',
+          text: 'One of the worst developments for Khorasan during the last three decades of Nāṣer-al-Din Shah’s reign was the Great Famine that began 1285/1869 and lasted until 1288/1873. It was so severe that people were reduced to eating grass, animals, and religiously forbidden meats, or even digging up corpses for food',
           lang: 'en',
           cite: {
             source: 'iranica-motavalli-haghighi-khorasan-qajar-pahlavi',
@@ -99,7 +99,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/khorasan-xi-history-in-the-qajar-and-pahlavi-periods'
           }
         },
@@ -159,12 +159,12 @@ export default defineEvent({
         },
         {
           id: 'q8',
-          text: 'Mašhad had lost 24,000 people and the surrounding area 100,000 (Smith, p. 361).',
+          text: 'Mašhad had lost 24,000 people and the surrounding area 100,000',
           lang: 'en',
           cite: { source: 'iranica-de-planhol-famines', loc: { section: 'FAMINES', para: '10' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/famines'
           }
         },

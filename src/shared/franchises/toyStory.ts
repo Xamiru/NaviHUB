@@ -143,7 +143,7 @@ export const TOY_STORY: FranchiseCfg = {
       releaseDate: '2026-06-09',
       route: 5,
       mc: 83,
-      note: 'The 2026 sequel'
+      note: 'Bonnie’s toys take on Lilypad, a tablet that wins her attention away from them'
     }
   ],
   characters: [
@@ -153,7 +153,7 @@ export const TOY_STORY: FranchiseCfg = {
       role: 'Cowboy doll',
       portraitUrl: `${TM}/w300_and_h450_face/oFvZoKI6lvU03n4YoNGAll9rkas.jpg`,
       appearsIn: ['toy-1', 'toy-2', 'toy-3', 'toy-4'],
-      blurb: 'Tom Hanks voices the loyal cowboy who leads the toys.'
+      blurb: 'A pull-string cowboy and Andy’s favourite toy, whose fear of being replaced drives the first film and whose loyalty to his kid drives all the rest. Tom Hanks voices him.'
     },
     {
       id: 'toy-buzz',
@@ -161,7 +161,7 @@ export const TOY_STORY: FranchiseCfg = {
       role: 'Space ranger toy',
       portraitUrl: `${TM}/w300_and_h450_face/k8XPNHBO459FaqkqqM4tfX5GMKk.jpg`,
       appearsIn: ['toy-1', 'toy-2', 'toy-3', 'toy-4'],
-      blurb: 'Tim Allen voices the space ranger who first believes he is not a toy.'
+      blurb: 'A space ranger action figure convinced he is the real thing, until a TV advert tells him otherwise. Woody’s rival, then his best friend. Tim Allen voices him.'
     },
     {
       id: 'toy-jessie',
@@ -169,7 +169,7 @@ export const TOY_STORY: FranchiseCfg = {
       role: 'Cowgirl doll',
       portraitUrl: `${TM}/w300_and_h450_face/59UIeHZFYrKyP20lXqijtfTXglO.jpg`,
       appearsIn: ['toy-2', 'toy-3', 'toy-4'],
-      blurb: 'Joan Cusack voices the energetic cowgirl introduced in Toy Story 2.'
+      blurb: 'A yodelling cowgirl from Woody’s Roundup who was outgrown and given away by her owner Emily, and still carries it. Joan Cusack voices her.'
     },
     {
       id: 'toy-rex',
@@ -177,7 +177,7 @@ export const TOY_STORY: FranchiseCfg = {
       role: 'Anxious dinosaur toy',
       portraitUrl: `${TM}/w300_and_h450_face/wVaM1WlFKDce4esThwL4XtNLhOe.jpg`,
       appearsIn: ['toy-1', 'toy-2', 'toy-3', 'toy-4'],
-      blurb: 'Wallace Shawn voices the nervous green dinosaur.'
+      blurb: 'A plastic tyrannosaur who worries he is not scary enough and gets the series’ best panicked lines. Wallace Shawn voices him.'
     },
     {
       id: 'toy-potato-head',
@@ -185,7 +185,7 @@ export const TOY_STORY: FranchiseCfg = {
       role: 'Sarcastic toy',
       portraitUrl: `${TM}/w300_and_h450_face/iGMOVxIQoTPepRvqSCtRulfpx7u.jpg`,
       appearsIn: ['toy-1', 'toy-2', 'toy-3', 'toy-4'],
-      blurb: 'Don Rickles voices the grumbling Mr. Potato Head.'
+      blurb: 'Sarcastic, short-tempered and endlessly reassembled: the toy box’s resident cynic. Don Rickles voiced him through Toy Story 4.'
     },
     {
       id: 'toy-bo-peep',
@@ -193,7 +193,7 @@ export const TOY_STORY: FranchiseCfg = {
       role: 'Porcelain lamp figure',
       portraitUrl: `${TM}/w300_and_h450_face/nugPVN28qOhOIoHawrDJ6fIfrxR.jpg`,
       appearsIn: ['toy-1', 'toy-2', 'toy-4'],
-      blurb: 'Annie Potts voices Woody’s friend, who returns as a self-reliant adventurer in Toy Story 4.'
+      blurb: 'A porcelain lamp shepherdess who vanishes between films and returns in Toy Story 4 as an ownerless toy who has made her own life. Annie Potts voices her.'
     },
     {
       id: 'toy-forky',
@@ -201,7 +201,7 @@ export const TOY_STORY: FranchiseCfg = {
       role: 'Craft-made toy',
       portraitUrl: `${TM}/w300_and_h450_face/3dEyZgTye0Ec17VGKp0mJ3aU6ty.jpg`,
       appearsIn: ['toy-4'],
-      blurb: 'Tony Hale voices the spork Bonnie turns into a toy.'
+      blurb: 'A spork with pipe-cleaner arms, made by Bonnie on her first day at kindergarten, who is sure he is trash and keeps diving for the bin. Tony Hale voices him.'
     }
   ]
 }

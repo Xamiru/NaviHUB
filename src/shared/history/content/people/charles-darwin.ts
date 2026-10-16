@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Charles Darwin', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -35,6 +35,25 @@ export default definePerson({
   regions: ['europe'],
   roles: ['scientist', 'writer'],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q3',
+          text: 'DARWIN, CHARLES ROBERT (1809–1882), English naturalist, author of the Origin of Species, was born at Shrewsbury on the 12th of February 1809.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-darwin-charles-robert',
+            loc: { section: 'DARWIN, CHARLES ROBERT', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Darwin,_Charles_Robert'
+          }
+        }
+      ]
+    },
     {
       kind: 'career',
       quotes: [

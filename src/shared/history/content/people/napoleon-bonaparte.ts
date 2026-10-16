@@ -7,7 +7,7 @@ export default definePerson({
     { text: 'Napoléon Bonaparte', lang: 'fr', role: 'native' },
     { text: 'Napoleon I', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -84,7 +84,7 @@ export default definePerson({
   ],
   sections: [
     {
-      kind: 'early-life',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',

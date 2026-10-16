@@ -8,6 +8,9 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { useDebouncedValue, useIncrementalList } from '../lib/hooks'
 import { toast, toastError } from '../lib/toast'
+import Tabs, { TabPanel } from '../components/Tabs'
+import { parseJlptLevel } from '@shared/jlptLevels'
+import type { JpGrammarIndexEntry } from '@shared/types'
 
 // The offline grammar library: every N5-N1 point, searchable, with formation
 // and real examples. Reference, not SRS — the cloze drill lives at
@@ -30,16 +33,34 @@ export default function JapaneseGrammarPage() {
   const [level, setLevel] = usePersistedState<LevelFilter>('jpGrammarLevel', 'all')
   const [query, setQuery] = usePersistedState<string>('jpGrammarQuery', '')
   const [expandedId, setExpandedId] = useState<number | null>(null)
+  // "Course lessons" searches the grammar lessons that ship with the app, so the
+  // library works with nothing installed; the downloaded pack is the reference.
+  const [tab, setTab] = usePersistedState<'lessons' | 'reference'>('jpGrammarTab', 'lessons')
   const debounced = useDebouncedValue(query, 250)
 
-  // ?q= deep link (from lesson pages) seeds the search once.
+  // ?q= deep link (a lesson's "more examples" link) seeds the search once and
+  // opens the reference pack, which is what that link is for.
   useEffect(() => {
     const q = params.get('q')
     if (q == null) return
     setQuery(q)
+    setTab('reference')
     setParams({}, { replace: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const { data: lessons = [] } = useQuery({
+    queryKey: qk.japanese.grammarIndex,
+    queryFn: () => api.japanese.grammarIndex()
+  })
+  const lessonHits = useMemo(() => {
+    const q = norm(debounced)
+    return lessons.filter((l) => {
+      if (level !== 'all' && parseJlptLevel(l.level) !== level) return false
+      if (!q) return true
+      return norm(l.title).includes(q) || norm(l.body).includes(q)
+    })
+  }, [lessons, level, debounced])
 
   const { data: bank, isLoading } = useQuery({
     queryKey: qk.dict.grammarBank,
@@ -81,16 +102,38 @@ export default function JapaneseGrammarPage() {
     }
   }
 
+  const filters = (
+    <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="flex gap-1.5">
+        {LEVELS.map((l) => (
+          <button
+            key={l}
+            aria-pressed={level === l}
+            onClick={() => setLevel(l)}
+            className={level === l ? 'pill pill-active' : 'pill'}
+          >
+            {l === 'all' ? 'All' : l}
+          </button>
+        ))}
+      </div>
+      <input
+        aria-label="Search grammar"
+        className="input ml-auto max-w-xs"
+        placeholder="Search grammar…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+    </div>
+  )
+
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Grammar"
-        subtitle={
-          bank
-            ? `${bank.pointCount.toLocaleString()} JLPT grammar points, offline.`
-            : 'Every JLPT grammar point, offline.'
-        }
+        subtitle={`${lessons.length.toLocaleString()} grammar lessons in your courses${
+          bank ? `, plus ${bank.pointCount.toLocaleString()} reference points` : ''
+        }. All offline.`}
         actions={
           <Link to="/japanese/grammar/quiz" className="btn-ghost">
             Grammar drill
@@ -98,7 +141,22 @@ export default function JapaneseGrammarPage() {
         }
       />
 
-      {!isLoading && !bank ? (
+      <Tabs
+        id="japanese-grammar"
+        label="Grammar library"
+        className="mb-4"
+        value={tab}
+        onChange={setTab}
+        tabs={[
+          { key: 'lessons', label: 'Course lessons', count: lessons.length },
+          { key: 'reference', label: 'Reference pack' }
+        ]}
+      />
+      <TabPanel tabsId="japanese-grammar" value={tab}>
+      {filters}
+      {tab === 'lessons' ? (
+        <LessonList entries={lessonHits} />
+      ) : !isLoading && !bank ? (
         <EmptyState
           title="Grammar pack not installed"
           body="Download the N5-N1 grammar library in Settings → Dictionaries (~2 MB)."
@@ -110,28 +168,6 @@ export default function JapaneseGrammarPage() {
         />
       ) : (
         <>
-          <div className="mb-4 flex flex-wrap items-center gap-2">
-            <div className="flex gap-1.5">
-              {LEVELS.map((l) => (
-                <button
-                  key={l}
-                  aria-pressed={level === l}
-                  onClick={() => setLevel(l)}
-                  className={level === l ? 'pill pill-active' : 'pill'}
-                >
-                  {l === 'all' ? 'All' : l}
-                </button>
-              ))}
-            </div>
-            <input
-              aria-label="Search grammar points"
-              className="input ml-auto max-w-xs"
-              placeholder="Search points…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </div>
-
           {filtered.length === 0 ? (
             <p className="text-sm text-gray-500">No grammar points match.</p>
           ) : (
@@ -155,6 +191,44 @@ export default function JapaneseGrammarPage() {
           )}
         </>
       )}
+      </TabPanel>
+    </div>
+  )
+}
+
+// The grammar lessons of the learner's own courses: each row opens the lesson.
+function LessonList({ entries }: { entries: JpGrammarIndexEntry[] }) {
+  const { visible, sentinelRef, hasMore } = useIncrementalList(entries)
+  if (entries.length === 0) return <p className="text-sm text-gray-500">No grammar lessons match.</p>
+  return (
+    <div className="space-y-1.5">
+      {visible.map((l) => {
+        const summary = l.body.split('\n').find((line) => line.trim())?.trim() ?? ''
+        return (
+          <Link
+            key={l.lessonId}
+            to={`/japanese/lessons/${l.lessonId}`}
+            className="card group flex items-start gap-3 p-3 transition-colors hover:border-accent"
+          >
+            <span className="chip mt-0.5 shrink-0 bg-base-700 text-gray-400">{parseJlptLevel(l.level) ?? l.level ?? '—'}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium group-hover:text-accent">{l.title}</span>
+              {summary && <span className="mt-0.5 block truncate text-sm text-gray-400">{summary}</span>}
+              <span className="mt-0.5 block text-xs text-gray-500">
+                {l.courseTitle}
+                {l.step != null && ` · Step ${l.step}`} · {l.cardCount} examples
+              </span>
+            </span>
+            <span
+              className={`mt-0.5 w-5 shrink-0 text-center ${l.learned ? 'text-signal-affirmative' : 'text-gray-500'}`}
+              title={l.learned ? 'Learned' : 'Not learned yet'}
+            >
+              {l.learned ? '✓' : '○'}
+            </span>
+          </Link>
+        )
+      })}
+      {hasMore && <div ref={sentinelRef} />}
     </div>
   )
 }

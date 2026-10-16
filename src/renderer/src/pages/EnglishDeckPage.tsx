@@ -74,7 +74,7 @@ export default function EnglishDeckPage() {
     if (q) list = list.filter((w) => w.word.toLowerCase().includes(q) || w.meaning.toLowerCase().includes(q))
     const sorted = [...list]
     if (sort === 'rank') sorted.sort((a, b) => (b.rank ?? -1) - (a.rank ?? -1)) // rarest first
-    else if (sort === 'lapses') sorted.sort((a, b) => b.lapses - a.lapses || a.ease - b.ease)
+    else if (sort === 'lapses') sorted.sort((a, b) => b.lapses - a.lapses || (b.difficulty ?? 0) - (a.difficulty ?? 0))
     else if (sort === 'due') {
       const t = (w: EnDeckWord): number =>
         w.status === 'new' || !w.dueAt ? Infinity : Date.parse(w.dueAt.replace(' ', 'T') + 'Z')

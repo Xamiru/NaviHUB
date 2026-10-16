@@ -1,19 +1,19 @@
-import type { SeedCourse } from './japaneseSeed'
+import type { SeedCourseDef } from './japaneseSeed'
 
 // Second wave of seed packs (2026-07-05): radicals, counters, manga SFX,
 // speech styles / role language, and idioms. Same voice as the first wave —
 // explain the pattern, then say why it matters for reading manga/VNs.
 
-export const RADICALS_COURSE: SeedCourse = {
+export const RADICALS_COURSE: SeedCourseDef = {
   title: 'Kanji Radicals & Components',
   description:
     'The ~90 building blocks kanji are made of. Learn these before (or alongside) the kanji ' +
     'decks and every new character becomes a combination of parts you already know, ' +
     'instead of a pile of strokes. Includes the sound-hint components that let you guess readings.',
   level: 'N5+',
-  difficulty: 2,
   lessons: [
     {
+      key: 'radicals.01',
       kind: 'grammar',
       title: 'What radicals are (and why they make kanji easy)',
       body: `Almost no kanji is a random drawing. Complex characters are built from a small set of reusable parts — radicals (部首) and components. 海 (sea), 泳 (swim) and 酒 (sake) all share 氵, the "water" part. Once you see the parts, a 12-stroke kanji is two or three chunks, not twelve strokes.
@@ -52,10 +52,25 @@ Reading payoff: when a manga throws an unknown kanji at you, the radical is your
           pos: 'position',
           exampleJp: '国・店・道',
           exampleEn: 'enclosure 囗, overhang 广, wrap 辶'
+        },
+        {
+          front: 'つくり',
+          back: 'radical on the RIGHT side of a kanji',
+          pos: 'position',
+          exampleJp: '頭 = 豆 + 頁',
+          exampleEn: 'sound-hint 豆 (トウ) + head radical 頁 on the right'
+        },
+        {
+          front: 'あし',
+          back: 'radical at the BOTTOM of a kanji ("legs")',
+          pos: 'position',
+          exampleJp: '思 = 田 + 心',
+          exampleEn: 'field over heart: the heart radical sits underneath'
         }
       ]
     },
     {
+      key: 'radicals.02',
       kind: 'kanji',
       title: 'The big left-siders (へん)',
       cards: [
@@ -138,6 +153,7 @@ Reading payoff: when a manga throws an unknown kanji at you, the radical is your
       ]
     },
     {
+      key: 'radicals.03',
       kind: 'kanji',
       title: 'Crowns & feet (かんむり・あし)',
       cards: [
@@ -212,6 +228,7 @@ Reading payoff: when a manga throws an unknown kanji at you, the radical is your
       ]
     },
     {
+      key: 'radicals.04',
       kind: 'kanji',
       title: 'Enclosures & overhangs (かまえ・たれ・にょう)',
       cards: [
@@ -278,6 +295,7 @@ Reading payoff: when a manga throws an unknown kanji at you, the radical is your
       ]
     },
     {
+      key: 'radicals.05',
       kind: 'kanji',
       title: 'People & body parts',
       cards: [
@@ -352,6 +370,7 @@ Reading payoff: when a manga throws an unknown kanji at you, the radical is your
       ]
     },
     {
+      key: 'radicals.06',
       kind: 'kanji',
       title: 'Nature & animals',
       cards: [
@@ -439,6 +458,7 @@ Reading payoff: when a manga throws an unknown kanji at you, the radical is your
       ]
     },
     {
+      key: 'radicals.07',
       kind: 'kanji',
       title: 'Tools, weapons & work',
       cards: [
@@ -516,6 +536,7 @@ Reading payoff: when a manga throws an unknown kanji at you, the radical is your
       ]
     },
     {
+      key: 'radicals.08',
       kind: 'kanji',
       title: 'Spirit, speech & society',
       cards: [
@@ -591,6 +612,7 @@ Reading payoff: when a manga throws an unknown kanji at you, the radical is your
       ]
     },
     {
+      key: 'radicals.09',
       kind: 'kanji',
       title: 'Sound-hints: the 形声 cheat code',
       cards: [
@@ -670,16 +692,16 @@ Reading payoff: when a manga throws an unknown kanji at you, the radical is your
   ]
 }
 
-export const COUNTERS_COURSE: SeedCourse = {
+export const COUNTERS_COURSE: SeedCourseDef = {
   title: 'Counters & Numbers',
   description:
     'Japanese never counts bare — three flat things, two small animals, one sword. ' +
     'This course covers the counters you will actually meet in manga and VNs, the irregular ' +
     'readings that trip everyone up (ひとり, ついたち, はたち), and how to ask "how many?".',
   level: 'N5–N4',
-  difficulty: 6,
   lessons: [
     {
+      key: 'counters.01',
       kind: 'grammar',
       title: 'How counting works',
       body: `A number never attaches straight to a noun. It takes a COUNTER that classifies the thing being counted:
@@ -714,10 +736,13 @@ Reading payoff: casual dialogue counts constantly (もう一回! — one more ti
           reading: 'もういっかいやろう！',
           back: "Let's go one more time!",
           notes: '一回 → いっかい (small っ).'
-        }
+        },
+        { front: '本を五冊買った。', reading: 'ほんをごさつかった。', back: 'I bought five books.' },
+        { front: '紙を一枚ください。', reading: 'かみをいちまいください。', back: 'One sheet of paper, please.' }
       ]
     },
     {
+      key: 'counters.02',
       kind: 'vocab',
       title: 'The generic counter 〜つ',
       cards: [
@@ -740,6 +765,7 @@ Reading payoff: casual dialogue counts constantly (もう一回! — one more ti
       ]
     },
     {
+      key: 'counters.03',
       kind: 'vocab',
       title: 'People & animals',
       cards: [
@@ -795,6 +821,7 @@ Reading payoff: casual dialogue counts constantly (もう一回! — one more ti
       ]
     },
     {
+      key: 'counters.04',
       kind: 'vocab',
       title: 'Objects: long, flat, bound and mechanical',
       cards: [
@@ -846,6 +873,7 @@ Reading payoff: casual dialogue counts constantly (もう一回! — one more ti
       ]
     },
     {
+      key: 'counters.05',
       kind: 'vocab',
       title: 'Time & dates (the irregular minefield)',
       cards: [
@@ -905,6 +933,7 @@ Reading payoff: casual dialogue counts constantly (もう一回! — one more ti
       ]
     },
     {
+      key: 'counters.06',
       kind: 'vocab',
       title: 'Frequency, rank & battle counters',
       cards: [
@@ -968,6 +997,7 @@ Reading payoff: casual dialogue counts constantly (もう一回! — one more ti
       ]
     },
     {
+      key: 'counters.07',
       kind: 'grammar',
       title: 'Asking & approximating',
       body: `何 + counter asks "how many":
@@ -1000,22 +1030,24 @@ Reading payoff: these show up in every dungeon brief and every shop scene — �
           reading: 'たまはさんぱつしかのこってない。',
           back: 'Only three bullets left.',
           notes: 'しか…ない — scarcity, dramatic tension.'
-        }
+        },
+        { front: '鉛筆は何本ありますか。', reading: 'えんぴつはなんぼんありますか。', back: 'How many pencils are there?' },
+        { front: '三人ほど来るらしい。', reading: 'さんにんほどくるらしい。', back: 'Apparently about three people are coming.' }
       ]
     }
   ]
 }
 
-export const SFX_COURSE: SeedCourse = {
+export const SFX_COURSE: SeedCourseDef = {
   title: 'Manga SFX & Onomatopoeia',
   description:
     'The sound effects drawn across manga panels and the mimetic words that pepper dialogue. ' +
     'These are almost never in beginner textbooks, yet a manga page can be half SFX. ' +
     'After this course the big scrawled katakana stops being decoration and starts being story.',
   level: 'N5+',
-  difficulty: 10,
   lessons: [
     {
+      key: 'sfx.01',
       kind: 'grammar',
       title: 'How to read SFX',
       body: `Japanese has three flavors of sound-symbolic words:
@@ -1053,10 +1085,13 @@ Reading payoff: SFX are drawn INTO the art, so OCR often misses them — your ey
           reading: 'あめがザーザーふってる。',
           back: "It's pouring rain.",
           notes: 'ザーザー — heavy continuous rain.'
-        }
+        },
+        { front: '外はシーンとしていた。', reading: 'そとはシーンとしていた。', back: 'It was dead silent outside.' },
+        { front: 'お腹がペコペコだ。', reading: 'おなかがペコペコだ。', back: "I'm starving." }
       ]
     },
     {
+      key: 'sfx.02',
       kind: 'vocab',
       title: 'Impacts & action',
       cards: [
@@ -1073,6 +1108,7 @@ Reading payoff: SFX are drawn INTO the art, so OCR often misses them — your ey
       ]
     },
     {
+      key: 'sfx.03',
       kind: 'vocab',
       title: 'Atmosphere & silence',
       cards: [
@@ -1093,6 +1129,7 @@ Reading payoff: SFX are drawn INTO the art, so OCR often misses them — your ey
       ]
     },
     {
+      key: 'sfx.04',
       kind: 'vocab',
       title: 'Hearts & nerves',
       cards: [
@@ -1109,6 +1146,7 @@ Reading payoff: SFX are drawn INTO the art, so OCR often misses them — your ey
       ]
     },
     {
+      key: 'sfx.05',
       kind: 'vocab',
       title: 'Faces & reactions',
       cards: [
@@ -1125,6 +1163,7 @@ Reading payoff: SFX are drawn INTO the art, so OCR often misses them — your ey
       ]
     },
     {
+      key: 'sfx.06',
       kind: 'vocab',
       title: 'Movement & sneaking',
       cards: [
@@ -1141,6 +1180,7 @@ Reading payoff: SFX are drawn INTO the art, so OCR often misses them — your ey
       ]
     },
     {
+      key: 'sfx.07',
       kind: 'vocab',
       title: 'Eating, drinking & sleeping',
       cards: [
@@ -1156,6 +1196,7 @@ Reading payoff: SFX are drawn INTO the art, so OCR often misses them — your ey
       ]
     },
     {
+      key: 'sfx.08',
       kind: 'vocab',
       title: 'Textures & states (gitaigo in prose)',
       cards: [
@@ -1174,16 +1215,16 @@ Reading payoff: SFX are drawn INTO the art, so OCR often misses them — your ey
   ]
 }
 
-export const SPEECH_COURSE: SeedCourse = {
+export const SPEECH_COURSE: SeedCourseDef = {
   title: 'Speech Styles & Role Language',
   description:
     'Who is speaking? In Japanese fiction the words themselves tell you: pronouns, name suffixes, ' +
     'family terms and sentence endings all encode age, class, gender and attitude (役割語 — role language). ' +
     'This goes deeper than the Manga & VN courses: archetype by archetype.',
   level: 'N4+',
-  difficulty: 17,
   lessons: [
     {
+      key: 'speech.01',
       kind: 'vocab',
       title: 'First-person pronouns: what "I" says about you',
       cards: [
@@ -1259,6 +1300,7 @@ export const SPEECH_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'speech.02',
       kind: 'vocab',
       title: 'Second person: from polite to fighting words',
       cards: [
@@ -1324,6 +1366,7 @@ export const SPEECH_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'speech.03',
       kind: 'vocab',
       title: 'Name suffixes & titles',
       cards: [
@@ -1393,6 +1436,7 @@ export const SPEECH_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'speech.04',
       kind: 'vocab',
       title: 'Family terms across registers',
       cards: [
@@ -1455,6 +1499,7 @@ export const SPEECH_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'speech.05',
       kind: 'grammar',
       title: 'お嬢様 speech: refined & fancy',
       body: `The rich-girl archetype (お嬢様) has a whole grammar:
@@ -1486,10 +1531,13 @@ Real-life note: almost nobody talks like this today — it's pure role language,
           reading: 'まあ、すてきですわね。',
           back: 'My, how lovely.',
           notes: 'まあ — the refined gasp.'
-        }
+        },
+        { front: 'お茶でもいかがかしら。', reading: 'おちゃでもいかがかしら。', back: 'Would you care for some tea? (refined)' },
+        { front: 'わたくし、負けませんことよ。', reading: 'わたくし、まけませんことよ。', back: 'I shall not lose, I assure you. (ojōsama)' }
       ]
     },
     {
+      key: 'speech.06',
       kind: 'grammar',
       title: 'Elders, samurai & period drama',
       body: `Two archetypes share a shelf:
@@ -1518,10 +1566,13 @@ Note the overlap with N1 literary grammar (ぬ, まじき, べし) — period sp
           reading: 'それはゆるせぬ！',
           back: 'That I cannot forgive! (archaic negative)',
           notes: 'ぬ = ない — dramatic, archaic.'
-        }
+        },
+        { front: '若いの、よく聞くのじゃ。', reading: 'わかいの、よくきくのじゃ。', back: 'Listen well, youngster. (elder speech)' },
+        { front: '殿、お待ちくだされ。', reading: 'との、おまちくだされ。', back: 'My lord, please wait. (samurai speech)' }
       ]
     },
     {
+      key: 'speech.07',
       kind: 'grammar',
       title: 'Rough speech & fight scenes',
       body: `The escalation ladder of delinquent Japanese:
@@ -1551,10 +1602,13 @@ Grammar-wise it's all contractions of things you know: なめるな→なめん�
           reading: 'にげやがったな。',
           back: 'The bastard ran.',
           notes: 'やがる — contempt auxiliary.'
-        }
+        },
+        { front: '文句あんのか？', reading: 'もんくあんのか？', back: 'You got a problem?' },
+        { front: 'どけよ、邪魔だ！', reading: 'どけよ、じゃまだ！', back: "Move it, you're in the way!" }
       ]
     },
     {
+      key: 'speech.08',
       kind: 'grammar',
       title: 'Polite menace & command styles',
       body: `Commands come in ranks — and fiction plays them against type:
@@ -1586,22 +1640,24 @@ Reading payoff: register whiplash = characterization. The moment a soft-spoken c
           reading: 'すわりなさい。',
           back: 'Sit down. (parental authority)',
           notes: 'なさい — firm but not vulgar.'
-        }
+        },
+        { front: '静かにしたまえ。', reading: 'しずかにしたまえ。', back: 'Be quiet. (condescending)' },
+        { front: 'お引き取り願えますか。', reading: 'おひきとりねがえますか。', back: 'Would you kindly leave? (polite dismissal)' }
       ]
     }
   ]
 }
 
-export const IDIOMS_COURSE: SeedCourse = {
+export const IDIOMS_COURSE: SeedCourseDef = {
   title: 'Idioms & Set Phrases (慣用句)',
   description:
     'Expressions whose meaning you cannot assemble from the words: the 気 family, body-part idioms, ' +
     'battle-scene set phrases, four-character idioms (四字熟語) and the proverbs fiction quotes. ' +
     'These read as single units — learn them as units and dialogue speeds up dramatically.',
   level: 'N3–N2',
-  difficulty: 22,
   lessons: [
     {
+      key: 'idioms.01',
       kind: 'vocab',
       title: 'The 気 system',
       cards: [
@@ -1677,6 +1733,7 @@ export const IDIOMS_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'idioms.02',
       kind: 'vocab',
       title: 'Body idioms I: eyes, mouth, ears',
       cards: [
@@ -1749,6 +1806,7 @@ export const IDIOMS_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'idioms.03',
       kind: 'vocab',
       title: 'Body idioms II: hands, feet, belly, head',
       cards: [
@@ -1820,6 +1878,7 @@ export const IDIOMS_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'idioms.04',
       kind: 'vocab',
       title: 'Battle & story set phrases',
       cards: [
@@ -1895,6 +1954,7 @@ export const IDIOMS_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'idioms.05',
       kind: 'vocab',
       title: 'Four-character idioms (四字熟語)',
       cards: [
@@ -1968,6 +2028,7 @@ export const IDIOMS_COURSE: SeedCourse = {
       ]
     },
     {
+      key: 'idioms.06',
       kind: 'vocab',
       title: 'Proverbs fiction actually quotes',
       cards: [

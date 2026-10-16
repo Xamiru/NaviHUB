@@ -198,23 +198,6 @@ export default defineEvent({
             at: '2026-10-08',
             url: 'https://history.state.gov/milestones/1981-1988/lebanon'
           }
-        },
-        {
-          id: 'q2',
-          text: 'On September 17, hundreds of Palestinian men, women, and children had been murdered in the Sabra and Shatila refugee camps, south of Beirut.',
-          lang: 'en',
-          cite: {
-            source: 'reagan-lib-1982-09-18-statement-on-murder-of-palestinian-refugees-in-lebanon',
-            loc: {
-              section: 'Statement on the Murder of Palestinian Refugees in Lebanon',
-              para: '6'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://www.reaganlibrary.gov/archives/speech/statement-murder-palestinian-refugees-lebanon'
-          }
         }
       ]
     },
@@ -233,28 +216,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-08',
             url: 'https://www.hrw.org/news/2001/06/22/israel-sharon-investigation-urged'
-          }
-        }
-      ]
-    },
-    {
-      kind: 'course',
-      quotes: [
-        {
-          id: 'q5',
-          text: 'During the negotiations leading to the PLO withdrawal from Beirut, we were assured that Israeli forces would not enter west Beirut.',
-          lang: 'en',
-          cite: {
-            source: 'reagan-lib-1982-09-18-statement-on-murder-of-palestinian-refugees-in-lebanon',
-            loc: {
-              section: 'Statement on the Murder of Palestinian Refugees in Lebanon',
-              para: '2'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://www.reaganlibrary.gov/archives/speech/statement-murder-palestinian-refugees-lebanon'
           }
         }
       ]
@@ -307,6 +268,62 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-08',
             url: 'https://www.hrw.org/news/2001/06/22/israel-sharon-investigation-urged'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q2',
+          text: 'On September 17, hundreds of Palestinian men, women, and children had been murdered in the Sabra and Shatila refugee camps, south of Beirut.',
+          lang: 'en',
+          cite: {
+            source: 'reagan-lib-1982-09-18-statement-on-murder-of-palestinian-refugees-in-lebanon',
+            loc: {
+              section: 'Statement on the Murder of Palestinian Refugees in Lebanon',
+              para: '6'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.reaganlibrary.gov/archives/speech/statement-murder-palestinian-refugees-lebanon'
+          }
+        },
+        {
+          id: 'q5',
+          text: 'During the negotiations leading to the PLO withdrawal from Beirut, we were assured that Israeli forces would not enter west Beirut.',
+          lang: 'en',
+          cite: {
+            source: 'reagan-lib-1982-09-18-statement-on-murder-of-palestinian-refugees-in-lebanon',
+            loc: {
+              section: 'Statement on the Murder of Palestinian Refugees in Lebanon',
+              para: '2'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.reaganlibrary.gov/archives/speech/statement-murder-palestinian-refugees-lebanon'
+          }
+        },
+        {
+          id: 'q11',
+          text: 'I was horrified to learn this morning of the killing of Palestinians which has taken place in Beirut.',
+          lang: 'en',
+          cite: {
+            source: 'reagan-lib-1982-09-18-statement-on-murder-of-palestinian-refugees-in-lebanon',
+            loc: {
+              section: 'Statement on the Murder of Palestinian Refugees in Lebanon',
+              para: '1'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://www.reaganlibrary.gov/archives/speech/statement-murder-palestinian-refugees-lebanon'
           }
         }
       ]
@@ -368,38 +385,6 @@ export default defineEvent({
           via: 'web',
           at: '2026-10-08',
           url: 'https://www.hrw.org/news/2001/06/22/israel-sharon-investigation-urged'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1982-09-18' },
-            cites: [
-              {
-                source: 'reagan-lib-1982-09-18-statement-on-murder-of-palestinian-refugees-in-lebanon',
-                loc: {
-                  section: 'Statement on the Murder of Palestinian Refugees in Lebanon',
-                  para: '0'
-                }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q11',
-        text: 'I was horrified to learn this morning of the killing of Palestinians which has taken place in Beirut.',
-        lang: 'en',
-        cite: {
-          source: 'reagan-lib-1982-09-18-statement-on-murder-of-palestinian-refugees-in-lebanon',
-          loc: { section: 'Statement on the Murder of Palestinian Refugees in Lebanon', para: '1' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-08',
-          url: 'https://www.reaganlibrary.gov/archives/speech/statement-murder-palestinian-refugees-lebanon'
         }
       }
     },

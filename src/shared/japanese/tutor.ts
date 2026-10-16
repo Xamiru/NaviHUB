@@ -40,7 +40,7 @@ export const TUTOR_PHASES: TutorPhase[] = [
   {
     id: 'foundation',
     title: 'Foundation and sound',
-    stepRange: 'Kana and Steps 01–03',
+    stepRange: 'Kana, N5 grammar and first kanji',
     purpose: 'Make the sound system, core sentence frame and first kanji automatic.',
     weeklyProof: [
       'Complete five review days without adding to a backlog.',
@@ -56,7 +56,7 @@ export const TUTOR_PHASES: TutorPhase[] = [
   {
     id: 'bridge',
     title: 'Controlled reading bridge',
-    stepRange: 'Steps 04–09',
+    stepRange: 'Casual speech and N4',
     purpose: 'Move from lessons and isolated sentences into manageable manga and VN scenes.',
     weeklyProof: [
       'Read from local media on at least four days and mine only useful recurring words.',
@@ -72,7 +72,7 @@ export const TUTOR_PHASES: TutorPhase[] = [
   {
     id: 'immersion',
     title: 'Immersion bridge',
-    stepRange: 'Steps 10–17',
+    stepRange: 'N3, SFX and character voice',
     purpose: 'Connect known grammar to continuous speech, character voice and longer scenes.',
     weeklyProof: [
       'Complete two five-pass listening sessions from an attached anime or video.',
@@ -88,7 +88,7 @@ export const TUTOR_PHASES: TutorPhase[] = [
   {
     id: 'independent',
     title: 'Independent comprehension',
-    stepRange: 'Steps 18–22',
+    stepRange: 'N2 and idioms',
     purpose: 'Sustain chapters and episodes while using lessons only to close observed gaps.',
     weeklyProof: [
       'Read two substantial chapters or equivalent novel sections.',
@@ -104,7 +104,7 @@ export const TUTOR_PHASES: TutorPhase[] = [
   {
     id: 'advanced',
     title: 'Advanced range',
-    stepRange: 'Steps 23–26 and self-directed media',
+    stepRange: 'N1 and self-directed media',
     purpose: 'Build breadth, precision and register through difficult native material.',
     weeklyProof: [
       'Alternate literary, conversational and formal material instead of staying in one register.',
@@ -129,7 +129,8 @@ export interface TutorEvidence {
   unseen: number
   introducedToday: number
   dailyTarget: number
-  frontierStep: number
+  // Phase of the course the learner is working through (coursePhase()).
+  frontierPhase: TutorPhaseId
   strictRetention30: number | null
   phonology: TutorHistoryEvidence
   listening: TutorHistoryEvidence
@@ -147,6 +148,10 @@ export interface TutorEvidence {
   /** All-time review count; zero means no known words for listening yet. */
   totalReviews?: number
   nextLesson?: { id: number; title: string } | null
+  /** The next step of a deck track beside the courses (pathTracks.nextDeckStep). */
+  deckStep?: { title: string; detail: string; route: string } | null
+  /** Days new material goes to the deck track rather than the next course lesson. */
+  deckDay?: boolean
 }
 
 export interface TutorTask {
@@ -186,16 +191,18 @@ export function historyEvidence(history: QuizHistory | undefined): TutorHistoryE
   }
 }
 
-export function tutorPhaseForStep(step: number): TutorPhase {
-  if (step <= 3) return TUTOR_PHASES[0]
-  if (step <= 9) return TUTOR_PHASES[1]
-  if (step <= 17) return TUTOR_PHASES[2]
-  if (step <= 22) return TUTOR_PHASES[3]
-  return TUTOR_PHASES[4]
+export function tutorPhase(id: TutorPhaseId): TutorPhase {
+  return TUTOR_PHASES.find((phase) => phase.id === id) ?? TUTOR_PHASES[0]
+}
+
+// Whether the learner has reached `id` (phases are ordered).
+export function phaseReached(current: TutorPhaseId, id: TutorPhaseId): boolean {
+  const rank = (p: TutorPhaseId): number => TUTOR_PHASES.findIndex((phase) => phase.id === p)
+  return rank(current) >= rank(id)
 }
 
 function weakestSkill(e: TutorEvidence): TutorWeakness | null {
-  const useImmersion = e.frontierStep >= 10 && e.hasListeningMedia
+  const useImmersion = phaseReached(e.frontierPhase, 'immersion') && e.hasListeningMedia
   const listeningEvidence = useImmersion ? e.immersion : e.listening
   const candidates: Array<TutorWeakness & { threshold: number; sessions: number }> = [
     {
@@ -281,7 +288,7 @@ function weakestSkill(e: TutorEvidence): TutorWeakness | null {
 }
 
 export function buildTutorPlan(e: TutorEvidence): TutorPlan {
-  const phase = tutorPhaseForStep(e.frontierStep)
+  const phase = tutorPhase(e.frontierPhase)
   const weakness = weakestSkill(e)
   const lessonHeld = e.unseen > 0
   const budget = e.budgetMinutes ?? 60
@@ -345,7 +352,7 @@ export function buildTutorPlan(e: TutorEvidence): TutorPlan {
   }
 
   const listeningRoute =
-    e.hasListeningMedia && e.frontierStep >= 10 ? '/japanese/immersion' : '/japanese/listen'
+    e.hasListeningMedia && phaseReached(e.frontierPhase, 'immersion') ? '/japanese/immersion' : '/japanese/listen'
   const listening: TutorTask = knowsWords
     ? {
         skill: 'listening',
@@ -379,13 +386,13 @@ export function buildTutorPlan(e: TutorEvidence): TutorPlan {
   }
   const output: TutorTask = {
     skill: 'output',
-    title: e.frontierStep >= 4 ? 'Complete one branching role-play' : 'Write or say a few sentences',
+    title: phaseReached(e.frontierPhase, 'bridge') ? 'Complete one branching role-play' : 'Write or say a few sentences',
     detail:
-      e.frontierStep >= 4
+      phaseReached(e.frontierPhase, 'bridge')
         ? 'Answer before you look at the example replies, carry the conversation on, then fix what was missing.'
         : 'Answer the prompts in Japanese, compare with the example, then improve your answer.',
     minutes: 10,
-    route: e.frontierStep >= 4 ? '/japanese/roleplay' : '/japanese/output',
+    route: phaseReached(e.frontierPhase, 'bridge') ? '/japanese/roleplay' : '/japanese/output',
     reason: 'Producing a sentence shows gaps that recognising one can hide.',
     priority: 'recommended'
   }
@@ -414,6 +421,22 @@ export function buildTutorPlan(e: TutorEvidence): TutorPlan {
     reason: lessonHeld ? 'More new material would bury the cards already waiting.' : 'You have room for new material.',
     priority: lessonHeld ? 'optional' : 'recommended'
   }
+
+  // New material alternates between the course path and the deck tracks, so
+  // vocabulary and kanji keep pace without stalling the grammar.
+  const deckTask: TutorTask | null =
+    e.deckStep && !lessonHeld && (e.deckDay || !e.nextLesson)
+      ? {
+          skill: 'curriculum',
+          title: e.deckStep.title,
+          detail: e.deckStep.detail,
+          minutes: 5,
+          route: e.deckStep.route,
+          reason: 'The courses teach a few hundred words and kanji per level; reading needs thousands.',
+          priority: 'recommended'
+        }
+      : null
+  const newMaterial = deckTask ?? nextLessonTask
 
   const at = (task: TutorTask, minutes: number): TutorTask => ({ ...task, minutes })
   let tasks: TutorTask[]
@@ -451,7 +474,7 @@ export function buildTutorPlan(e: TutorEvidence): TutorPlan {
                 at(listening, 10),
                 at(reading, 20),
                 at(output, 10),
-                ...(repair ? [repair] : lessonFirst ? [] : [nextLessonTask])
+                ...(repair ? [repair] : lessonFirst ? [] : [newMaterial])
               ]
   }
 

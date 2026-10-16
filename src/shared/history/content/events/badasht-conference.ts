@@ -194,12 +194,12 @@ export default defineEvent({
         },
         {
           id: 'q8',
-          text: 'Also during the conference the title Qoddūs was given to Mollā Moḥammad-ʿAlī Bārforūšī and Ṭāhera to Qorrat-al-ʿAyn, who were both members of the earliest group of the Bāb’s disciples, the ḥorūf-e ḥayy (Letters of the Living; q.v.).',
+          text: 'Also during the conference the title Qoddūs was given to Mollā Moḥammad-ʿAlī Bārforūšī and Ṭāhera to Qorrat-al-ʿAyn, who were both members of the earliest group of the Bāb’s disciples, the ḥorūf-e ḥayy',
           lang: 'en',
           cite: { source: 'iranica-momen-badasht', loc: { section: 'BADAŠT', para: '1' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/badast'
           }
         },

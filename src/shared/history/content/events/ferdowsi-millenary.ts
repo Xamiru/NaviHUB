@@ -147,7 +147,7 @@ export default defineEvent({
         },
         {
           id: 'q2',
-          text: 'Construction of the tomb started in 1928, under the supervision of Šāhroḵ, and was finished in 1934, in time for Ferdowsī’s millenary celebration (q.v.).',
+          text: 'Construction of the tomb started in 1928, under the supervision of Šāhroḵ, and was finished in 1934, in time for Ferdowsī’s millenary celebration',
           lang: 'en',
           cite: {
             source: 'iranica-shahbazi-ferdowsi-mausoleum',
@@ -155,7 +155,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/ferdowsi-iii/'
           }
         }

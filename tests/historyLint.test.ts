@@ -159,3 +159,37 @@ describe('History lint: dates and invisible characters', () => {
     expect(keys).toContain('ocr|event:sample-revolution|q97')
   })
 })
+
+describe('History lint: pins, narrators and openers', () => {
+  it('asks a leading event for a located place', () => {
+    // The fixture's prominence-1 event names no place with coordinates.
+    expect(lint()).toContain('unpinned|event:sample-revolution|')
+  })
+
+  it('flags a primary source narrating an event, but not in its own words', () => {
+    const chronicle = (all: HistoryEntity[]): void => {
+      const book = find<HistorySource>(all, 'source', 'book-a')
+      all.push({ ...book, id: 'chronicle', type: 'primary' })
+    }
+    const narrated = lint((all) => {
+      chronicle(all)
+      find<HistoryEvent>(all, 'event', 'sample-revolution').sections[0].quotes.push({ ...q('q98', 'chronicle'), text: 'The shah won a great victory.' })
+    })
+    expect(narrated).toContain('primary-narration|event:sample-revolution|q98')
+    const ownWords = lint((all) => {
+      chronicle(all)
+      find<HistoryEvent>(all, 'event', 'sample-revolution').sections.push({ kind: 'in-their-words', quotes: [{ ...q('q99', 'chronicle'), text: 'The shah won a great victory.' }] })
+    })
+    expect(ownWords.filter((k) => k.startsWith('primary-narration'))).toEqual([])
+  })
+
+  it('flags a leading page that opens on a pre-1950 work', () => {
+    const keys = lint((all) => {
+      const book = find<HistorySource>(all, 'source', 'book-a')
+      book.date = '1911'
+      const e = find<HistoryEvent>(all, 'event', 'sample-revolution')
+      e.sections[0].quotes.unshift({ ...q('q100'), text: 'The revolution overthrew the monarchy.' })
+    })
+    expect(keys).toContain('dated-opener|event:sample-revolution|q100')
+  })
+})

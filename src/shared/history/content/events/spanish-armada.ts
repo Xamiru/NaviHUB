@@ -343,5 +343,13 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Defeat_of_the_Spanish_Armada,_8_August_1588_RMG_BHC0264.tiff',
     credit: { institution: 'National Maritime Museum', creator: 'Philip James de Loutherbourg' },
     license: { id: 'public-domain' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:plymouth',
+      cites: [
+        { source: 'britannica-1911-armada-the', loc: { section: 'Armada, The', para: '1' } }
+      ]
+    }
+  ]
 })

@@ -33,6 +33,9 @@ import {
 } from './settings/AppearanceSettings'
 import {
   KnownBaselineSettings,
+  JapaneseBuiltInSettings,
+  ReviewSchedulerSettings,
+  JapaneseDirectionSettings,
   DictionarySettings,
   EnglishDictionarySettings
 } from './settings/LearningSettings'
@@ -45,6 +48,7 @@ import {
   YtdlpSettings,
   MusicDownloadSettings,
   MokuroSettings,
+  SevenZipSettings,
   VideoSubtitleToolsSettings,
   TorrentSettings
 } from './settings/ToolSettings'
@@ -256,6 +260,9 @@ export default function SettingsPage() {
                 <>
                   <KnownBaselineSettings data={data} onSave={setKey} />
                   <JapaneseDefaultsSettings />
+                  <ReviewSchedulerSettings data={data} onSave={setKey} />
+                  <JapaneseDirectionSettings data={data} onSave={setKey} />
+                  <JapaneseBuiltInSettings />
                   <DictionarySettings />
                   <EnglishDictionarySettings />
                 </>
@@ -274,6 +281,7 @@ export default function SettingsPage() {
                   <MusicDownloadSettings data={data} onSave={setKey} />
                   <VideoSubtitleToolsSettings data={data} onSave={setKey} />
                   <MokuroSettings data={data} onSave={setKey} />
+                  <SevenZipSettings data={data} onSave={setKey} />
                   <TorrentSettings data={data} secretStorage={secretStorage} onSave={setKey} />
                 </>
               )}

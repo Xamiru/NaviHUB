@@ -31,6 +31,24 @@ export default defineEvent({
           loc: { section: 'Timeline: Consulate/1st French Empire, 1814 – THE FRENCH CAMPAIGN' }
         }
       ]
+    },
+    {
+      ref: 'place:fontainebleau',
+      cites: [
+        {
+          source: 'fondation-napoleon-napodoc-french-campaign',
+          loc: { section: 'The Abdication', para: '1' }
+        }
+      ]
+    },
+    {
+      ref: 'place:paris',
+      cites: [
+        {
+          source: 'fondation-napoleon-napodoc-french-campaign',
+          loc: { section: 'The Abdication', para: '4' }
+        }
+      ]
     }
   ],
   polities: [

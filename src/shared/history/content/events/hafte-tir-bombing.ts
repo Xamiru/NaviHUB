@@ -31,7 +31,17 @@ export default defineEvent({
   },
   regions: ['iran'],
   prominence: 2,
-  places: [],
+  places: [
+    {
+      ref: 'place:tehran',
+      cites: [
+        {
+          source: 'iranica-algar-khomeini-life',
+          loc: { section: 'KHOMEINI i. Life', para: '5' }
+        }
+      ]
+    }
+  ],
   polities: [
     {
       ref: 'polity:islamic-republic-of-iran',
@@ -176,20 +186,6 @@ export default defineEvent({
             loc: { section: 'TERROR AND REPRESSION', para: '3' }
           },
           provenance: { via: 'web', at: '2026-10-08', url: 'http://countrystudies.us/iran/26.htm' }
-        },
-        {
-          id: 'q7',
-          text: 'A bomb at the Islamic Republican Party headquarters kills some 70 members of the ruling party including its leader, Ayatollah Sayyed-Moḥammad Behešti (b. 1928)',
-          lang: 'en',
-          cite: {
-            source: 'iranica-yarshater-chronology-part-4',
-            loc: { section: 'Chronology of Iranian History Part 4, 1981' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-4/'
-          }
         }
       ]
     },

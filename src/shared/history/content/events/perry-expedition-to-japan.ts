@@ -169,34 +169,6 @@ export default defineEvent({
             loc: { section: 'Decline of the Tokugawa', para: '5' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/japan/21.htm' }
-        },
-        {
-          id: 'q6',
-          text: 'The advance boat soon touched the spot, and Captain Buchanan, who commanded the party, sprang ashore, being the first of the Americans who landed in the Kingdom of Japan.',
-          lang: 'en',
-          cite: {
-            source: 'hawks-1856-narrative-of-the-expedition-to-japan',
-            loc: { section: 'Commodore Perry: When We Landed in Japan, 1853', para: '9' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://sourcebooks.fordham.edu/mod/1854Perry-japan1.asp'
-          }
-        },
-        {
-          id: 'q7',
-          text: 'The port of Simoda, in the principality of Idzu and the port of Hakodadi, in the pricipality of Matsmai are granted by the Japanese as ports for he reception for American ships, where they can be supplied with wood, water, provisions and coal, and other articles their necessities may require, as far as the Japanese have them.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-treaty-of-kanagawa',
-            loc: { section: 'Treaty of Kanagawa; March 31, 1854', para: '6' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://avalon.law.yale.edu/19th_century/japan002.asp'
-          }
         }
       ]
     },
@@ -235,6 +207,39 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1830-1860/opening-to-japan'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q6',
+          text: 'The advance boat soon touched the spot, and Captain Buchanan, who commanded the party, sprang ashore, being the first of the Americans who landed in the Kingdom of Japan.',
+          lang: 'en',
+          cite: {
+            source: 'hawks-1856-narrative-of-the-expedition-to-japan',
+            loc: { section: 'Commodore Perry: When We Landed in Japan, 1853', para: '9' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://sourcebooks.fordham.edu/mod/1854Perry-japan1.asp'
+          }
+        },
+        {
+          id: 'q7',
+          text: 'The port of Simoda, in the principality of Idzu and the port of Hakodadi, in the pricipality of Matsmai are granted by the Japanese as ports for he reception for American ships, where they can be supplied with wood, water, provisions and coal, and other articles their necessities may require, as far as the Japanese have them.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-treaty-of-kanagawa',
+            loc: { section: 'Treaty of Kanagawa; March 31, 1854', para: '6' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://avalon.law.yale.edu/19th_century/japan002.asp'
           }
         }
       ]

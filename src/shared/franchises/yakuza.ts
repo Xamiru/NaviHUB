@@ -1,5 +1,7 @@
 // Yakuza / Like a Dragon — curated canon. Mainline + the Judgment duology
-// (approved spin-offs); Dead Souls / Ishin / Kenzan-tier excluded. Story
+// (approved spin-offs); Dead Souls / Kenzan-tier excluded. Added 2026-10-17:
+// Like a Dragon: Ishin! (the 2023 remake, a spin-off outside the story order)
+// and Pirate Yakuza in Hawaii (set after Infinite Wealth). Story
 // order: 0 (1988) -> Kiwami/1 (2005) -> ... -> Infinite Wealth (2023); the
 // Judgment games run parallel and are slotted where their events land.
 // Kiwami 1/2 were re-listed on Steam in 2026 under NEW appids; both old
@@ -49,7 +51,7 @@ export const YAKUZA: FranchiseCfg = {
       id: 'yakuza-2',
       title: 'Yakuza 2',
       year: 2006,
-      chrono: 4,
+      chrono: 3,
       mc: 76,
       bgUrl:
         'https://static.wikia.nocookie.net/yakuza/images/1/19/Wallpaper13_yakuza2_10788631416_o.jpg/revision/latest?cb=20190929095434',
@@ -72,7 +74,7 @@ export const YAKUZA: FranchiseCfg = {
       aliases: ['Yakuza 3 Remastered'],
       externalIds: [{ source: 'steam', id: '1088710' }],
       year: 2009,
-      chrono: 6,
+      chrono: 4,
       mc: 78,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1088710/library_hero.jpg',
       note: 'Okinawa and the orphanage'
@@ -83,7 +85,7 @@ export const YAKUZA: FranchiseCfg = {
       aliases: ['Yakuza 4 Remastered'],
       externalIds: [{ source: 'steam', id: '1105500' }],
       year: 2010,
-      chrono: 7,
+      chrono: 5,
       mc: 78,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1105500/library_hero.jpg',
       note: 'Four protagonists'
@@ -94,7 +96,7 @@ export const YAKUZA: FranchiseCfg = {
       aliases: ['Yakuza 5 Remastered'],
       externalIds: [{ source: 'steam', id: '1105510' }],
       year: 2012,
-      chrono: 8,
+      chrono: 6,
       mc: 83,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1105510/library_hero.jpg',
       note: 'Five cities, five stories'
@@ -118,7 +120,7 @@ export const YAKUZA: FranchiseCfg = {
       ],
       year: 2016,
       releaseDate: '2016-01-21',
-      chrono: 3,
+      chrono: 2,
       mc: 80,
       remake: true,
       bgUrl:
@@ -131,7 +133,7 @@ export const YAKUZA: FranchiseCfg = {
       externalIds: [{ source: 'steam', id: '1388590' }],
       year: 2016,
       releaseDate: '2016-12-08',
-      chrono: 9,
+      chrono: 7,
       mc: 83,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1388590/library_hero.jpg',
       note: "Kiryu's farewell (first of several)"
@@ -144,7 +146,7 @@ export const YAKUZA: FranchiseCfg = {
         { source: 'steam', id: '927380' }
       ],
       year: 2017,
-      chrono: 5,
+      chrono: 3,
       mc: 85,
       remake: true,
       bgUrl:
@@ -156,7 +158,7 @@ export const YAKUZA: FranchiseCfg = {
       title: 'Judgment',
       externalIds: [{ source: 'steam', id: '2058180' }],
       year: 2018,
-      chrono: 10,
+      chrono: 8,
       mc: 81,
       spinOff: true,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2058180/library_hero.jpg',
@@ -168,7 +170,7 @@ export const YAKUZA: FranchiseCfg = {
       aliases: ['Like a Dragon'],
       externalIds: [{ source: 'steam', id: '1235140' }],
       year: 2020,
-      chrono: 11,
+      chrono: 9,
       mc: 84,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1235140/library_hero.jpg',
       note: 'Ichiban arrives — turn-based reboot'
@@ -178,7 +180,7 @@ export const YAKUZA: FranchiseCfg = {
       title: 'Lost Judgment',
       externalIds: [{ source: 'steam', id: '2058190' }],
       year: 2021,
-      chrono: 12,
+      chrono: 10,
       mc: 82,
       spinOff: true,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2058190/library_hero.jpg',
@@ -189,17 +191,29 @@ export const YAKUZA: FranchiseCfg = {
       title: 'Like a Dragon Gaiden: The Man Who Erased His Name',
       externalIds: [{ source: 'steam', id: '2375550' }],
       year: 2023,
-      chrono: 13,
+      chrono: 11,
       mc: 83,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2375550/library_hero.jpg',
       note: 'What Kiryu did during 7'
+    },
+    {
+      id: 'yakuza-ishin',
+      title: 'Like a Dragon: Ishin!',
+      aliases: ['Ryu ga Gotoku Ishin! Kiwami'],
+      externalIds: [{ source: 'steam', id: '1805480' }],
+      year: 2023,
+      releaseDate: '2023-02-21',
+      spinOff: true,
+      remake: true,
+      bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1805480/library_hero.jpg',
+      note: 'Bakumatsu Kyoto — Kiryu’s face as Sakamoto Ryoma, remake of the 2014 Japan-only Ishin'
     },
     {
       id: 'yakuza-infinite-wealth',
       title: 'Like a Dragon: Infinite Wealth',
       externalIds: [{ source: 'steam', id: '2072450' }],
       year: 2024,
-      chrono: 14,
+      chrono: 12,
       mc: 89,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2072450/library_hero.jpg',
       note: 'Hawaii — two heroes, one series'
@@ -213,6 +227,17 @@ export const YAKUZA: FranchiseCfg = {
       releaseDate: '2024-10-24',
       adaptation: true,
       note: 'Prime Video series retelling the first game across 1995 and 2005'
+    },
+    {
+      id: 'yakuza-pirate',
+      title: 'Like a Dragon: Pirate Yakuza in Hawaii',
+      aliases: ['Like a Dragon: Pirate Yakuza'],
+      externalIds: [{ source: 'steam', id: '3061810' }],
+      year: 2025,
+      releaseDate: '2025-02-20',
+      chrono: 13,
+      bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3061810/library_hero.jpg',
+      note: 'Majima, amnesiac, captains a pirate crew after Infinite Wealth'
     }
   ],
   characters: [

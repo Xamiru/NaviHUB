@@ -83,7 +83,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'Russia and Britain political influence led to their progressive domination over Persian trade. The shah granted to British merchants in 1836 the same rights as those given to Russians. Soon after John McNeill’s return to Tehran as minister, a commercial treaty was signed on 28 October 1841 (Lambton, 1988, pp. 127-28).',
+          text: 'Russia and Britain political influence led to their progressive domination over Persian trade. The shah granted to British merchants in 1836 the same rights as those given to Russians. Soon after John McNeill’s return to Tehran as minister, a commercial treaty was signed on 28 October 1841',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-mohammad-shah',
@@ -91,13 +91,13 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
         },
         {
           id: 'q2',
-          text: 'Soon after, the terms of the 1841 Treaty of Commerce gave Britain capitulatory advantages in custom duties and other areas on a par with those enjoyed by Russia after 27 years of Persian resistance (Hurewitz, II, p. 280).',
+          text: 'Soon after, the terms of the 1841 Treaty of Commerce gave Britain capitulatory advantages in custom duties and other areas on a par with those enjoyed by Russia after 27 years of Persian resistance',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-great-britain-ii',
@@ -108,7 +108,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
           }
         },
@@ -133,7 +133,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'The conclusion of this treaty was the first serious step in opening the Persian markets to British manufactured goods, which contributed to the further decline of the traditional Persian workshops and a shift in foreign trade to exportable cash crops (Issawi, pp. 70-82; Abbott, pp. xiv-xxv).',
+          text: 'The conclusion of this treaty was the first serious step in opening the Persian markets to British manufactured goods, which contributed to the further decline of the traditional Persian workshops and a shift in foreign trade to exportable cash crops',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-great-britain-ii',
@@ -144,7 +144,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
           }
         },
@@ -164,7 +164,7 @@ export default defineEvent({
         },
         {
           id: 'q6',
-          text: 'British cheap goods then flooded the Persian market and this led to bankruptcies in Tabriz in 1843 (Lambton, 1988, pp. 133-34; Issawi, pp. 92 ff.).',
+          text: 'British cheap goods then flooded the Persian market and this led to bankruptcies in Tabriz in 1843',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-mohammad-shah',
@@ -172,7 +172,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
         }

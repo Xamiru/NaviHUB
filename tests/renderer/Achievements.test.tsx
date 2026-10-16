@@ -1,14 +1,24 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import AchievementSetupDialog from '@/components/AchievementSetupDialog'
 import { TrophyRow } from '@/components/TrophyDisplay'
 import AchievementNameDialog from '@/components/AchievementNameDialog'
 import GoldbergWizardDialog from '@/components/GoldbergWizardDialog'
+import AchievementsSection from '@/components/AchievementsSection'
+import AchievementsPage from '@/pages/AchievementsPage'
 import ConfirmHost from '@/components/ConfirmHost'
 import { api } from '@/lib/api'
-import type { AchievementRow, GoldbergState } from '@shared/types'
+import type {
+  AchievementListPayload,
+  AchievementRow,
+  AchievementsOverview,
+  AchievementUnlockEvent,
+  GoldbergState,
+  MediaDetail
+} from '@shared/types'
 import { expectNoAxeViolations } from './accessibility'
 
 vi.mock('@/lib/api', () => ({
@@ -23,7 +33,11 @@ vi.mock('@/lib/api', () => ({
       goldbergState: vi.fn(),
       goldbergInstall: vi.fn(),
       goldbergRestore: vi.fn(),
-      generateGoldberg: vi.fn(async () => null)
+      generateGoldberg: vi.fn(async () => null),
+      list: vi.fn(),
+      overview: vi.fn(),
+      recent: vi.fn(async () => []),
+      testPopup: vi.fn()
     }
   }
 }))
@@ -62,7 +76,6 @@ describe('achievement row actions', () => {
     render(
       <ul>
         <TrophyRow
-          provider="steam"
           busy={false}
           onToggle={onToggle}
           achievement={{
@@ -117,7 +130,6 @@ describe('achievement row corrections', () => {
     const { rerender } = render(
       <ul>
         <TrophyRow
-          provider="steam"
           busy={false}
           onToggle={vi.fn()}
           achievement={row({ name: 'Heavy Lifter', progress: { current: 820, max: 2000 } })}
@@ -130,7 +142,6 @@ describe('achievement row corrections', () => {
     rerender(
       <ul>
         <TrophyRow
-          provider="steam"
           busy={false}
           onToggle={vi.fn()}
           achievement={row({
@@ -152,7 +163,6 @@ describe('achievement row corrections', () => {
     render(
       <ul>
         <TrophyRow
-          provider="steam"
           busy={false}
           onToggle={vi.fn()}
           selection={{ selected: false, onChange }}
@@ -248,5 +258,159 @@ describe('one-click Goldberg setup', () => {
     renderWithQuery(<GoldbergWizardDialog mediaId={7} onClose={vi.fn()} />)
     expect(await screen.findByText(/cannot be set up here/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Write the achievement list/ })).not.toBeInTheDocument()
+  })
+})
+
+function renderRouted(ui: React.ReactNode) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter>{ui}</MemoryRouter>
+    </QueryClientProvider>
+  )
+}
+
+describe('hidden achievement text', () => {
+  it('stays hidden until asked for, and says so when there is nothing to show', async () => {
+    const user = userEvent.setup()
+    const { rerender } = render(
+      <ul>
+        <TrophyRow
+          busy={false}
+          onToggle={vi.fn()}
+          achievement={row({ name: 'Welcome Back', hidden: true, description: 'Arrived in Kamurocho.' })}
+        />
+      </ul>
+    )
+    expect(screen.queryByText('Arrived in Kamurocho.')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Show description/ }))
+    expect(screen.getByText('Arrived in Kamurocho.')).toBeInTheDocument()
+
+    rerender(
+      <ul>
+        <TrophyRow
+          busy={false}
+          onToggle={vi.fn()}
+          achievement={row({ id: 2, name: 'Unknown', hidden: true, description: null })}
+        />
+      </ul>
+    )
+    expect(screen.queryByRole('button', { name: /Show description/ })).not.toBeInTheDocument()
+  })
+
+  it('words rarity as a share of players and leaves the provider to the header', () => {
+    render(
+      <ul>
+        <TrophyRow busy={false} onToggle={vi.fn()} achievement={row({ globalPct: 4.2, rarity: 'rare' })} />
+      </ul>
+    )
+    expect(screen.getByText('4.2% of players')).toBeInTheDocument()
+    expect(screen.queryByText(/Steam/)).not.toBeInTheDocument()
+  })
+})
+
+describe('achievements tab', () => {
+  function payload(over: Partial<AchievementListPayload['tracking']> = {}): AchievementListPayload {
+    return {
+      eligible: true,
+      tracking: { provider: 'steam', providerGameId: '1388590', schemaFetchedAt: '2026-10-03 12:00:00', schemaSource: 'community', ...over },
+      summary: { unlocked: 1, total: 3, points: null },
+      achievements: [
+        row({ id: 1, name: 'Pizza Chef', unlockedAt: '2026-10-01 10:00:00', unlockSource: 'emu' }),
+        row({ id: 2, name: 'Keep Lou Safe', description: 'Protect Lou.' }),
+        row({ id: 3, name: 'Secret', hidden: true, description: null })
+      ]
+    }
+  }
+  const media = { id: 1, title: 'Yakuza 6' } as MediaDetail
+
+  it('names the list source and asks for a re-fetch when names were rank-paired', async () => {
+    vi.mocked(api.achievements.list).mockResolvedValue(payload())
+    const { container } = renderRouted(<AchievementsSection m={media} />)
+    expect(await screen.findByText(/Steam community page, names matched by rank/)).toBeInTheDocument()
+    expect(screen.getByText(/Re-fetch the list to replace it/)).toBeInTheDocument()
+    await expectNoAxeViolations(container)
+  })
+
+  it('says nothing more when the list is exact', async () => {
+    vi.mocked(api.achievements.list).mockResolvedValue(payload({ schemaSource: 'public-api' }))
+    renderRouted(<AchievementsSection m={media} />)
+    expect(await screen.findByText(/exact list from Steam/)).toBeInTheDocument()
+    expect(screen.queryByText(/Re-fetch the list to replace it/)).not.toBeInTheDocument()
+  })
+
+  it('searches the set and offers the hidden filter only when there are hidden rows', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.achievements.list).mockResolvedValue(payload({ schemaSource: 'public-api' }))
+    renderRouted(<AchievementsSection m={media} />)
+    expect(await screen.findByRole('button', { name: /Hidden 1/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /In progress/ })).not.toBeInTheDocument()
+
+    await user.type(screen.getByRole('searchbox', { name: 'Search achievements' }), 'lou')
+    expect(screen.getByText('Keep Lou Safe')).toBeInTheDocument()
+    expect(screen.queryByText('Pizza Chef')).not.toBeInTheDocument()
+
+    await user.clear(screen.getByRole('searchbox', { name: 'Search achievements' }))
+    await user.type(screen.getByRole('searchbox', { name: 'Search achievements' }), 'nothing like it')
+    expect(screen.getByText(/No achievements match/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Show all achievements' }))
+    expect(screen.getByText('Pizza Chef')).toBeInTheDocument()
+  })
+})
+
+describe('achievement archive', () => {
+  function unlock(over: Partial<AchievementUnlockEvent>): AchievementUnlockEvent {
+    return {
+      seq: 0,
+      achievementId: 1,
+      mediaId: 1,
+      mediaTitle: 'Yakuza 6',
+      mediaType: 'game',
+      name: 'Welcome Back',
+      description: null,
+      iconPath: null,
+      rarity: 'ultra-rare',
+      globalPct: 1.4,
+      points: null,
+      unlockedAt: '2026-10-01 10:00:00',
+      ...over
+    }
+  }
+  const overview: AchievementsOverview = {
+    recent: [unlock({}), unlock({ achievementId: 2, name: 'Second' }), unlock({ achievementId: 3, name: 'Third' })],
+    rarest: [unlock({})],
+    games: [
+      { mediaId: 1, title: 'Alpha', mediaType: 'game', coverPath: null, provider: 'steam', unlocked: 10, total: 10, lastUnlockedAt: '2026-01-01 10:00:00' },
+      { mediaId: 2, title: 'Beta', mediaType: 'game', coverPath: null, provider: 'steam', unlocked: 1, total: 100, lastUnlockedAt: '2026-10-01 10:00:00' }
+    ],
+    totals: { unlocked: 11, total: 110, games: 2 }
+  }
+
+  it('averages completion per game, counts perfect sets and sorts by last unlock', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.achievements.overview).mockResolvedValue(overview)
+    const { container } = renderRouted(<AchievementsPage />)
+    // (100% + 1%) / 2, not 11 / 110.
+    expect(await screen.findByRole('img', { name: '51% average completion' })).toBeInTheDocument()
+    expect(screen.getByText('Perfect games').previousSibling).toHaveTextContent('1')
+    expect(screen.getByText('1.4% of players')).toBeInTheDocument()
+
+    const titles = () => screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
+    expect(titles()).toEqual(expect.arrayContaining(['Alpha', 'Beta']))
+    expect(titles().indexOf('Alpha')).toBeLessThan(titles().indexOf('Beta'))
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Sort' }), 'recent')
+    expect(titles().indexOf('Beta')).toBeLessThan(titles().indexOf('Alpha'))
+    await expectNoAxeViolations(container)
+  })
+
+  it('opens the full unlock history on request', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.achievements.overview).mockResolvedValue(overview)
+    vi.mocked(api.achievements.recent).mockResolvedValue(overview.recent)
+    renderRouted(<AchievementsPage />)
+    await user.click(await screen.findByRole('button', { name: 'Show full history' }))
+    expect(api.achievements.recent).toHaveBeenCalledWith(5000)
+    const history = await screen.findByText(/3 unlocks/)
+    expect(within(history.closest('div')!).getAllByRole('listitem')).toHaveLength(3)
   })
 })

@@ -1,5 +1,6 @@
 import { useSearchParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
+import JapaneseHubTabs from '../components/japanese/JapaneseHubTabs'
 import Tabs, { TabPanel } from '../components/Tabs'
 import { usePersistedState } from '../lib/navState'
 import LookalikeDrill from '../components/japanese/LookalikeDrill'
@@ -23,6 +24,7 @@ export default function JapaneseConfusablesPage() {
 
   return (
     <div className="p-6 max-w-[1320px] mx-auto">
+      <JapaneseHubTabs />
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Confusables"

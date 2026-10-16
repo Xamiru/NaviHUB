@@ -27,12 +27,14 @@ import {
   joinUnder,
   joinCommunityWithPercentages,
   parseCommunityAchievementsPage,
-  parseGoldbergSchema
+  parseGoldbergSchema,
+  parsePlayerServiceAchievements
 } from './achievementsCore'
 import type { EmuFileIO } from './emuScan'
 import type { EmuEnv, PercentRow, SchemaRow } from './achievementsCore'
 import type {
   AchievementEmuImport,
+  AchievementSchemaSource,
   AchievementLaunchCheck,
   AchievementSetupResult,
   SteamAppCandidate,
@@ -67,7 +69,7 @@ async function webApiGet(path: string, params: Record<string, string>): Promise<
     timeoutMs: 20_000,
     maxResponseBytes: MAX_API_RESPONSE_BYTES
   })
-  if (res.status === 403) {
+  if (res.status === 403 && params.key) {
     throw new Error('Steam rejected the Web API key — check it in Settings > API keys.')
   }
   if (!res.ok) throw new Error(`Steam Web API request failed (${res.status})`)
@@ -110,14 +112,17 @@ export async function resolveSteamCandidates(mediaId: number): Promise<SteamAppC
 }
 
 // ---------------- Steam schema ----------------
-// Three sources, tried in order; the first that yields a set wins:
+// Four sources, tried in order; the first that yields a set wins:
 //   1. steam_settings/achievements.json beside the exe — what Goldberg/GSE
 //      cracks ship. Zero network, and it uses the exact api names the emulator
 //      writes unlocks under.
-//   2. The Web API, only if the user has a key.
-//   3. The public community stats page + the keyless percentages endpoint,
-//      joined by percentage (see achievementsCore.joinCommunityWithPercentages).
-// Rarity always comes from the keyless percentages endpoint, best-effort.
+//   2. Steam's keyless IPlayerService/GetGameAchievements — the exact list
+//      with api names, hidden descriptions, both icons and the global %.
+//   3. The Web API, only if the user has a key.
+//   4. The public community stats page + the keyless percentages endpoint,
+//      joined by rank (see achievementsCore.joinCommunityWithPercentages).
+//      The last resort: its names can trade places inside a near-tie.
+// Rarity for 1 and 3 comes from the keyless percentages endpoint, best-effort.
 
 type SteamSchemaAchievement = {
   name: string
@@ -128,7 +133,7 @@ type SteamSchemaAchievement = {
   icongray?: string
 }
 
-export type SteamSchemaSource = 'local' | 'webapi' | 'community'
+export type SteamSchemaSource = Exclude<AchievementSchemaSource, 'ra'>
 
 async function fetchPercentages(appid: string): Promise<PercentRow[]> {
   const pct = await webApiGet('/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/', {
@@ -178,7 +183,20 @@ async function loadSteamSchema(
     tried.push('no steam_settings/achievements.json beside the executable')
   }
 
-  // 2. The Web API, if a key exists.
+  // 2. Steam's keyless list. Any failure falls through: the sources below
+  // still work, and this one is undocumented.
+  try {
+    const rows = parsePlayerServiceAchievements(
+      await webApiGet('/IPlayerService/GetGameAchievements/v1/', { appid, language: 'english' }),
+      appid
+    )
+    if (rows.length) return { source: 'public-api', localDir: null, unmatched: 0, rows }
+    tried.push('Steam listed no achievements for this app')
+  } catch (error) {
+    tried.push(`Steam's public list unavailable (${error instanceof Error ? error.message : String(error)})`)
+  }
+
+  // 3. The Web API, if a key exists.
   const key = steamKey()
   if (key) {
     try {
@@ -214,7 +232,7 @@ async function loadSteamSchema(
     }
   }
 
-  // 3. The public community page.
+  // 4. The public community page.
   const pageRes = await fetchWithRetry(
     `https://steamcommunity.com/stats/${appid}/achievements/?l=english`,
     {
@@ -291,7 +309,7 @@ export async function fetchSteamSchema(
   // Rarity for the two sources that don't already carry it. Decoration: a
   // failure here must not sink the fetch.
   let percentages = new Map<string, number>()
-  if (schema.source !== 'community') {
+  if (schema.source === 'local' || schema.source === 'webapi') {
     try {
       percentages = new Map((await fetchPercentages(id)).map((p) => [p.name, p.percent]))
     } catch {
@@ -325,14 +343,16 @@ export async function fetchSteamSchema(
     scan.unlocks,
     'emu',
     fallback,
-    // Only the Web API names every achievement by its id. The crack's own list
-    // may be a file the old copy-it-yourself wizard wrote from a rank-paired
-    // guess (no manifest marks those), so it cannot override a hand swap; and
-    // it is often incomplete, so it never prunes.
+    // Only Steam's own lists (keyless or Web API) name every achievement by
+    // its id. The crack's own list may be a file the old copy-it-yourself
+    // wizard wrote from a rank-paired guess (no manifest marks those), so it
+    // cannot override a hand swap; and it is often incomplete, so it never
+    // prunes.
     {
-      exactNames: schema.source === 'webapi',
+      exactNames: schema.source === 'public-api' || schema.source === 'webapi',
       prune: schema.source !== 'local',
-      emu: emuStateOf(scan)
+      emu: emuStateOf(scan),
+      schemaSource: schema.source
     }
   )
 

@@ -26,6 +26,19 @@ function storeValue(key: string, value: unknown): void {
   }
 }
 
+// Duplicate tab: every value stored under each mapped history entry (persisted
+// state, scroll) is copied under its new key, in one pass over the store. Entry
+// keys never contain ':' (tabHistory.newEntryKey), so the first one ends the key.
+export function copyEntryState(keyMap: ReadonlyMap<string, string>): void {
+  const copies: [string, unknown][] = []
+  for (const [key, value] of store) {
+    const at = key.indexOf(':')
+    const to = at > 0 ? keyMap.get(key.slice(0, at)) : undefined
+    if (to) copies.push([`${to}${key.slice(at)}`, value])
+  }
+  for (const [key, value] of copies) storeValue(key, value)
+}
+
 // Drop-in replacement for useState whose value survives back/forward navigation.
 // Pass a unique `name` per piece of state on a page (e.g. 'castPage', 'search').
 // Returning to a page via the back button restores the value it had on leaving;

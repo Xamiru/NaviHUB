@@ -199,7 +199,8 @@ export async function fetchRaGame(
     schema,
     unlocks,
     'ra',
-    Date.now()
+    Date.now(),
+    { schemaSource: 'ra' }
   )
 
   const summary = achievementRepo.summaryFor(mediaId)

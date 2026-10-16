@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'reuter-concession-cancellation',
   about: ['event:reuter-concession'],
   topic: 'causes',
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'opposition-and-no-british-support',
@@ -15,7 +15,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q1',
-          text: 'Owing to popular opposition in Persia and to lack of British government support for Reuter, however, the shah canceled this concession in 1290/1873 (Teymūrī, pp. 97-150).',
+          text: 'Owing to popular opposition in Persia and to lack of British government support for Reuter, however, the shah canceled this concession in 1290/1873',
           lang: 'en',
           cite: {
             source: 'iranica-ettehadiyeh-concessions-qajar',
@@ -23,7 +23,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/concessions/concessions-ii-in-the-qajar-period'
           }
         }
@@ -38,7 +38,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q2',
-          text: 'Russian opposition, augmented by British government indifference, led to the cancellation of a broad concession for industrial development granted to a British subject, Baron Julius de Reuter, in the early 1870s (Algar, pp. 174-78; Farhād-Moʿtamed, pp. 210-12; F. Ādamiyat, 1972, pp. 367-69; Kazemzadeh, 1968, pp. 126-34; Frechling, apud Issawi, pp. 178-84).',
+          text: 'Russian opposition, augmented by British government indifference, led to the cancellation of a broad concession for industrial development granted to a British subject, Baron Julius de Reuter, in the early 1870s',
           lang: 'en',
           cite: {
             source: 'iranica-andreeva-russia-relations',
@@ -49,7 +49,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/russia-i-relations/'
           }
         }

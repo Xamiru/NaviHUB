@@ -45,6 +45,15 @@ export default defineEvent({
           loc: { section: 'Grenada', para: '9' }
         }
       ]
+    },
+    {
+      ref: 'place:st-georges',
+      cites: [
+        {
+          source: 'loc-caribbean-islands-country-study-1987',
+          loc: { section: 'Grenada: Government and Politics', para: '12' }
+        }
+      ]
     }
   ],
   partOf: [

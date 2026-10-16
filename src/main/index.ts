@@ -4,6 +4,7 @@ import { createReadStream } from 'fs'
 import { stat } from 'fs/promises'
 import { Readable } from 'stream'
 import { initDatabase, closeDatabase, getDbPath } from './db/connection'
+import { japaneseSeedReady } from './db/japaneseSeedLoader'
 import { runStartupMaintenance } from './startupMaintenance'
 import { closeDictDb } from './dict/dictDb'
 import { registerIpc } from './ipc'
@@ -27,6 +28,7 @@ import { cancelActiveLibraryBackup } from './libraryBackup'
 import { cancelActiveStorageMove, pinPicturesDir } from './storageMove'
 import { cancelSlideshowSync } from './pictureLibrary'
 import { killSqlSandbox } from './sqlSandbox'
+import { stopActiveTts } from './tts/ttsPaths'
 import { stopQuizPools } from './quizPools'
 import { finalizeActiveGameSession } from './gameLaunch'
 import { stopAchievementWatcher } from './achievementWatcher'
@@ -41,6 +43,8 @@ import { startFileSink, stopFileSink } from './logFile'
 import { settleAllOnQuit as settleAllTasksOnQuit } from './tasks'
 import { cancelActiveFootballSync } from './football/sync'
 import { cancelHistoryJobs } from './history/historyJobs'
+import { cancelModJobs } from './mods'
+import { cancelRomScan } from './romScan'
 import { installAppMenu } from './appMenu'
 import { initializeSecretStorage } from './secretStorage'
 
@@ -219,6 +223,9 @@ app.whenReady().then(async () => {
   // Compact / restore need the database file with no connection open.
   runStartupMaintenance(app.getPath('userData'), getDbPath())
   initDatabase()
+  // Seeds/syncs the built-in Japanese courses off the launch path; skipped
+  // entirely when the stamped version is current (japaneseSeedLoader.ts).
+  void japaneseSeedReady()
   pinPicturesDir()
   await initializeSecretStorage()
   registerIpc()
@@ -358,6 +365,12 @@ app.on('before-quit', () => {
   // History archive copies and downloads write under a .partial name; abort
   // them so no half-copied file is left in the History folder.
   cancelHistoryJobs()
+  // A mod install copies into a "<name>.navihub-partial" folder and records
+  // its ledger only after the rename; abort it and remove the partial files
+  // before the database closes.
+  cancelModJobs()
+  // The game-folder scan reads the library after its walk; stop it first.
+  cancelRomScan()
   // Don't let a half-finished yt-dlp outlive the app; its .part files survive
   // and resume on the next try.
   killActiveMusicDownload()
@@ -382,6 +395,9 @@ app.on('before-quit', () => {
   // The SQL sandbox's utility process holds nothing durable — an in-memory
   // copy of a dataset that is code — so it is simply dropped.
   killSqlSandbox()
+  // The Japanese voice's worker thread holds nothing durable (clips are
+  // written under a .partial name and renamed), so it is simply terminated.
+  stopActiveTts()
   // The quiz pool process only caches what it can rebuild; it goes before
   // closeDatabase() so its reader is not holding the WAL at the checkpoint.
   stopQuizPools()

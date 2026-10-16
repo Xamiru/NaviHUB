@@ -34,7 +34,7 @@ export const STAR_WARS: FranchiseCfg = {
     },
     {
       title: 'The Disney+ era',
-      body: 'Starting with The Mandalorian in 2019, Lucasfilm built a connected run of live-action and animated television: The Mandalorian, The Book of Boba Fett, Obi-Wan Kenobi, Andor, Ahsoka and Skeleton Crew all share writers, directors and continuity with each other and with the earlier Clone Wars and Rebels. The Mandalorian, Boba Fett, Ahsoka and Skeleton Crew are explicitly the same stretch of timeline, about nine years after Return of the Jedi, and 2026\'s The Mandalorian and Grogu continues directly from Ahsoka\'s ending.'
+      body: 'Starting with The Mandalorian in 2019, Lucasfilm built a connected run of live-action and animated television: The Mandalorian, The Book of Boba Fett, Obi-Wan Kenobi, Andor, Ahsoka and Skeleton Crew all share writers, directors and continuity with each other and with the earlier Clone Wars and Rebels. The Mandalorian, Boba Fett, Ahsoka and Skeleton Crew are explicitly the same stretch of timeline, about nine years after Return of the Jedi, and 2026\'s The Mandalorian and Grogu continues The Mandalorian\'s story after its third season.'
     },
     {
       title: 'Watching by era, not release order',
@@ -155,7 +155,7 @@ export const STAR_WARS: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '140607' }],
       year: 2015,
       releaseDate: '2015-12-15',
-      chrono: 14,
+      chrono: 15,
       route: 10,
       note: 'Thirty years on, a scavenger named Rey finds herself drawn into a new war with the First Order'
     },
@@ -179,7 +179,7 @@ export const STAR_WARS: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '181808' }],
       year: 2017,
       releaseDate: '2017-12-13',
-      chrono: 15,
+      chrono: 16,
       route: 12,
       note: 'Rey seeks out the exiled Luke Skywalker while the Resistance is run to ground'
     },
@@ -202,7 +202,7 @@ export const STAR_WARS: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '82856' }],
       year: 2019,
       releaseDate: '2019-11-12',
-      chrono: 17,
+      chrono: 14,
       route: 14,
       optional: true,
       note: 'A lone bounty hunter protects a foundling of Grogu\'s species, nine years after Return of the Jedi'
@@ -215,7 +215,7 @@ export const STAR_WARS: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '181812' }],
       year: 2019,
       releaseDate: '2019-12-18',
-      chrono: 16,
+      chrono: 17,
       route: 15,
       note: 'The returned Emperor Palpatine forces a final confrontation with Rey'
     },
@@ -238,7 +238,7 @@ export const STAR_WARS: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '115036' }],
       year: 2021,
       releaseDate: '2021-12-29',
-      chrono: 17,
+      chrono: 14,
       route: 17,
       optional: true,
       spinOff: true,
@@ -275,7 +275,7 @@ export const STAR_WARS: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '114461' }],
       year: 2023,
       releaseDate: '2023-08-22',
-      chrono: 17,
+      chrono: 14,
       route: 20,
       optional: true,
       spinOff: true,
@@ -300,7 +300,7 @@ export const STAR_WARS: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '202879' }],
       year: 2024,
       releaseDate: '2024-12-02',
-      chrono: 17,
+      chrono: 14,
       route: 22,
       optional: true,
       note: 'Four kids get lost in the galaxy, in the same post-Return-of-the-Jedi era as The Mandalorian'
@@ -313,7 +313,7 @@ export const STAR_WARS: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '1228710' }],
       year: 2026,
       releaseDate: '2026-05-20',
-      chrono: 17,
+      chrono: 14,
       route: 23,
       note: 'Din Djarin and Grogu\'s first feature film, continuing The Mandalorian'
     }

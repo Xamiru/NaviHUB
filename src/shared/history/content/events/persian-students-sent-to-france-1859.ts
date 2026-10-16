@@ -147,7 +147,7 @@ export default defineEvent({
         },
         {
           id: 'q3',
-          text: 'Convinced of the necessity of progress for his country, he persuaded the shah to have a group of students (forty-two in number) sent to Europe for training in technical and scientific fields under the guardianship of the well-known Iranist Alexandre Chodzko (ibid., II, p. 235; Thieury, France, pp. 30-38; Maḥbūbī Ardakānī, Tārīḵ-e moʾassasāt I, pp. 320f.).',
+          text: 'Convinced of the necessity of progress for his country, he persuaded the shah to have a group of students (forty-two in number) sent to Europe for training in technical and scientific fields under the guardianship of the well-known Iranist Alexandre Chodzko',
           lang: 'en',
           cite: {
             source: 'iranica-gaffary-amin-al-dawla-farrok-khan',
@@ -155,13 +155,13 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/amin-al-dawla-farrok-khan-gaffari'
           }
         },
         {
           id: 'q4',
-          text: 'He was also responsible for arranging the education in Europe of over sixty Persian students, mostly graduates of Dār al-fonūn (q.v.; AMAE, CP Perse, vol. 34, p. 118; Maḥbūbī, Moʾassasāt I, pp. 320-53).',
+          text: 'He was also responsible for arranging the education in Europe of over sixty Persian students, mostly graduates of Dār al-fonūn',
           lang: 'en',
           cite: {
             source: 'iranica-hellot-bellier-france-relations',
@@ -169,7 +169,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/france-iii-relations-with-persia-1789-1918/'
           }
         }
@@ -180,7 +180,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'Most stayed several years, until Nāṣer-al-Dīn Shah, who had become suspicious of the loyalty of the students abroad, abruptly ordered them to be recalled in 1284/1867. Back in Persia several taught at Dār al-fonūn and introduced, through their publications and teaching, the latest ideas and techniques current in Europe (for the careers of these students, see Maḥbūbī, Moʾassasāt I, pp. 321-28).',
+          text: 'Most stayed several years, until Nāṣer-al-Dīn Shah, who had become suspicious of the loyalty of the students abroad, abruptly ordered them to be recalled in 1284/1867. Back in Persia several taught at Dār al-fonūn and introduced, through their publications and teaching, the latest ideas and techniques current in Europe',
           lang: 'en',
           cite: {
             source: 'iranica-gurney-nabavi-dar-al-fonun',
@@ -188,13 +188,13 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/dar-al-fonun-lit'
           }
         },
         {
           id: 'q6',
-          text: 'Between 1276/1860 and 1318/1900, however, the government did not send students to Europe, as Nāṣer-al-Dīn Shah grew increasingly fearful of the subversive impact of modern education (Maḥbūbī, Moʾassasāt I, pp. 270, 321-38, 349-54; Arasteh, p. 29; Copeland, pp. 308-11).',
+          text: 'Between 1276/1860 and 1318/1900, however, the government did not send students to Europe, as Nāṣer-al-Dīn Shah grew increasingly fearful of the subversive impact of modern education',
           lang: 'en',
           cite: {
             source: 'iranica-matin-asgari-education-abroad',
@@ -202,7 +202,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/education-xxii-education-abroad-1/'
           }
         }

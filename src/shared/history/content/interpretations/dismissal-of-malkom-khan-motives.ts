@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'dismissal-of-malkom-khan-motives',
   about: ['event:dismissal-of-malkom-khan', 'person:malkom-khan', 'person:amin-al-soltan'],
   topic: 'motives',
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'lottery-as-pretext',
@@ -15,7 +15,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q1',
-          text: 'Although it has been argued that the case of the lottery concession was for Amīn-al-solṭān a mere pretext to this dismissal (ibid., p. 65),',
+          text: 'Although it has been argued that the case of the lottery concession was for Amīn-al-solṭān a mere pretext to this dismissal',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-atabak-e-azam',
@@ -23,7 +23,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/atabak-e-azam'
           }
         }
@@ -38,7 +38,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q2',
-          text: 'This dismissal occurred after a long period of strained relations between Amīn-al-solṭān and Malkom (see Algar, Malkum Khān, pp. 164ff.).',
+          text: 'This dismissal occurred after a long period of strained relations between Amīn-al-solṭān and Malkom',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-atabak-e-azam',
@@ -46,7 +46,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/atabak-e-azam'
           }
         },

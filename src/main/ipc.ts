@@ -12,7 +12,7 @@ import * as journeys from './repos/wrestlingJourneyRepo'
 import * as journeyFiles from './wrestling/journeyFiles'
 import * as vnReading from './repos/vnReadingRepo'
 import * as spotifyRecovery from './musicSpotifyRecovery'
-import { app, ipcMain, shell, BrowserWindow } from 'electron'
+import { app, ipcMain, shell, BrowserWindow, type IpcMainInvokeEvent } from 'electron'
 import { clampUiScale, parseUiScale } from '@shared/uiScale'
 import * as mediaRepo from './repos/mediaRepo'
 import * as tvRepo from './repos/tvRepo'
@@ -37,6 +37,8 @@ import * as quoteRepo from './repos/quoteRepo'
 import * as tierListRepo from './repos/tierListRepo'
 import * as checklistRepo from './repos/checklistRepo'
 import * as japaneseRepo from './repos/japaneseRepo'
+import * as japaneseSeedLoader from './db/japaneseSeedLoader'
+import * as ttsPaths from './tts/ttsPaths'
 import * as english from './english'
 import * as wordnet from './dict/wordnet'
 import * as enFreq from './dict/enFreq'
@@ -82,6 +84,10 @@ import * as jackett from './jackett'
 import * as qbittorrent from './qbittorrent'
 import * as hltb from './hltb'
 import * as gameLaunch from './gameLaunch'
+import * as emulation from './emulation'
+import * as romScan from './romScan'
+import * as gamebanana from './gamebanana'
+import * as mods from './mods'
 import * as gameSessionRepo from './repos/gameSessionRepo'
 import * as achievements from './achievements'
 import * as achievementWatcher from './achievementWatcher'
@@ -121,16 +127,18 @@ import * as footballRepo from './repos/footballRepo'
 import * as footballSync from './football/sync'
 import * as footballMedia from './football/media'
 import * as scan from './video/scan'
-import type { VideoFileRef, VideoSourceRef } from '@shared/types'
+import type { HistoryQuizRequest, HistoryQuizScope, VideoFileRef, VideoSourceRef } from '@shared/types'
 import { VIDEO_SCOPES, type VideoScope } from './video/scope'
 import * as tokenizer from './tokenizer'
 import * as dictImporter from './dict/importer'
 import * as starterInstall from './dict/starterInstall'
 import * as dictLookup from './dict/lookup'
+import * as dictTagInfo from './dict/tagInfo'
 import * as dictSentences from './dict/sentences'
 import * as dictStrokes from './dict/strokes'
 import * as prepDeck from './prepDeck'
 import * as coreDeck from './coreDeck'
+import * as kanjiDeck from './kanjiDeck'
 import * as coverage from './coverage'
 import * as coverageRepo from './repos/coverageRepo'
 import * as analyzeText from './analyzeText'
@@ -145,6 +153,17 @@ const loadEnglishWriting = (): Promise<typeof import('./englishWriting')> =>
 const loadProgrammingRepo = (): Promise<typeof import('./repos/programmingRepo')> =>
   import('./repos/programmingRepo')
 const loadHistory = (): Promise<typeof import('./history/historyService')> => import('./history/historyService')
+// The voice runtime (worker thread + Open JTalk engine) loads on first use.
+const loadTts = (): Promise<typeof import('./tts/ttsRuntime')> => import('./tts/ttsRuntime')
+// Japanese course/review channels wait for the built-in course seed, which
+// loads its ~0.8 MB of content only when that content changed (fresh library or
+// a new release) — so a first launch never answers with an empty course list.
+const seeded =
+  (fn: (e: IpcMainInvokeEvent, ...args: any[]) => unknown) =>
+  async (e: IpcMainInvokeEvent, ...args: any[]): Promise<unknown> => {
+    await japaneseSeedLoader.japaneseSeedReady()
+    return fn(e, ...args)
+  }
 // The map's borders (1.6 MB of CShapes outlines) load only when the map opens.
 const loadHistoryMap = (): Promise<typeof import('./history/historyMap')> => import('./history/historyMap')
 
@@ -394,9 +413,51 @@ export function registerIpc(): void {
   }))
   ipcMain.handle('games:pickExe', (_e, mediaId) => gameLaunch.pickExeFor(mediaId))
   ipcMain.handle('games:clearExe', (_e, mediaId) => gameLaunch.clearExe(mediaId))
-  ipcMain.handle('games:launch', (_e, mediaId) => gameLaunch.startSession(mediaId))
+  ipcMain.handle('games:launch', (_e, mediaId, choice) => gameLaunch.startSession(mediaId, choice ?? null))
   ipcMain.handle('games:sessionStatus', () => gameLaunch.getLaunchStatus())
   ipcMain.handle('games:installed', () => achievementRepo.installedGames())
+  ipcMain.handle('games:playOptions', (_e, mediaId) => emulation.playOptions(mediaId))
+  ipcMain.handle('games:pickRom', (_e, mediaId) => emulation.pickAndLinkRom(mediaId))
+  ipcMain.handle('games:unlinkRom', (_e, romId) => emulation.unlinkRom(romId))
+  ipcMain.handle('games:setPreferredRom', (_e, mediaId, romId) => emulation.setPreferred(mediaId, romId))
+  ipcMain.handle('games:updateRom', (_e, romId, upd) => emulation.updateRom(romId, upd ?? {}))
+  ipcMain.handle('games:importSessionShots', (_e, sessionId) => gameLaunch.importSessionShots(sessionId))
+  ipcMain.handle('games:romScanStart', () => romScan.start())
+  ipcMain.handle('games:romScanStatus', () => romScan.status())
+  ipcMain.handle('games:romScanCancel', () => romScan.cancel())
+  ipcMain.handle('games:romScanAccept', (_e, items) => romScan.accept(items ?? []))
+  ipcMain.handle('games:emulationStats', () => emulation.stats())
+
+  // ---- mods (GameBanana) ----
+  ipcMain.handle('mods:searchGames', (_e, query) => gamebanana.searchGames(String(query ?? '')))
+  ipcMain.handle('mods:link', (_e, mediaId) => gamebanana.getLink(mediaId))
+  ipcMain.handle('mods:setLink', (_e, mediaId, gameId) => gamebanana.setLink(mediaId, gameId ?? null))
+  ipcMain.handle('mods:list', (_e, gameId, sort, page) => gamebanana.mods(gameId, sort, page))
+  ipcMain.handle('mods:detail', (_e, modId) => gamebanana.modDetail(modId))
+  ipcMain.handle('mods:targets', (_e, mediaId) => mods.targets(mediaId))
+  ipcMain.handle('mods:install', (_e, req) => mods.start(req))
+  ipcMain.handle('mods:status', () => mods.status())
+  ipcMain.handle('mods:confirm', (_e, jobId, variantIndex) => mods.confirm(jobId, variantIndex ?? 0))
+  ipcMain.handle('mods:cancel', (_e, jobId) => mods.cancel(jobId))
+  ipcMain.handle('mods:installed', (_e, mediaId) => mods.installed(mediaId))
+  ipcMain.handle('mods:uninstall', (_e, installId) => mods.uninstall(installId))
+  ipcMain.handle('mods:setEnabled', (_e, installId, enabled) => mods.setEnabled(installId, enabled === true))
+  ipcMain.handle('mods:checkUpdates', (_e, mediaId) => mods.checkUpdates(mediaId))
+  ipcMain.handle('mods:sevenZip', () => mods.sevenZipPath())
+
+  // ---- emulators ----
+  ipcMain.handle('emulators:list', () => emulation.listEmulators())
+  ipcMain.handle('emulators:add', () => emulation.pickAndAddEmulator())
+  ipcMain.handle('emulators:update', (_e, id, upd) => emulation.updateEmulatorFromRenderer(id, upd ?? {}))
+  ipcMain.handle('emulators:remove', (_e, id) => emulation.removeEmulator(id))
+  ipcMain.handle('emulators:setDefault', (_e, platform, emulatorId) =>
+    emulation.setDefaultEmulator(platform, emulatorId ?? null)
+  )
+  ipcMain.handle('emulators:locate', (_e, id) => emulation.pickEmulatorExe(id))
+  ipcMain.handle('emulators:pickCore', (_e, id) => emulation.pickEmulatorCore(id))
+  ipcMain.handle('emulators:pickFolder', (_e, id, which) =>
+    emulation.pickEmulatorFolder(id, which === 'screenshots' ? 'screenshots' : 'data')
+  )
 
   // ---- achievements ----
   // Steam sets come from the Web API and their unlocks off disk (whatever
@@ -536,68 +597,78 @@ export function registerIpc(): void {
   ipcMain.handle('checklist:deleteCustom', (_e, id) => checklistRepo.deleteCustom(id))
 
   // ---- Japanese learning ----
-  ipcMain.handle('japanese:listCourses', () => japaneseRepo.listCourses())
-  ipcMain.handle('japanese:getCourse', (_e, id) => japaneseRepo.getCourse(id))
-  ipcMain.handle('japanese:createCourse', (_e, input) => japaneseRepo.createCourse(input))
-  ipcMain.handle('japanese:updateCourse', (_e, id, input) => japaneseRepo.updateCourse(id, input))
-  ipcMain.handle('japanese:removeCourse', (_e, id) => japaneseRepo.removeCourse(id))
-  ipcMain.handle('japanese:getLesson', (_e, id) => japaneseRepo.getLesson(id))
-  ipcMain.handle('japanese:createLesson', (_e, input) => japaneseRepo.createLesson(input))
-  ipcMain.handle('japanese:updateLesson', (_e, id, patch) => japaneseRepo.updateLesson(id, patch))
-  ipcMain.handle('japanese:removeLesson', (_e, id) => japaneseRepo.removeLesson(id))
-  ipcMain.handle('japanese:setLessonLearned', (_e, id, learned) =>
+  ipcMain.handle('japanese:listCourses', seeded(() => japaneseRepo.listCourses()))
+  ipcMain.handle('japanese:getCourse', seeded((_e, id) => japaneseRepo.getCourse(id)))
+  ipcMain.handle('japanese:createCourse', seeded((_e, input) => japaneseRepo.createCourse(input)))
+  ipcMain.handle('japanese:updateCourse', seeded((_e, id, input) => japaneseRepo.updateCourse(id, input)))
+  ipcMain.handle('japanese:removeCourse', seeded((_e, id) => japaneseRepo.removeCourse(id)))
+  ipcMain.handle('japanese:getLesson', seeded((_e, id) => japaneseRepo.getLesson(id)))
+  ipcMain.handle('japanese:createLesson', seeded((_e, input) => japaneseRepo.createLesson(input)))
+  ipcMain.handle('japanese:updateLesson', seeded((_e, id, patch) => japaneseRepo.updateLesson(id, patch)))
+  ipcMain.handle('japanese:removeLesson', seeded((_e, id) => japaneseRepo.removeLesson(id)))
+  ipcMain.handle('japanese:setLessonLearned', seeded((_e, id, learned) =>
     japaneseRepo.setLessonLearned(id, learned)
-  )
-  ipcMain.handle('japanese:createCard', (_e, lessonId, input) =>
+  ))
+  ipcMain.handle('japanese:createCard', seeded((_e, lessonId, input) =>
     japaneseRepo.createCard(lessonId, input)
-  )
-  ipcMain.handle('japanese:updateCard', (_e, id, patch) => japaneseRepo.updateCard(id, patch))
-  ipcMain.handle('japanese:removeCard', (_e, id) => japaneseRepo.removeCard(id))
-  ipcMain.handle('japanese:reviewQueue', (_e, newLimit) => japaneseRepo.reviewQueue(newLimit))
-  ipcMain.handle('japanese:submitReview', (_e, cardId, grade) =>
-    japaneseRepo.submitReview(cardId, grade)
-  )
-  ipcMain.handle('japanese:quizPool', (_e, scope) => japaneseRepo.quizPool(scope))
-  ipcMain.handle('japanese:lessonQuizPool', (_e, lessonId) =>
+  ))
+  ipcMain.handle('japanese:updateCard', seeded((_e, id, patch) => japaneseRepo.updateCard(id, patch)))
+  ipcMain.handle('japanese:removeCard', seeded((_e, id) => japaneseRepo.removeCard(id)))
+  ipcMain.handle('japanese:reviewQueue', seeded((_e, newLimit) => japaneseRepo.reviewQueue(newLimit)))
+  ipcMain.handle('japanese:submitReview', seeded((_e, cardId, grade, direction) =>
+    japaneseRepo.submitReview(cardId, grade, direction)
+  ))
+  ipcMain.handle('japanese:quizPool', seeded((_e, scope) => japaneseRepo.quizPool(scope)))
+  ipcMain.handle('japanese:lessonQuizPool', seeded((_e, lessonId) =>
     japaneseRepo.lessonQuizPool(lessonId)
-  )
-  ipcMain.handle('japanese:buildPrepDeck', (_e, mediaId) => prepDeck.buildPrepDeck(mediaId))
+  ))
+  ipcMain.handle('japanese:buildPrepDeck', seeded((_e, mediaId) => prepDeck.buildPrepDeck(mediaId)))
   ipcMain.handle('japanese:prepDeckStatus', () => prepDeck.getPrepDeckStatus())
-  ipcMain.handle('japanese:buildCoreDeck', (_e, limit) => coreDeck.buildCoreDeck(limit))
+  ipcMain.handle('japanese:buildCoreDeck', seeded((_e, limit) => coreDeck.buildCoreDeck(limit)))
   ipcMain.handle('japanese:coreDeckStatus', () => coreDeck.getCoreDeckStatus())
+  ipcMain.handle('japanese:buildKanjiDeck', seeded((_e, limit) => kanjiDeck.buildKanjiDeck(limit)))
+  ipcMain.handle('japanese:kanjiDeckStatus', () => kanjiDeck.getKanjiDeckStatus())
   ipcMain.handle('japanese:scanCoverage', (_e, mediaId) => coverage.scanCoverage(mediaId))
   ipcMain.handle('japanese:coverageScanStatus', () => coverage.getCoverageScanStatus())
   ipcMain.handle('japanese:coverage', (_e, mediaId) => coverageRepo.coverageForMedia(mediaId))
   ipcMain.handle('japanese:coverageList', () => coverageRepo.coverageList())
   ipcMain.handle('japanese:analyzeText', (_e, text) => analyzeText.analyzeText(text))
-  ipcMain.handle('japanese:roadmap', () => japaneseRepo.roadmap())
-  ipcMain.handle('japanese:listLeeches', () => japaneseRepo.listLeeches())
-  ipcMain.handle('japanese:resetCard', (_e, id) => japaneseRepo.resetCard(id))
-  ipcMain.handle('japanese:stats', () => japaneseRepo.stats())
-  ipcMain.handle('japanese:jlptLadder', () => japaneseRepo.jlptLadder())
-  ipcMain.handle('japanese:statsDetail', () => japaneseRepo.statsDetail())
-  ipcMain.handle('japanese:saveTutorDebrief', (_e, input) => japaneseRepo.saveTutorDebrief(input))
-  ipcMain.handle('japanese:tutorDays', (_e, limit) => japaneseRepo.listTutorDays(limit))
-  ipcMain.handle('japanese:addTutorError', (_e, input) => japaneseRepo.addTutorError(input))
-  ipcMain.handle('japanese:tutorErrors', (_e, limit) => japaneseRepo.listTutorErrors(limit))
-  ipcMain.handle('japanese:resolveTutorError', (_e, id, resolved) =>
+  ipcMain.handle('japanese:roadmap', seeded(() => japaneseRepo.roadmap()))
+  ipcMain.handle('japanese:cardsForFronts', seeded((_e, fronts) => japaneseRepo.cardsForFronts(fronts)))
+  ipcMain.handle('japanese:grammarIndex', seeded(() => japaneseRepo.grammarIndex()))
+  ipcMain.handle('japanese:voiceInfo', () => ({ installed: ttsPaths.voicePackInstalled() }))
+  ipcMain.handle('japanese:speak', async (_e, text, reading) => (await loadTts()).speak(text, reading))
+  ipcMain.handle('japanese:installVoice', async () => (await loadTts()).installVoice())
+  ipcMain.handle('japanese:removeVoice', async () => (await loadTts()).removeVoice())
+  ipcMain.handle('japanese:builtInStatus', () => japaneseSeedLoader.builtInStatus())
+  ipcMain.handle('japanese:restoreBuiltIn', () => japaneseSeedLoader.restoreBuiltIn())
+  ipcMain.handle('japanese:listLeeches', seeded(() => japaneseRepo.listLeeches()))
+  ipcMain.handle('japanese:resetCard', seeded((_e, id) => japaneseRepo.resetCard(id)))
+  ipcMain.handle('japanese:stats', seeded(() => japaneseRepo.stats()))
+  ipcMain.handle('japanese:jlptLadder', seeded(() => japaneseRepo.jlptLadder()))
+  ipcMain.handle('japanese:statsDetail', seeded(() => japaneseRepo.statsDetail()))
+  ipcMain.handle('japanese:saveTutorDebrief', seeded((_e, input) => japaneseRepo.saveTutorDebrief(input)))
+  ipcMain.handle('japanese:tutorDays', seeded((_e, limit) => japaneseRepo.listTutorDays(limit)))
+  ipcMain.handle('japanese:addTutorError', seeded((_e, input) => japaneseRepo.addTutorError(input)))
+  ipcMain.handle('japanese:tutorErrors', seeded((_e, limit) => japaneseRepo.listTutorErrors(limit)))
+  ipcMain.handle('japanese:resolveTutorError', seeded((_e, id, resolved) =>
     japaneseRepo.resolveTutorError(id, resolved)
-  )
-  ipcMain.handle('japanese:ensureMiningInbox', () => japaneseRepo.ensureMiningInbox())
-  ipcMain.handle('japanese:markWordsKnown', (_e, words) => japaneseRepo.markWordsKnown(words))
-  ipcMain.handle('japanese:addGrammarPoints', (_e, ids) => jpGrammarDeck.addGrammarPoints(ids))
-  ipcMain.handle('japanese:addGrammarLevel', (_e, level) => jpGrammarDeck.addGrammarLevel(level))
+  ))
+  ipcMain.handle('japanese:ensureMiningInbox', seeded(() => japaneseRepo.ensureMiningInbox()))
+  ipcMain.handle('japanese:markWordsKnown', seeded((_e, words) => japaneseRepo.markWordsKnown(words)))
+  ipcMain.handle('japanese:addGrammarPoints', seeded((_e, ids) => jpGrammarDeck.addGrammarPoints(ids)))
+  ipcMain.handle('japanese:addGrammarLevel', seeded((_e, level) => jpGrammarDeck.addGrammarLevel(level)))
   ipcMain.handle('japanese:tokenize', (_e, text) => tokenizer.tokenize(text))
-  ipcMain.handle('japanese:minedFronts', (_e, fronts) => japaneseRepo.minedFronts(fronts))
+  ipcMain.handle('japanese:minedFronts', seeded((_e, fronts) => japaneseRepo.minedFronts(fronts)))
   ipcMain.handle('japanese:pitchQuizPool', (_e, req) => jpDrills.pitchQuizPool(req))
   ipcMain.handle('japanese:componentQuizPool', (_e, req) => jpDrills.componentQuizPool(req))
   ipcMain.handle('japanese:lookalikePool', (_e, req) => jpDrills.lookalikePool(req))
   ipcMain.handle('japanese:homophonePool', (_e, req) => jpDrills.homophonePool(req))
   ipcMain.handle('japanese:confusables', () => jpConfusables.listConfusables())
-  ipcMain.handle('japanese:ghostQueue', (_e, limit) => japaneseRepo.ghostQueue(limit))
-  ipcMain.handle('japanese:ghostAnswer', (_e, cardId, correct) =>
+  ipcMain.handle('japanese:ghostQueue', seeded((_e, limit) => japaneseRepo.ghostQueue(limit)))
+  ipcMain.handle('japanese:ghostAnswer', seeded((_e, cardId, correct) =>
     japaneseRepo.ghostAnswer(cardId, correct)
-  )
+  ))
   ipcMain.handle('japanese:feed', (_e, req) => jpFeed.getFeed(req))
   ipcMain.handle('japanese:listeningPool', (_e, req) => jpListening.listeningPool(req))
   ipcMain.handle('japanese:particlePool', (_e, req) => jpSentenceGames.particlePool(req))
@@ -610,6 +681,7 @@ export function registerIpc(): void {
   ipcMain.handle('dict:list', () => dictImporter.listDictionaries())
   ipcMain.handle('dict:lookup', (_e, query) => dictLookup.lookupWord(query))
   ipcMain.handle('dict:kanji', (_e, text) => dictLookup.lookupKanji(text))
+  ipcMain.handle('dict:tagInfo', () => dictTagInfo.listTagInfo())
   // Any change to the installed dictionaries can change the frequency bank the
   // known-word baseline is built from, and that bank is not part of its cache
   // key — so drop it and let the next read rebuild.
@@ -626,7 +698,8 @@ export function registerIpc(): void {
         dicts: dictImporter.listDictionaries(),
         krad: dictKrad.getKradSetInfo() != null,
         grammar: dictGrammar.getGrammarBankInfo() != null,
-        sentences: dictSentences.getSentenceBankInfo() != null
+        sentences: dictSentences.getSentenceBankInfo() != null,
+        voice: ttsPaths.voicePackInstalled()
       }),
       install: async (key) => {
         if (key === 'jmdict') await dictImporter.importPreset('jmdict-en')
@@ -634,6 +707,7 @@ export function registerIpc(): void {
         else if (key === 'kanjidic') await dictImporter.importPreset('kanjidic-en')
         else if (key === 'krad') await dictKrad.importKrad()
         else if (key === 'grammar') await dictGrammar.importGrammar()
+        else if (key === 'voice') await (await loadTts()).installVoice()
         else await dictSentences.importSentences()
         // Same as the single-pack handlers: the frequency bank feeds the
         // known-word baseline, which is not part of its cache key.
@@ -1019,6 +1093,12 @@ export function registerIpc(): void {
   ipcMain.handle('history:themes', async () => (await loadHistory()).themes())
   ipcMain.handle('history:onThisDay', async (_e, month: number, day: number) => (await loadHistory()).onThisDay(month, day))
   ipcMain.handle('history:decade', async (_e, start: number) => (await loadHistory()).decade(start))
+  ipcMain.handle('history:quizDeal', async (_e, request: HistoryQuizRequest) => (await loadHistory()).quizDeal(request))
+  ipcMain.handle('history:quizCounts', async (_e, scope: HistoryQuizScope) => (await loadHistory()).quizCounts(scope))
+  ipcMain.handle('history:year', async (_e, year: number) => {
+    if (!Number.isInteger(year) || Math.abs(year) > 9999) throw new Error('A year is a whole number')
+    return (await loadHistory()).year(year)
+  })
   ipcMain.handle('history:article', async (_e, ref: string) => (await loadHistory()).article(ref))
   ipcMain.handle('history:sources', async () => (await loadHistory()).sources())
   ipcMain.handle('history:source', async (_e, id: string) => (await loadHistory()).source(id))

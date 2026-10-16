@@ -1,6 +1,7 @@
 // Final Fantasy — curated canon. Mainline I-XVI (XIV included on merit, XI
-// excluded) + approved spin-offs: Tactics, Crisis Core, and the FF7 Remake
-// project. No `chrono` on any entry: the stories are standalone, so the
+// excluded) + X-2 (the first direct sequel, added 2026-10-17; it shares the
+// X/X-2 HD Steam listing, which stays on X) + approved spin-offs: Tactics,
+// Crisis Core, and the FF7 Remake project. No `chrono` on any entry: the stories are standalone, so the
 // Story order pill hides itself for this franchise.
 // Steam ids cover both classic ports and current relaunch SKUs where Steam
 // re-listed a game (FF7: 39140 classic + 3837340 "2013 Edition" relaunch).
@@ -23,7 +24,7 @@ export const FINAL_FANTASY: FranchiseCfg = {
   trivia: [
     {
       title: 'The desperate gamble',
-      body: 'The 1987 original was named "Final" because Square was near bankruptcy and Hironobu Sakaguchi expected it to be his last game. It sold 400,000 copies and the joke is now on its fortieth year.\n\nAlmost uniquely among franchises, each numbered entry resets everything — world, cast, systems — keeping only chocobos, crystals, a man named Cid, and composer Nobuo Uematsu\'s shadow.'
+      body: 'The 1987 original was named "Final" because Square was near bankruptcy and Hironobu Sakaguchi expected it to be his last game. It sold 400,000 copies, and the series has outlived the joke by nearly four decades.\n\nAlmost uniquely among franchises, each numbered entry resets everything — world, cast, systems — keeping only chocobos, crystals, a man named Cid, and composer Nobuo Uematsu\'s shadow.'
     },
     {
       title: 'The VII gravity well',
@@ -175,6 +176,13 @@ export const FINAL_FANTASY: FranchiseCfg = {
       releaseDate: '2001-10-02',
       spinOff: true,
       note: 'TV anime: two children search the other world of Wonderland for their parents'
+    },
+    {
+      id: 'ff-10-2',
+      title: 'Final Fantasy X-2',
+      year: 2003,
+      releaseDate: '2003-03-13',
+      note: 'Yuna, two years on — the first direct sequel in the series'
     },
     {
       id: 'ff-advent-children',
@@ -330,7 +338,7 @@ export const FINAL_FANTASY: FranchiseCfg = {
         'https://static.wikia.nocookie.net/finalfantasy/images/1/1f/Aerith_Gainsborough_from_FFVII_Rebirth_promo_render.png/revision/latest?cb=20240304072103',
       appearsIn: ['ff-7', 'ff-crisis-core', 'ff-7-remake', 'ff-7-rebirth'],
       blurb:
-        'The last of the Cetra, selling flowers in a city that killed the planet. The scene everyone knows is still the genre\'s defining gut-punch, 27 years on.'
+        'The last of the Cetra, selling flowers in a city that killed the planet. The scene everyone knows is still the genre\'s defining gut-punch, decades on.'
     },
     {
       id: 'ff-tifa',

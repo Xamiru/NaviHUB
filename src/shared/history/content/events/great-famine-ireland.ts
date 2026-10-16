@@ -63,6 +63,15 @@ export default defineEvent({
           loc: { section: 'Famine Records and Distress Papers', para: '1' }
         }
       ]
+    },
+    {
+      ref: 'place:dublin',
+      cites: [
+        {
+          source: 'nai-famine-records-and-distress-papers',
+          loc: { section: 'Famine Records and Distress Papers', para: '3' }
+        }
+      ]
     }
   ],
   polities: [
@@ -170,20 +179,6 @@ export default defineEvent({
             loc: { section: 'The Revolutions of 1848', para: '1' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/25.htm' }
-        },
-        {
-          id: 'q4',
-          text: 'There there are five millions of people always on the verge of starvation.',
-          lang: 'en',
-          cite: {
-            source: 'hansard-commons-1846-02-17-famine-and-disease-in-ireland',
-            loc: { section: 'HC Deb 17 February 1846 vol 83 cc1050-89' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://api.parliament.uk/historic-hansard/commons/1846/feb/17/famine-and-disease-in-ireland'
-          }
         },
         {
           id: 'q12',
@@ -331,6 +326,25 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.nli.ie/news-stories/stories/searching-images-great-famine'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q4',
+          text: 'There there are five millions of people always on the verge of starvation.',
+          lang: 'en',
+          cite: {
+            source: 'hansard-commons-1846-02-17-famine-and-disease-in-ireland',
+            loc: { section: 'HC Deb 17 February 1846 vol 83 cc1050-89' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://api.parliament.uk/historic-hansard/commons/1846/feb/17/famine-and-disease-in-ireland'
           }
         }
       ]

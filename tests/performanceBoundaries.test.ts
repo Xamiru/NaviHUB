@@ -109,6 +109,31 @@ describe('main-process loading boundaries', () => {
     expect(read('src/main/index.ts')).toMatch(/stopQuizPools\(\)[\s\S]*closeDatabase\(\)/)
   })
 
+  it('loads the built-in Japanese course seed only when its content changed', () => {
+    // The seed modules are ~0.8 MB and grow with every content wave; a normal
+    // launch reads one settings stamp (japaneseSeedLoader.ts) instead.
+    const walk = (dir: string): string[] =>
+      readdirSync(fileURLToPath(new URL(`../${dir}`, import.meta.url)), { withFileTypes: true }).flatMap((d) =>
+        d.isDirectory() ? walk(`${dir}/${d.name}`) : /\.ts$/.test(d.name) ? [`${dir}/${d.name}`] : []
+      )
+    const offenders = walk('src/main').filter((file) =>
+      /^import (?!type )[^\n]*from '[^']*\/japaneseSeed'/m.test(read(file))
+    )
+    expect(offenders).toEqual([])
+    expect(read('src/main/db/japaneseSeedLoader.ts')).toContain("import('./japaneseSeed')")
+    expect(read('src/main/db/connection.ts')).not.toMatch(/seedJapanese\(/)
+  })
+
+  it('starts the Japanese voice worker only on first use', () => {
+    // ttsRuntime spawns the Open JTalk worker; only ttsPaths (no worker) is eager.
+    const ipc = read('src/main/ipc.ts')
+    expect(ipc).toContain("import('./tts/ttsRuntime')")
+    expect(ipc).not.toMatch(/^import [^\n]*'\.\/tts\/ttsRuntime'/m)
+    expect(read('src/main/index.ts')).not.toMatch(/ttsRuntime/)
+    expect(read('src/main/tts/ttsRuntime.ts')).toContain("import workerPath from './ttsWorker?modulePath'")
+    expect(read('src/main/tts/ttsWorker.ts')).not.toMatch(/from 'electron'/)
+  })
+
   it('defers offline learning catalogs until their first IPC call', () => {
     const ipc = read('src/main/ipc.ts')
     const sandbox = read('src/main/sqlSandbox.ts')

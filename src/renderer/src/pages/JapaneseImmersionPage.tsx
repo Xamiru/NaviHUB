@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import PageHeader from '../components/PageHeader'
+import JapaneseHubTabs from '../components/japanese/JapaneseHubTabs'
 import EmptyState from '../components/EmptyState'
 import Section from '../components/Section'
 import TutorSessionContinue from '../components/TutorSessionContinue'
@@ -154,6 +155,7 @@ export default function JapaneseImmersionPage() {
   if (anime.length === 0) {
     return (
       <div className="mx-auto max-w-3xl p-6">
+        <JapaneseHubTabs />
         <PageHeader
           back={{ to: '/japanese', label: 'Japanese' }}
           title="Long-form listening"
@@ -171,6 +173,7 @@ export default function JapaneseImmersionPage() {
   if (active && file && media) {
     return (
       <div className="mx-auto max-w-5xl p-4 sm:p-6">
+        <JapaneseHubTabs />
         <PageHeader
           back={{ to: '/japanese/immersion', label: 'Listening setup' }}
           title={stage.title}
@@ -291,6 +294,7 @@ export default function JapaneseImmersionPage() {
 
   return (
     <div className="mx-auto max-w-5xl p-4 sm:p-6">
+      <JapaneseHubTabs />
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Long-form listening"

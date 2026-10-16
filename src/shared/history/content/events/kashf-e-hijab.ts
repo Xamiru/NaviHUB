@@ -161,7 +161,7 @@ export default defineEvent({
         },
         {
           id: 'q4',
-          text: 'Eventually, in 1314 Š./1936, Reżā Shah did abolish the veil, the first ruler in the region to do so (Atatürk had not banned the veil; see Keddie, pp. 108-09).',
+          text: 'Eventually, in 1314 Š./1936, Reżā Shah did abolish the veil, the first ruler in the region to do so',
           lang: 'en',
           cite: {
             source: 'iranica-saidi-sirjani-clothing-pahlavi',
@@ -169,7 +169,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/clothing-xi/'
           }
         },
@@ -306,7 +306,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q11',
-        text: 'he ordered all women to dress thenceforth in the European manner',
+        text: 'In a speech addressed to the predominantly female audience, which had been ordered to attend unveiled, he ordered all women to dress thenceforth in the European manner',
         lang: 'en',
         cite: {
           source: 'iranica-saidi-sirjani-clothing-pahlavi',
@@ -314,7 +314,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/clothing-xi/'
         }
       }

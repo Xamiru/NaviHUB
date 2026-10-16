@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Sukarno', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   regions: ['southeast-asia'],
   roles: ['politician', 'revolutionary', 'head-of-state'],
   offices: [
@@ -26,7 +26,7 @@ export default definePerson({
   ],
   sections: [
     {
-      kind: 'career',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',
@@ -37,7 +37,12 @@ export default definePerson({
             loc: { section: 'The National Revolution, 1945-50', para: '2' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/indonesia/16.htm' }
-        },
+        }
+      ]
+    },
+    {
+      kind: 'career',
+      quotes: [
         {
           id: 'q2',
           text: 'The committee chose Sukarno, who favored a unitary state, and Hatta, who wanted a federal system, as president and vice president, respectively--an association of two very different leaders that had survived the Japanese occupation and would continue until 1956.',
@@ -56,5 +61,31 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:SoekarnoDoaProKemRI2.jpg',
     credit: { institution: 'Indonesian Department of Information', creator: 'Frans Mendur' },
     license: { id: 'public-domain' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1901-06-06' },
+        cites: [
+          {
+            source: 'loc-name-authority-sukarno',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1970-06-21' },
+        cites: [
+          {
+            source: 'loc-name-authority-sukarno',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
   }
 })

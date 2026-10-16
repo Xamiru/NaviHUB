@@ -1,5 +1,5 @@
-import { useId, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useId, useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
@@ -347,6 +347,35 @@ export function ClipDialog({
   )
 }
 
+const CLIP_THUMB_CLASS = 'relative block aspect-video w-full overflow-hidden bg-surface-base text-left'
+
+// The clip's poster: a link to the player, or a disabled button when the file
+// is gone.
+function ClipThumb({
+  to,
+  label,
+  title,
+  children
+}: {
+  to: string | null
+  label: string
+  title: string
+  children: ReactNode
+}) {
+  if (to == null) {
+    return (
+      <button type="button" className={CLIP_THUMB_CLASS} disabled aria-label={label} title={title}>
+        {children}
+      </button>
+    )
+  }
+  return (
+    <Link to={to} className={CLIP_THUMB_CLASS} aria-label={label} title={title}>
+      {children}
+    </Link>
+  )
+}
+
 export function ClipCard({
   clip,
   onEdit,
@@ -357,13 +386,9 @@ export function ClipCard({
   highlighted?: boolean
 }): JSX.Element {
   const qc = useQueryClient()
-  const navigate = useNavigate()
   async function toggleFavorite(): Promise<void> {
     await api.wrestling.setClipFavorite(clip.id, !clip.favorite)
     await qc.invalidateQueries({ queryKey: qk.wrestling.all })
-  }
-  function play(): void {
-    navigate(`/watch/clip/${clip.id}`)
   }
   async function openExternal(): Promise<void> {
     try {
@@ -377,12 +402,10 @@ export function ClipCard({
       id={`clip-${clip.id}`}
       className={`card group flex flex-col overflow-hidden ${highlighted ? 'ring-2 ring-accent' : ''}`}
     >
-      <button
-        type="button"
-        className="relative block aspect-video w-full overflow-hidden bg-surface-base text-left"
-        onClick={play}
-        disabled={!clip.available}
-        aria-label={clip.available ? `Play ${clip.title}` : `${clip.title}: file unavailable`}
+      {/* A link while the file is there, so Ctrl+click plays it in a new tab. */}
+      <ClipThumb
+        to={clip.available ? `/watch/clip/${clip.id}` : null}
+        label={clip.available ? `Play ${clip.title}` : `${clip.title}: file unavailable`}
         title={clip.available ? 'Play' : 'File unavailable'}
       >
         <CoverImage path={clipImage(clip)} alt="" className="h-full w-full object-cover" thumbWidth={480} />
@@ -394,7 +417,7 @@ export function ClipCard({
             File unavailable
           </span>
         )}
-      </button>
+      </ClipThumb>
       <div className="flex flex-1 flex-col gap-2 p-3">
         <div className="flex items-start gap-2">
           <h3 className="min-w-0 flex-1 text-sm font-medium leading-snug">{clip.title}</h3>

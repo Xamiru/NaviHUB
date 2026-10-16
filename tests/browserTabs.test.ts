@@ -9,9 +9,14 @@ vi.mock('../src/renderer/src/lib/toast', () => ({ toast: toastMock }))
 import {
   activateTab,
   activeTab,
+  closeOtherTabs,
   closeTab,
+  closeTabsToRight,
   cycleTab,
+  duplicateTab,
   getTabsSnapshot,
+  hasClosedTabs,
+  jumpToLastTab,
   jumpToTab,
   MAX_TABS,
   openTab,
@@ -79,6 +84,24 @@ describe('TabHistory', () => {
   })
 })
 
+describe('TabHistory.clone', () => {
+  it('copies the stack and position under fresh keys', () => {
+    const h = new TabHistory('/')
+    h.push('/anime')
+    h.push('/anime/7')
+    h.go(-1)
+    const { history, keyMap } = h.clone()
+    expect(history.entries.map((e) => e.pathname)).toEqual(['/', '/anime', '/anime/7'])
+    expect(history.index).toBe(1)
+    const oldKeys = h.entries.map((e) => e.key)
+    const newKeys = history.entries.map((e) => e.key)
+    expect(newKeys.some((k) => oldKeys.includes(k))).toBe(false)
+    expect(oldKeys.map((k) => keyMap.get(k))).toEqual(newKeys)
+    history.push('/games')
+    expect(h.entries).toHaveLength(3)
+  })
+})
+
 describe('browser tab store', () => {
   beforeEach(() => {
     resetBrowserTabs('/')
@@ -99,7 +122,7 @@ describe('browser tab store', () => {
     for (let i = 1; i < MAX_TABS; i++) expect(await openTab(`/t${i}`)).toBe(true)
     expect(await openTab('/one-too-many')).toBe(false)
     expect(getTabsSnapshot().tabs).toHaveLength(MAX_TABS)
-    expect(toastMock).toHaveBeenCalledWith('5 tabs open. Close one to open another.', 'warning')
+    expect(toastMock).toHaveBeenCalledWith(`${MAX_TABS} tabs open. Close one to open another.`, 'warning')
   })
 
   it('closes to the right neighbour, then the left, and never closes the last tab', async () => {
@@ -136,6 +159,73 @@ describe('browser tab store', () => {
     expect(activeTab().history.location.pathname).toBe('/a')
     await jumpToTab(5)
     expect(activeTab().history.location.pathname).toBe('/a')
+  })
+
+  it('duplicates a tab after itself with its history and title, and activates it', async () => {
+    await openTab('/anime')
+    activeTab().history.push('/anime/7')
+    const source = activeTab()
+    await activateTab(getTabsSnapshot().tabs[0].id)
+    await openTab('/music', { activate: false })
+    expect(await duplicateTab(source.id)).toBe(true)
+    expect(paths()).toEqual(['/', '/music', '/anime/7', '/anime/7'])
+    const copy = activeTab()
+    expect(copy.id).not.toBe(source.id)
+    expect(getTabsSnapshot().tabs.indexOf(copy)).toBe(3)
+    expect(copy.title).toBe(source.title)
+    expect(copy.history.entries.map((e) => e.pathname)).toEqual(['/anime', '/anime/7'])
+    expect(copy.history.action).toBe('POP')
+  })
+
+  it('refuses to duplicate past the tab limit', async () => {
+    for (let i = 1; i < MAX_TABS; i++) await openTab(`/t${i}`)
+    expect(await duplicateTab()).toBe(false)
+    expect(getTabsSnapshot().tabs).toHaveLength(MAX_TABS)
+  })
+
+  it('jumps to the last tab whatever the count', async () => {
+    await openTab('/a')
+    await openTab('/b')
+    await jumpToTab(1)
+    await jumpToLastTab()
+    expect(activeTab().history.location.pathname).toBe('/b')
+  })
+
+  it('counts switches that bring a tab to the front, not background opens', async () => {
+    const seq = () => getTabsSnapshot().switchSeq
+    expect(seq()).toBe(0)
+    await openTab('/a', { activate: false })
+    expect(seq()).toBe(0)
+    await jumpToTab(2)
+    expect(seq()).toBe(1)
+    await jumpToTab(2)
+    expect(seq()).toBe(1)
+    await closeTab(activeTab().id)
+    expect(seq()).toBe(2)
+  })
+
+  it('closes tabs to the right of one, keeping the active tab when it survives', async () => {
+    await openTab('/a', { activate: false })
+    await openTab('/b', { activate: false })
+    await openTab('/c', { activate: false })
+    expect(paths()).toEqual(['/', '/c', '/b', '/a'])
+    await closeTabsToRight(getTabsSnapshot().tabs[1].id)
+    expect(paths()).toEqual(['/', '/c'])
+    expect(activeTab().history.location.pathname).toBe('/')
+  })
+
+  it('closes the others, bringing the kept tab to the front, and reopens each in place', async () => {
+    expect(hasClosedTabs()).toBe(false)
+    await openTab('/a', { activate: false })
+    await openTab('/b', { activate: false })
+    const keep = getTabsSnapshot().tabs[1]
+    await closeOtherTabs(keep.id)
+    expect(paths()).toEqual(['/b'])
+    expect(activeTab().id).toBe(keep.id)
+    expect(hasClosedTabs()).toBe(true)
+    await reopenClosedTab()
+    await reopenClosedTab()
+    expect(paths()).toEqual(['/', '/b', '/a'])
   })
 
   it('titles a tab by its section until the page heading is read', async () => {

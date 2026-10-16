@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Imre Nagy', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-07',
+  researched: '2026-10-16',
   died: {
     alts: [
       {
@@ -113,5 +113,18 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1896' },
+        cites: [
+          {
+            source: 'loc-name-authority-imre-nagy',
+            loc: { section: 'MARC field 100 $d: heading dates' }
+          }
+        ]
+      }
+    ]
+  }
 })

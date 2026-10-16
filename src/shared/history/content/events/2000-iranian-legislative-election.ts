@@ -471,5 +471,19 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:National_Consultative_Majlis.JPG',
     credit: { creator: 'Mahdifa33' },
     license: { id: 'cc-by-sa', version: '4.0', url: 'https://creativecommons.org/licenses/by-sa/4.0' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:tehran',
+      cites: [
+        {
+          source: 'iranica-ashraf-islamic-political-movements',
+          loc: {
+            section: 'ISLAM IN IRAN xiii. ISLAMIC POLITICAL MOVEMENTS IN 20TH CENTURY IRAN',
+            para: '17'
+          }
+        }
+      ]
+    }
+  ]
 })

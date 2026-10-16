@@ -81,6 +81,7 @@ export function requestPopupTest(): void {
     description: 'If you can read this over your game, the overlay works.',
     iconPath: null,
     rarity: null,
+    globalPct: null,
     points: 10,
     unlockedAt: new Date().toISOString().slice(0, 19).replace('T', ' ')
   }
@@ -149,6 +150,7 @@ function publish(mediaId: number, rows: AchievementRow[]): void {
       description: row.description,
       iconPath: row.iconPath,
       rarity: row.rarity,
+      globalPct: row.globalPct,
       points: row.points,
       unlockedAt: row.unlockedAt ?? new Date().toISOString()
     }
@@ -242,7 +244,7 @@ function tick(): void {
 
 // Called from gameLaunch.startSession once the child is spawned. A game with
 // no tracking set up is a no-op — no timer, no cost.
-export function startWatch(mediaId: number, nowMs: number = Date.now()): void {
+export function startWatch(mediaId: number, nowMs: number = Date.now(), opts: { emulated?: boolean } = {}): void {
   stopWatchTimer()
   // Clear FIRST: launching an untracked game must not leave the previous
   // game's watch standing, or getWatchStatus() would report the wrong title as
@@ -256,6 +258,9 @@ export function startWatch(mediaId: number, nowMs: number = Date.now()): void {
   recent = []
   const tracking = achievementRepo.getTracking(mediaId)
   if (!tracking) return
+  // A game launched through an emulator never writes the Steam emulator's
+  // unlock file next to the linked executable.
+  if (opts.emulated && tracking.provider === 'steam') return
 
 
   watch = {

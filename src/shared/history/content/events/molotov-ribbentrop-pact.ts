@@ -150,36 +150,6 @@ export default defineEvent({
             loc: { section: 'Transformation and Terror', para: '23' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/10.htm' }
-        },
-        {
-          id: 'q4',
-          text: 'Both High Contracting Parties obligate, themselves to desist from any act of violence, any aggressive action, and any attack on each other, either individually or jointly with other powers.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-nazi-soviet-nonaggression-treaty-1939',
-            loc: {
-              section: 'Treaty of Nonaggression Between Germany and the Union of Soviet Socialist Republics'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://avalon.law.yale.edu/20th_century/nonagres.asp'
-          }
-        },
-        {
-          id: 'q5',
-          text: '2. In the event of a territorial and political rearrangement of the areas belonging to the Polish state the spheres of influence of Germany and the U.S.S.R. shall be bounded approximately by the line of the rivers Narew, Vistula, and San.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-nazi-soviet-secret-additional-protocol-1939',
-            loc: { section: 'Secret Additional Protocol' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://avalon.law.yale.edu/20th_century/addsepro.asp'
-          }
         }
       ]
     },
@@ -208,6 +178,41 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/germany-i'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q4',
+          text: 'Both High Contracting Parties obligate, themselves to desist from any act of violence, any aggressive action, and any attack on each other, either individually or jointly with other powers.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-nazi-soviet-nonaggression-treaty-1939',
+            loc: {
+              section: 'Treaty of Nonaggression Between Germany and the Union of Soviet Socialist Republics'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://avalon.law.yale.edu/20th_century/nonagres.asp'
+          }
+        },
+        {
+          id: 'q5',
+          text: '2. In the event of a territorial and political rearrangement of the areas belonging to the Polish state the spheres of influence of Germany and the U.S.S.R. shall be bounded approximately by the line of the rivers Narew, Vistula, and San.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-nazi-soviet-secret-additional-protocol-1939',
+            loc: { section: 'Secret Additional Protocol' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://avalon.law.yale.edu/20th_century/addsepro.asp'
           }
         }
       ]

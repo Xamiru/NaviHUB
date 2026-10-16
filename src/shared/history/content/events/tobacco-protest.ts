@@ -280,7 +280,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: '1891 Mobilization of a popular uprising by tobacco merchants leads to a nationwide tobacco boycott.',
+          text: 'Mobilization of a popular uprising by tobacco merchants leads to a nationwide tobacco boycott.',
           lang: 'en',
           cite: {
             source: 'iranica-yarshater-chronology-part-2',
@@ -288,7 +288,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
           }
         },
@@ -320,7 +320,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q6',
-          text: 'Favors bestowed by Amīn-al-solṭān to keep the anti-concession movement from going even further enriched and strengthened the ʿolamāʾ, notably Mīrzā Ḥasan Āštīānī who had a milder position than Šīrāzī (Keddie, op. cit., pp. 114ff.).',
+          text: 'Favors bestowed by Amīn-al-solṭān to keep the anti-concession movement from going even further enriched and strengthened the ʿolamāʾ, notably Mīrzā Ḥasan Āštīānī who had a milder position than Šīrāzī',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-atabak-e-azam',
@@ -328,7 +328,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/atabak-e-azam'
           }
         },
@@ -520,7 +520,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q13',
-        text: 'The tojjār’s achievement was, however, only partial, as a deep breach between the shah and the tojjār had developed by then, best exemplified by the arrest and deportation from Tehran to Qazvin in December 1891 of Ḥāji Moḥammad-Ḥasan Amin-al-Żarb by the order of the shah (Gilbar, 1976-77, pp. 288-91; Ashraf, 1980, pp. 110-12; Ādamiyat, p. 55; Moaddel, p. 459).',
+        text: 'The tojjār’s achievement was, however, only partial, as a deep breach between the shah and the tojjār had developed by then, best exemplified by the arrest and deportation from Tehran to Qazvin in December 1891 of Ḥāji Moḥammad-Ḥasan Amin-al-Żarb by the order of the shah',
         lang: 'en',
         cite: {
           source: 'iranica-gilbar-qajar-big-merchants',
@@ -531,7 +531,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/qajar-big-merchants'
         }
       }

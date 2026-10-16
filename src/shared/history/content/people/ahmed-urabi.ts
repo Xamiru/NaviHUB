@@ -22,7 +22,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   born: {
     alts: [
       {
@@ -203,5 +203,18 @@ export default definePerson({
         { source: 'britannica-1911-arabi-pasha', loc: { section: 'ARABI PASHA', para: '1' } }
       ]
     }
-  ]
+  ],
+  died: {
+    alts: [
+      {
+        value: { d: '1911-09-21' },
+        cites: [
+          {
+            source: 'loc-name-authority-ahmed-urabi',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
+  }
 })

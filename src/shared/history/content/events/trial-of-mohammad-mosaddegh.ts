@@ -31,6 +31,15 @@ export default defineEvent({
           loc: { section: 'Chronology of Iranian History Part 3, 1953' }
         }
       ]
+    },
+    {
+      ref: 'place:tehran',
+      cites: [
+        {
+          source: 'iranica-gasiorowski-coup-detat-1953',
+          loc: { section: 'COUP D’ETAT OF 1332 Š./1953', para: '9' }
+        }
+      ]
     }
   ],
   partOf: [

@@ -43,7 +43,7 @@ export const ZELDA: FranchiseCfg = {
       id: 'zelda-1',
       title: 'The Legend of Zelda',
       year: 1986,
-      chrono: 9,
+      chrono: 8,
       bgUrl: 'https://static.wikia.nocookie.net/zelda_gamepedia_en/images/1/1e/TLoZ_Link_Observing_Hyrule_Artwork.png',
       note: 'NES — the open world, 1986 edition'
     },
@@ -51,7 +51,7 @@ export const ZELDA: FranchiseCfg = {
       id: 'zelda-2',
       title: 'Zelda II: The Adventure of Link',
       year: 1987,
-      chrono: 10,
+      chrono: 9,
       bgUrl: 'https://static.wikia.nocookie.net/zelda_gamepedia_en/images/9/91/TAoL_Link_in_Hyrule_Artwork_2.png',
       note: 'The side-scrolling black sheep'
     },
@@ -98,7 +98,7 @@ export const ZELDA: FranchiseCfg = {
       title: "The Legend of Zelda: Majora's Mask",
       aliases: ["The Legend of Zelda: Majora's Mask 3D"],
       year: 2000,
-      chrono: 11,
+      chrono: 10,
       mc: 95,
       bgUrl: 'https://static.wikia.nocookie.net/zelda_gamepedia_en/images/3/30/Four_Giants.jpg',
       note: 'Three days, forever'
@@ -154,7 +154,7 @@ export const ZELDA: FranchiseCfg = {
       title: 'The Legend of Zelda: The Wind Waker',
       aliases: ['The Legend of Zelda: The Wind Waker HD'],
       year: 2002,
-      chrono: 13,
+      chrono: 12,
       mc: 96,
       bgUrl: 'https://static.wikia.nocookie.net/zelda_gamepedia_en/images/4/42/The_Wind_Waker_Scene_HD.jpg',
       note: 'The great sea'
@@ -173,7 +173,7 @@ export const ZELDA: FranchiseCfg = {
       title: 'The Legend of Zelda: Twilight Princess',
       aliases: ['The Legend of Zelda: Twilight Princess HD'],
       year: 2006,
-      chrono: 12,
+      chrono: 11,
       mc: 95,
       bgUrl: 'https://static.wikia.nocookie.net/zelda_gamepedia_en/images/b/b0/TPHD_Cast_Artwork_3.png',
       note: 'The dark one'
@@ -193,7 +193,7 @@ export const ZELDA: FranchiseCfg = {
       id: 'zelda-phantom-hourglass',
       title: 'The Legend of Zelda: Phantom Hourglass',
       year: 2007,
-      chrono: 14,
+      chrono: 13,
       mc: 90,
       bgUrl: 'https://static.wikia.nocookie.net/zelda_gamepedia_en/images/b/b4/Phantomhour.jpg',
       note: 'DS — Wind Waker afloat again'
@@ -202,7 +202,7 @@ export const ZELDA: FranchiseCfg = {
       id: 'zelda-spirit-tracks',
       title: 'The Legend of Zelda: Spirit Tracks',
       year: 2009,
-      chrono: 15,
+      chrono: 14,
       mc: 87,
       bgUrl: 'https://static.wikia.nocookie.net/zelda_gamepedia_en/images/c/c5/ST_Link_Phantom_Zelda_Spirit_Train_Artwork.png',
       note: 'DS — Hyrule by rail'
@@ -214,7 +214,7 @@ export const ZELDA: FranchiseCfg = {
       aliases: ['Zelda no Densetsu: Mugen no Sunadokei'],
       externalIds: [{ source: 'anilist', id: '43513' }],
       year: 2009,
-      chrono: 14,
+      chrono: 13,
       adaptation: true,
       note: 'Akira Himekawa’s manga of Phantom Hourglass'
     },
@@ -232,7 +232,7 @@ export const ZELDA: FranchiseCfg = {
       id: 'zelda-albw',
       title: 'The Legend of Zelda: A Link Between Worlds',
       year: 2013,
-      chrono: 8,
+      chrono: 7,
       mc: 91,
       bgUrl: 'https://static.wikia.nocookie.net/zelda_gamepedia_en/images/c/cd/ALBW_Hyrule_Lorule.png',
       note: '3DS — ALttP, generations later'
@@ -245,7 +245,7 @@ export const ZELDA: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '96842' }],
       year: 2016,
       releaseDate: '2016-02-08',
-      chrono: 12,
+      chrono: 11,
       adaptation: true,
       note: 'Akira Himekawa’s eleven-volume manga, the longest Zelda adaptation'
     },
@@ -253,7 +253,7 @@ export const ZELDA: FranchiseCfg = {
       id: 'zelda-botw',
       title: 'The Legend of Zelda: Breath of the Wild',
       year: 2017,
-      chrono: 16,
+      chrono: 15,
       mc: 97,
       bgUrl: 'https://static.wikia.nocookie.net/zelda_gamepedia_en/images/7/7c/BotW_Link_Gazing_at_Hyrule_Artwork.jpg',
       note: 'The formula, deleted'
@@ -262,7 +262,7 @@ export const ZELDA: FranchiseCfg = {
       id: 'zelda-links-awakening-2019',
       title: "The Legend of Zelda: Link's Awakening (2019)",
       year: 2019,
-      chrono: 7,
+      chrono: 6,
       mc: 87,
       remake: true,
       bgUrl: 'https://static.wikia.nocookie.net/zelda_gamepedia_en/images/5/52/LANS_Release_Day_Artwork.jpg',
@@ -272,7 +272,7 @@ export const ZELDA: FranchiseCfg = {
       id: 'zelda-totk',
       title: 'The Legend of Zelda: Tears of the Kingdom',
       year: 2023,
-      chrono: 17,
+      chrono: 16,
       mc: 96,
       bgUrl: 'https://static.wikia.nocookie.net/zelda_gamepedia_en/images/5/59/Tears_of_the_Kingdom_Art_Book.png',
       note: 'BotW, vertical'
@@ -281,7 +281,7 @@ export const ZELDA: FranchiseCfg = {
       id: 'zelda-echoes',
       title: 'The Legend of Zelda: Echoes of Wisdom',
       year: 2024,
-      chrono: 18,
+      chrono: 17,
       mc: 86,
       bgUrl: 'https://static.wikia.nocookie.net/zelda_gamepedia_en/images/a/ae/Echoes_of_Wisdom_Box_Art.webp',
       note: 'Zelda, finally playable in her own legend'

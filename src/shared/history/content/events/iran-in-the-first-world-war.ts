@@ -473,7 +473,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q14',
-        text: 'On 12 Ḏu’l-ḥejja 1332/1 November 1914, after the Ottoman empire had entered World War I on the side of Germany, Persia declared a policy of neutrality (Neẓām Māfī, p. 20). The Russians refused to evacuate Persian territory, however, and the Turks then invaded northern and western Persia, thus involving the country in the war, despite its declared neutrality (Sepehr, pp. 89-100).',
+        text: 'On 12 Ḏu’l-ḥejja 1332/1 November 1914, after the Ottoman empire had entered World War I on the side of Germany, Persia declared a policy of neutrality (Neẓām Māfī, p. 20). The Russians refused to evacuate Persian territory, however, and the Turks then invaded northern and western Persia, thus involving the country in the war, despite its declared neutrality',
         lang: 'en',
         cite: {
           source: 'iranica-ettehadiyeh-constitutional-revolution-aftermath',
@@ -481,7 +481,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/constitutional-revolution-iv/'
         }
       }
@@ -592,7 +592,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q18',
-        text: 'In March 1915, Russia agreed to British control over the central area of Iran, which had been defined as “neutral” by the convention of 1907. In return, the British agreed to the Russian annexation of Constantinople (Kazemzadeh, 1968, p. 678).',
+        text: 'In March 1915, Russia agreed to British control over the central area of Iran, which had been defined as “neutral” by the convention of 1907. In return, the British agreed to the Russian annexation of Constantinople',
         lang: 'en',
         cite: {
           source: 'iranica-andreeva-russia-relations',
@@ -603,7 +603,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/russia-i-relations/'
         }
       }
@@ -835,7 +835,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q23',
-        text: 'On 15 November 1915 the representatives of the Central Powers followed. They assumed that the shah and his government would join them and transfer the capital to Isfahan. Aḥmad Shah had indeed issued orders to that effect. The representatives of the Allies were nevertheless able to persuade the monarch to stay (Gehrke, I, pp. 200-207; Bast, 1997, pp. 96-101).',
+        text: 'On 15 November 1915 the representatives of the Central Powers followed. They assumed that the shah and his government would join them and transfer the capital to Isfahan. Aḥmad Shah had indeed issued orders to that effect. The representatives of the Allies were nevertheless able to persuade the monarch to stay',
         lang: 'en',
         cite: {
           source: 'iranica-bast-germany-diplomatic-relations',
@@ -843,7 +843,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/germany-i'
         }
       }
@@ -924,7 +924,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q26',
-        text: 'In Kermānšāh they formed a provisional government and a council of representatives (Hayʾat-e nemāyandagān) composed of members from all the Majles parties (Lustig, pp. 240-45). Reżāqolī Khan Neẓām-al-Salṭana, a nationalist statesman reputed to be unsympathetic to the Allies, was elected to head the provisional cabinet (Bahār, II, pp. 17-23).',
+        text: 'In Kermānšāh they formed a provisional government and a council of representatives (Hayʾat-e nemāyandagān) composed of members from all the Majles parties (Lustig, pp. 240-45). Reżāqolī Khan Neẓām-al-Salṭana, a nationalist statesman reputed to be unsympathetic to the Allies, was elected to head the provisional cabinet',
         lang: 'en',
         cite: {
           source: 'iranica-ettehadiyeh-constitutional-revolution-aftermath',
@@ -932,7 +932,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/constitutional-revolution-iv/'
         }
       }
@@ -1098,7 +1098,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q32',
-        text: 'By the beginning of 1917, Iran was almost entirely occupied by the Russians and the British (Kulagina, pp. 193-94).',
+        text: 'By the beginning of 1917, Iran was almost entirely occupied by the Russians and the British',
         lang: 'en',
         cite: {
           source: 'iranica-andreeva-russia-relations',
@@ -1109,7 +1109,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/russia-i-relations/'
         }
       }
@@ -1133,7 +1133,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q33',
-        text: 'In December 1917, between January and March of 1918, most Russian troops were evacuated, while some troops under Baratov stayed in Iran and entered British military service (Kulagina, p. 194).',
+        text: 'In December 1917, between January and March of 1918, most Russian troops were evacuated, while some troops under Baratov stayed in Iran and entered British military service',
         lang: 'en',
         cite: {
           source: 'iranica-andreeva-russia-relations',
@@ -1144,7 +1144,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/russia-i-relations/'
         }
       }

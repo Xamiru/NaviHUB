@@ -334,5 +334,16 @@ export default defineEvent({
       source: 'mantoux-1906-la-revolution-industrielle-au-xviiie-siecle',
       perspective: 'european'
     }
+  ],
+  places: [
+    {
+      ref: 'place:manchester',
+      cites: [
+        {
+          source: 'britannica-1911-cotton-manufacture',
+          loc: { section: 'Cotton Manufacture', para: '2' }
+        }
+      ]
+    }
   ]
 })

@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'imprisonment-of-the-bab-motives',
   about: ['event:imprisonment-of-the-bab', 'person:haji-mirza-aqasi'],
   topic: 'motives',
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'aqasi-feared-rival',
@@ -15,7 +15,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q1',
-          text: 'It has been suggested that the prime minister, Ḥājī Mīrzā Āqāsī, prevented the Bāb’s arrival in Tehran out of fear that he might supplant him as an influence on Moḥammad Shah (Zarandī, Dawn-Breakers, pp. 231-32).',
+          text: 'It has been suggested that the prime minister, Ḥājī Mīrzā Āqāsī, prevented the Bāb’s arrival in Tehran out of fear that he might supplant him as an influence on Moḥammad Shah',
           lang: 'en',
           cite: {
             source: 'iranica-maceoin-bab',
@@ -23,7 +23,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/bab-ali-mohammad-sirazi'
           }
         }
@@ -85,7 +85,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q4',
-          text: 'At this point, the Russian Minister in Tehran, Dolgorukov, began to exert pressure on the Prime Minister to have the Bāb removed from Mākū, which was located dangerously close to the Russian border; a recent messianic movement in the Caucasus had caused serious problems for the Russians and their fears of renewed chiliastic agitation in the region seem to have been behind their request for the Bāb’s removal (see Momen, Bābī and Bahāʾī Religions, p. 72).',
+          text: 'At this point, the Russian Minister in Tehran, Dolgorukov, began to exert pressure on the Prime Minister to have the Bāb removed from Mākū, which was located dangerously close to the Russian border; a recent messianic movement in the Caucasus had caused serious problems for the Russians and their fears of renewed chiliastic agitation in the region seem to have been behind their request for the Bāb’s removal',
           lang: 'en',
           cite: {
             source: 'iranica-maceoin-bab',
@@ -93,7 +93,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/bab-ali-mohammad-sirazi'
           }
         }

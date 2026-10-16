@@ -27,7 +27,16 @@ export default defineEvent({
   regions: ['europe'],
   prominence: 2,
   places: [
-    { ref: 'place:cape-trafalgar' }
+    { ref: 'place:cape-trafalgar' },
+    {
+      ref: 'place:cadiz',
+      cites: [
+        {
+          source: 'britannica-1911-trafalgar-battle-of',
+          loc: { section: 'TRAFALGAR, BATTLE OF', para: '1' }
+        }
+      ]
+    }
   ],
   partOf: [
     { ref: 'period:napoleonic-wars' }
@@ -280,20 +289,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q3',
-          text: 'The British victory over the French off Cape Trafalgar, fought on the 21st of October 1805, was a sequel of the breakdown of Napoleon\'s great scheme for the invasion of the British Isles',
-          lang: 'en',
-          cite: {
-            source: 'britannica-1911-trafalgar-battle-of',
-            loc: { section: 'TRAFALGAR, BATTLE OF', para: '1' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-08',
-            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Trafalgar,_Battle_of'
-          }
-        },
-        {
           id: 'q1',
           text: 'On 21 October, 1805, the allied Franco-Spanish fleet under Admiral Villeneuve was ‘annihilated’ by the British fleet under Admiral Nelson.',
           lang: 'en',
@@ -305,6 +300,20 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.napoleon.org/en/history-of-the-two-empires/close-up/a-close-up-on-trafalgar-21-october-1805/'
+          }
+        },
+        {
+          id: 'q3',
+          text: 'The British victory over the French off Cape Trafalgar, fought on the 21st of October 1805, was a sequel of the breakdown of Napoleon\'s great scheme for the invasion of the British Isles',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-trafalgar-battle-of',
+            loc: { section: 'TRAFALGAR, BATTLE OF', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-08',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Trafalgar,_Battle_of'
           }
         }
       ]

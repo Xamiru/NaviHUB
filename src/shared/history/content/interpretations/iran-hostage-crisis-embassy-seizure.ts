@@ -14,7 +14,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q1',
-          text: 'would have world-wide repercussions and would allow them [students] to express their outrage against the U.S. and the shah’s admission',
+          text: 'They wanted to attack the embassy for its symbolic significance, which “would have world-wide repercussions and would allow them [students] to express their outrage against the U.S. and the shah’s admission”',
           lang: 'en',
           cite: {
             source: 'iranica-mohsen-milani-hostage-crisis',
@@ -22,7 +22,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-09',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/hostage-crisis/'
           }
         }
@@ -38,7 +38,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q2',
-          text: 'war between Islam and blasphemy',
+          text: 'He proclaimed the hostage crisis to be a “war between Islam and blasphemy,”',
           lang: 'en',
           cite: {
             source: 'iranica-mohsen-milani-hostage-crisis',
@@ -46,7 +46,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-09',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/hostage-crisis/'
           }
         },
@@ -66,7 +66,7 @@ export default defineInterpretation({
         },
         {
           id: 'q4',
-          text: 'a second revolution, greater than the first',
+          text: 'With the shah in the United States, circumstances were different this time, and Khomeini hailed the initiative of the students as “a second revolution, greater than the first.”',
           lang: 'en',
           cite: {
             source: 'iranica-algar-khomeini-life',
@@ -74,7 +74,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-09',
+            at: '2026-10-16',
             url: 'https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/'
           }
         }
@@ -137,7 +137,7 @@ export default defineInterpretation({
         },
         {
           id: 'q6',
-          text: 'it hosted Mohammad Reza who was the definite enemy of the people of Iran.',
+          text: 'Besides, it hosted Mohammad Reza who was the definite enemy of the people of Iran.',
           lang: 'en',
           cite: {
             source: 'khamenei-ir-us-enmity-against-the-iranian-nation',
@@ -148,7 +148,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-09',
+            at: '2026-10-16',
             url: 'https://web.archive.org/web/2024/https://english.khamenei.ir/news/7155/Does-U-S-enmity-against-the-Iranian-nation-stem-from-the-1979'
           }
         }
@@ -238,7 +238,7 @@ export default defineInterpretation({
         },
         {
           id: 'q19',
-          text: 'Carter’s diplomacy did have some results; the United Nations, the International Court of Justice, the Arab League, the Western European counties, dozens of prominent religious leaders, including the pope, Nobel Peace Prize winner Sean MacBride, and many heads of state of Islamic countries called for the release of the hostages (see Bāqi, pp. 41-55; Ebtekar, pp. 85-87).',
+          text: 'Carter’s diplomacy did have some results; the United Nations, the International Court of Justice, the Arab League, the Western European counties, dozens of prominent religious leaders, including the pope, Nobel Peace Prize winner Sean MacBride, and many heads of state of Islamic countries called for the release of the hostages',
           lang: 'en',
           cite: {
             source: 'iranica-milani-hostage-crisis',
@@ -246,7 +246,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-09',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/hostage-crisis/'
           }
         }
@@ -285,7 +285,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q10',
-          text: 'manipulated and prolonged the crisis in order to craft a new political landscape for Iran.',
+          text: 'Ayatollah Khomeini and a number of leading pragmatic figures in the new regime, including ʿAli-Akbar Hāšemi-Rafsanjāni and Sayyed Moḥammad Ḥosayni-Behešti as well as the leftist Islamist students who initiated the event, manipulated and prolonged the crisis in order to craft a new political landscape for Iran.',
           lang: 'en',
           cite: {
             source: 'iranica-mohsen-milani-hostage-crisis',
@@ -293,7 +293,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-09',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/hostage-crisis/'
           }
         },
@@ -360,5 +360,5 @@ export default defineInterpretation({
       ]
     }
   ],
-  researched: '2026-10-09'
+  researched: '2026-10-16'
 })

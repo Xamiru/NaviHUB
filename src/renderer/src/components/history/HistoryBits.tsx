@@ -39,9 +39,12 @@ export function HistoryImg({
 }
 
 export function ImageCredit({ image, className = '' }: { image: HistoryImage | null | undefined; className?: string }) {
-  if (!image || (!image.credit && !image.license)) return null
+  if (!image || (!image.credit && !image.license && !image.title)) return null
+  // The holder's own title comes first: it is what says "Portrait of a Man, Said to be …".
   return (
     <span className={`media-contrast rounded bg-black/70 px-2 py-0.5 text-[10px] text-gray-300 ${className}`}>
+      {image.title && <span className="italic">{image.title}</span>}
+      {image.title && (image.credit || image.license) && ' · '}
       {[image.credit, image.license].filter(Boolean).join(' · ')}
     </span>
   )
@@ -182,6 +185,18 @@ export function NativeName({ native, className = '' }: { native: { text: string;
 }
 
 /** A compact link to another entity: thumbnail, title, native name, years. */
+export function RefLink({ info }: { info: HistoryRefInfo | undefined }) {
+  if (!info) return null
+  const to = historyPath(info.ref)
+  return to && !info.missing ? (
+    <Link to={to} className="hover:text-accent">
+      {info.title}
+    </Link>
+  ) : (
+    <span className="text-ink-muted">{info.title}</span>
+  )
+}
+
 export function RefRow({ info, extra }: { info: HistoryRefInfo; extra?: ReactNode }) {
   const to = historyPath(info.ref)
   const body = (

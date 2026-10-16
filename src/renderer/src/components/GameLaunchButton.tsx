@@ -1,10 +1,9 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import { qk } from '../lib/queryKeys'
 import { toastError } from '../lib/toast'
 import { confirmAchievementLaunch } from '../lib/achievementLaunch'
 import { useGameSession, fmtDurationSec } from '../lib/useGameSession'
+import { defaultChoice, usePlayOptions } from './WaysToPlay'
 
 // THE launch control for games/VNs (cfg.hasGameLaunch). It lives in the detail
 // page's action row so a linked game is one click from anywhere on the page,
@@ -13,7 +12,7 @@ import { useGameSession, fmtDurationSec } from '../lib/useGameSession'
 //
 // Busy state derives from the polled session, never a local flag (the
 // MangaChaptersSection rule). useGameSession is already mounted in the Topbar,
-// so this shares that poll, and qk.games.overview is the same key
+// so this shares that poll, and qk.games.playOptions is the same key
 // GameLaunchSection reads — one fetch, not two.
 // Whether this title has something to launch. The caller needs it to decide
 // which button is the filled one, and it must follow the linked executable
@@ -21,12 +20,8 @@ import { useGameSession, fmtDurationSec } from '../lib/useGameSession'
 // so demoting the log button on `hasGameLaunch` alone would leave the page with
 // no filled action at all. Same query key, so this costs nothing extra.
 export function useHasLaunchTarget(mediaId: number, enabled: boolean): boolean {
-  const { data } = useQuery({
-    queryKey: qk.games.overview(mediaId),
-    queryFn: () => api.games.overview(mediaId),
-    enabled
-  })
-  return !!data?.exePath
+  const { data } = usePlayOptions(mediaId, enabled)
+  return defaultChoice(data) != null
 }
 
 export default function GameLaunchButton({
@@ -41,14 +36,12 @@ export default function GameLaunchButton({
   // the launch call) happens BEFORE any session exists for the poll to report,
   // and a second click there would launch the game twice.
   const [starting, setStarting] = useState(false)
-  const { data: ov } = useQuery({
-    queryKey: qk.games.overview(mediaId),
-    queryFn: () => api.games.overview(mediaId)
-  })
+  const { data: ov } = usePlayOptions(mediaId)
+  const choice = defaultChoice(ov)
 
   // Nothing to launch: the section on the Playtime tab is where you link one,
   // and an empty slot in the action row would just be a dead button.
-  if (!ov?.exePath) return null
+  if (!ov || !choice) return null
 
   // This title's session vs some other title's — both block Play, different copy.
   const runningHere = session.running && session.status?.mediaId === mediaId
@@ -69,8 +62,9 @@ export default function GameLaunchButton({
     if (starting) return
     setStarting(true)
     try {
-      if (!(await confirmAchievementLaunch(mediaId))) return
-      await api.games.launch(mediaId)
+      // The Steam-emulator list check only concerns a native executable.
+      if (choice?.kind === 'native' && !(await confirmAchievementLaunch(mediaId))) return
+      await api.games.launch(mediaId, choice)
       // The poll self-gates while idle, so a launch must kick it back to life
       // or the session would never report.
       await session.kick()

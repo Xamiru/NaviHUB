@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Kermit Roosevelt Jr.', lang: 'en', role: 'primary' },
     { text: 'Kermit Roosevelt', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['north-america', 'iran'],
   roles: ['other'],
   portrait: {
@@ -93,5 +93,31 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1916' },
+        cites: [
+          {
+            source: 'loc-name-authority-kermit-roosevelt',
+            loc: { section: 'MARC field 100 $d: heading dates' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '2000' },
+        cites: [
+          {
+            source: 'loc-name-authority-kermit-roosevelt',
+            loc: { section: 'MARC field 100 $d: heading dates' }
+          }
+        ]
+      }
+    ]
+  }
 })

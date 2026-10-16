@@ -90,13 +90,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'The last and most tenacious of the Polish uprisings of the mid- nineteenth century erupted in the Russian-occupied sector in January 1863.',
+          text: 'The last and most tenacious of the Polish uprisings […] erupted in the Russian-occupied sector in January 1863.',
           lang: 'en',
           cite: {
             source: 'loc-poland-country-study-1992',
             loc: { section: 'PARTITIONED POLAND', para: '15' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/poland/12.htm' }
+          provenance: { via: 'web', at: '2026-10-16', url: 'http://countrystudies.us/poland/12.htm' }
         }
       ]
     },
@@ -216,5 +216,16 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:Artur_Grottger_-_Po_powstaniu._W_drodze_do_ko%C5%9Bcio%C5%82a_1864.jpg',
     credit: { institution: 'National Museum in Wrocław', creator: 'Artur Grottger' },
     license: { id: 'public-domain' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:warsaw',
+      cites: [
+        {
+          source: 'loc-poland-country-study-1992',
+          loc: { section: 'PARTITIONED POLAND', para: '4' }
+        }
+      ]
+    }
+  ]
 })

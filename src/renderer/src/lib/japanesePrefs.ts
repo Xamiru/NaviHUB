@@ -47,3 +47,23 @@ export function saveJpSessionBudget(budget: TutorBudget): void {
 // "I can read kana" lives in the settings table so the plan, the Today page
 // and the path all agree on it.
 export const KANA_KNOWN_SETTING = 'japanese.kanaKnown'
+
+// Furigana over example sentences and graded reading, shared by the lesson
+// page and the reading page. A per-machine display choice, like the two above.
+const FURIGANA_KEY = 'japanese.furigana'
+
+export function loadJpFurigana(): boolean {
+  try {
+    return localStorage.getItem(FURIGANA_KEY) !== '0'
+  } catch {
+    return true
+  }
+}
+
+export function saveJpFurigana(show: boolean): void {
+  try {
+    localStorage.setItem(FURIGANA_KEY, show ? '1' : '0')
+  } catch {
+    // Storage is optional here.
+  }
+}

@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Emilio Aguinaldo', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   regions: ['southeast-asia'],
   roles: ['revolutionary', 'politician'],
   sections: [
@@ -69,5 +69,31 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:AguinaldoMP.jpg',
     credit: { institution: 'Malacañang Palace' },
     license: { id: 'public-domain' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1869-03-22' },
+        cites: [
+          {
+            source: 'loc-name-authority-emilio-aguinaldo',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1964-02-06' },
+        cites: [
+          {
+            source: 'loc-name-authority-emilio-aguinaldo',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
   }
 })

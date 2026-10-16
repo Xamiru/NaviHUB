@@ -164,7 +164,7 @@ export default defineEvent({
         },
         {
           id: 'q5',
-          text: 'In the same year, a convention relating to Russo-Iranian border east of the Caspian Sea was signed, which drew the border mainly along the Atrak River (text in Krausse, pp. 360-62).',
+          text: 'In the same year, a convention relating to Russo-Iranian border east of the Caspian Sea was signed, which drew the border mainly along the Atrak River',
           lang: 'en',
           cite: {
             source: 'iranica-andreeva-russia-relations',
@@ -175,7 +175,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/russia-i-relations/'
           }
         }

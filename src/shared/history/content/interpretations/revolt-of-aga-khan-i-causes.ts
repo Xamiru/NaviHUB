@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'revolt-of-aga-khan-i-causes',
   about: ['event:revolt-of-aga-khan-i', 'person:aga-khan-i'],
   topic: 'causes',
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'sufi-rivalry',
@@ -29,7 +29,7 @@ export default defineInterpretation({
         },
         {
           id: 'q2',
-          text: 'A supplementary reason may have been the Āqā Khan’s refusal to give his daughter in marriage to the son of lowborn protégé of Ḥāǰǰī Mīrzā Āqāšī, who had originally worked on the family lands at Maḥallāt (see Moḥammad b. Zayn-al-ʿābedīn Ḵorāsānī Fedāʾī, Tārīḵ-e Esmāʿīlīya, ed. A. A. Semyonov, Moscow, 1959, repr. Tehran, 1362 Š./1983, p. 151).',
+          text: 'A supplementary reason may have been the Āqā Khan’s refusal to give his daughter in marriage to the son of lowborn protégé of Ḥāǰǰī Mīrzā Āqāšī, who had originally worked on the family lands at Maḥallāt',
           lang: 'en',
           cite: {
             source: 'iranica-algar-aqa-khan-mahallati',
@@ -37,7 +37,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/aqa-khan/aqa-khan-i-aqa-khan-i-ma%e1%b8%a5allati'
           }
         }
@@ -76,7 +76,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q4',
-          text: 'The revolt of the Ismaʿili leader Hosayn-ʿAli Shah Āqā Khan Maḥallāti (q.v.) was probably supported by messianic missionary activities (daʿwa) before turning to political claims (Amanat, 1988, pp. 83-84).',
+          text: 'The revolt of the Ismaʿili leader Hosayn-ʿAli Shah Āqā Khan Maḥallāti (q.v.) was probably supported by messianic missionary activities (daʿwa) before turning to political claims',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-mohammad-shah',
@@ -84,7 +84,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
         }

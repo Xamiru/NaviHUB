@@ -60,6 +60,15 @@ export default defineEvent({
           loc: { section: 'Paper Tigers? How the Asian Economies Lost Their Bite', para: '5' }
         }
       ]
+    },
+    {
+      ref: 'place:bangkok',
+      cites: [
+        {
+          source: 'neely-1999-paper-tigers-how-the-asian-economies-lost-their-bite',
+          loc: { section: 'Paper Tigers? How the Asian Economies Lost Their Bite', para: '1' }
+        }
+      ]
     }
   ],
   participants: [

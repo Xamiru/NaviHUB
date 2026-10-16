@@ -44,10 +44,87 @@ CREATE TABLE IF NOT EXISTS game_session (
   media_id   INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
   started_at TEXT NOT NULL,   -- UTC, like all timestamps
   ended_at   TEXT NOT NULL,   -- UTC
-  duration   INTEGER NOT NULL -- seconds of wall-clock process lifetime
+  duration   INTEGER NOT NULL, -- seconds of wall-clock process lifetime
+  -- How the session was launched: 'native' (the linked executable) or
+  -- 'emu:<preset key>'; NULL for sessions recorded before 2026-10-16. Frozen.
+  via        TEXT,
+  platform   TEXT              -- @shared/emulation/platforms key of an emulated session
 );
 CREATE INDEX IF NOT EXISTS idx_game_session_media   ON game_session(media_id);
 CREATE INDEX IF NOT EXISTS idx_game_session_started ON game_session(started_at);
+
+-- ---- Emulation ----
+-- Emulators installed on THIS machine (absolute paths, wiped on export). The
+-- preset key names a built-in launch recipe in @shared/emulation/emulatorPresets
+-- ('custom' = the user's own argument list); args_json overrides the preset's
+-- argument list as a JSON array with a '{rom}' element. data_dir and
+-- screenshot_dir override the folders the preset resolves on its own.
+CREATE TABLE IF NOT EXISTS emulator (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  preset_key     TEXT NOT NULL,
+  name           TEXT NOT NULL,
+  exe_path       TEXT NOT NULL,
+  core_path      TEXT,
+  args_json      TEXT,
+  data_dir       TEXT,
+  screenshot_dir TEXT,
+  platforms      TEXT NOT NULL DEFAULT '[]', -- JSON array of platform keys
+  created_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+-- Which emulator plays a platform when a game file names none.
+CREATE TABLE IF NOT EXISTS emulator_default (
+  platform    TEXT PRIMARY KEY,
+  emulator_id INTEGER NOT NULL REFERENCES emulator(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_emulator_default_emulator ON emulator_default(emulator_id);
+-- A game file linked to a library game. emulator_id NULL = the platform's
+-- default emulator. game_code is the disc id / serial / title id that mods and
+-- texture packs are filed under ('file' = read from the header, 'manual' =
+-- typed by the user). At most one preferred row per game decides Play.
+CREATE TABLE IF NOT EXISTS game_rom (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  media_id         INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+  rom_path         TEXT NOT NULL,
+  platform         TEXT NOT NULL,
+  emulator_id      INTEGER REFERENCES emulator(id) ON DELETE SET NULL,
+  game_code        TEXT,
+  game_code_source TEXT CHECK(game_code_source IN ('file','manual')),
+  preferred        INTEGER NOT NULL DEFAULT 0,
+  created_at       TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_game_rom_path ON game_rom(media_id, rom_path);
+CREATE INDEX IF NOT EXISTS idx_game_rom_emulator ON game_rom(emulator_id);
+-- Mods NaviHUB installed into an emulator's user folder (mods.ts). The ledger
+-- is the ONLY licence to touch those files: uninstall and disable act on the
+-- listed files alone, and only while their size and mtime still match.
+-- kind 'folder' = one new folder (install_dir) NaviHUB created under
+-- target_root; 'files' = loose files (PCSX2 .pnach) directly in target_root.
+-- While disabled the files live under userData/modcache/disabled/<id>.
+CREATE TABLE IF NOT EXISTS mod_install (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  media_id          INTEGER REFERENCES media_item(id) ON DELETE SET NULL,
+  emulator_id       INTEGER REFERENCES emulator(id) ON DELETE SET NULL,
+  gb_mod_id         INTEGER NOT NULL,
+  gb_file_id        INTEGER NOT NULL,
+  name              TEXT NOT NULL,
+  version           TEXT,
+  kind              TEXT NOT NULL CHECK(kind IN ('folder','files')),
+  target_root       TEXT NOT NULL,
+  install_dir       TEXT,
+  enabled           INTEGER NOT NULL DEFAULT 1,
+  installed_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  source_updated_at INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_mod_install_media ON mod_install(media_id);
+CREATE INDEX IF NOT EXISTS idx_mod_install_emulator ON mod_install(emulator_id);
+-- rel_path is relative to target_root (folder installs include install_dir's name).
+CREATE TABLE IF NOT EXISTS mod_install_file (
+  install_id INTEGER NOT NULL REFERENCES mod_install(id) ON DELETE CASCADE,
+  rel_path   TEXT NOT NULL,
+  size       INTEGER NOT NULL,
+  mtime_ms   INTEGER NOT NULL,
+  PRIMARY KEY (install_id, rel_path)
+) WITHOUT ROWID;
 
 -- ---- Achievements ----
 -- Opt-in per title: one row here means "this game is tracked". Written when the
@@ -64,6 +141,7 @@ CREATE TABLE IF NOT EXISTS achievement_game (
   provider          TEXT NOT NULL,   -- 'steam' | 'ra'
   provider_game_id  TEXT NOT NULL,   -- Steam appid, or RA game id
   schema_fetched_at TEXT,            -- UTC; NULL = associated but not fetched yet
+  schema_source     TEXT,            -- 'local'|'public-api'|'webapi'|'community'|'ra'; NULL = before it was kept
   created_at        TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -603,6 +681,12 @@ CREATE TABLE IF NOT EXISTS jp_course (
   level       TEXT,
   difficulty  INTEGER,
   sort_order  INTEGER NOT NULL DEFAULT 0,
+  -- Built-in content sync (japaneseSeedSync.ts): frozen key of the seed this
+  -- row came from, and the hash of the seed content last written to it. NULL
+  -- on user-made rows. The same pair sits on jp_lesson and jp_card; their
+  -- seed_key indexes live in runMigrations (ensureColumn'd columns).
+  seed_key    TEXT,
+  seed_hash   TEXT,
   created_at  TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -616,6 +700,8 @@ CREATE TABLE IF NOT EXISTS jp_lesson (
   sort_order  INTEGER NOT NULL DEFAULT 0,
   learned     INTEGER NOT NULL DEFAULT 0,
   learned_at  TEXT,
+  seed_key    TEXT,
+  seed_hash   TEXT,
   created_at  TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -655,19 +741,66 @@ CREATE TABLE IF NOT EXISTS jp_card (
   reps             INTEGER NOT NULL DEFAULT 0,
   lapses           INTEGER NOT NULL DEFAULT 0,
   last_reviewed_at TEXT,
+  -- FSRS memory state (src/shared/srs.ts); NULL until the first answer.
+  -- ease above is the legacy SM-2 value, kept but no longer scheduled from.
+  stability        REAL,
+  fsrs_difficulty  REAL,
+  seed_key         TEXT,
+  seed_hash        TEXT,
   created_at       TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_jp_card_lesson ON jp_card(lesson_id);
 CREATE INDEX IF NOT EXISTS idx_jp_card_due ON jp_card(status, due_at);
 
+-- Built-in lessons and cards kept out of the content sync, by seed_key:
+-- source 'user' = deleted in the app (never comes back); 'backfill' = missing
+-- when keys were first assigned (deleted, or added to the pack later — the
+-- Settings restore lifts these). A deleted course needs no row: the sync
+-- skips any pack whose course row is gone.
+CREATE TABLE IF NOT EXISTS jp_seed_tombstone (
+  seed_key    TEXT PRIMARY KEY,
+  source      TEXT NOT NULL DEFAULT 'user',
+  removed_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Review directions beyond recognition (@shared/japanese/reviewDirections.ts):
+-- 'production' (meaning → word) and 'reading' (kanji word → reading), each
+-- with its own FSRS schedule. Recognition stays on jp_card, so every "known
+-- word" read is unchanged. submitReview spawns a row once the card's own
+-- schedule reaches DIRECTION_SPAWN_INTERVAL_DAYS. Personal: wiped on export.
+CREATE TABLE IF NOT EXISTS jp_card_review (
+  card_id          INTEGER NOT NULL REFERENCES jp_card(id) ON DELETE CASCADE,
+  direction        TEXT NOT NULL CHECK (direction IN ('production', 'reading')),
+  status           TEXT NOT NULL DEFAULT 'new',
+  learning_step    INTEGER NOT NULL DEFAULT 0,
+  due_at           TEXT,
+  interval_days    REAL NOT NULL DEFAULT 0,
+  reps             INTEGER NOT NULL DEFAULT 0,
+  lapses           INTEGER NOT NULL DEFAULT 0,
+  last_reviewed_at TEXT,
+  stability        REAL,
+  fsrs_difficulty  REAL,
+  created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (card_id, direction)
+);
+CREATE INDEX IF NOT EXISTS idx_jp_card_review_due ON jp_card_review(status, due_at);
+
+-- interval_days/ease are the card's values AFTER the answer. state_before,
+-- elapsed_days (since the previous answer) and scheduled_days (the interval
+-- the card had) are what an FSRS optimizer reads; NULL on pre-FSRS rows.
 CREATE TABLE IF NOT EXISTS jp_review_log (
-  id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  card_id       INTEGER NOT NULL REFERENCES jp_card(id) ON DELETE CASCADE,
-  grade         TEXT NOT NULL,
-  reviewed_at   TEXT NOT NULL DEFAULT (datetime('now')),
-  interval_days REAL NOT NULL,
-  ease          REAL NOT NULL
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  card_id        INTEGER NOT NULL REFERENCES jp_card(id) ON DELETE CASCADE,
+  grade          TEXT NOT NULL,
+  reviewed_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  interval_days  REAL NOT NULL,
+  ease           REAL NOT NULL,
+  state_before   TEXT,
+  elapsed_days   REAL,
+  scheduled_days REAL,
+  -- which schedule was answered: 'recognition' (jp_card) or a jp_card_review direction
+  direction      TEXT NOT NULL DEFAULT 'recognition'
 );
 CREATE INDEX IF NOT EXISTS idx_jp_review_log_card ON jp_review_log(card_id);
 CREATE INDEX IF NOT EXISTS idx_jp_review_log_time ON jp_review_log(reviewed_at);
@@ -1154,7 +1287,9 @@ CREATE TABLE IF NOT EXISTS en_word (
   ease             REAL NOT NULL DEFAULT 2.5,
   reps             INTEGER NOT NULL DEFAULT 0,
   lapses           INTEGER NOT NULL DEFAULT 0,
-  last_reviewed_at TEXT
+  last_reviewed_at TEXT,
+  stability        REAL,                      -- FSRS memory state, as on jp_card
+  fsrs_difficulty  REAL
 );
 CREATE INDEX IF NOT EXISTS idx_en_word_word ON en_word(word);
 -- idx_en_word_due lives in connection.ts:runMigrations, NOT here. Its columns
@@ -1165,12 +1300,15 @@ CREATE INDEX IF NOT EXISTS idx_en_word_word ON en_word(word);
 -- live in this file if every column it touches is in the CREATE TABLE above it.
 
 CREATE TABLE IF NOT EXISTS en_review_log (
-  id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  word_id       INTEGER NOT NULL REFERENCES en_word(id) ON DELETE CASCADE,
-  grade         TEXT NOT NULL,
-  reviewed_at   TEXT NOT NULL DEFAULT (datetime('now')),
-  interval_days REAL NOT NULL,
-  ease          REAL NOT NULL
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  word_id        INTEGER NOT NULL REFERENCES en_word(id) ON DELETE CASCADE,
+  grade          TEXT NOT NULL,
+  reviewed_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  interval_days  REAL NOT NULL,
+  ease           REAL NOT NULL,
+  state_before   TEXT,                       -- as on jp_review_log
+  elapsed_days   REAL,
+  scheduled_days REAL
 );
 CREATE INDEX IF NOT EXISTS idx_en_review_log_word ON en_review_log(word_id);
 CREATE INDEX IF NOT EXISTS idx_en_review_log_time ON en_review_log(reviewed_at);

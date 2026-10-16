@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Nikita Khrushchev', lang: 'en', role: 'primary' },
     { text: 'Никита Сергеевич Хрущёв', lang: 'ru', role: 'native' }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['russia-central-asia'],
   roles: ['politician', 'head-of-state'],
   offices: [
@@ -135,5 +135,31 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  born: {
+    alts: [
+      {
+        value: { d: '1894-04-15' },
+        cites: [
+          {
+            source: 'loc-name-authority-nikita-khrushchev',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1971-09-11' },
+        cites: [
+          {
+            source: 'loc-name-authority-nikita-khrushchev',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
+  }
 })

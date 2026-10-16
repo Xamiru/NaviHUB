@@ -33,6 +33,18 @@ export default defineEvent({
       cites: [
         { source: 'browne-1910-persian-revolution', loc: { page: '59' } }
       ]
+    },
+    {
+      ref: 'place:tehran',
+      cites: [
+        {
+          source: 'iranica-andreeva-russia-relations',
+          loc: {
+            section: 'RUSSIA i. Russo-Iranian Relations up to the Bolshevik Revolution',
+            para: '25'
+          }
+        }
+      ]
     }
   ],
   partOf: [
@@ -98,7 +110,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: '1896 Assassination of Nāṣer-al-Din Shah by Mirzā Reżā Kermāni, follower of Jamāl-al-Din Afḡāni, a leading Iranian cleric and one of the influential leaders of the late 19th century pan-Islamic movement.',
+          text: 'Assassination of Nāṣer-al-Din Shah by Mirzā Reżā Kermāni, follower of Jamāl-al-Din Afḡāni, a leading Iranian cleric and one of the influential leaders of the late 19th century pan-Islamic movement.',
           lang: 'en',
           cite: {
             source: 'iranica-yarshater-chronology-part-2',
@@ -106,7 +118,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
           }
         }
@@ -156,7 +168,7 @@ export default defineEvent({
         },
         {
           id: 'q6',
-          text: 'When Nāṣer-al-Din Shah was assassinated in 1896, the Cossack Brigade commanded by Colonel Kosogovskiĭ maintained order and secured Moẓaffar-al-Din’s succession (Kosogovskiĭ, pp. 458-63).',
+          text: 'When Nāṣer-al-Din Shah was assassinated in 1896, the Cossack Brigade commanded by Colonel Kosogovskiĭ maintained order and secured Moẓaffar-al-Din’s succession',
           lang: 'en',
           cite: {
             source: 'iranica-andreeva-russia-relations',
@@ -167,7 +179,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/russia-i-relations/'
           }
         },
@@ -255,7 +267,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q9',
-        text: 'He was extradited to Iran and executed in Tabriz in July 1896 after being implicated in planning the assassination of Nāṣer-al-Din Shah, carried out by fellow radical Mirzā Reżā Kermāni (Nāẓem-al-Eslām, I, p. 15).',
+        text: 'He was extradited to Iran and executed in Tabriz in July 1896 after being implicated in planning the assassination of Nāṣer-al-Din Shah, carried out by fellow radical Mirzā Reżā Kermāni',
         lang: 'en',
         cite: {
           source: 'iranica-gustafson-kerman-qajar',
@@ -263,7 +275,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/kerman-09-qajar-period'
         }
       }

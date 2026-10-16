@@ -68,6 +68,20 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'Encouraged by his chief minister, Mirzā Ḥosayn Khan Sepahsālār, the shah made a trip to Europe followed by two further trips, accompanied by a number of his courtiers.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-yarshater-iranian-history-islamic-period-5',
+            loc: { section: 'IRAN ii. IRANIAN HISTORY (2) Islamic period, Qajar period' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/iran-ii2-islamic-period-page-5/'
+          }
+        },
+        {
           id: 'q8',
           text: 'In April 1889 the shah set out upon his third voyage to Europe. After a visit to the principal courts, including a stay of a month in England, where he was accompanied by Sir Henry Drummond Wolff, he returned to his capital (Oct. 20).',
           lang: 'en',
@@ -87,20 +101,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Nasr-ed-Din'
-          }
-        },
-        {
-          id: 'q2',
-          text: 'Encouraged by his chief minister, Mirzā Ḥosayn Khan Sepahsālār, the shah made a trip to Europe followed by two further trips, accompanied by a number of his courtiers.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-yarshater-iranian-history-islamic-period-5',
-            loc: { section: 'IRAN ii. IRANIAN HISTORY (2) Islamic period, Qajar period' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/iran-ii2-islamic-period-page-5/'
           }
         }
       ]
@@ -195,7 +195,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q7',
-        text: 'Bismarck, who significantly enough had stayed away from Berlin during the second state visit of Nāṣer-al-Dīn Shah (5-13 June 1889), also constantly rejected British offers for joint German-British ventures in Persia (e.g., in late 1885 or in June 1888; Martin, pp. 33-37).',
+        text: 'Bismarck, who significantly enough had stayed away from Berlin during the second state visit of Nāṣer-al-Dīn Shah (5-13 June 1889), also constantly rejected British offers for joint German-British ventures in Persia',
         lang: 'en',
         cite: {
           source: 'iranica-bast-germany-diplomatic-relations',
@@ -203,7 +203,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/germany-i'
         }
       }

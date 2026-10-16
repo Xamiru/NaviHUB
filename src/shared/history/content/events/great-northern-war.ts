@@ -351,5 +351,22 @@ export default defineEvent({
     page: 'https://commons.wikimedia.org/wiki/File:%27The_Victory_at_Poltava%27_by_Alexander_Evstafyevich_Kotzebue,_1862,_Hermitage.JPG',
     credit: { institution: 'Hermitage Museum', creator: 'Alexander von Kotzebue' },
     license: { id: 'public-domain' }
-  }
+  },
+  places: [
+    {
+      ref: 'place:poltava',
+      cites: [
+        {
+          source: 'britannica-1911-poltava-town',
+          loc: { section: 'Poltava (town)', para: '2' }
+        }
+      ]
+    },
+    {
+      ref: 'place:saint-petersburg',
+      cites: [
+        { source: 'britannica-1911-peter-i', loc: { section: 'PETER I.', para: '13' } }
+      ]
+    }
+  ]
 })

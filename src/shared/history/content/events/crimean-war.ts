@@ -427,7 +427,7 @@ export default defineEvent({
         },
         {
           id: 'q12',
-          text: 'In the meantime, the diplomatic scene had changed since the end of the Crimean War in April, 1856: Russia could consider further progress toward India, and France was no longer Britain’s ally (Standish, “The Persian War,” p. 30).',
+          text: 'In the meantime, the diplomatic scene had changed since the end of the Crimean War in April, 1856: Russia could consider further progress toward India, and France was no longer Britain’s ally',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-anglo-persian-war',
@@ -435,7 +435,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/anglo-persian-war-1856-57'
           }
         }

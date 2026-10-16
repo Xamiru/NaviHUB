@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Mikhail Kutuzov', lang: 'en', role: 'primary' },
     { text: 'Михаил Илларионович Кутузов', lang: 'ru', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-16',
   died: {
     alts: [
       {
@@ -23,6 +23,25 @@ export default definePerson({
   regions: ['russia-central-asia'],
   roles: ['military'],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q4',
+          text: 'Mikhail Kutuzov began his military service in the artillery before becoming ADC to the Prince of Holstein-Beck in 1762.',
+          lang: 'en',
+          cite: {
+            source: 'fondation-napoleon-kutuzov',
+            loc: { section: 'KUTUZOV, Mikhail Illarionovich Golenishchev', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-16',
+            url: 'https://www.napoleon.org/en/reading_room/biographies/files/481511.asp'
+          }
+        }
+      ]
+    },
     {
       kind: 'career',
       quotes: [
@@ -81,5 +100,18 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Kutuzov_by_Volkov.jpg',
     credit: { creator: 'Roman Volkov' },
     license: { id: 'public-domain' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1745-09-16' },
+        cites: [
+          {
+            source: 'loc-name-authority-mikhail-kutuzov',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
   }
 })

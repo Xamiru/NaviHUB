@@ -5,9 +5,9 @@ import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
 import { STARTER_PACKS, starterPackInstalled } from '@shared/japanese/starterPacks'
 
-// One-time setup on Today: the six offline packs the section leans on, installed
-// with one button. Renders nothing until every query has answered (no "nothing
-// installed" flash) and nothing once all six are in. The per-pack controls and
+// One-time setup on Today: the seven offline packs the section leans on (the
+// dictionaries and the voice), installed with one button. Renders nothing until every query has answered (no "nothing
+// installed" flash) and nothing once all seven are in. The per-pack controls and
 // the optional extras stay in Settings.
 
 const SETTINGS_LINK = '/settings?tab=learning'
@@ -19,6 +19,7 @@ export default function SetupChecklist() {
   const sentencesQ = useQuery({ queryKey: qk.dict.sentenceBank, queryFn: () => api.dict.sentenceBank() })
   const kradQ = useQuery({ queryKey: qk.dict.kradSet, queryFn: () => api.dict.kradSet() })
   const grammarQ = useQuery({ queryKey: qk.dict.grammarBank, queryFn: () => api.dict.grammarBank() })
+  const voiceQ = useQuery({ queryKey: qk.japanese.voiceInfo, queryFn: () => api.japanese.voiceInfo() })
   const statusQ = useQuery({
     queryKey: qk.dict.starterStatus,
     queryFn: () => api.dict.starterStatus(),
@@ -29,16 +30,22 @@ export default function SetupChecklist() {
   // Each pack that lands changes what is installed; refresh the lists then.
   const doneCount = statusQ.data?.done.length ?? 0
   useEffect(() => {
-    if (doneCount > 0) void qc.invalidateQueries({ queryKey: qk.dict.all })
+    if (doneCount > 0) {
+      void qc.invalidateQueries({ queryKey: qk.dict.all })
+      void qc.invalidateQueries({ queryKey: qk.japanese.voiceInfo })
+    }
   }, [doneCount, qc])
 
-  if (!dictsQ.isSuccess || !sentencesQ.isSuccess || !kradQ.isSuccess || !grammarQ.isSuccess) return null
+  if (!dictsQ.isSuccess || !sentencesQ.isSuccess || !kradQ.isSuccess || !grammarQ.isSuccess || !voiceQ.isSuccess) {
+    return null
+  }
 
   const facts = {
     dicts: dictsQ.data,
     krad: kradQ.data != null,
     grammar: grammarQ.data != null,
-    sentences: sentencesQ.data != null
+    sentences: sentencesQ.data != null,
+    voice: voiceQ.data.installed
   }
   const rows = STARTER_PACKS.map((pack) => ({ ...pack, installed: starterPackInstalled(pack.key, facts) }))
   const status = statusQ.data
@@ -55,6 +62,7 @@ export default function SetupChecklist() {
     } finally {
       setStarting(false)
       await qc.invalidateQueries({ queryKey: qk.dict.all })
+      await qc.invalidateQueries({ queryKey: qk.japanese.voiceInfo })
     }
   }
 
@@ -63,7 +71,7 @@ export default function SetupChecklist() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="min-w-0">
           <h2 id="jp-setup" className="font-semibold text-white">
-            Install the offline dictionaries
+            Install the offline packs
           </h2>
           <p className="mt-1 text-sm text-gray-400" aria-live="polite">
             {running

@@ -199,5 +199,16 @@ export default defineEvent({
   furtherReading: [
     { source: 'mao-2005-wuxu-bianfa-shishi-kao', perspective: 'chinese' },
     { source: 'tang-1984-wuxu-bianfa-shi', perspective: 'chinese' }
+  ],
+  places: [
+    {
+      ref: 'place:beijing',
+      cites: [
+        {
+          source: 'loc-china-country-study-1987',
+          loc: { section: 'The Hundred Days\' Reform and the Aftermath', para: '4' }
+        }
+      ]
+    }
   ]
 })

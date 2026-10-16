@@ -1195,19 +1195,21 @@ function OnThisDayCard() {
       ) : (
         <ul className="space-y-2">
           {data.map((h) => (
-            <li key={h.info.ref}>
-              <Link to={historyPath(h.info.ref) ?? '/history'} className="group flex items-center gap-3">
+            <li key={h.info.ref} className="flex items-center gap-3">
+              <Link to={historyPath(h.info.ref) ?? '/history'} className="group flex min-w-0 flex-1 items-center gap-3">
                 {historyImageSrc(h.info.image, 160) ? (
                   <img src={historyImageSrc(h.info.image, 160)!} alt="" className="h-10 w-10 shrink-0 rounded-md object-cover" />
                 ) : (
                   <span aria-hidden="true" className="h-10 w-10 shrink-0 rounded-md bg-base-800" />
                 )}
                 <span className="min-w-0 flex-1 truncate text-sm text-gray-200 group-hover:text-accent">{h.info.title}</span>
-                <span className="shrink-0 text-xs tabular-nums text-gray-400">
-                  {h.what === 'began' ? '' : h.what === 'ended' ? 'ended ' : 'stage, '}
-                  {h.year}
-                </span>
               </Link>
+              <span className="shrink-0 text-xs tabular-nums text-gray-400">
+                {h.what === 'began' ? '' : h.what === 'ended' ? 'ended ' : 'stage, '}
+                <Link to={`/history/year/${h.year}`} className="hover:text-accent" aria-label={`The world in ${h.year}`}>
+                  {h.year}
+                </Link>
+              </span>
             </li>
           ))}
         </ul>

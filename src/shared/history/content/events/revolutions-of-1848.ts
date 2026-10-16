@@ -355,7 +355,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q24',
-        text: 'though the riot which broke out in Berlin on the 15th of March was suppressed by the troops with but little bloodshed, the king shrank with horror from the thought of fighting his “beloved Berliners,” and when on the night of the 18th the fighting was renewed, he entered into negotiation with the insurgents, negotiations that resulted in the withdrawal of the troops from Berlin.',
+        text: 'But Frederick William’s emotional and kindly temperament little fitted him to use “the mailed fist”; though the riot which broke out in Berlin on the 15th of March was suppressed by the troops with but little bloodshed, the king shrank with horror from the thought of fighting his “beloved Berliners,” and when on the night of the 18th the fighting was renewed, he entered into negotiation with the insurgents, negotiations that resulted in the withdrawal of the troops from Berlin.',
         lang: 'en',
         cite: {
           source: 'britannica-1911-germany-history',
@@ -363,7 +363,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-07',
+          at: '2026-10-16',
           url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Germany/History'
         }
       }

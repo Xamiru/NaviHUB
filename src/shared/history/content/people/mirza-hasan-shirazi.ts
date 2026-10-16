@@ -14,7 +14,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['iran', 'mena'],
   roles: ['cleric'],
   sections: [
@@ -66,12 +66,12 @@ export default definePerson({
         },
         {
           id: 'q1',
-          text: 'In 1287/1870, Samarra came temporarily to overshadow Naǰaf, when Mīrzā Ḥasan Šīrāzī, soon to become the sole marǰaʿ-e taqlīd of the day, moved there from Naǰaf to escape various pressures to which he was subject (Āḡā Bozorg Tehrānī, Mīrzā-ye Šīrāzī, Tehran, 1362 Š./ 1983, pp. 40-41).',
+          text: 'In 1287/1870, Samarra came temporarily to overshadow Naǰaf, when Mīrzā Ḥasan Šīrāzī, soon to become the sole marǰaʿ-e taqlīd of the day, moved there from Naǰaf to escape various pressures to which he was subject',
           lang: 'en',
           cite: { source: 'iranica-algar-atabat', loc: { section: 'ʿATABĀT', para: '10' } },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/atabat'
           }
         },

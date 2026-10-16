@@ -111,8 +111,13 @@ def decode(raw):
     import re as _re
     m = _re.search(rb'charset=["\']?([A-Za-z0-9_-]+)', raw[:4096])
     if m:
+        declared = m.group(1).decode('ascii').lower()
+        # As browsers do (WHATWG): a page labelled Latin-1 or ASCII is read as windows-1252,
+        # so its curly quotes and dashes are characters, not C1 control codes.
+        if declared in ('iso-8859-1', 'iso8859-1', 'latin1', 'latin-1', 'us-ascii', 'ascii'):
+            declared = 'cp1252'
         try:
-            return raw.decode(m.group(1).decode('ascii'))
+            return raw.decode(declared)
         except (LookupError, UnicodeDecodeError):
             pass
     return raw.decode('cp1252', errors='replace')

@@ -4,11 +4,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
+import { loadJpFurigana, saveJpFurigana } from '../lib/japanesePrefs'
 import PageHeader from '../components/PageHeader'
+import JapaneseHubTabs from '../components/japanese/JapaneseHubTabs'
 import EmptyState from '../components/EmptyState'
 import { Group, Pill } from '../components/PillGroup'
 import Furigana from '../components/japanese/Furigana'
 import MiningPanel from '../components/reader/MiningPanel'
+import { ReadableParagraph, WordPopup, type PickedWord } from '../components/japanese/PassageReader'
 import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
 import TutorSessionContinue from '../components/TutorSessionContinue'
 import { JP_PASSAGES } from '@shared/japanese/readings'
@@ -36,7 +39,15 @@ interface Question {
 export default function JapaneseReadingPage() {
   const qc = useQueryClient()
   const [level, setLevel] = usePersistedState<LevelFilter>('jpReadingLevel', 'N5')
-  const [furigana, setFurigana] = usePersistedState<boolean>('jpReadingFurigana', true)
+  // Shared with the lesson page and remembered across visits.
+  const [furigana, setFuriganaState] = useState(loadJpFurigana)
+  const setFurigana = (next: boolean | ((show: boolean) => boolean)): void => {
+    setFuriganaState((prev) => {
+      const value = typeof next === 'function' ? next(prev) : next
+      saveJpFurigana(value)
+      return value
+    })
+  }
   const [phase, setPhase] = useState<Phase>('setup')
   const [passage, setPassage] = useState<JpPassage | null>(null)
   const [questions, setQuestions] = useState<Question[]>([])
@@ -44,6 +55,7 @@ export default function JapaneseReadingPage() {
   const [picked, setPicked] = useState<number | null>(null)
   const [score, setScore] = useState(0)
   const [mining, setMining] = useState<{ term: string; context: string } | null>(null)
+  const [word, setWord] = useState<PickedWord | null>(null)
   const loggedRef = useRef(false)
 
   // A long window of jpReading rounds → per-passage bests via settings.passageKey.
@@ -61,6 +73,19 @@ export default function JapaneseReadingPage() {
     }
     return m
   }, [history])
+
+  // The passage's words, tiered against the decks: clickable units, the dotted
+  // underline on new words, and the words-to-learn list.
+  const { data: analysis } = useQuery({
+    queryKey: qk.japanese.passageWords(passage?.key ?? ''),
+    queryFn: () => api.japanese.analyzeText(stripFurigana(passage!.text)),
+    enabled: phase === 'play' && !!passage
+  })
+  const paragraphTokens = useMemo(() => {
+    if (!passage || !analysis) return null
+    const paras = passage.text.split('\n').filter((p) => stripFurigana(p).trim())
+    return analysis.paragraphs.length === paras.length ? analysis.paragraphs : null
+  }, [passage, analysis])
 
   const list = useMemo(
     () => (level === 'all' ? JP_PASSAGES : JP_PASSAGES.filter((p) => p.level === level)),
@@ -80,6 +105,7 @@ export default function JapaneseReadingPage() {
     setPicked(null)
     setScore(0)
     setMining(null)
+    setWord(null)
     loggedRef.current = false
     setPhase('play')
   }
@@ -186,13 +212,39 @@ export default function JapaneseReadingPage() {
             </>
           }
           rail={
-            <SessionEvidence title="Reading evidence">
-              <dl className="space-y-3">
-                <div className="flex justify-between gap-3"><dt>Level</dt><dd className="text-white">{passage.level}</dd></div>
-                <div className="flex justify-between gap-3"><dt>Topic</dt><dd className="text-right text-white">{passage.topic}</dd></div>
-                <div className="flex justify-between gap-3"><dt>Score</dt><dd className="text-white">{score}/{index + (answered ? 1 : 0)}</dd></div>
-              </dl>
-              <p className="mt-4 border-t border-base-700 pt-4">Double-click a term in the passage to open the offline mining panel.</p>
+            <SessionEvidence title="Words in this passage">
+              {analysis ? (
+                <>
+                  <p>
+                    You know {analysis.stats.tiers.known.uniqueCount} of {analysis.stats.uniqueWords} words.
+                  </p>
+                  {analysis.unknown.length > 0 && (
+                    <ul className="mt-3 space-y-2 border-t border-base-700 pt-3">
+                      {analysis.unknown.slice(0, 12).map((u) => (
+                        <li key={u.word}>
+                          <button
+                            type="button"
+                            className="w-full text-left hover:text-accent"
+                            onClick={() => setMining({ term: u.word, context: stripFurigana(passage.text) })}
+                            title="Save to review"
+                          >
+                            <span lang="ja" className="text-base text-white">{u.word}</span>
+                            {u.reading && u.reading !== u.word && (
+                              <span lang="ja" className="ml-2 text-gray-400">{u.reading}</span>
+                            )}
+                            {u.gloss && <span className="block truncate text-xs text-gray-500">{u.gloss}</span>}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="mt-3 border-t border-base-700 pt-3 text-xs">
+                    Click any word in the passage for its meaning. Dotted words are not in your decks yet.
+                  </p>
+                </>
+              ) : (
+                <p>Reading the passage…</p>
+              )}
             </SessionEvidence>
           }
           surface={false}
@@ -206,19 +258,19 @@ export default function JapaneseReadingPage() {
               <h2 className="mb-3 text-lg">
                 <Furigana text={passage.title} show={furigana} />
               </h2>
-              {passage.text.split('\n').map((para, i) => (
-                <p
-                  key={i}
-                  className="mb-3 cursor-text text-xl leading-loose"
-                  onDoubleClick={() => {
-                    const sel = window.getSelection()?.toString().trim()
-                    setMining({ term: sel || '', context: stripFurigana(para) })
-                  }}
-                  title="Double-click (or select a word and double-click) to open the mining panel"
-                >
-                  <Furigana text={para} show={furigana} />
-                </p>
-              ))}
+              {passage.text
+                .split('\n')
+                .filter((para) => stripFurigana(para).trim())
+                .map((para, i) => (
+                  <ReadableParagraph
+                    key={i}
+                    text={para}
+                    plain={stripFurigana(para)}
+                    tokens={paragraphTokens?.[i]}
+                    show={furigana}
+                    onWord={setWord}
+                  />
+                ))}
               {passage.glossary.length > 0 && (
                 <details className="mt-2 text-sm text-gray-400">
                   <summary className="cursor-pointer">Glossary</summary>
@@ -275,6 +327,16 @@ export default function JapaneseReadingPage() {
             </div>
           </div>
         </StudySessionFrame>
+        {word && (
+          <WordPopup
+            word={word}
+            onClose={() => setWord(null)}
+            onSave={(term, context) => {
+              setWord(null)
+              setMining({ term, context })
+            }}
+          />
+        )}
         {mining && (
           <MiningPanel
             mediaId={null}
@@ -289,6 +351,7 @@ export default function JapaneseReadingPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
+      <JapaneseHubTabs />
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Graded reading"

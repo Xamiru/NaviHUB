@@ -2,6 +2,7 @@ import { join, dirname, sep } from 'path'
 import { createRequire } from 'module'
 import kuromoji from 'kuromoji'
 import type { JpToken } from '@shared/types'
+import { normalizeCasualText, restoreSurfaces } from './tokenizerCasual'
 
 // Morphological analysis for the manga reader's mining panel: splits an OCR'd
 // text block into tappable words with their dictionary forms (食べた → 食べる).
@@ -47,24 +48,53 @@ function toHiragana(s: string): string {
 const NON_WORD_POS = new Set(['助詞', '助動詞', '記号'])
 const JP_CHAR = /[぀-ヿ㐀-䶿一-鿿豈-﫿]/
 
+// A morphological analyser behind tokenize(). kuromoji (IPAdic) is the only
+// shipped backend; the seam exists so a candidate (a UniDic build) can be
+// measured against the same corpus (tests/tokenizerCorpus.test.ts) and swapped
+// in without touching the eight callers. A backend returns IPAdic-shaped
+// tokens: sentenceGames/chunkTokens and the drills read IPAdic POS names.
+export interface TokenizerBackend {
+  name: string
+  tokenize(text: string): Promise<JpToken[]>
+}
+
+export const kuromojiBackend: TokenizerBackend = {
+  name: 'kuromoji-ipadic',
+  async tokenize(text) {
+    const tokenizer = await getTokenizer()
+    return tokenizer.tokenize(text).map((t) => ({
+      surface: t.surface_form,
+      base: t.basic_form && t.basic_form !== '*' ? t.basic_form : t.surface_form,
+      reading: t.reading ? toHiragana(t.reading) : null,
+      pos: t.pos,
+      posDetail: t.pos_detail_1 && t.pos_detail_1 !== '*' ? t.pos_detail_1 : null,
+      wordLike: !NON_WORD_POS.has(t.pos) && JP_CHAR.test(t.surface_form)
+    }))
+  }
+}
+
+let backend: TokenizerBackend = kuromojiBackend
+
+// Tests and the evaluation harness only.
+export function setTokenizerBackend(next: TokenizerBackend): void {
+  backend = next
+}
+
 // Returns [] for blank input or tokenizer failure — the renderer treats [] as
 // "no tokenization available" and falls back to manual selection. Dictionary
-// lookup still applies the local rule-based deinflector.
+// lookup still applies the local rule-based deinflector. Casual speech the
+// dictionary does not know (すげえ, 知らねー) is repaired by tokenizerCasual.
 export async function tokenize(text: string): Promise<JpToken[]> {
   const trimmed = text.trim()
   if (!trimmed) return []
-  let tokenizer: KuromojiTokenizer
   try {
-    tokenizer = await getTokenizer()
+    const normalized = normalizeCasualText(trimmed)
+    if (normalized !== trimmed) {
+      const repaired = restoreSurfaces(await backend.tokenize(normalized), normalized, trimmed)
+      if (repaired) return repaired
+    }
+    return await backend.tokenize(trimmed)
   } catch {
     return []
   }
-  return tokenizer.tokenize(trimmed).map((t) => ({
-    surface: t.surface_form,
-    base: t.basic_form && t.basic_form !== '*' ? t.basic_form : t.surface_form,
-    reading: t.reading ? toHiragana(t.reading) : null,
-    pos: t.pos,
-    posDetail: t.pos_detail_1 && t.pos_detail_1 !== '*' ? t.pos_detail_1 : null,
-    wordLike: !NON_WORD_POS.has(t.pos) && JP_CHAR.test(t.surface_form)
-  }))
 }

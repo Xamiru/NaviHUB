@@ -4,7 +4,7 @@ export default defineInterpretation({
   id: 'deposition-of-the-qajar-dynasty-legitimacy',
   about: ['event:deposition-of-the-qajar-dynasty'],
   topic: 'legitimacy',
-  researched: '2026-10-09',
+  researched: '2026-10-16',
   positions: [
     {
       id: 'in-the-name-of-the-nations-happiness',
@@ -89,7 +89,7 @@ export default defineInterpretation({
       statements: [
         {
           id: 'q2',
-          text: 'after plenty of political maneuvering, intimidation, and even use of force against his opponents in the Majles, he stage-managed the approval of the constituent assembly for the demise of the Qajars and the establishment of a new ruling dynasty (Pahlavi) under himself',
+          text: 'However, he eventually changed his mind, and on 12 December 1924, after plenty of political maneuvering, intimidation, and even use of force against his opponents in the Majles, he stage-managed the approval of the constituent assembly for the demise of the Qajars and the establishment of a new ruling dynasty (Pahlavi) under himself',
           lang: 'en',
           cite: {
             source: 'iranica-shahnavaz-kazal-khan',
@@ -97,7 +97,7 @@ export default defineInterpretation({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/kazal-khan/'
           }
         },

@@ -54,6 +54,24 @@ export default defineEvent({
           loc: { section: 'World Report 2006: Israel/Occupied Palestinian Territories' }
         }
       ]
+    },
+    {
+      ref: 'place:gaza',
+      cites: [
+        {
+          source: 'hrw-2007-world-report-israel-and-the-occupied-palestinian-territories',
+          loc: { section: 'World Report 2007: Israel', para: '11' }
+        }
+      ]
+    },
+    {
+      ref: 'place:jerusalem',
+      cites: [
+        {
+          source: 'hrw-2007-world-report-israel-and-the-occupied-palestinian-territories',
+          loc: { section: 'World Report 2007: Israel', para: '13' }
+        }
+      ]
     }
   ],
   polities: [

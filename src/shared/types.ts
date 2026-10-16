@@ -1,6 +1,10 @@
 // Shared types — the contract between the main process (DB) and the renderer (UI).
 // Kept framework-free so both sides can import it.
 
+import type { SrsState } from './srs'
+import type { PlatformKey } from './emulation/platforms'
+import type { PresetKey } from './emulation/emulatorPresets'
+import type { JpReviewDirection } from './japanese/reviewDirections'
 import type {
   ArchiveKind,
   Claim,
@@ -590,7 +594,8 @@ export interface ImageOverrideState {
 
 // Identities a title has besides its own (external_source, external_id) —
 // media_external_link. Frozen strings: they are stored.
-export type ExternalLinkSource = 'launchbox' | 'bangumi' | 'wikidata' | 'steam' | 'rawg' | 'fandom'
+// 'gamebanana' = the GameBanana game a title's mods come from (Mods tab).
+export type ExternalLinkSource = 'launchbox' | 'bangumi' | 'wikidata' | 'steam' | 'rawg' | 'fandom' | 'gamebanana'
 // xref = an id chain baked into the games catalog; exact = a unique exact
 // title + date match; manual = the user's choice, never overwritten.
 export type ExternalLinkMethod = 'xref' | 'wikidata' | 'exact' | 'manual'
@@ -913,6 +918,10 @@ export type QuizKind =
   | 'footballTransfer' // transfer fee higher or lower, three lives (best = points)
   | 'footballChronology' // order four verified champion editions
   | 'footballPlayerGrid' // 3x3 verified player intersections (best = points)
+  | 'historyChronology' // order five History events by date
+  | 'historyQuote' // who said or wrote a quoted passage
+  | 'historyDate' // the year a History event began
+  | 'historyMapState' // which state held a place in a given year (map borders)
   | 'particles' // sentence-bank particle fill (MC over は/が/を/に/で…)
   | 'scramble' // sentence-bank chunk reordering (graded against the original)
   | 'contextReading' // typed reading of a kanji word inside a bank sentence
@@ -1533,6 +1542,228 @@ export interface GameLaunchOverview {
   sessionCount: number
 }
 
+// ---- Emulation (emulation.ts) ----
+// Emulators installed on this machine and the game files linked to library
+// games. Platform and preset keys are frozen strings from @shared/emulation.
+
+export interface EmulatorInfo {
+  id: number
+  presetKey: PresetKey
+  name: string
+  exePath: string
+  exeExists: boolean
+  corePath: string | null
+  // The argument list a launch uses: the user's own when argsCustom, else the preset's.
+  args: string[]
+  argsCustom: boolean
+  // Resolved folders (override, portable marker, then the preset's defaults).
+  dataDir: string | null
+  dataDirOverride: string | null
+  screenshotDir: string | null
+  screenshotDirOverride: string | null
+  platforms: PlatformKey[]
+  defaultFor: PlatformKey[]
+  verified: boolean
+}
+
+export interface EmulatorUpdate {
+  name?: string
+  platforms?: PlatformKey[]
+  args?: string[] | null // null = back to the preset's list
+  corePath?: string | null
+  dataDir?: string | null
+  screenshotDir?: string | null
+}
+
+export interface GameRom {
+  id: number
+  mediaId: number
+  romPath: string
+  exists: boolean
+  platform: PlatformKey
+  // The emulator chosen for this file; null follows the platform default.
+  emulatorId: number | null
+  // Who will actually run it right now, after the default is applied.
+  effectiveEmulatorId: number | null
+  effectiveEmulatorName: string | null
+  gameCode: string | null
+  gameCodeSource: 'file' | 'manual' | null
+  preferred: boolean
+}
+
+export interface GamePlayOptions {
+  supported: boolean
+  exePath: string | null
+  // When the linked executable is itself a known emulator (linked before
+  // game files existed), which one.
+  exePreset: PresetKey | null
+  roms: GameRom[]
+}
+
+export type GameLaunchChoice = { kind: 'native' } | { kind: 'rom'; romId: number }
+
+// Games → Emulators "Find game files" (romScan.ts). Paths stay in main; a row
+// is accepted by its id.
+export interface RomScanRow {
+  id: number
+  fileName: string
+  folder: string
+  platform: PlatformKey
+  gameCode: string | null
+  candidates: { mediaId: number; title: string }[]
+  suggestedMediaId: number | null
+  alreadyLinked: boolean
+}
+
+export interface RomScanStatus {
+  id: string
+  state: 'scanning' | 'done' | 'cancelled' | 'error'
+  scanned: number
+  found: number
+  message: string | null
+  results: RomScanRow[]
+}
+
+export interface RomScanAcceptResult {
+  linked: number
+  failed: string[]
+}
+
+// ---- GameBanana (gamebanana.ts) ----
+// Mods browsed and installed from inside the app. Adult content never reaches
+// these shapes: the parsers drop it (gamebananaCore.isSafeRow/isSafeProfile).
+
+export type GbSort = 'downloads' | 'newest' | 'likes'
+
+export interface GbGame {
+  id: number
+  name: string
+  iconUrl: string | null
+}
+
+export interface GbModSummary {
+  id: number
+  name: string
+  submitter: string | null
+  category: string | null
+  version: string | null
+  likes: number
+  views: number
+  dateAdded: number | null // epoch seconds
+  dateUpdated: number | null
+  obsolete: boolean
+  thumbUrl: string | null
+  images: string[]
+}
+
+export interface GbModPage {
+  page: number
+  // The game's name as GameBanana gives it, read off the rows.
+  gameName: string | null
+  mods: GbModSummary[]
+  total: number
+  complete: boolean
+}
+
+export interface GbFile {
+  id: number
+  name: string
+  size: number
+  md5: string | null
+  avClean: boolean
+  description: string | null
+  version: string | null
+  dateAdded: number | null
+  downloads: number
+  archived: boolean
+}
+
+export interface GbModDetail {
+  id: number
+  name: string
+  gameId: number | null
+  submitter: string | null
+  category: string | null
+  version: string | null
+  likes: number
+  downloads: number
+  dateUpdated: number | null
+  dateModified: number | null
+  summary: string | null
+  body: string[] // plain paragraphs, never markup
+  license: string | null
+  images: string[]
+  files: GbFile[]
+  profileUrl: string
+}
+
+export interface GbLink {
+  gameId: number
+  profileUrl: string
+}
+
+// Where a game's mods can go: one row per linked game file whose emulator
+// NaviHUB knows how to install into (mods.ts).
+export interface ModTarget {
+  romId: number
+  romName: string
+  platform: PlatformKey
+  gameCode: string | null
+  emulatorId: number | null
+  emulatorName: string | null
+  presetKey: PresetKey | null
+  dataDir: string | null
+  // Why installing is not possible here, or null when it is.
+  blocked: string | null
+}
+
+export interface ModInstallInfo {
+  id: number
+  gbModId: number
+  gbFileId: number
+  name: string
+  version: string | null
+  emulatorName: string | null
+  kind: 'folder' | 'files'
+  // The folder the mod lives in while enabled (or its loose files' folder).
+  location: string
+  enabled: boolean
+  installedAt: string
+  fileCount: number
+  sourceUpdatedAt: number | null
+}
+
+export interface ModJobPlan {
+  destination: string
+  fileCount: number
+  variants: { index: number; label: string }[]
+}
+
+export interface ModJobStatus {
+  id: string
+  state: 'downloading' | 'extracting' | 'awaiting' | 'installing' | 'done' | 'cancelled' | 'error'
+  mediaId: number
+  modName: string
+  fileName: string
+  bytes: number
+  totalBytes: number
+  message: string | null
+  plan: ModJobPlan | null
+  installId: number | null
+}
+
+export interface ModRemoveResult {
+  removed: number
+  // Files left in place because they changed after install or are not ours.
+  kept: string[]
+}
+
+// Tracked playtime grouped by console and by emulator preset.
+export interface EmulationStats {
+  byPlatform: { platform: PlatformKey; seconds: number; sessions: number; games: number }[]
+  byEmulator: { presetKey: PresetKey; seconds: number; sessions: number }[]
+}
+
 // The tracked-session poll (gameLaunch.ts). Terminal states persist until the
 // next launch so the renderer can stop polling and still show the outcome.
 // elapsedSec is wall clock computed at poll time. On 'ended': durationSec is
@@ -1550,6 +1781,11 @@ export interface GameLaunchStatus {
   discarded: boolean
   progressDelta: number | null
   message: string | null
+  // Emulated sessions: true while the screenshot folder is being read after
+  // exit, then how many screenshots the session produced (0 when none or not
+  // an emulator).
+  shotsPending: boolean
+  screenshotCount: number
 }
 
 // ---- Achievements ----
@@ -1584,10 +1820,17 @@ export interface AchievementRow {
   progress: { current: number; max: number } | null
 }
 
+// Where a tracked set's list last came from (achievement_game.schema_source, a
+// frozen stored value): the crack's own steam_settings file, Steam's keyless
+// GetGameAchievements, the keyed Web API, the public community page (names
+// paired by rank), or RetroAchievements. NULL on sets fetched before it was kept.
+export type AchievementSchemaSource = 'local' | 'public-api' | 'webapi' | 'community' | 'ra'
+
 export interface AchievementTracking {
   provider: AchievementProvider
   providerGameId: string // Steam appid, or RA game id
   schemaFetchedAt: string | null
+  schemaSource: AchievementSchemaSource | null
 }
 
 export interface AchievementSummary {
@@ -1626,9 +1869,10 @@ export interface AchievementSetupResult {
   unlocked: number // includes anything a retroactive emulator sweep found
   importedFromFiles: number
   filesFound: number
-  // Where the Steam list came from — the crack's own steam_settings file, the
-  // Web API (only with a key), or the public community page. Absent for RA.
-  schemaSource?: 'local' | 'webapi' | 'community'
+  // Where the Steam list came from — the crack's own steam_settings file,
+  // Steam's keyless list, the Web API (only with a key), or the public
+  // community page. Absent for RA.
+  schemaSource?: Exclude<AchievementSchemaSource, 'ra'>
   // Community-page achievements that could not be paired with an api name and
   // were dropped (they cannot be tracked without one).
   unmatched?: number
@@ -1686,6 +1930,7 @@ export interface AchievementUnlockEvent {
   description: string | null
   iconPath: string | null
   rarity: AchievementRarity | null
+  globalPct: number | null // share of players with it, when the provider reports one
   points: number | null
   unlockedAt: string
 }
@@ -1715,6 +1960,7 @@ export interface AchievementGameProgress {
   provider: AchievementProvider
   unlocked: number
   total: number
+  lastUnlockedAt: string | null // UTC, newest unlock in the set
 }
 
 export interface AchievementsOverview {
@@ -1730,7 +1976,9 @@ export interface InstalledGame {
   title: string
   mediaType: MediaType
   coverPath: string | null
-  exePath: string
+  exePath: string | null
+  // The console of its preferred (or only) linked game file; null for PC games.
+  platform: PlatformKey | null
   totalSeconds: number
   lastPlayedAt: string | null
   lastSessionSeconds: number | null
@@ -2082,6 +2330,8 @@ export interface JpCourse {
   level: string | null // display label, e.g. "N5", "N4–N3"
   difficulty: number | null // recommended study-order step (1 = start here)
   sortOrder: number
+  // Frozen key of the built-in pack this course came from; null when user-made.
+  seedKey: string | null
   createdAt: string
   updatedAt: string
 }
@@ -2138,10 +2388,13 @@ export interface JpCard {
   learningStep: number
   dueAt: string | null
   intervalDays: number
-  ease: number
+  ease: number // legacy SM-2 value; FSRS schedules from stability/difficulty
   reps: number
   lapses: number
   lastReviewedAt: string | null
+  // FSRS memory state (src/shared/srs.ts); null until the first answer
+  stability: number | null
+  difficulty: number | null
 }
 
 export interface JpLessonDetail extends JpLesson {
@@ -2187,6 +2440,9 @@ export interface JpLessonInput {
 export interface JpReviewCard extends JpCard {
   lessonKind: JpLessonKind
   lessonTitle: string
+  // Which schedule this review answers (@shared/japanese/reviewDirections).
+  // For an extra direction the SRS fields are that direction's, not the card's.
+  direction: JpReviewDirection
 }
 
 export interface JpReviewQueue {
@@ -2203,7 +2459,7 @@ export interface JpLeech {
   back: string
   lapses: number
   agains: number // Again grades since the last reset (learning-step misses)
-  ease: number
+  difficulty: number | null // FSRS difficulty, 1-10
   status: SrsStatus
   intervalDays: number
   lessonId: number
@@ -2221,9 +2477,30 @@ export interface JpRoadmapCourse extends JpCourseSummary {
   dueCardCount: number // same due definition as stats()
 }
 
+// Built-in course rows the content sync leaves alone (japaneseSeedSync.ts).
+export interface JpBuiltInStatus {
+  // Edited by the user, or seeded from an older text before the sync existed.
+  edited: number
+  // Lessons/cards missing when keys were first assigned (deleted, or added to
+  // the course after this library seeded it). The user's later deletions are
+  // not counted: those stay deleted.
+  missing: number
+}
+
+// A deck track beside the course path (@shared/japanese/pathTracks.ts):
+// cards built so far against the target the cleared courses set.
+export interface JpPathTrack {
+  built: number // cards in the track's decks
+  target: number
+  decks: number
+  // First unlearned lesson in the track's decks, oldest deck first.
+  nextLesson: { id: number; title: string; courseId: number; courseTitle: string } | null
+}
+
 export interface JpRoadmap {
   steps: JpRoadmapCourse[]
   unscheduled: JpRoadmapCourse[]
+  tracks: { words: JpPathTrack; kanji: JpPathTrack }
   frontierCourseId: number | null // first step course with lessons left
   nextLesson: {
     id: number
@@ -2240,6 +2517,9 @@ export interface JpReviewOutcome {
   status: SrsStatus
   intervalDays: number
   dueAt: string
+  // The scheduler state main persisted, so a requeued learning step continues
+  // from exactly what was written rather than a renderer-side recomputation.
+  state: SrsState
 }
 
 // Narrows the multiple-choice quiz pool. Omit/null = unfiltered.
@@ -2263,8 +2543,9 @@ export interface JpLessonQuizPool {
 }
 
 export interface JpStats {
-  dueCount: number
-  newAvailableCount: number
+  dueCount: number // recognition and enabled extra directions
+  newAvailableCount: number // new WORDS only — what holds the next lesson
+  newDirectionCount: number // unlocked review directions not yet started
   learnedLessons: number
   totalLessons: number
   totalCards: number
@@ -2496,6 +2777,36 @@ export interface DictEntry {
   frequency: DictFrequency | null
 }
 
+// One tag description from an installed dictionary's tag bank.
+export interface DictTagInfo {
+  name: string
+  category: string | null // e.g. 'partOfSpeech', 'frequent'
+  notes: string | null // e.g. 'Ichidan verb'
+}
+
+// One grammar lesson in the learner's courses, for the grammar library's
+// "Course lessons" view (searchable offline, nothing to download).
+export interface JpGrammarIndexEntry {
+  lessonId: number
+  title: string
+  level: string | null // the course's level label, e.g. "N3"
+  courseTitle: string
+  step: number | null // the course's path step
+  learned: boolean
+  cardCount: number
+  body: string // the explanation, for search and the summary line
+}
+
+// A word as it already exists in the learner's decks (dictionary "In your decks").
+export interface JpFrontStatus {
+  front: string
+  status: string // jp_card.status
+  lessonId: number
+  lessonTitle: string
+  courseTitle: string
+  learned: boolean // the lesson is marked learned, so the card is in review
+}
+
 // A word's rank in one installed frequency dictionary.
 export interface DictFrequency {
   rank: number
@@ -2532,7 +2843,12 @@ export interface DictInfo {
 // import runs (module-level state in the importer, like the music scan). The
 // sentence bank and stroke set share this status and its one-at-a-time gate.
 // The one-click install of the core Japanese packs (dict:installStarter).
-export type StarterPackKey = 'jmdict' | 'freq' | 'kanjidic' | 'krad' | 'grammar' | 'sentences'
+export type StarterPackKey = 'jmdict' | 'freq' | 'kanjidic' | 'krad' | 'grammar' | 'sentences' | 'voice'
+
+// The offline Japanese voice (Open JTalk, src/main/tts/).
+export interface JpVoiceInfo {
+  installed: boolean
+}
 
 export interface StarterInstallStatus {
   running: boolean
@@ -3032,6 +3348,13 @@ export interface CoreDeckSummary {
   skippedKnown: number
 }
 
+// The kanji deck shares the core deck's status shape.
+export interface KanjiDeckSummary {
+  courseId: number
+  courseTitle: string
+  kanji: number
+}
+
 // ---- Local manga reader ----
 // Chapters are folders of page images under the manga library root (settings
 // key manga.dir), attached to a manga media_item and scanned into manga_chapter
@@ -3163,6 +3486,9 @@ export interface VideoSource {
   durationSeconds: number | null
   resumeSeconds: number | null
   watchedAt: string | null
+  // The subtitle-offset scope: `media:<id>` for a library title's episodes,
+  // `event:<id>` / `wfile:<id>` for wrestling files, `clip:<id>`, `football:<id>`.
+  offsetKey: string
   audioTracks: VideoAudioTrack[]
   subtitles: VideoSubtitleTrack[] // embedded tracks arrive with url null
   prev: { fileId: number; title: string } | null
@@ -3958,6 +4284,8 @@ export type TaskKind =
   | 'bulkImport'
   | 'libraryRefresh'
   | 'gamesUpgrade'
+  | 'romScan'
+  | 'modInstall'
   | 'wrestlingImport'
   | 'footballSync'
   | 'musicDownload'
@@ -3972,6 +4300,7 @@ export type TaskKind =
   | 'dictImport'
   | 'prepDeck'
   | 'coreDeck'
+  | 'kanjiDeck'
   | 'coverageScan'
   | 'torrentSearch'
   | 'franchiseArt'
@@ -4645,10 +4974,13 @@ export interface EnWord {
   learningStep: number
   dueAt: string | null
   intervalDays: number
-  ease: number
+  ease: number // legacy SM-2 value; FSRS schedules from stability/difficulty
   reps: number
   lapses: number
   lastReviewedAt: string | null
+  // FSRS memory state (src/shared/srs.ts); null until the first answer
+  stability: number | null
+  difficulty: number | null
 }
 
 // Deck page row: the saved word plus its frequency rank (null without the
@@ -4667,6 +4999,7 @@ export interface EnReviewOutcome {
   status: SrsStatus
   intervalDays: number
   dueAt: string
+  state: SrsState // see JpReviewOutcome
 }
 
 export interface EnSrsStats {
@@ -6136,6 +6469,84 @@ export interface HistoryDecade {
   total: number
 }
 
+/** /history/year/:year — the world in one year, from the dates the pages already hold. */
+export interface HistoryYear {
+  /** Astronomical year: 0 is 1 BCE. */
+  year: number
+  /** "1514", "480 BCE". */
+  label: string
+  /** The calendar the year's stored dates are counted in: Julian before the 1582 reform. */
+  calendar: 'julian' | 'reform' | 'gregorian'
+  /** Lunar Hijri years the year overlaps, from 622. */
+  lunarHijri: [number, number] | null
+  /** Solar Hijri years the year overlaps; computed back before the 1925 adoption. */
+  solarHijri: { from: number; to: number; proleptic: boolean } | null
+  /** Events under way during the year, by region. */
+  events: Array<{ region: RegionKey; items: HistoryRefInfo[] }>
+  /** Periods under way. */
+  periods: HistoryRefInfo[]
+  /** States in existence, each with the office holders in post that year. */
+  states: Array<{ state: HistoryRefInfo; holders: Array<{ person: HistoryRefInfo; title: string }> }>
+  born: HistoryRefInfo[]
+  died: HistoryRefInfo[]
+}
+
+export type HistoryQuizKind = 'historyChronology' | 'historyQuote' | 'historyDate' | 'historyMapState'
+
+/** Read pages only (the default), or every page. */
+export type HistoryQuizScope = 'read' | 'all'
+
+export interface HistoryQuizRequest {
+  kind: HistoryQuizKind
+  seed: number
+  length: number
+  scope: HistoryQuizScope
+}
+
+export interface HistoryQuizChoice {
+  key: string
+  label: string
+  /** `media/` path of a cached picture, when the choice is a page that has one. */
+  image: string | null
+}
+
+interface HistoryQuizBase {
+  key: string
+  choices: HistoryQuizChoice[]
+  /** The right answer; for a chronology, every key in order. */
+  validKeys: string[]
+}
+
+export type HistoryQuizQuestion =
+  | (HistoryQuizBase & {
+      kind: 'historyChronology'
+      /** Display year of each choice, shown after the board is locked. */
+      years: Record<string, string>
+    })
+  | (HistoryQuizBase & {
+      kind: 'historyQuote'
+      /** The page the quote was cut from. */
+      ref: string
+      text: string
+      lang: string
+      translation: { text: string; lang: string } | null
+      /** Source of the quote, shown once answered. */
+      source: string
+    })
+  | (HistoryQuizBase & { kind: 'historyDate'; ref: string; title: string; image: string | null })
+  | (HistoryQuizBase & {
+      kind: 'historyMapState'
+      ref: string
+      event: string
+      place: string
+      year: number
+      /** Borders before 1886 are an approximate reconstruction. */
+      approximate: boolean
+    })
+
+/** Questions each kind can deal from, for the quiz room. */
+export type HistoryQuizCounts = Record<HistoryQuizKind, number>
+
 export interface HistoryArchiveItem {
   /** `<ref>#<suggestion id>` for research items, `file-<row id>` for attachments. */
   key: string
@@ -6211,6 +6622,8 @@ export interface HistoryArticleView {
   solarHijri: boolean
   /** Iran and Middle East entities show lunar Hijri dates between the Hijra and 1925. */
   lunarHijri: boolean
+  /** How much of the narrative rests on scholarship from before 1950 (shared/history/sourceAge.ts). */
+  datedNarration: { share: number; oldest: number } | null
   /** State pages: holders of the state's offices, in office order. */
   rulers: HistoryRuler[]
   /** State pages: the states that succeeded this one. */

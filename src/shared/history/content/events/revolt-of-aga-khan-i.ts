@@ -162,7 +162,7 @@ export default defineEvent({
         },
         {
           id: 'q4',
-          text: 'He went to Afghanistan and moved to India under British rule, where he installed the seat of the Nezāri Ismaʿili imamate (Daftary, pp. 501 ff.; Bayat, pp. 60 ff.).',
+          text: 'He went to Afghanistan and moved to India under British rule, where he installed the seat of the Nezāri Ismaʿili imamate',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-mohammad-shah',
@@ -170,7 +170,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
         },
@@ -330,7 +330,7 @@ export default defineEvent({
       },
       quote: {
         id: 'q9',
-        text: 'After a few months at the village of Rūmanī near Šahr-e Bābak, the Āqā Khan moved westwards in the direction of Fārs, where he stayed until the spring of 1258/1842 (ʿEbrat-afzā, ed. Kūhī Kermānī, pp. 32-35).',
+        text: 'After a few months at the village of Rūmanī near Šahr-e Bābak, the Āqā Khan moved westwards in the direction of Fārs, where he stayed until the spring of 1258/1842',
         lang: 'en',
         cite: {
           source: 'iranica-algar-aqa-khan-mahallati',
@@ -338,7 +338,7 @@ export default defineEvent({
         },
         provenance: {
           via: 'web',
-          at: '2026-10-06',
+          at: '2026-10-16',
           url: 'https://www.iranicaonline.org/articles/aqa-khan/aqa-khan-i-aqa-khan-i-ma%e1%b8%a5allati'
         }
       }

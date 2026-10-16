@@ -32,6 +32,9 @@ vi.mock('@/lib/hooks', async (importOriginal) => {
 // Cards that load tool or dictionary state are not under test here.
 vi.mock('@/pages/settings/LearningSettings', () => ({
   KnownBaselineSettings: () => null,
+  JapaneseBuiltInSettings: () => null,
+  ReviewSchedulerSettings: () => null,
+  JapaneseDirectionSettings: () => null,
   DictionarySettings: () => null,
   EnglishDictionarySettings: () => null
 }))

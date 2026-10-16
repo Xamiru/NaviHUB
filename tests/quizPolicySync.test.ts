@@ -38,6 +38,10 @@ describe('central quiz kinds and score policies stay synchronized', () => {
     ['libraryle', 'points'],
     ['mysteryCareer', 'points'],
     ['linkWall', 'points'],
+    ['historyChronology', 'accuracy'],
+    ['historyQuote', 'accuracy'],
+    ['historyDate', 'accuracy'],
+    ['historyMapState', 'accuracy'],
     ['songRelay', 'party'],
     ['tournament', 'tournament']
   ]

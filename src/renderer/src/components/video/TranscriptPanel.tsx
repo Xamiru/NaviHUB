@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import {
   cueMatches,
   cuesAt,
@@ -58,7 +58,9 @@ const Row = memo(function Row({
   )
 })
 
-export default function TranscriptPanel({
+// memo: the player re-renders about four times a second while playing, and
+// none of that reaches the transcript unless its own props change.
+export default memo(function TranscriptPanel({
   track,
   secondary,
   showSecondary,
@@ -85,17 +87,30 @@ export default function TranscriptPanel({
   // suppressObserverRef trick).
   const [manualUntil, setManualUntil] = useState(0)
 
-  const all = track?.cues ?? []
-  const base = dialogueOnly ? filterDialogue(all) : all
-  const filtered = dq.trim() ? base.filter((c) => cueMatches(c, dq)) : base
-  const { visible, sentinelRef } = useIncrementalList(filtered)
+  // Memoised: useIncrementalList resets its window whenever the list identity
+  // changes, so a fresh array per render capped the script at one batch.
+  const all = useMemo(() => track?.cues ?? [], [track])
+  const base = useMemo(() => (dialogueOnly ? filterDialogue(all) : all), [all, dialogueOnly])
+  const filtered = useMemo(
+    () => (dq.trim() ? base.filter((c) => cueMatches(c, dq)) : base),
+    [base, dq]
+  )
+  const { visible, sentinelRef, reveal } = useIncrementalList(filtered)
+  const holdScroll = (): void => setManualUntil(Date.now() + 4000)
 
+  // Follows the active line. A line past the rendered window is revealed
+  // first; the effect runs again once it has rendered and scrolls then.
   useEffect(() => {
     if (activeCueId == null || Date.now() < manualUntil) return
+    const index = filtered.findIndex((c) => c.id === activeCueId)
+    if (index >= visible.length) {
+      reveal(index)
+      return
+    }
     const el = scrollRef.current?.querySelector(`[data-cue="${activeCueId}"]`)
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     el?.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' })
-  }, [activeCueId, manualUntil])
+  }, [activeCueId, manualUntil, filtered, visible.length, reveal])
 
   return (
     <aside className="panel-in fixed inset-y-0 right-0 z-40 flex h-full w-[min(440px,92vw)] shrink-0 flex-col border-l border-base-700 bg-base-800 shadow-2xl shadow-black/60 xl:static xl:z-auto xl:max-w-[44vw] xl:shadow-none">
@@ -133,7 +148,15 @@ export default function TranscriptPanel({
       <div
         ref={scrollRef}
         className="min-h-0 flex-1 overflow-y-auto"
-        onWheel={() => setManualUntil(Date.now() + 4000)}
+        // Reading ahead by wheel, scrollbar drag (a press on the list itself,
+        // not on a line) or Page Up/Down pauses following.
+        onWheel={holdScroll}
+        onPointerDown={(e) => {
+          if (e.target === e.currentTarget) holdScroll()
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'PageUp' || e.key === 'PageDown') holdScroll()
+        }}
       >
         {track == null ? (
           <p className="p-3 text-sm text-gray-500">Pick a subtitle track to see the script.</p>
@@ -162,4 +185,4 @@ export default function TranscriptPanel({
       </div>
     </aside>
   )
-}
+})

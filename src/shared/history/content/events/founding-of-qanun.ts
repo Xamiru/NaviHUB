@@ -229,7 +229,7 @@ export default defineEvent({
         },
         {
           id: 'q10',
-          text: 'at least one hundred of the great mojtaheds, the renowned learned men, and savants of Persia be gathered in a national consultative assembly (majles-e šūrā-ye mellī). They should be held responsible and given the full authority, first, to establish, codify, and officially proclaim the laws and principles that are necessary for the reorganization (tanẓīm) of Persia. Second, according to an orderly arrangement, the national consultative assembly should hold itself as the guardian, the overseer, and the agent for the execution of the law',
+          text: 'Malkom proposed that “at least one hundred of the great mojtaheds, the renowned learned men, and savants of Persia be gathered in a national consultative assembly (majles-e šūrā-ye mellī). They should be held responsible and given the full authority, first, to establish, codify, and officially proclaim the laws and principles that are necessary for the reorganization (tanẓīm) of Persia. Second, according to an orderly arrangement, the national consultative assembly should hold itself as the guardian, the overseer, and the agent for the execution of the law',
           lang: 'en',
           cite: {
             source: 'iranica-amanat-constitutional-revolution-intellectual-background',
@@ -237,7 +237,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-08',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/constitutional-revolution-i'
           }
         }

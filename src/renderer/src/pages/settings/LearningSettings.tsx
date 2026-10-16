@@ -3,6 +3,16 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
 import { type SaveFn, confirmRemove, SettingCard } from './shared'
+import { confirmDialog } from '../../lib/confirm'
+import { toast } from '../../lib/toast'
+import { RETENTION_OPTIONS, RETENTION_SETTING, retentionFromSetting } from '@shared/srs'
+import {
+  DIRECTION_SETTING,
+  DIRECTION_SPAWN_INTERVAL_DAYS,
+  directionEnabled,
+  EXTRA_DIRECTIONS,
+  type JpExtraDirection
+} from '@shared/japanese/reviewDirections'
 
 const BASELINE_STEPS = [0, 500, 1000, 2000, 3000, 5000]
 
@@ -35,6 +45,161 @@ export function KnownBaselineSettings({
           ? 'Off — only cards in your deck count as known.'
           : `Your deck plus the top ${current.toLocaleString()} words. Set it to what you can honestly read, not what you would like to: every comprehension number is built on it.`}
       </p>
+    </SettingCard>
+  )
+}
+
+// Desired retention for the Japanese and English review decks (FSRS,
+// src/shared/srs.ts). Higher retention means shorter intervals and more
+// reviews per day; the default 90% is FSRS's own recommendation.
+export function ReviewSchedulerSettings({
+  data,
+  onSave
+}: {
+  data?: Record<string, string>
+  onSave: SaveFn
+}) {
+  const current = retentionFromSetting(data?.[RETENTION_SETTING])
+  return (
+    <SettingCard
+      title="Review scheduler"
+      description="How sure you want to be of remembering a card when it comes due, for Japanese and English reviews. Intervals are chosen by FSRS from each card's own answer history."
+    >
+      <div className="flex flex-wrap gap-2">
+        {RETENTION_OPTIONS.map((r) => (
+          <button
+            key={r}
+            onClick={() => void onSave(RETENTION_SETTING, String(r))}
+            className={Math.abs(current - r) < 0.001 ? 'pill pill-active' : 'pill'}
+            aria-pressed={Math.abs(current - r) < 0.001}
+          >
+            {Math.round(r * 100)}%
+          </button>
+        ))}
+      </div>
+      <p className="mt-3 text-xs text-gray-500">
+        {current >= 0.95
+          ? 'Fewer lapses, but roughly half again as many reviews as 90%.'
+          : current <= 0.85
+            ? 'Fewer reviews each day, at the cost of forgetting more often.'
+            : 'The recommended balance between reviews per day and forgetting.'}
+      </p>
+    </SettingCard>
+  )
+}
+
+const DIRECTION_COPY: Record<JpExtraDirection, { label: string; body: string }> = {
+  production: {
+    label: 'English to Japanese',
+    body: 'See the meaning, recall the word. For vocabulary cards.'
+  },
+  reading: {
+    label: 'Kanji to reading',
+    body: 'See a word written in kanji, type how it is read.'
+  }
+}
+
+// Which extra review directions Japanese vocabulary earns (jp_card_review).
+export function JapaneseDirectionSettings({
+  data,
+  onSave
+}: {
+  data?: Record<string, string>
+  onSave: SaveFn
+}) {
+  const queryClient = useQueryClient()
+  // The toggles change what review queues, counts and forecasts include.
+  async function toggle(d: JpExtraDirection, on: boolean): Promise<void> {
+    await onSave(DIRECTION_SETTING[d], on ? '1' : '0')
+    await queryClient.invalidateQueries({ queryKey: qk.japanese.all })
+  }
+  return (
+    <SettingCard
+      title="Japanese review directions"
+      description={`Besides recognising a word, review it the other way round. A word gets these cards once you recognise it reliably (a ${DIRECTION_SPAWN_INTERVAL_DAYS}-day interval), and they come out of your daily new-card budget. Turning one off stops new cards and hides its reviews; its progress is kept.`}
+    >
+      <div className="space-y-3">
+        {EXTRA_DIRECTIONS.map((d) => {
+          const on = directionEnabled(data?.[DIRECTION_SETTING[d]])
+          return (
+            <label key={d} className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={on}
+                onChange={(e) => void toggle(d, e.target.checked)}
+              />
+              <span>
+                <span className="block text-sm text-gray-200">{DIRECTION_COPY[d].label}</span>
+                <span className="block text-xs text-gray-500">{DIRECTION_COPY[d].body}</span>
+              </span>
+            </label>
+          )
+        })}
+      </div>
+    </SettingCard>
+  )
+}
+
+// Built-in course rows the content sync leaves alone: lessons/cards the user
+// edited (or text seeded before the sync existed), and lessons/cards missing
+// when keys were first assigned. Restoring puts the built-in text back
+// (review progress kept) and brings the missing ones in.
+export function JapaneseBuiltInSettings() {
+  const queryClient = useQueryClient()
+  const status = useQuery({ queryKey: qk.japanese.builtInStatus, queryFn: () => api.japanese.builtInStatus() })
+  const [busy, setBusy] = useState(false)
+  const edited = status.data?.edited ?? 0
+  const missing = status.data?.missing ?? 0
+
+  async function restore(): Promise<void> {
+    const parts = [
+      edited ? `replace the text of ${edited} edited or older built-in ${edited === 1 ? 'item' : 'items'}` : null,
+      missing ? `add ${missing} built-in ${missing === 1 ? 'item' : 'items'} your library does not have` : null
+    ].filter(Boolean)
+    const ok = await confirmDialog(
+      `Restore the built-in courses? This will ${parts.join(' and ')}. Your edits to built-in lessons and cards are lost; review progress, your own lessons and cards, and anything you delete in the app from now on stay as they are.`,
+      { confirmLabel: 'Restore built-in text', danger: true }
+    )
+    if (!ok) return
+    setBusy(true)
+    try {
+      await api.japanese.restoreBuiltIn()
+      toast('Built-in courses restored', 'success')
+    } finally {
+      setBusy(false)
+      await queryClient.invalidateQueries({ queryKey: qk.japanese.all })
+    }
+  }
+
+  return (
+    <SettingCard
+      title="Built-in course updates"
+      description="Corrections and new lessons in the built-in Japanese courses reach your library automatically. Built-in lessons and cards you edited are left alone, and so is text from before automatic updates existed."
+    >
+      {status.isError ? (
+        <p className="text-xs text-signal-anomaly">Could not read the built-in course status.</p>
+      ) : (
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-sm text-gray-300">
+            {status.isPending
+              ? 'Checking…'
+              : edited + missing === 0
+                ? 'Every built-in lesson and card is up to date.'
+                : [
+                    edited ? `${edited} built-in ${edited === 1 ? 'item is' : 'items are'} edited or older text.` : '',
+                    missing ? `${missing} built-in ${missing === 1 ? 'item is' : 'items are'} missing from your library.` : ''
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+          </p>
+          {edited + missing > 0 && (
+            <button className="btn" disabled={busy} onClick={() => void restore()}>
+              {busy ? 'Restoring…' : 'Restore built-in text'}
+            </button>
+          )}
+        </div>
+      )}
     </SettingCard>
   )
 }
@@ -85,6 +250,10 @@ export function DictionarySettings() {
     queryKey: qk.dict.sentenceAudioBank,
     queryFn: () => api.dict.sentenceAudioBank()
   })
+  const { data: voice, isPending: voicePending, isError: voiceError } = useQuery({
+    queryKey: qk.japanese.voiceInfo,
+    queryFn: () => api.japanese.voiceInfo()
+  })
 
   async function run(fn: () => Promise<unknown>) {
     setError(null)
@@ -92,6 +261,7 @@ export function DictionarySettings() {
     try {
       await fn()
       await qc.invalidateQueries({ queryKey: qk.dict.all })
+      await qc.invalidateQueries({ queryKey: qk.japanese.voiceInfo })
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -102,9 +272,9 @@ export function DictionarySettings() {
   const running = !!status?.running
   const blocked = busy || running
   const readError = dictsError || statusError || sentencesError || strokesError || kradError ||
-    grammarError || pairsError || audioError
+    grammarError || pairsError || audioError || voiceError
   const readPending = dictsPending || statusPending || sentencesPending || strokesPending ||
-    kradPending || grammarPending || pairsPending || audioPending
+    kradPending || grammarPending || pairsPending || audioPending || voicePending
 
   if (readError || readPending) {
     return (
@@ -212,6 +382,18 @@ export function DictionarySettings() {
               onRemove={async () => {
                 if (await confirmRemove('Remove the minimal-pairs pack (and its audio files)?')) {
                   void run(() => api.dict.removePairs())
+                }
+              }}
+            />
+          )}
+          {voice?.installed && (
+            <PackRow
+              title="Japanese voice (Open JTalk)"
+              detail={<span>Speaks any word or sentence offline, with dictionary pitch accent. Open JTalk (Modified BSD) with the NIT ATR503 M001 voice, Nagoya Institute of Technology (CC BY 3.0).</span>}
+              busy={blocked}
+              onRemove={async () => {
+                if (await confirmRemove('Remove the Japanese voice and its cached clips?')) {
+                  void run(() => api.japanese.removeVoice())
                 }
               }}
             />
@@ -328,6 +510,14 @@ export function DictionarySettings() {
               detail="Every JLPT grammar point with formation and examples — the library page + cloze drill. ~2 MB."
               busy={blocked}
               onDownload={() => void run(() => api.dict.importGrammar())}
+            />
+          )}
+          {voice && !voice.installed && (
+            <PackRow
+              title="Japanese voice (Open JTalk)"
+              detail="Hear any word or sentence spoken, with its pitch accent — a synthetic voice, fully offline after one ~25 MB download. Open JTalk (Modified BSD) with the NIT ATR503 M001 voice, Nagoya Institute of Technology (CC BY 3.0)."
+              busy={blocked}
+              onDownload={() => void run(() => api.japanese.installVoice())}
             />
           )}
           {!pairSet && (

@@ -160,7 +160,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q6',
-          text: 'Sometime in early January of that year, Navvāb Ṣafavi and Kāšāni met at Ḥājj Abu’l-Qāsem Rafiʿi’s house to discuss Razmārā’s fate. Kāšāni is reported to have presented Navvāb Ṣafavi with a list of seven politicians, at the top of which was Razmārā’s name, who should be assassinated to pave the way for religious and national progress (ʿArāqi, pp. 76-77).',
+          text: 'Sometime in early January of that year, Navvāb Ṣafavi and Kāšāni met at Ḥājj Abu’l-Qāsem Rafiʿi’s house to discuss Razmārā’s fate. Kāšāni is reported to have presented Navvāb Ṣafavi with a list of seven politicians, at the top of which was Razmārā’s name, who should be assassinated to pave the way for religious and national progress',
           lang: 'en',
           cite: {
             source: 'iranica-rahnema-kashani',
@@ -168,7 +168,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/kasani-abul-qasem/'
           }
         }
@@ -193,7 +193,7 @@ export default defineEvent({
         },
         {
           id: 'q8',
-          text: 'After spending a relatively short time in jail, the assassin was greeted upon his release as a hero by Ayatollah Kāšānī and others (Amīnī, pp. 135-37).',
+          text: 'After spending a relatively short time in jail, the assassin was greeted upon his release as a hero by Ayatollah Kāšānī and others',
           lang: 'en',
           cite: {
             source: 'iranica-kazemi-fedaian-e-eslam',
@@ -201,7 +201,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-07',
+            at: '2026-10-16',
             url: 'https://www.iranicaonline.org/articles/fedaian-e-esla/'
           }
         },
@@ -250,5 +250,16 @@ export default defineEvent({
   furtherReading: [
     { source: 'makki-1983-ketab-e-siyah', perspective: 'iranian' },
     { source: 'rouhani-1973-tarikh-e-melli-shodan-e-sanat-e-naft', perspective: 'iranian' }
+  ],
+  places: [
+    {
+      ref: 'place:tehran',
+      cites: [
+        {
+          source: 'iranica-kazemi-fedaian-e-eslam',
+          loc: { section: 'FEDĀʾĪĀN-E ESLĀM', para: '2' }
+        }
+      ]
+    }
   ]
 })

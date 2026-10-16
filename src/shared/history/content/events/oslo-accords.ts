@@ -275,54 +275,6 @@ export default defineEvent({
       kind: 'course',
       quotes: [
         {
-          id: 'q5',
-          text: 'The aim of the Israeli Palestinian negotiations within the current Middle East peace process is, among other things, to establish a Palestinian Interim Self-Government Authority, the elected Council, (the "Council") for the Palestinian people in the West Bank and the Gaza Strip, for a transitional period not exceeding five years, leading to a permanent settlement based on Security Council Resolutions 242 and 338.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-israel-plo-declaration-of-principles-1993',
-            loc: { section: 'Israel-Palestine Liberation Organization Agreement : 1993', para: '3' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-10',
-            url: 'https://avalon.law.yale.edu/20th_century/isrplo.asp'
-          }
-        },
-        {
-          id: 'q6',
-          text: '1. The five-year transitional period will begin upon the withdrawal from the Gaza strip and Jericho area.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-israel-plo-declaration-of-principles-1993',
-            loc: {
-              section: 'Israel-Palestine Liberation Organization Agreement : 1993',
-              para: '14'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-10',
-            url: 'https://avalon.law.yale.edu/20th_century/isrplo.asp'
-          }
-        },
-        {
-          id: 'q7',
-          text: '3. It is understood that these negotiations shall cover remaining issues, including: Jerusalem, refugees, settlements, security arrangements, border, relations and cooperation with their neighbors, and other issues of common interest.',
-          lang: 'en',
-          cite: {
-            source: 'avalon-israel-plo-declaration-of-principles-1993',
-            loc: {
-              section: 'Israel-Palestine Liberation Organization Agreement : 1993',
-              para: '16'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-10',
-            url: 'https://avalon.law.yale.edu/20th_century/isrplo.asp'
-          }
-        },
-        {
           id: 'q8',
           text: 'Both sides agreed that a Palestinian Authority (PA) would be established and assume governing responsibilities in the West Bank and Gaza Strip over a five-year period.',
           lang: 'en',
@@ -417,6 +369,73 @@ export default defineEvent({
           }
         }
       ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q5',
+          text: 'The aim of the Israeli Palestinian negotiations within the current Middle East peace process is, among other things, to establish a Palestinian Interim Self-Government Authority, the elected Council, (the "Council") for the Palestinian people in the West Bank and the Gaza Strip, for a transitional period not exceeding five years, leading to a permanent settlement based on Security Council Resolutions 242 and 338.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-israel-plo-declaration-of-principles-1993',
+            loc: { section: 'Israel-Palestine Liberation Organization Agreement : 1993', para: '3' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-10',
+            url: 'https://avalon.law.yale.edu/20th_century/isrplo.asp'
+          }
+        },
+        {
+          id: 'q6',
+          text: '1. The five-year transitional period will begin upon the withdrawal from the Gaza strip and Jericho area.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-israel-plo-declaration-of-principles-1993',
+            loc: {
+              section: 'Israel-Palestine Liberation Organization Agreement : 1993',
+              para: '14'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-10',
+            url: 'https://avalon.law.yale.edu/20th_century/isrplo.asp'
+          }
+        },
+        {
+          id: 'q7',
+          text: '3. It is understood that these negotiations shall cover remaining issues, including: Jerusalem, refugees, settlements, security arrangements, border, relations and cooperation with their neighbors, and other issues of common interest.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-israel-plo-declaration-of-principles-1993',
+            loc: {
+              section: 'Israel-Palestine Liberation Organization Agreement : 1993',
+              para: '16'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-10',
+            url: 'https://avalon.law.yale.edu/20th_century/isrplo.asp'
+          }
+        },
+        {
+          id: 'q15',
+          text: 'The Government of the State of Israel and the Palestinian team representing the Palestinian people agree that it is time to put an end to decades of confrontation and conflict, recognize their mutual legitimate and political rights, and strive to live in peaceful coexistence and mutual dignity and security to achieve a just, lasting and comprehensive peace settlement and historic reconciliation through the agreed political process.',
+          lang: 'en',
+          cite: {
+            source: 'avalon-israel-plo-declaration-of-principles-1993',
+            loc: { section: 'Israel-Palestine Liberation Organization Agreement : 1993', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-10',
+            url: 'https://avalon.law.yale.edu/20th_century/isrplo.asp'
+          }
+        }
+      ]
     }
   ],
   course: [
@@ -446,35 +465,6 @@ export default defineEvent({
           via: 'web',
           at: '2026-10-10',
           url: 'https://history.state.gov/milestones/1993-2000/oslo'
-        }
-      }
-    },
-    {
-      date: {
-        alts: [
-          {
-            value: { d: '1993-09-13' },
-            cites: [
-              {
-                source: 'state-dept-milestones-oslo-accords-and-the-arab-israeli-peace-process',
-                loc: { section: 'The Oslo Accords and the Arab-Israeli Peace Process', para: '1' }
-              }
-            ]
-          }
-        ]
-      },
-      quote: {
-        id: 'q15',
-        text: 'The Government of the State of Israel and the Palestinian team representing the Palestinian people agree that it is time to put an end to decades of confrontation and conflict, recognize their mutual legitimate and political rights, and strive to live in peaceful coexistence and mutual dignity and security to achieve a just, lasting and comprehensive peace settlement and historic reconciliation through the agreed political process.',
-        lang: 'en',
-        cite: {
-          source: 'avalon-israel-plo-declaration-of-principles-1993',
-          loc: { section: 'Israel-Palestine Liberation Organization Agreement : 1993', para: '1' }
-        },
-        provenance: {
-          via: 'web',
-          at: '2026-10-10',
-          url: 'https://avalon.law.yale.edu/20th_century/isrplo.asp'
         }
       }
     },

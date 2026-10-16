@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { VideoSource } from '../../src/shared/types'
 import VideoPlayerPage from '../../src/renderer/src/pages/VideoPlayerPage'
+import { api } from '../../src/renderer/src/lib/api'
 import { expectNoAxeViolations } from './accessibility'
 
 const m = vi.hoisted(() => ({
@@ -95,12 +96,38 @@ function source(overrides: Partial<VideoSource> = {}): VideoSource {
     durationSeconds: 1440,
     resumeSeconds: null,
     watchedAt: null,
+    offsetKey: 'media:12',
     audioTracks: [],
     subtitles: [],
     prev: null,
     next: null,
     ...overrides
   }
+}
+
+const JA_SRT_TRACK = {
+  id: 'sidecar:ja',
+  label: 'Japanese',
+  lang: 'ja' as const,
+  format: 'srt' as const,
+  url: 'navimg://video/Frieren/03.ja.srt',
+  signs: false,
+  forced: false,
+  textual: true
+}
+
+function srtTime(seconds: number): string {
+  const pad = (n: number, w = 2): string => String(n).padStart(w, '0')
+  const ms = Math.round(seconds * 1000)
+  return `${pad(Math.floor(ms / 3_600_000))}:${pad(Math.floor(ms / 60_000) % 60)}:${pad(
+    Math.floor(ms / 1000) % 60
+  )},${pad(ms % 1000, 3)}`
+}
+
+// The element's clock is a plain writable property in jsdom.
+function setClock(video: HTMLVideoElement, currentTime: number, duration?: number): void {
+  Object.defineProperty(video, 'currentTime', { configurable: true, writable: true, value: currentTime })
+  if (duration != null) Object.defineProperty(video, 'duration', { configurable: true, value: duration })
 }
 
 function renderAt(path = '/watch/file/7') {
@@ -446,6 +473,179 @@ describe('video player', () => {
     expect(screen.queryByTestId('styled-subtitles')).toBeNull()
     expect(m.jassubOptions).not.toHaveBeenCalled()
     vi.unstubAllGlobals()
+  })
+
+  it('leaves the Finished screen and saves positions again when played back after the end', async () => {
+    m.source.mockResolvedValue(source({ next: { fileId: 8, title: 'Episode 4' } }))
+    const { container } = renderAt()
+    await screen.findByRole('heading', { name: /Episode 3/ })
+    const video = container.querySelector('video')!
+    setClock(video, 1440, 1440)
+    act(() => {
+      fireEvent.ended(video)
+    })
+    expect(await screen.findByText('Finished Episode 3')).toBeInTheDocument()
+    await vi.waitFor(() => expect(m.markProgress).toHaveBeenCalledWith({ kind: 'file', fileId: 7 }, null))
+    // Space or a timeline seek after the end lands here (play() seeks to 0).
+    video.currentTime = 100
+    act(() => {
+      fireEvent.seeking(video)
+    })
+    expect(screen.queryByText('Finished Episode 3')).toBeNull()
+    m.markProgress.mockClear()
+    act(() => {
+      fireEvent.timeUpdate(video)
+      fireEvent.pause(video)
+    })
+    await vi.waitFor(() => expect(m.markProgress).toHaveBeenCalledWith({ kind: 'file', fileId: 7 }, 100))
+  })
+
+  it('keeps the whole script reachable and follows a line past the first batch', async () => {
+    const srt = Array.from(
+      { length: 300 },
+      (_, i) => `${i + 1}\n${srtTime(i * 4)} --> ${srtTime(i * 4 + 3)}\nLine ${i + 1}\n`
+    ).join('\n')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(srt)))
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        observe(): void {}
+        disconnect(): void {}
+      }
+    )
+    m.source.mockResolvedValue(source({ subtitles: [JA_SRT_TRACK] }))
+    const user = userEvent.setup()
+    const { container } = renderAt()
+    await screen.findByRole('heading', { name: /Episode 3/ })
+    const video = container.querySelector('video')!
+    // Line 250 runs from 996 s to 999 s: far past the first 96-row batch.
+    setClock(video, 997)
+    await user.keyboard('t')
+    const script = await screen.findByRole('complementary')
+    const row = await within(script).findByText('Line 250', {}, { timeout: 3000 })
+    await vi.waitFor(() => expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalled())
+    // The player re-renders on every timeupdate; the rendered window must hold.
+    for (let i = 0; i < 4; i += 1) {
+      video.currentTime = 997 + i * 0.25
+      act(() => {
+        fireEvent.timeUpdate(video)
+      })
+    }
+    expect(row).toBeInTheDocument()
+    expect(within(script).getByText('Line 250')).toBeInTheDocument()
+    vi.unstubAllGlobals()
+  })
+
+  it('keeps the player keys live after a click on the timeline', async () => {
+    m.source.mockResolvedValue(source())
+    const user = userEvent.setup()
+    const { container } = renderAt()
+    await screen.findByRole('heading', { name: /Episode 3/ })
+    const video = container.querySelector('video')!
+    setClock(video, 10)
+    const timeline = screen.getByRole('slider', { name: 'Position' })
+    await user.click(timeline)
+    expect(timeline).toHaveFocus()
+    const play = vi.mocked(HTMLMediaElement.prototype.play)
+    play.mockClear()
+    await user.keyboard(' ')
+    expect(play).toHaveBeenCalled()
+    video.currentTime = 10
+    await user.keyboard('{ArrowRight}')
+    expect(video.currentTime).toBe(15)
+  })
+
+  it('cuts captured audio in media time when a subtitle delay is set, and remembers it per show', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('1\n00:00:01,000 --> 00:00:04,000\n行こう\n'))
+    )
+    m.source.mockResolvedValue(source({ subtitles: [JA_SRT_TRACK] }))
+    const user = userEvent.setup()
+    const { container } = renderAt()
+    await screen.findByRole('heading', { name: /Episode 3/ })
+    const video = container.querySelector('video')!
+    setClock(video, 2)
+    await screen.findByRole('button', { name: '行こう' }, { timeout: 3000 })
+    await user.keyboard('=====')
+    expect(screen.getByText('Subtitle delay +0.5 s')).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('video.subOffsets') ?? '{}')).toEqual({ 'media:12': 0.5 })
+    await user.keyboard('c')
+    await vi.waitFor(() =>
+      expect(api.video.clipAudio).toHaveBeenCalledWith({
+        ref: { kind: 'file', fileId: 7 },
+        startSec: 1.5,
+        endSec: 4.5
+      })
+    )
+    vi.unstubAllGlobals()
+  })
+
+  it('reads the subtitle delay for this show only and ignores the old global one', async () => {
+    localStorage.setItem('video.subOffsets', JSON.stringify({ 'media:12': 0.3 }))
+    localStorage.setItem('video.playerPrefs', JSON.stringify({ subOffsetSec: 2 }))
+    m.source.mockResolvedValue(source())
+    const user = userEvent.setup()
+    const first = renderAt()
+    await screen.findByRole('heading', { name: /Episode 3/ })
+    await user.click(screen.getByRole('button', { name: 'Tracks' }))
+    expect(screen.getByText('+0.3s')).toBeInTheDocument()
+    first.unmount()
+
+    m.source.mockResolvedValue(source({ offsetKey: 'media:99', mediaId: 99, title: 'Other' }))
+    renderAt()
+    await screen.findByRole('heading', { name: /Other/ })
+    await user.click(screen.getByRole('button', { name: 'Tracks' }))
+    expect(screen.getByText('0.0s')).toBeInTheDocument()
+  })
+
+  it('shows keyboard changes on screen and lists every shortcut in the help', async () => {
+    m.source.mockResolvedValue(source())
+    const user = userEvent.setup()
+    renderAt()
+    await screen.findByRole('heading', { name: /Episode 3/ })
+    await user.keyboard(']')
+    expect(screen.getByText('Speed 1.1x')).toBeInTheDocument()
+    await user.keyboard('{ArrowDown}')
+    expect(screen.getByText('Volume 85%')).toBeInTheDocument()
+    await user.keyboard('?')
+    expect(screen.getByText('Previous / next frame (while paused)')).toBeInTheDocument()
+    expect(screen.getByText('Next subtitle track')).toBeInTheDocument()
+  })
+
+  it('reads letter keys by Shift, not by case, so Caps Lock cannot toggle the loop', async () => {
+    m.source.mockResolvedValue(source())
+    const { container } = renderAt('/watch/file/7?start=90&end=210')
+    await screen.findByText('Start 1:30, stop 3:30')
+    const video = container.querySelector('video')!
+    setClock(video, 100)
+    // Let the frame clock pick the new time up before the key reads it.
+    await act(() => new Promise((r) => setTimeout(r, 50)))
+    // Caps Lock on: key 'L' arrives without Shift.
+    act(() => {
+      fireEvent.keyDown(window, { key: 'L', shiftKey: false })
+    })
+    expect(video.currentTime).toBe(110)
+    expect(screen.getByRole('button', { name: 'Loop' })).toHaveAttribute('aria-pressed', 'false')
+    act(() => {
+      fireEvent.keyDown(window, { key: 'L', shiftKey: true })
+    })
+    expect(screen.getByRole('button', { name: 'Loop' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('names a vanished file instead of blaming the decoder', async () => {
+    m.source
+      .mockResolvedValueOnce(source())
+      .mockRejectedValueOnce(new Error('Video file not found on disk. Rescan the folder.'))
+    const { container } = renderAt()
+    await screen.findByRole('heading', { name: /Episode 3/ })
+    act(() => {
+      fireEvent.error(container.querySelector('video')!)
+    })
+    expect(await screen.findByRole('heading', { name: 'Video unavailable' })).toBeInTheDocument()
+    expect(screen.getByText('Video file not found on disk. Rescan the folder.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Open externally' })).toBeNull()
   })
 
   it('rejects a malformed player link without calling main', async () => {

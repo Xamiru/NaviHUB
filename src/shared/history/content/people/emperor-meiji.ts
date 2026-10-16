@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-08',
+  researched: '2026-10-16',
   regions: ['east-asia'],
   roles: ['monarch'],
   offices: [
@@ -64,6 +64,21 @@ export default definePerson({
   ],
   sections: [
     {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q3',
+          text: 'Mutsuhito, who was to reign until 1912, selected a new reign title- -Meiji, or Enlightened Rule--to mark the beginning of a new era in Japanese history.',
+          lang: 'en',
+          cite: {
+            source: 'loc-japan-country-study-1994',
+            loc: { section: 'THE EMERGENCE OF MODERN JAPAN: The Meiji Restoration', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/japan/22.htm' }
+        }
+      ]
+    },
+    {
       kind: 'career',
       quotes: [
         {
@@ -95,16 +110,6 @@ export default definePerson({
             loc: { section: 'THE EMERGENCE OF MODERN JAPAN: The Meiji Restoration', para: '1' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/japan/22.htm' }
-        },
-        {
-          id: 'q3',
-          text: 'Mutsuhito, who was to reign until 1912, selected a new reign title- -Meiji, or Enlightened Rule--to mark the beginning of a new era in Japanese history.',
-          lang: 'en',
-          cite: {
-            source: 'loc-japan-country-study-1994',
-            loc: { section: 'THE EMERGENCE OF MODERN JAPAN: The Meiji Restoration', para: '3' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/japan/22.htm' }
         }
       ]
     }
@@ -114,5 +119,31 @@ export default definePerson({
     page: 'https://commons.wikimedia.org/wiki/File:Mutsuhito,_The_Meiji_Emperor_MET_DT8575.jpg',
     credit: { institution: 'Metropolitan Museum of Art', creator: 'Uchida Kuichi' },
     license: { id: 'cc0' }
+  },
+  born: {
+    alts: [
+      {
+        value: { d: '1852-11-03' },
+        cites: [
+          {
+            source: 'loc-name-authority-emperor-meiji',
+            loc: { section: 'MARC field 046: birth date' }
+          }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1912-07-30' },
+        cites: [
+          {
+            source: 'loc-name-authority-emperor-meiji',
+            loc: { section: 'MARC field 046: death date' }
+          }
+        ]
+      }
+    ]
   }
 })
