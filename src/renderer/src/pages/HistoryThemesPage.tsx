@@ -20,7 +20,6 @@ export default function HistoryThemesPage() {
     <div className="mx-auto max-w-[1100px] p-6">
       <PageHeader
         title="Themes"
-        subtitle="Threads that run through the decades: the events, people and states of one story, in order."
         className="mb-5"
       />
       {isError ? (

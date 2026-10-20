@@ -142,7 +142,7 @@ export default function WrestlingCollectionPage(): JSX.Element {
       ) : !looseCount ? (
         <EmptyState
           title="No loose matches"
-          body="For the odd match you own that isn't part of a pay-per-view — a weekly-show main event, a one-off. Pick the file and give it a title."
+          body="For a match that is not part of a pay-per-view."
           action={
             <button className="btn-primary" disabled={busy} onClick={addLoose}>
               Add loose match

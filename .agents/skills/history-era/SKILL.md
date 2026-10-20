@@ -1,6 +1,6 @@
 ---
 name: history-era
-description: Research one decade (or deepen one topic) of the NaviHUB History section and commit it as content files — candidates from finding aids, verbatim quotes from real sources with locators, interpretations, media links and archive suggestions — finishing with the content validator green. Use when the user asks to research, add, extend or correct History content.
+description: Research one decade or era, build a single-subject dossier (a state, person, period or theme the user looked up), or deepen one topic of the NaviHUB History section and commit it as content files — candidates from finding aids, verbatim quotes from real sources with locators, interpretations, media links and archive suggestions — finishing with the content validator green. Use when the user asks to research, add, extend or correct History content.
 ---
 
 # Codex adapter

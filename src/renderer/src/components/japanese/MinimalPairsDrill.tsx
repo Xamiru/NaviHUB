@@ -78,8 +78,7 @@ export default function MinimalPairsDrill() {
   return (
     <div>
       <p className="mb-3 text-sm text-gray-400">
-        A recording plays — was it 箸 or 橋? Pick the contour you heard. The exact drill kotu.io
-        runs, offline. Endless; Stop when your ears give out.
+        A recording plays — was it 箸 or 橋? Pick the contour you heard. Endless.
       </p>
       <Section
         title="Patterns"

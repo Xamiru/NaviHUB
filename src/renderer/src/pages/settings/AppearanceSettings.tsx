@@ -124,7 +124,6 @@ export function ThemeSettings({
   return (
     <SettingCard
       title="Theme"
-      description="Choose the visual language for NaviHUB. Your library, layout and features stay exactly the same."
     >
       <div className="grid gap-3 sm:grid-cols-2" role="group" aria-label="Application theme">
         {APP_THEME_OPTIONS.map((option) => {
@@ -196,7 +195,7 @@ export function SignalClaritySettings({
   return (
     <SettingCard
       title="Signal clarity"
-      description="Controls how strongly the Lain atmosphere appears. Route moods still keep readers chromeless and workspaces calm."
+      description="How strongly the Lain atmosphere appears. Readers and workspaces stay calm."
     >
       <div className="grid gap-2 sm:grid-cols-3" role="group" aria-label="Signal clarity">
         {SIGNAL_CLARITY_OPTIONS.map((option) => {
@@ -249,7 +248,7 @@ export function UiScaleSettings({ data, onSave }: { data?: Record<string, string
   return (
     <SettingCard
       title="UI scale"
-      description="Scales the whole interface. Below 100% everything gets smaller and more fits on screen — useful on a smaller or lower-resolution monitor where you'd otherwise scroll a lot. Applies immediately and is remembered."
+      description="Scales the whole interface. Applies immediately and is remembered."
     >
       <div className="flex flex-wrap gap-2">
         {UI_SCALE_STEPS.map((s) => (
@@ -264,8 +263,7 @@ export function UiScaleSettings({ data, onSave }: { data?: Record<string, string
         ))}
       </div>
       <p className="mt-3 text-xs text-gray-500">
-        Currently {formatUiScale(scale)}. Tip: on a 1366×768 screen, 80% gives roughly the room of a
-        1707×960 one. Ctrl+scroll zooms from anywhere.
+        Currently {formatUiScale(scale)}. Ctrl+scroll zooms from anywhere.
       </p>
     </SettingCard>
   )
@@ -285,7 +283,7 @@ export function MenuBarSettings({ data, onSave }: { data?: Record<string, string
   return (
     <SettingCard
       title="Menu bar"
-      description="The native File / Edit / View bar above the app. Hidden by default — zoom works with Ctrl+scroll, and keyboard shortcuts (Ctrl+R, F11, Ctrl+= / Ctrl+-) keep working while it's hidden."
+      description="The native File / Edit / View bar. Shortcuts keep working while it's hidden."
     >
       <div className="flex gap-2">
         <button className={!shown ? 'pill pill-active' : 'pill'} onClick={() => pick(false)}>

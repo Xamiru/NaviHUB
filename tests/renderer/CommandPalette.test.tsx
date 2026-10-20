@@ -7,7 +7,11 @@ import CommandPalette from '../../src/renderer/src/components/CommandPalette'
 import { ANIME } from '../../src/renderer/src/lib/mediaConfig'
 import { expectNoAxeViolations } from './accessibility'
 
-const { logProgress } = vi.hoisted(() => ({ logProgress: vi.fn() }))
+const { logProgress, addRequest, historyRequestable } = vi.hoisted(() => ({
+  logProgress: vi.fn(),
+  addRequest: vi.fn(),
+  historyRequestable: { value: undefined as boolean | undefined }
+}))
 vi.mock('../../src/renderer/src/lib/api', () => ({
   api: {
     settings: { all: async () => ({}) },
@@ -20,10 +24,12 @@ vi.mock('../../src/renderer/src/lib/api', () => ({
         people: [{ id: 1, name: 'Toshiyuki Morikawa', photoPath: null }],
         companies: [],
         characters: [{ id: 2, name: 'Guts', imagePath: null }],
-        history: []
+        history: [],
+        historyRequestable: historyRequestable.value
       })
     },
-    media: { logProgress: (...args: unknown[]) => logProgress(...args) }
+    media: { logProgress: (...args: unknown[]) => logProgress(...args) },
+    history: { addRequest: (...args: unknown[]) => addRequest(...args) }
   }
 }))
 
@@ -54,4 +60,35 @@ it('groups results, lists a title’s actions on Tab, and steps back on Escape',
   await user.keyboard('{Tab}{ArrowDown}{Enter}')
   await waitFor(() => expect(logProgress).toHaveBeenCalledWith(7))
   expect(screen.queryByRole('dialog', { name: 'Command palette' })).not.toBeInTheDocument()
+})
+
+function renderPalette(): void {
+  render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <MemoryRouter>
+        <CommandPalette />
+      </MemoryRouter>
+    </QueryClientProvider>
+  )
+}
+
+it('offers a History page request only when main says no page is named by the query', async () => {
+  const user = userEvent.setup()
+  // An empty History list with no verdict (catalog unavailable) offers nothing.
+  historyRequestable.value = undefined
+  renderPalette()
+  await user.keyboard('{Control>}k{/Control}')
+  const box = screen.getByRole('textbox', { name: 'Search commands and library' })
+  await user.type(box, 'Kingdom of Benin')
+  expect(await screen.findByText('Titles')).toBeInTheDocument()
+  expect(screen.queryByText(/Request a History page/)).not.toBeInTheDocument()
+
+  historyRequestable.value = true
+  await user.clear(box)
+  await user.type(box, 'Kingdom of Benin2')
+  const row = await screen.findByText('Request a History page for “Kingdom of Benin2”')
+  addRequest.mockResolvedValue({ id: 1 })
+  await user.click(row)
+  await waitFor(() => expect(addRequest).toHaveBeenCalledWith('Kingdom of Benin2', ''))
+  historyRequestable.value = undefined
 })

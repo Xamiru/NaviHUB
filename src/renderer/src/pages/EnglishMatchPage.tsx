@@ -154,7 +154,6 @@ export default function EnglishMatchPage() {
       <PageHeader
         back={{ to: '/english', label: 'English' }}
         title="Collocation match"
-        subtitle="Six pairs a set — verbs with their nouns, adjectives with theirs, phrasal verbs with meanings, words with the prepositions they take."
       />
       <div className="card p-5 space-y-5">
         <Group label="Theme">

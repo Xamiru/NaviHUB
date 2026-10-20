@@ -117,6 +117,7 @@ const api: NaviApi = {
   companies: {
     list: (search, mediaType, limit) =>
       ipcRenderer.invoke('companies:list', search, mediaType, limit),
+    directory: (query) => ipcRenderer.invoke('companies:directory', query),
     get: (id) => ipcRenderer.invoke('companies:get', id),
     media: (id) => ipcRenderer.invoke('companies:media', id),
     collaborators: (id, limit) => ipcRenderer.invoke('companies:collaborators', id, limit),
@@ -465,6 +466,10 @@ const api: NaviApi = {
     setMark: (ref, field, value) => ipcRenderer.invoke('history:setMark', ref, field, value),
     saveNote: (ref, body, kind) => ipcRenderer.invoke('history:saveNote', ref, body, kind),
     notes: (kind) => ipcRenderer.invoke('history:notes', kind),
+    requests: () => ipcRenderer.invoke('history:requests'),
+    addRequest: (query, body) => ipcRenderer.invoke('history:addRequest', query, body),
+    setRequestDone: (id, done) => ipcRenderer.invoke('history:setRequestDone', id, done),
+    removeRequest: (id) => ipcRenderer.invoke('history:removeRequest', id),
     linkMedia: (ref, mediaId, kind) => ipcRenderer.invoke('history:linkMedia', ref, mediaId, kind),
     unlinkMedia: (id) => ipcRenderer.invoke('history:unlinkMedia', id),
     userEntities: () => ipcRenderer.invoke('history:userEntities'),
@@ -675,6 +680,11 @@ const api: NaviApi = {
     subtitleFonts: (ref) => ipcRenderer.invoke('video:subtitleFonts', ref),
     markProgress: (ref, seconds) => ipcRenderer.invoke('video:markProgress', ref, seconds),
     clipAudio: (input) => ipcRenderer.invoke('video:clipAudio', input)
+  },
+  episodeFavorites: {
+    list: (mediaId) => ipcRenderer.invoke('episodeFavorite:list', mediaId),
+    set: (mediaId, number, favorite) =>
+      ipcRenderer.invoke('episodeFavorite:set', mediaId, number, favorite)
   },
   music: {
     pickRoot: () => ipcRenderer.invoke('music:pickRoot'),

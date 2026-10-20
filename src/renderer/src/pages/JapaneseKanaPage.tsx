@@ -263,7 +263,6 @@ export default function JapaneseKanaPage() {
       <PageHeader
         back={{ to: "/japanese", label: "Japanese" }}
         title="Typing drills"
-        subtitle="See a prompt, type the answer. Anything you miss comes back around until you get it."
       />
 
       <Tabs
@@ -343,8 +342,7 @@ function DojoSetup() {
   return (
     <div>
       <p className="mb-3 text-sm text-gray-400">
-        Reading teaches you to RECOGNIZE forms — this trains you to PRODUCE them, which makes
-        recognition instant. Type kana or romaji.
+        Type kana or romaji.
       </p>
       <Section
         title="Forms"

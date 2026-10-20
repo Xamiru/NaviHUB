@@ -180,7 +180,7 @@ export default function RefreshTab(): React.JSX.Element {
       <GamesUpgradeSection />
       <QuietWorkspace
         title="Online metadata"
-        description="Revisit the original source for titles already in your library. Choose a quick setup or keep your own selection."
+        description="Choose a quick setup or keep your own selection."
       >
         <div className="space-y-4">
           <OperationFlow
@@ -238,7 +238,7 @@ export default function RefreshTab(): React.JSX.Element {
                 <span className="min-w-0">
                   <span className="block text-sm font-medium text-white">My custom refresh</span>
                   <span className="mt-0.5 block text-xs leading-relaxed text-gray-400">
-                    Choose the shelves and fields yourself. NaviHUB remembers this setup for next time.
+                    Remembered for next time.
                   </span>
                 </span>
               </button>
@@ -483,7 +483,7 @@ function LocalLibraryMaintenance(): React.JSX.Element {
     : 'Discover new and deleted files, rebuild artist and album placement, and reconnect imported Spotify tracks.'
   const artDetail = fetchingArt
     ? `Checking artwork ${artStatus?.done ?? 0}/${artStatus?.total ?? '…'}`
-    : 'Retry blank artist photos and album covers with the current strict provider chain.'
+    : 'Retry blank artist photos and album covers.'
 
   const lyricsDetail = lyricsRunning
     ? `Checking lyrics ${lyricsStatus?.done ?? 0}/${lyricsStatus?.total ?? '…'}`
@@ -492,7 +492,7 @@ function LocalLibraryMaintenance(): React.JSX.Element {
   return (
     <QuietWorkspace
       title="Local files"
-      description="Maintain the music NaviHUB reads from this computer. These actions never contact a title importer."
+      description="These actions never contact a title importer."
       actions={
         <Link className="btn-ghost" to="/music">
           Open Music

@@ -139,7 +139,7 @@ export default function JapanesePhonologyPage() {
           <SessionEvidence title="What this measures">
             <p>{unit.focus}</p>
             <p className="mt-3">
-              This checks timing and sound-system decisions. It does not claim to judge your accent.
+              This checks timing and sound-system decisions.
             </p>
           </SessionEvidence>
         }
@@ -222,7 +222,7 @@ export default function JapanesePhonologyPage() {
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Japanese sound foundation"
-        subtitle="Eight offline units on mora timing, vowel length, consonant closure, devoicing, particles, pitch, and connected speech. Generated beats train timing without pretending to grade your voice."
+        subtitle="Eight offline units on mora timing, vowel length, consonant closure, devoicing, particles, pitch, and connected speech."
         actions={<Link to="/japanese/tutor" className="btn-ghost">Tutor plan</Link>}
       />
 

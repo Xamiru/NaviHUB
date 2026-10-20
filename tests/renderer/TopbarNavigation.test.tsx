@@ -10,7 +10,10 @@ vi.mock('@/lib/hooks', async (importOriginal) => {
 vi.mock('@/components/GameSessionIndicator', () => ({ default: () => null }))
 vi.mock('@/components/TasksIndicator', () => ({ default: () => null }))
 
+import TabbedRouter from '@/components/TabbedRouter'
+import TabStrip from '@/components/TabStrip'
 import Topbar from '@/components/Topbar'
+import { getTabsSnapshot, resetBrowserTabs } from '@/lib/browserTabs'
 
 describe('Topbar navigation', () => {
   it('exposes a scroll control when contextual destinations overflow', async () => {
@@ -57,5 +60,24 @@ describe('Topbar navigation', () => {
     expect(box).toHaveValue('lain')
     await user.click(screen.getByRole('button', { name: 'Go back' }))
     expect(box).toHaveValue('')
+  })
+
+  it('offers a New tab button with one tab and hands it to the tab strip after', async () => {
+    const user = userEvent.setup()
+    resetBrowserTabs('/anime')
+    render(
+      <TabbedRouter>
+        <TabStrip />
+        <Topbar />
+      </TabbedRouter>
+    )
+    expect(screen.queryByRole('navigation', { name: 'Open tabs' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'New tab' }))
+    expect(getTabsSnapshot().tabs).toHaveLength(2)
+    const strip = screen.getByRole('navigation', { name: 'Open tabs' })
+    // Exactly one New tab button on screen: the strip's, not the Topbar's.
+    const buttons = screen.getAllByRole('button', { name: 'New tab' })
+    expect(buttons).toHaveLength(1)
+    expect(strip).toContainElement(buttons[0])
   })
 })

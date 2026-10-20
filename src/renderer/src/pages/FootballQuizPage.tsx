@@ -11,7 +11,7 @@ const GAMES = [
   { key: 'scoreline', to: '/football/quiz/scoreline', title: 'Scoreline', body: 'Recover the exact final score from teams, date and stage.', minimum: 5, competitionKey: 'premier-league' },
   { key: 'careerPath', to: '/football/quiz/career-path', title: 'Career Path', body: 'Type the player as their senior clubs are revealed in career order.', minimum: 5, competitionKey: 'world-cup' },
   { key: 'chronology', to: '/football/quiz/chronology', title: 'Champion Chronology', body: 'Order four champion editions from one competition.', minimum: 4, competitionKey: 'euros' },
-  { key: 'playerGrid', to: '/football/quiz/player-grid', title: 'Player Grid', body: 'Fill nine verified club, national-team and edition intersections, solo or as a two-player duel.', minimum: 1, competitionKey: 'europa-league' },
+  { key: 'playerGrid', to: '/football/quiz/player-grid', title: 'Player Grid', body: 'Fill nine club, national-team and edition intersections, solo or as a two-player duel.', minimum: 1, competitionKey: 'europa-league' },
   { key: 'wordle', to: '/football/quiz/wordle', title: 'Football Wordle', body: 'Find a mystery player from nation, position, club, league, age, height and shirt feedback.', minimum: 8, competitionKey: 'la-liga' },
   { key: 'lineup', to: '/football/quiz/lineup', title: 'Name the XI', body: 'Type a famous match\'s starting eleven, laid out by formation.', minimum: 1, competitionKey: 'serie-a' },
   { key: 'transfer', to: '/football/quiz/transfers', title: 'Transfer Higher or Lower', body: 'Did this move cost more or less than the last one?', minimum: 2, competitionKey: 'bundesliga' }
@@ -29,7 +29,6 @@ export default function FootballQuizPage() {
     <div className="mx-auto max-w-[1300px] p-6">
       <PageHeader
         title="Football quiz room"
-        subtitle="Eight offline games dealt only from complete, verified and conflict-free archive facts."
         back={{ to: '/football', label: 'Football Archive' }}
       />
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">

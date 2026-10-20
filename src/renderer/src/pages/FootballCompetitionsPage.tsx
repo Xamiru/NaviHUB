@@ -48,7 +48,7 @@ export default function FootballCompetitionsPage() {
       })}
 
       <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line-subtle pt-5 text-sm">
-        <p className="text-ink-muted">Teams and players are discovered through competitions, matches, and archive search.</p>
+        
         <div className="flex gap-4"><Link to="/football/teams" className="text-signal-link">Teams</Link><Link to="/football/people" className="text-signal-link">Players and managers</Link><Link to="/football/sync" className="text-ink-secondary hover:text-signal-link">Sources</Link></div>
       </div>
     </div>

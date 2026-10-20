@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { useDebouncedValue, useDialog, useSettings } from '../lib/hooks'
@@ -14,6 +14,7 @@ import { Field } from './Field'
 import { FX_ART } from '../lib/themeFxArt'
 import { useAppTheme } from '../lib/useAppTheme'
 import { historyPath } from '../lib/historyUi'
+import { toast } from '../lib/toast'
 
 interface PaletteItem {
   key: string
@@ -25,6 +26,7 @@ interface PaletteItem {
   image?: { path: string | null; round: boolean } // cover, photo or logo
   sub?: string // second line: type, status and progress
   media?: MediaItem // titles carry their row for the Tab action list
+  run?: () => Promise<void> // an action row instead of a destination
 }
 
 interface PaletteAction {
@@ -195,6 +197,7 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
   const panelRef = useDialog(() => (actionsFor ? setActionsFor(null) : onClose()))
   const logProgress = useLogProgress()
   const { data: settings } = useSettings()
+  const queryClient = useQueryClient()
 
   const debounced = useDebouncedValue(query, 250)
   const term = debounced.trim()
@@ -247,6 +250,24 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
         })
       }
     }
+    // A name History has no page for is kept for the next research session.
+    // Offered only once the debounce has caught up, so Enter stores what is
+    // typed, and only on main's word that no page is named by it: a hit for
+    // "Holy Roman Empire" does not answer "Roman Empire".
+    if (results?.historyRequestable && term.length >= 3 && term === query.trim()) {
+      found.push({
+        key: 'history-request',
+        label: `Request a History page for “${term}”`,
+        hint: 'History',
+        to: '/history/corrections?tab=requests',
+        group: 'History',
+        run: async () => {
+          await api.history.addRequest(term, '')
+          void queryClient.invalidateQueries({ queryKey: qk.history.requests })
+          toast(`Requested “${term}” for the next History research session`, 'success')
+        }
+      })
+    }
     found.push({
       key: 'search-all',
       label: `Search everywhere for “${query.trim()}”`,
@@ -255,7 +276,7 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
       group: 'Search'
     })
     return [...found, ...nav.map((n) => ({ ...n, group: 'Go to' }))]
-  }, [query, results, theme])
+  }, [query, results, theme, term, queryClient])
 
   // Clamp + scroll the selection as the list changes.
   const selIdx = Math.min(sel, Math.max(0, items.length - 1))
@@ -268,7 +289,8 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
   function go(item: PaletteItem | undefined) {
     if (!item) return
     onClose()
-    onGo(item.to)
+    if (item.run) void item.run()
+    else onGo(item.to)
   }
 
   // What a title offers without opening it first (lib/mediaQuickActions.ts,

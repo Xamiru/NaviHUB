@@ -117,8 +117,7 @@ export default function ChecklistPage() {
       {empty ? (
         <div className="card p-6">
           <p className="text-sm text-gray-300">
-            Nothing on your board yet. Add built-in items that track themselves, such as Japanese
-            reviews or minutes played, or make your own, such as a workout or 20 pages of reading.
+            Nothing on your board yet. Add built-in items that track themselves, or make your own.
           </p>
           <button type="button" className="btn-primary mt-4" onClick={() => setAdding('daily')}>
             Add your first item

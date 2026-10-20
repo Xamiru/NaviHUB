@@ -118,7 +118,6 @@ export default function JapaneseDictionaryPage() {
       <PageHeader
         back={{ to: "/japanese", label: "Japanese" }}
         title="Dictionary"
-        subtitle="Offline lookup across every dictionary you&apos;ve installed. Type Japanese or English."
       />
 
       {dicts.length === 0 && (

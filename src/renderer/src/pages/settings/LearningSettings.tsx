@@ -63,7 +63,7 @@ export function ReviewSchedulerSettings({
   return (
     <SettingCard
       title="Review scheduler"
-      description="How sure you want to be of remembering a card when it comes due, for Japanese and English reviews. Intervals are chosen by FSRS from each card's own answer history."
+      description="How sure you want to be of remembering a card when it comes due, for Japanese and English reviews."
     >
       <div className="flex flex-wrap gap-2">
         {RETENTION_OPTIONS.map((r) => (
@@ -296,8 +296,7 @@ export function DictionarySettings() {
       title="Japanese dictionaries"
       description={
         <>
-          Offline dictionaries power the Japanese section&apos;s lookup, word mining and the manga
-          reader. Install JMdict and KANJIDIC with one click; import pitch-accent, grammar (DOJG) and
+          Install JMdict and KANJIDIC with one click; import pitch-accent, grammar (DOJG) and
           和英 dictionaries as Yomitan <span className="text-gray-400">.zip</span> files exported from
           the extension. Large one-time downloads (JMdict is ~60&nbsp;MB); everything then works with
           no network.
@@ -475,7 +474,7 @@ export function DictionarySettings() {
           {!hasDict('JMnedict') && (
             <PackRow
               title="Names (JMnedict)"
-              detail="People, places, companies — the #1 lookup miss in manga. ~740k entries, ~11 MB, takes a few minutes."
+              detail="People, places, companies. ~740k entries, ~11 MB, takes a few minutes."
               busy={blocked}
               onDownload={() => void run(() => api.dict.importPreset('jmnedict'))}
             />

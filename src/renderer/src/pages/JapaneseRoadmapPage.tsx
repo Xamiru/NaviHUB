@@ -34,7 +34,7 @@ export default function JapaneseRoadmapPage() {
       <PageHeader
         back={{ to: "/japanese", label: "Japanese" }}
         title="Path"
-        subtitle="Every course in order, from your first lesson to native material. Start anywhere; nothing is locked."
+        subtitle="Start anywhere; nothing is locked."
       />
 
       <div className="grid min-w-0 gap-7 lg:grid-cols-[minmax(0,1fr)_360px]">

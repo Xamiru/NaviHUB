@@ -104,7 +104,7 @@ export default function CheatsheetsPage() {
               {active.entries.filter((entry) => entry.answers?.length).length} commands can enter the typed practice pool.
             </p>
             <p className="mt-4 border-t border-base-700 pt-4 text-xs leading-5 text-gray-500">
-              Search reads every local sheet. Selecting a sheet clears the search and keeps that reference active when you return.
+              Selecting a sheet clears the search and keeps that reference active when you return.
             </p>
           </div>
         </aside>

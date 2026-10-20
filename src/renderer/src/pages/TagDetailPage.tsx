@@ -112,9 +112,6 @@ export default function TagDetailPage() {
                 </span>
               ))}
             </ContextTrail>
-            <p className="mt-4 text-sm leading-6 text-gray-400">
-              Highest-rated linked works provide a quick route back into the archive without changing the tag itself.
-            </p>
           </div>
         </section>
       )}

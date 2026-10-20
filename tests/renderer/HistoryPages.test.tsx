@@ -24,7 +24,12 @@ const apiMock = vi.hoisted(() => ({
     attachFile: vi.fn(),
     downloadSuggestion: vi.fn(),
     linkMedia: vi.fn(),
-    unlinkMedia: vi.fn()
+    unlinkMedia: vi.fn(),
+    notes: vi.fn(async () => []),
+    requests: vi.fn(async () => []),
+    addRequest: vi.fn(),
+    setRequestDone: vi.fn(async () => true),
+    removeRequest: vi.fn()
   },
   search: { global: vi.fn() },
   app: { openExternal: vi.fn() }
@@ -250,5 +255,37 @@ describe('History editor', () => {
     const alert = await screen.findByRole('alert')
     expect(within(alert).getByText(/at least one citation is required/)).toBeTruthy()
     expect(apiMock.history.saveUserEntity).toHaveBeenCalledWith(expect.objectContaining({ kind: 'event', names: [expect.objectContaining({ text: 'My event' })] }))
+  })
+})
+
+describe('History requests', () => {
+  it('asks for a page, lists open and resolved requests and marks one done', async () => {
+    const { default: HistoryCorrectionsPage } = await import('@/pages/HistoryCorrectionsPage')
+    apiMock.history.requests.mockResolvedValue([
+      { id: 1, query: 'Kingdom of Benin', body: 'the 1897 expedition', createdAt: '2026-10-18 09:00:00', doneAt: null, resolved: null },
+      {
+        id: 2,
+        query: 'Sample Revolution',
+        body: '',
+        createdAt: '2026-10-17 09:00:00',
+        doneAt: null,
+        resolved: { ref: 'event:sample-revolution', kind: 'event', title: 'Sample Revolution', native: null, years: '1978', sub: 'Revolution', image: null }
+      }
+    ] as never)
+    apiMock.history.addRequest.mockResolvedValue({ id: 3, query: 'Roman Empire', body: '', createdAt: '2026-10-18 10:00:00', doneAt: null } as never)
+    const user = userEvent.setup()
+    const { container } = withQuery(<HistoryCorrectionsPage />, '/history/corrections')
+    await user.click(await screen.findByRole('button', { name: /Requests/ }))
+    expect(await screen.findByText('Kingdom of Benin')).toBeTruthy()
+    expect(screen.getByText('the 1897 expedition')).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Now available: Sample Revolution' })).toBeTruthy()
+
+    await user.type(screen.getByLabelText('Name to look up'), 'Roman Empire')
+    await user.click(screen.getByRole('button', { name: 'Request page' }))
+    await waitFor(() => expect(apiMock.history.addRequest).toHaveBeenCalledWith('Roman Empire', ''))
+
+    await user.click(screen.getAllByRole('button', { name: 'Mark done' })[0])
+    expect(apiMock.history.setRequestDone).toHaveBeenCalledWith(1, true)
+    await expectNoAxeViolations(container)
   })
 })

@@ -14,7 +14,7 @@ export function FoldersSettings({ data, onSave }: { data?: Record<string, string
         onSave={onSave}
         title="Anime music folder"
         placeholder="/media/you/Drive/Music/Anime"
-        description="Where downloaded opening/ending audio is stored. Point it at a roomier drive to save space — songs are a few MB each and add up. Leave blank to use the default app folder. Changing this only affects newly-downloaded songs; existing files stay where they were saved."
+        description="Where downloaded opening/ending audio is stored. Leave blank to use the default app folder. Changing this only affects newly-downloaded songs; existing files stay where they were saved."
       />
       <TextSetting
         folder

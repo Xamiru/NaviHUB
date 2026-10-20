@@ -130,7 +130,6 @@ export default function EnglishDeckPage() {
       <PageHeader
         back={{ to: '/english', label: 'English' }}
         title="Deck"
-        subtitle="Every saved word with its frequency rank and review state. Prune the tail by hand — nothing here is automatic."
         actions={
           <Link to="/english/review" className="btn-ghost">
             Review

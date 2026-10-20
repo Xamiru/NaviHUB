@@ -35,7 +35,6 @@ export default function HistorySourcesPage() {
     <div className="mx-auto max-w-[1400px] p-6">
       <PageHeader
         title="Sources"
-        subtitle="Every work History quotes or cites, with how often. Each quote on a page links back here."
         className="mb-5"
       />
       {!data?.length ? (

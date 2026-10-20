@@ -274,8 +274,7 @@ export default function JapaneseTestPage() {
           title="JLPT Checkpoint"
           subtitle={
             <>
-              A timed checkpoint built from the offline packs: levelled grammar, vocabulary by
-              frequency band, kanji readings, and sentences to translate. {SECONDS_PER_QUESTION}s a
+              {SECONDS_PER_QUESTION}s a
               question. It points at a level; it does not certify one.
             </>
           }

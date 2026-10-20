@@ -1,6 +1,6 @@
 ---
 name: history-era
-description: Research one decade (or deepen one topic) of the NaviHUB History section and commit it as content files — candidates from finding aids, verbatim quotes from real sources with locators, interpretations, media links and archive suggestions — finishing with the content validator green. Use when the user asks to research, add, extend or correct History content.
+description: Research one decade or era, build a single-subject dossier (a state, person, period or theme the user looked up), or deepen one topic of the NaviHUB History section and commit it as content files — candidates from finding aids, verbatim quotes from real sources with locators, interpretations, media links and archive suggestions — finishing with the content validator green. Use when the user asks to research, add, extend or correct History content.
 ---
 
 # Researching History content
@@ -18,6 +18,10 @@ shape of existing files under `src/shared/history/content/`.
 - The scope is the 20th century decade by decade from the 1900s and, since 2026-10-06, the 19th
   century decade by decade from the 1800s; about **20–25 events** per decade on the first pass,
   world coverage with **extra depth on Iran**. A deepening session may instead take one topic.
+- **Dossiers** (since 2026-10-18) serve lookups: one subject the user asked for (the Requests tab
+  on the Corrections page, or a name in chat) gets its page, its major events and its people. Use
+  "The dossier flow" below. Rome, Africa and other non-Iranian spines stay context in the era
+  plan; they enter the catalog through dossiers.
 - Several decades may be researched in parallel by subagents that each deliver a session spec;
   the primary agent builds them one at a time (`write_all`), so the slug lock never races, and
   dry-runs a spec first with `checks.py json` plus `tools/validate_spec.ts`.
@@ -46,6 +50,43 @@ shape of existing files under `src/shared/history/content/`.
    `build_spec.py`, and keeps the validator and lint ratchet green. Edits to already committed
    pages go through one `edit.py` script run by the primary agent, never by two agents at once.
    The primary agent then runs the full gate and checks pages in the app.
+
+## The dossier flow (2026-10-18)
+
+For a lookup: the user heard a name (Kingdom of Benin, Theodore Roosevelt, the Roman Empire) and
+wants to open its page, see the major events it took part in, and read quoted text on how it went.
+Same rules, tools, reviewers and gates as an era; only the unit of work changes.
+
+1. **Input.** The subject and its kind (polity, person, period or theme), from the Requests tab's
+   copied block ("Requested pages:") or the user's message. A request already marked "now
+   available" only needs its link checked. If the subject already has a page, the dossier deepens
+   it (extend, never rewrite, through `edit.py`).
+2. **Sources first.** `dossier_<slug>/SOURCES.md` in `~/.cache/navihub-history-work/`, as for an
+   era: the allowed modern sources with their robots and terms checked, which ones open the subject
+   page and the lead events, which pre-1950 works may carry detail only, which primary texts are
+   positions only. **If no allowed modern source can open the subject page, stop and report it**
+   rather than building a page on the 1911 Britannica.
+3. **List.** `dossier_<slug>/LIST.md`, settled by the primary agent without asking the user:
+   - the subject page with every section a reader needs to follow how it went (overview, background
+     or early life, course or career, the end or later life, legacy);
+   - its major events, 10 to 20, prominence 1–2, each pinned with `locate.py`; the existing event
+     pages to link to the subject (participants, `polities`, sides), extended and never rewritten;
+   - the rulers or office holders as people with `offices` naming the state, so the state page's
+     succession chart and "appears in" lists fill;
+   - for a state: type, dated capitals, predecessors, `partOf`, and the map unit from
+     `src/main/history/data/borders.json` or `borders-ancient.json` (`set: 'early'`, Cliopatria's
+     code); say so in the list when no border unit exists;
+   - the interpretations a reader would expect (every notable view, labelled; a government's or
+     ruler's words are a claim with a quoted independent assessment).
+   More than 20 events splits into parts of 15 to 20, one part per researcher.
+4. **Research** (Sonnet, medium effort, at most two in parallel): specs only under
+   `dossier_<slug>/`, never content files; each self-checks five of its pages and runs
+   `checks.py repeats` before handing back.
+5. **Review the draft.** A separate agent reads the spec's `out.json` with `review/REVIEW.md` (draft
+   mode); the researcher fixes its spec.
+6. **One builder.** The primary agent runs `check_quotes.py`, builds with `build_spec.py`, keeps the
+   validator and the lint ratchet green, runs the gate (section 6) and reports what could not be
+   sourced. The user marks the request done on the Requests tab (or the report names it).
 
 ## 1. Candidates (finding aids only)
 

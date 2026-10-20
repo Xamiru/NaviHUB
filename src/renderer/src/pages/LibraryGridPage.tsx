@@ -318,7 +318,7 @@ export default function LibraryGridPage() {
   return (
     <StudySessionFrame
       title="Library Grid"
-      subtitle={`${MODE_LABEL[mediaMode]} · Select a cell, then submit one matching title.`}
+      subtitle={MODE_LABEL[mediaMode]}
       progress={{ current: solvedCount, total: 9, label: 'Grid progress' }}
       actions={
         <>

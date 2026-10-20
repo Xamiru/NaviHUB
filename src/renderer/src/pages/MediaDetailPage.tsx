@@ -1,7 +1,7 @@
 import GamePlaythroughSection, { GameResumeCard } from '../components/GamePlaythroughSection'
 import { useEffect, useState } from 'react'
 import Pager from '../components/Pager'
-import StatTile, { StatInline } from '../components/StatTile'
+import { StatInline } from '../components/StatTile'
 import ActionMenu from '../components/ActionMenu'
 import Tabs, { TabPanel, type TabDef } from '../components/Tabs'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -14,7 +14,6 @@ import { usePlayerControls, type Track } from '../lib/player'
 import {
   CAST_ROLES,
   configFor,
-  fmtMinutesAsHours,
   isCompletedStatus,
   pathForMedia,
   type MediaConfig
@@ -34,12 +33,14 @@ import AddToListMenu from '../components/AddToListMenu'
 import MangaChaptersSection from '../components/MangaChaptersSection'
 import TvSeasonsSection from '../components/TvSeasonsSection'
 import GameLaunchSection from '../components/GameLaunchSection'
+import PlaytimeSection from '../components/PlaytimeSection'
 import GameLinksPanel from '../components/GameLinksPanel'
 import AchievementsSection from '../components/AchievementsSection'
 import ModsSection from '../components/ModsSection'
 import GameLaunchButton, { useHasLaunchTarget } from '../components/GameLaunchButton'
 import { PlayIcon, PauseIcon } from '../components/PlayerIcons'
 import VideoEpisodesSection from '../components/VideoEpisodesSection'
+import FavoriteEpisodesSection from '../components/FavoriteEpisodesSection'
 import CoverageSection from '../components/japanese/CoverageSection'
 import MediaImagesSection from '../components/MediaImagesSection'
 import ImagePickerDialog from '../components/ImagePickerDialog'
@@ -55,8 +56,7 @@ import type {
   MediaCharacterEntry,
   ThemeSong,
   MusicTrack,
-  MediaRelation,
-  HltbTimes
+  MediaRelation
 } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
 import { crewRoleLabel, mangaCreatorFacts } from '../lib/creatorCredits'
@@ -72,6 +72,16 @@ import LinkedMusicSection, { useMusicLinks } from '../components/music/LinkedMus
 import { musicTrackToPlayerTrack } from '../lib/musicTracks'
 
 type DetailTab = 'overview' | 'cast' | 'video' | 'media' | 'achievements' | 'mods' | 'music' | 'quotes' | 'art'
+const GAME_TAB_ORDER: DetailTab[] = [
+  'overview',
+  'media',
+  'achievements',
+  'cast',
+  'art',
+  'music',
+  'quotes',
+  'mods'
+]
 
 export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const { id } = useParams()
@@ -111,6 +121,16 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
     ...(titleQuotes.length ? [{ key: 'quotes' as DetailTab, label: 'Quotes' }] : []),
     { key: 'art', label: 'Art' }
   ]
+  // Games lead with what you open most (Playtime, Achievements) and end with
+  // the rarely used tabs; every other type keeps the order above. A tab the
+  // list does not name goes last rather than ahead of Overview.
+  if (cfg.key === 'game') {
+    const rank = (key: DetailTab): number => {
+      const i = GAME_TAB_ORDER.indexOf(key)
+      return i < 0 ? GAME_TAB_ORDER.length : i
+    }
+    tabs.sort((a, b) => rank(a.key) - rank(b.key))
+  }
   const [params] = useSearchParams()
   const requested = params.get('tab') as DetailTab | null
   const [tabState, setTab] = usePersistedState<DetailTab>(
@@ -353,15 +373,17 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
 
         {tab === 'cast' && (
           <>
-          {m.mediaType === 'game' && <GameLinksPanel mediaId={m.id} title={m.title} />}
           <CastSection cfg={cfg} m={m} onChange={refresh} />
           {cfg.hasCrew !== false && <StaffSection cfg={cfg} m={m} onChange={refresh} />}
+          {/* Correcting the catalog/Bangumi links is rare, so it sits below the cast. */}
+          {m.mediaType === 'game' && <GameLinksPanel mediaId={m.id} title={m.title} />}
           </>
         )}
 
         {tab === 'video' && (
           <>
           <VideoEpisodesSection m={m} />
+          {cfg.key === 'anime' && <FavoriteEpisodesSection m={m} />}
           {/* Subtitle text feeds the same comprehension scan / prep deck as
               manga OCR (seriesText.ts:seriesCorpus), so anime gets it free —
               but only where a Japanese track is plausible. */}
@@ -373,9 +395,13 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           <>
           {cfg.key === 'tv' && <TvSeasonsSection m={m} />}
           {m.mediaType === 'visual_novel' && <Link className="btn mb-4 inline-flex" to={`/visual-novels/${m.id}/reading`}>Open reading workspace</Link>}
+          {/* Playtime: the numbers first, then the launcher (its post-session
+              screenshot prompt must stay in view), then the journal. */}
+          {cfg.hasPlaytimes && (
+            <PlaytimeSection m={m} tracked={!!cfg.hasGameLaunch} onChange={refresh} />
+          )}
           {cfg.hasGameLaunch && <GameLaunchSection m={m} />}
           {m.mediaType === 'game' && <GamePlaythroughSection key={m.id} mediaId={m.id} />}
-          {cfg.hasPlaytimes && <PlaytimeSection m={m} onChange={refresh} />}
           {cfg.hasLocalReader && <MangaChaptersSection m={m} />}
           {/* Comprehension coverage is a Japanese-learning feature — manga only,
               not every type with a local reader (books are English reading). */}
@@ -675,91 +701,6 @@ function LogProgressButton({
   )
 }
 
-function fmtPlaytime(minutes: number | null | undefined): string {
-  if (minutes == null || minutes <= 0) return '—'
-  return fmtMinutesAsHours(minutes)
-}
-
-// Play-time estimates for games + VNs (cfg.hasPlaytimes): VNDB's average for
-// VNs, HowLongToBeat's Main / Main+Extras / Completionist boxes for both.
-// Games get HLTB filled automatically at import; the button covers items
-// imported before that existed, failed lookups, and refreshes.
-function PlaytimeSection({ m, onChange }: { m: MediaDetail; onChange: () => void }) {
-  const meta = (m.metadata ?? {}) as Record<string, unknown>
-  const hltb = (meta.hltb as HltbTimes | undefined) ?? null
-  const isVn = m.mediaType === 'visual_novel'
-  const vndbVotes = typeof meta.vndbLengthVotes === 'number' ? meta.vndbLengthVotes : null
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  async function fetchTimes() {
-    setBusy(true)
-    setError(null)
-    try {
-      const res = await api.hltb.fetch(m.id)
-      if (res) onChange()
-      else setError('No matching entry found on HowLongToBeat.')
-    } catch {
-      setError('HowLongToBeat lookup failed — try again in a bit.')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const boxes: { label: string; minutes: number | null; sub?: string }[] = []
-  // VN average play time comes from VNDB votes (stored in totalUnits, minutes).
-  if (isVn && m.totalUnits != null && m.totalUnits > 0) {
-    boxes.push({
-      label: 'Average',
-      minutes: m.totalUnits,
-      sub: vndbVotes ? `VNDB · ${vndbVotes} votes` : 'VNDB'
-    })
-  }
-  if (hltb) {
-    const polled = (n?: number) => (n ? `${n} polled` : undefined)
-    boxes.push(
-      { label: 'Main Story', minutes: hltb.main, sub: polled(hltb.mainCount) },
-      { label: 'Main + Extras', minutes: hltb.mainExtra, sub: polled(hltb.mainExtraCount) },
-      { label: 'Completionist', minutes: hltb.completionist, sub: polled(hltb.completionistCount) },
-      { label: 'All Styles', minutes: hltb.allStyles, sub: polled(hltb.allStylesCount) }
-    )
-  }
-
-  return (
-    <Section className="mb-6" title="How long to beat">
-      {boxes.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {boxes.map((b) => (
-            <StatTile
-              key={b.label}
-              label={b.label}
-              value={fmtPlaytime(b.minutes)}
-              sub={b.sub ?? undefined}
-              accent={!!b.minutes}
-            />
-          ))}
-        </div>
-      ) : (
-        <p className="text-sm text-gray-500">No play-time estimates yet.</p>
-      )}
-      <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
-        <button className="btn-ghost text-xs" onClick={fetchTimes} disabled={busy}>
-          {busy
-            ? 'Fetching…'
-            : hltb
-              ? 'Refresh from HowLongToBeat'
-              : 'Fetch from HowLongToBeat'}
-        </button>
-        {/* Surface the matched entry so a wrong match is easy to catch */}
-        {hltb && hltb.name && hltb.name.toLowerCase() !== m.title.toLowerCase() && (
-          <span className="text-gray-500">Matched: “{hltb.name}”</span>
-        )}
-        {error && <span className="text-red-400">{error}</span>}
-      </div>
-    </Section>
-  )
-}
-
 // The overview's facts column: dates, the companies behind the title, the
 // curated franchises it belongs to and the user's lists that hold it. Imported titles get their companies from the
 // source (and re-import prunes/refreshes them), so manual removal doesn't
@@ -915,6 +856,10 @@ function FactsColumn({
   )
 }
 
+// Portrait-only cast cards (manga, books) at the density of the person and
+// character role grids; fixed column counts stretched them on a wide window.
+const CHARACTER_ONLY_GRID = 'grid-cols-[repeat(auto-fill,minmax(112px,1fr))]'
+
 // The first few cast entries on the overview, in the same cards as the cast
 // tab; the full, editable list stays one click away.
 function MainCastStrip({ cfg, m, onShowAll }: { cfg: MediaConfig; m: MediaDetail; onShowAll: () => void }) {
@@ -934,7 +879,7 @@ function MainCastStrip({ cfg, m, onShowAll }: { cfg: MediaConfig; m: MediaDetail
         )
       }
     >
-      <div className={`grid gap-3 ${characterOnly ? 'grid-cols-4 sm:grid-cols-6 xl:grid-cols-8' : 'sm:grid-cols-2 2xl:grid-cols-3'}`}>
+      <div className={`grid gap-3 ${characterOnly ? CHARACTER_ONLY_GRID : 'sm:grid-cols-2 2xl:grid-cols-3'}`}>
         {shown.map((e) =>
           cfg.castLayout === 'actor' ? (
             <ActorCard key={e.character.id} entry={e} />
@@ -985,7 +930,7 @@ function CastSection({
         <>
           <div
             className={`grid gap-3 mb-3 ${
-              cfg.castLayout === 'character-only' ? 'grid-cols-3 sm:grid-cols-4' : 'grid-cols-2'
+              cfg.castLayout === 'character-only' ? CHARACTER_ONLY_GRID : 'grid-cols-2'
             }`}
           >
             {shown.map((e) =>
@@ -1164,7 +1109,7 @@ function CharacterOnlyCard({
         <CoverImage
           path={character.imagePath}
           alt={character.name}
-          thumbWidth={320}
+          thumbWidth={240}
           rounded="rounded-none"
           className="w-full aspect-[3/4]"
         />

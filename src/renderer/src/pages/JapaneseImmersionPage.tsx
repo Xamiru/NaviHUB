@@ -298,7 +298,7 @@ export default function JapaneseImmersionPage() {
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Long-form listening"
-        subtitle="A staged path from a familiar two-minute scene to full episodes without subtitles. NaviHUB keeps the protocol, boundaries, notes, and evidence together while playback stays in your system player."
+        subtitle="A staged path from a familiar two-minute scene to full episodes without subtitles."
         actions={<Link to="/japanese/tutor" className="btn-ghost">Tutor plan</Link>}
       />
 

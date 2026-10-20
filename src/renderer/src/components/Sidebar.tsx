@@ -19,7 +19,7 @@ import { resolveAppTheme } from '../lib/theme'
 const EXPANDED_SETTING = 'sidebar.expanded'
 
 function railClass(active: boolean): string {
-  return `relative flex h-12 w-full items-center justify-center px-2 text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors ${
+  return `archive-rail-item relative flex h-12 w-full items-center justify-center px-2 text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors ${
     active
       ? 'bg-signal-live/10 text-signal-live shadow-[inset_3px_0_0_0_rgb(var(--signal-live))]'
       : 'text-ink-muted hover:bg-surface-raised/70 hover:text-ink'
@@ -167,7 +167,7 @@ function NavigationDrawer({
         ))}
       </nav>
       <div className="border-t border-line-subtle px-5 py-4 text-xs leading-relaxed text-ink-muted">
-        Every archive stays local to this device. Hidden sections remain reachable through search.
+        Hidden sections remain reachable through search.
       </div>
     </div>
   )

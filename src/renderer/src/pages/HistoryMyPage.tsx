@@ -35,7 +35,6 @@ export default function HistoryMyPage() {
     <div className="mx-auto max-w-5xl p-6">
       <PageHeader
         title="My additions"
-        subtitle="Events, people, periods, sources and interpretations you wrote yourself. They stay on this machine and are marked Personal wherever they appear."
         actions={
           <div className="flex flex-wrap gap-2">
             <Link to="/history/new/source" className="btn-ghost">New source</Link>

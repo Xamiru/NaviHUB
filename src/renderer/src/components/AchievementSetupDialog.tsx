@@ -65,7 +65,7 @@ export default function AchievementSetupDialog({
             </h2>
             <p className="mt-1 text-sm text-gray-500">
               {provider === 'steam'
-                ? 'Pick the Steam game this title is, and the achievement list is fetched once and cached.'
+                ? 'Pick the Steam game this title is.'
                 : 'Pick the RetroAchievements game this title is. Your unlock history syncs with it.'}
             </p>
           </div>

@@ -21,6 +21,9 @@ interface Props {
   longTextLabel?: string
   // Portraits for people and characters; logos are shown whole.
   imageShape?: 'portrait' | 'logo'
+  // Fills the image slot while the entity has no image of its own (the studio
+  // page's cover mosaic); given the slot's size and rounding classes.
+  imagePlaceholder?: (className: string) => ReactNode
   facts?: { label: string; value: ReactNode }[]
   onSave: (f: Fields) => Promise<void>
   onDelete: () => Promise<void>
@@ -45,6 +48,7 @@ export default function EntityHeader({
   initial,
   longTextLabel,
   imageShape = 'portrait',
+  imagePlaceholder,
   facts = [],
   onSave,
   onDelete,
@@ -77,17 +81,22 @@ export default function EntityHeader({
     await onSave({ ...initial, imgPath: path })
   }
 
+  const slotAspect = imageShape === 'logo' ? 'aspect-square' : 'aspect-[3/4]'
   const longText = initial.longText.trim()
   const folded = !expanded && longText.length > FOLD_AT
   return (
     <div className="grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)]">
       <aside>
-        <CoverImage
-          path={initial.imgPath}
-          alt={initial.name}
-          rounded="rounded-lg"
-          className={`mx-auto w-44 lg:w-full ${imageShape === 'logo' ? 'aspect-square' : 'aspect-[3/4]'}`}
-        />
+        {!initial.imgPath && imagePlaceholder ? (
+          imagePlaceholder(`mx-auto w-44 lg:w-full rounded-lg ${slotAspect}`)
+        ) : (
+          <CoverImage
+            path={initial.imgPath}
+            alt={initial.name}
+            rounded="rounded-lg"
+            className={`mx-auto w-44 lg:w-full ${slotAspect}`}
+          />
+        )}
         {facts.length > 0 && (
           <dl className="mt-4 space-y-3 text-sm">
             {facts.map((f) => (

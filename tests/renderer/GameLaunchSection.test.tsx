@@ -26,22 +26,18 @@ describe('Game detail launcher panel', () => {
     })
   })
 
-  it('shows aggregate playtime without a dated session history', async () => {
+  it('keeps setup only; the tracked total lives in the estimates row', async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     render(
       <QueryClientProvider client={client}>
-        <GameLaunchSection m={{ id: 7, metadata: {} } as MediaDetail} />
+        <GameLaunchSection m={{ id: 7, metadata: { hltb: { main: 600 } } } as unknown as MediaDetail} />
       </QueryClientProvider>
     )
 
-    expect(await screen.findByText('Tracked')).toBeInTheDocument()
-    expect(screen.getByText('1 h 30 m')).toBeInTheDocument()
-    expect(screen.getByText('2 sessions')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Relink executable' })).toBeInTheDocument()
-    expect(screen.queryByText('1 h 0 m')).not.toBeInTheDocument()
-    expect(screen.queryByRole('list')).not.toBeInTheDocument()
-    expect(screen.queryByText('Last 12 weeks')).not.toBeInTheDocument()
-    expect(screen.queryByRole('graphics-document')).not.toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Relink executable' })).toBeInTheDocument()
+    expect(screen.queryByText('Tracked')).not.toBeInTheDocument()
+    expect(screen.queryByText('HLTB Main')).not.toBeInTheDocument()
+    expect(screen.queryByText('1 h 30 m')).not.toBeInTheDocument()
     expect(overview).toHaveBeenCalledWith(7)
   })
 })

@@ -919,7 +919,7 @@ function HeroContinuation({
       </p>
       <h2 className="mt-2 text-xl font-semibold text-white">Build your personal archive</h2>
       <p className="mt-2 text-sm leading-relaxed text-gray-400">
-        Add a title, scan a local library, or begin a course. Home will turn that activity into a continuation feed.
+        Add a title, scan a local library, or begin a course.
       </p>
       <Link to="/anime" className="btn-primary mt-5 self-start">
         Open library

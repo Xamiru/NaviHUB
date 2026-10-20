@@ -173,7 +173,7 @@ export default function FootballMediaPage() {
     <div className="mx-auto max-w-[1500px] p-6">
       <PageHeader
         title="My archive"
-        subtitle="Every match you have watched, rated and noted, plus your clips, highlights and full matches. Files stay where you put them."
+        subtitle="Files stay where you put them."
         back={{ to: '/football', label: 'Football Archive' }}
         actions={<button className={showAttach ? 'btn-ghost' : 'btn-primary'} onClick={() => { setTab('media'); setShowAttach((value) => !value) }}>{showAttach ? 'Close form' : 'Add media'}</button>}
       />

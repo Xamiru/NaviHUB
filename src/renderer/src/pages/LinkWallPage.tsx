@@ -299,7 +299,7 @@ export default function LinkWallPage() {
   return (
     <StudySessionFrame
       title="Link Wall"
-      subtitle={`${MODE_LABEL[mediaMode]} · Select four titles that share one exact connection.`}
+      subtitle={MODE_LABEL[mediaMode]}
       progress={{ current: state.solvedGroupKeys.length, total: 4, label: 'Groups found' }}
       actions={
         <>

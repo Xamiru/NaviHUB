@@ -115,9 +115,7 @@ export default function HomophoneDrill() {
   return (
     <div>
       <p className="mb-3 text-sm text-gray-400">
-        Japanese packs thousands of meanings into a few hundred syllables — かえる alone is
-        帰る・変える・返る・買える. Context plus kanji is the only way through; this drills
-        exactly that.
+        かえる alone is 帰る・変える・返る・買える. Context and kanji tell them apart.
       </p>
       <div className="card p-5 space-y-5">
         <Group label="Words from">

@@ -6,10 +6,12 @@
 
 import { getSqlite } from '../db/connection'
 import type { HistoryEntity } from '@shared/history/schema'
+import { normalizeForSearch } from '@shared/history/search'
 import type {
   HistoryMark,
   HistoryNote,
   HistoryNoteKind,
+  HistoryRequestRecord,
   HistoryUserEntity
 } from '@shared/types'
 
@@ -88,6 +90,74 @@ export function saveNote(ref: string, body: string, kind: HistoryNoteKind): Hist
      ON CONFLICT(ref) DO UPDATE SET body = excluded.body, kind = excluded.kind, updated_at = datetime('now')`
   ).run(ref, text, kind)
   return note(ref)
+}
+
+// ---- page requests ----
+
+interface RequestRow {
+  id: number
+  query: string
+  body: string
+  created_at: string
+  done_at: string | null
+}
+
+const toRequest = (r: RequestRow): HistoryRequestRecord => ({
+  id: r.id,
+  query: r.query,
+  body: r.body,
+  createdAt: r.created_at,
+  doneAt: r.done_at
+})
+
+/** Open requests first (newest first), then done ones (most recently done first). */
+export function requests(): HistoryRequestRecord[] {
+  const rows = getSqlite()
+    .prepare('SELECT * FROM history_request ORDER BY done_at IS NOT NULL, COALESCE(done_at, created_at) DESC, id DESC')
+    .all() as RequestRow[]
+  return rows.map(toRequest)
+}
+
+// Names compare as History search does (case, diacritics, Persian/Arabic
+// letter variants, joiners), so a request typed in another form is the same
+// request. The open list is small; it is read whole and matched in JS.
+function openRequestFor(query: string, exceptId?: number): RequestRow | undefined {
+  const key = normalizeForSearch(query)
+  const open = getSqlite().prepare('SELECT * FROM history_request WHERE done_at IS NULL').all() as RequestRow[]
+  return open.find((r) => r.id !== exceptId && normalizeForSearch(r.query) === key)
+}
+
+/** A repeated open request for the same name returns the existing row instead of a duplicate. */
+export function addRequest(query: string, body: string): HistoryRequestRecord {
+  const db = getSqlite()
+  const q = query.trim().replace(/\s+/g, ' ')
+  if (!normalizeForSearch(q)) throw new Error('A request needs a name')
+  const open = openRequestFor(q)
+  if (open) {
+    const note = body.trim()
+    if (note && note !== open.body) db.prepare('UPDATE history_request SET body = ? WHERE id = ?').run(note, open.id)
+    return toRequest(db.prepare('SELECT * FROM history_request WHERE id = ?').get(open.id) as RequestRow)
+  }
+  const id = db.prepare('INSERT INTO history_request (query, body) VALUES (?, ?)').run(q, body.trim()).lastInsertRowid
+  return toRequest(db.prepare('SELECT * FROM history_request WHERE id = ?').get(id) as RequestRow)
+}
+
+/** False, with nothing changed, when reopening would duplicate a request that is already open. */
+export function setRequestDone(id: number, done: boolean): boolean {
+  const db = getSqlite()
+  if (!done) {
+    const row = db.prepare('SELECT * FROM history_request WHERE id = ?').get(id) as RequestRow | undefined
+    if (row && row.done_at && openRequestFor(row.query, id)) return false
+  }
+  db.prepare("UPDATE history_request SET done_at = CASE WHEN ? THEN COALESCE(done_at, datetime('now')) ELSE NULL END WHERE id = ?").run(
+    done ? 1 : 0,
+    id
+  )
+  return true
+}
+
+export function removeRequest(id: number): void {
+  getSqlite().prepare('DELETE FROM history_request WHERE id = ?').run(id)
 }
 
 // ---- the user's own title links ----

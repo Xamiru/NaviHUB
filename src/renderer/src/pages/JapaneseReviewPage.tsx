@@ -270,7 +270,6 @@ export default function JapaneseReviewPage() {
         <PageHeader
           back={{ to: "/japanese", label: "Japanese" }}
           title="Review"
-          subtitle="Flashcards for everything you have learned, each shown again just before you would forget it."
         />
 
         <SessionLauncher

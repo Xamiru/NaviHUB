@@ -70,7 +70,7 @@ function Journeys() {
       <Section title="Your journeys">
         {!query.data?.length && (
           <p className="text-sm text-ink-muted">
-            Start with a curated path below, or make your own sequence of matches and story moments.
+            No journeys yet.
           </p>
         )}
         {query.data?.map((j) => (

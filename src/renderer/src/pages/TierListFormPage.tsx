@@ -68,7 +68,6 @@ export default function TierListFormPage() {
 
       <QuietWorkspace
         title="Board identity"
-        description="Define what the board ranks. Tier rows and item placement stay in the editor."
       >
       <div className="space-y-4">
         <div>
@@ -113,8 +112,7 @@ export default function TierListFormPage() {
 
         {!editing && (
           <p className="text-xs text-gray-500">
-            The board starts with S–F rows in the classic colors — rename, recolor and
-            add or remove rows from the board afterwards.
+            The board starts with S–F rows; rename, recolor, add or remove them afterwards.
           </p>
         )}
 

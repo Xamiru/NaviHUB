@@ -53,7 +53,6 @@ export default function ListsIndexPage() {
     <div className="p-6 max-w-[1600px] mx-auto">
       <PageHeader
         title="Curated collections"
-        subtitle="Authored shelves, rankings and tier boards drawn from every part of the archive."
         actions={
           !isLoading && all.length === 0 ? undefined : (
             <Link to={newTo} className="btn-primary">
@@ -105,7 +104,6 @@ export default function ListsIndexPage() {
         isTiers ? (
           <EmptyState
             title="No tier lists yet"
-            body="Drag covers onto S–F tiers, tiermaker-style — anime openings, studios, wrestlers…"
             action={
               <Link to={newTo} className="btn-primary">
                 Create your first tier list
@@ -115,7 +113,6 @@ export default function ListsIndexPage() {
         ) : (
           <EmptyState
             title="No lists yet"
-            body="Rank your favorites — best anime by opening, favorite actors, worst characters…"
             action={
               <Link to={newTo} className="btn-primary">
                 Create your first list

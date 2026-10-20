@@ -158,12 +158,17 @@ export function fontAttachments(probe: MediaProbe): ProbeAttachment[] {
 }
 
 // Subtitle codecs that carry TEXT. Everything else (Blu-ray PGS, DVD VobSub) is
-// a bitmap and can never become clickable words — it gets listed and refused
-// rather than silently omitted, because Blu-ray rips carry them constantly.
+// a bitmap and can never become clickable words. PGS is drawn as pictures;
+// VobSub is listed and refused rather than silently omitted.
 const TEXT_SUB_CODECS = new Set(['subrip', 'srt', 'ass', 'ssa', 'webvtt', 'mov_text', 'text'])
 
 export function isTextualSubtitle(codec: string): boolean {
   return TEXT_SUB_CODECS.has(codec.toLowerCase())
+}
+
+export function isPgsSubtitle(codec: string): boolean {
+  const c = codec.toLowerCase()
+  return c === 'hdmv_pgs_subtitle' || c === 'pgssub'
 }
 
 export function subtitleStreams(probe: MediaProbe): ProbeStream[] {

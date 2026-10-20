@@ -1,12 +1,13 @@
 import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { usePersistedState } from '../lib/navState'
 import { useDebouncedValue, useIncrementalList, useStatuses } from '../lib/hooks'
 import { qk } from '../lib/queryKeys'
 import type { MediaConfig } from '../lib/mediaConfig'
+import { directoryCompare, directoryNameMatches, directorySorts } from '../lib/directory'
 import CoverImage from '../components/CoverImage'
+import DirectoryCard from '../components/DirectoryCard'
 import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import EmptyState from '../components/EmptyState'
@@ -14,29 +15,8 @@ import { Group, Pill } from '../components/PillGroup'
 import { Field } from '../components/Field'
 import type { CreditRole, PersonDirectoryEntry, PersonDirectorySort } from '@shared/types'
 
-const SORTS: { key: PersonDirectorySort; label: string }[] = [
-  { key: 'works', label: 'Most works' },
-  { key: 'read', label: 'Most read' },
-  { key: 'score', label: 'Your score' },
-  { key: 'name', label: 'Name' }
-]
-
-function compare(sort: PersonDirectorySort) {
-  const byName = (a: PersonDirectoryEntry, b: PersonDirectoryEntry) =>
-    a.person.name.localeCompare(b.person.name)
-  switch (sort) {
-    case 'read':
-      return (a: PersonDirectoryEntry, b: PersonDirectoryEntry) =>
-        b.readWorks - a.readWorks || b.works - a.works || byName(a, b)
-    case 'score':
-      return (a: PersonDirectoryEntry, b: PersonDirectoryEntry) =>
-        (b.meanScore ?? -1) - (a.meanScore ?? -1) || b.readWorks - a.readWorks || byName(a, b)
-    case 'name':
-      return byName
-    default:
-      return (a: PersonDirectoryEntry, b: PersonDirectoryEntry) => b.works - a.works || byName(a, b)
-  }
-}
+const SORTS = directorySorts('Most read')
+const byPerson = (e: PersonDirectoryEntry): string => e.person.name
 
 // A role-scoped creator directory (Mangaka): who made the titles in the
 // library, how many of them, how many the user has read, and their covers.
@@ -65,13 +45,8 @@ export default function CreatorDirectoryPage({
     const all = data ?? []
     return all
       .filter((e) => !readOnly || e.readWorks > 0)
-      .filter(
-        (e) =>
-          !needle ||
-          e.person.name.toLowerCase().includes(needle) ||
-          (e.person.nameNative ?? '').toLowerCase().includes(needle)
-      )
-      .sort(compare(sort))
+      .filter((e) => directoryNameMatches(needle, e.person.name, e.person.nameNative))
+      .sort(directoryCompare(sort, byPerson))
   }, [data, readOnly, needle, sort])
   const { visible, sentinelRef, hasMore } = useIncrementalList(rows)
 
@@ -147,11 +122,14 @@ function CreatorCard({
   cfg: MediaConfig
   role: CreditRole
 }) {
-  const { person, works, readWorks, meanScore, covers } = entry
+  const { person, works } = entry
   const unit = works === 1 ? cfg.singular.toLowerCase() : cfg.plural.toLowerCase()
   return (
-    <li className="card flex flex-col gap-3 p-3">
-      <Link to={`/people/${person.id}?role=${role}`} className="group flex min-w-0 items-center gap-3">
+    <DirectoryCard
+      to={`/people/${person.id}?role=${role}`}
+      name={person.name}
+      nameNative={person.nameNative}
+      image={
         <CoverImage
           path={person.photoPath}
           alt=""
@@ -159,33 +137,12 @@ function CreatorCard({
           rounded="rounded-full"
           className="h-14 w-14 shrink-0"
         />
-        <span className="min-w-0">
-          <span className="block truncate text-sm font-medium group-hover:text-accent">
-            {person.name}
-          </span>
-          {person.nameNative && (
-            <span className="block truncate text-xs text-gray-500">{person.nameNative}</span>
-          )}
-          <span className="mt-0.5 block text-xs text-gray-400">
-            {works} {unit}
-            {readWorks > 0 && ` / ${readWorks} read`}
-            {meanScore != null && ` / ★ ${meanScore.toFixed(1)}`}
-          </span>
-        </span>
-      </Link>
-      <div className="grid grid-cols-3 gap-2">
-        {covers.map((c) => (
-          <Link
-            key={c.id}
-            to={`${cfg.basePath}/${c.id}`}
-            title={c.title}
-            aria-label={c.title}
-            className={c.read ? '' : 'opacity-60 hover:opacity-100 focus-visible:opacity-100'}
-          >
-            <CoverImage path={c.coverPath} alt="" thumbWidth={160} className="aspect-[2/3] w-full" />
-          </Link>
-        ))}
-      </div>
-    </li>
+      }
+      counts={entry}
+      worksLabel={`${works} ${unit}`}
+      readLabel="read"
+      covers={entry.covers}
+      coverBase={cfg.basePath}
+    />
   )
 }

@@ -124,7 +124,6 @@ export default function HistoryHomePage() {
       <div className="relative z-10 mx-auto max-w-[1600px] p-6">
         <PageHeader
           title="History"
-          subtitle="World history by time. Every passage is a verbatim quote from a cited source, and every date and figure carries its citation."
           actions={
             next ? (
               <Link to={historyPath(next.ref) ?? '/history'} className="btn-primary">
@@ -143,12 +142,15 @@ export default function HistoryHomePage() {
           </Link>
           <span><span className="font-semibold tabular-nums text-ink">{data.counts.quotes}</span> quotes</span>
           <span><span className="font-semibold tabular-nums text-accent">{data.counts.read}</span> read</span>
+          <Link to="/history/corrections?tab=requests" className="hover:text-ink">
+            Request a page
+          </Link>
         </div>
 
         {empty || !data.range ? (
           <EmptyState
             title="Nothing researched yet"
-            body="History fills in one research session at a time, decade by decade and era by era. Each entry is built only from quoted, cited sources."
+            body="History fills in one research session at a time."
           />
         ) : (
           <>

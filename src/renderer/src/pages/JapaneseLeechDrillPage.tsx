@@ -138,7 +138,7 @@ export default function JapaneseLeechDrillPage() {
         <PageHeader back={{ to: '/japanese/stats', label: 'Stats' }} title="Leech Drill" />
         <EmptyState
           title="No leeches to drill"
-          body="Cards only land here after repeated lapses or a run of learning-step misses — that's a good thing."
+          body="Cards only land here after repeated lapses or a run of learning-step misses."
           action={
             <Link to="/japanese/stats" className="btn-primary">
               Back to stats

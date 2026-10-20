@@ -15,8 +15,7 @@ export default function EnglishRepairPage() {
     ENGLISH_REPAIR_UNITS[0]
   const key = learningSettingKey('english', selected.id)
   return <div className="mx-auto max-w-3xl p-6">
-    <PageHeader back={{ to: '/english', label: 'English' }} title="Repair a writing rule"
-      subtitle="Understand the rule, practise it, use it in writing, then check it again after a delay." />
+    <PageHeader back={{ to: '/english', label: 'English' }} title="Repair a writing rule" />
     {item && <aside className="card mb-5 p-4" aria-label="Original missed item">
       <h2 className="font-semibold">Your original item</h2>
       <p className="mt-2 text-sm">{item.prompt}</p>

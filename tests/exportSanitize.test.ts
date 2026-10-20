@@ -103,6 +103,7 @@ function seed(): void {
 
     INSERT INTO video_file (media_id, file_path, title, number, watched_at, resume_seconds)
       VALUES (1, 'Cowboy Bebop/ep01.mkv', 'Session 1', 1, '2026-08-01 22:00:00', 431);
+    INSERT INTO media_episode_favorite (media_id, number) VALUES (1, 5);
     INSERT INTO video_cache (cache_key, file_name, source_path, action, bytes)
       VALUES ('sha1-abc', 'sha1-abc.mp4', '/media/x/ep01.mkv', 'remux', 812345678);
 
@@ -202,6 +203,9 @@ function seed(): void {
       ('anime.statuses', '["Watching","Completed"]'),
       ('score.max', '10'),
       ('theme', 'dark');
+
+    INSERT INTO history_note (ref, body, kind) VALUES ('event:x', 'my private note', 'correction');
+    INSERT INTO history_request (query, body) VALUES ('Kingdom of Benin', 'heard it in a podcast');
   `)
 }
 
@@ -265,7 +269,9 @@ describe('export sanitize', () => {
       // and resume positions are personal. sanitizeSql.cjs has always deleted
       // these two; nothing ever seeded them, so the guard had a hole.
       'video_file', 'video_cache',
-      'wrestling_clip', 'wrestling_clip_link', 'wrestling_clip_tag'
+      'media_episode_favorite',
+      'wrestling_clip', 'wrestling_clip_link', 'wrestling_clip_tag',
+      'history_note', 'history_request'
     ]) {
       expect(count(t), t).toBe(0)
     }
@@ -344,6 +350,7 @@ describe('custom export policy', () => {
       notes: 'my private notes',
       favorite: 1
     })
+    expect(count('media_episode_favorite')).toBe(1)
   })
 
   it('exports Spotify source snapshots without local music linkage', () => {

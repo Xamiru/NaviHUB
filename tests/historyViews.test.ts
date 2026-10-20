@@ -6,6 +6,7 @@ import {
   decade,
   mapPins,
   overview,
+  resolveRequest,
   search,
   sourceRows,
   sourceView,
@@ -174,6 +175,40 @@ describe('History article', () => {
     expect(view.solarHijri).toBe(true)
     expect(article(index, 'source:book-a', { ...ctx(), note: null })).toBeNull()
     expect(article(index, 'event:nope', { ...ctx(), note: null })).toBeNull()
+  })
+})
+
+describe('History person chronology and page requests', () => {
+  it('lists a person\'s events in time order whatever order the files load in', () => {
+    const earlier = defineEvent({
+      id: 'earlier-uprising',
+      names: [{ text: 'Earlier Uprising', lang: 'en', role: 'primary' }],
+      researched: '2026-10-18',
+      type: 'uprising',
+      start: { alts: [{ value: { d: '1905-12' }, cites: [{ source: 'book-a', loc: { page: '1' } }] }] },
+      regions: ['iran'],
+      prominence: 2,
+      participants: [{ ref: 'person:sample-person', role: 'leader', cites: [{ source: 'book-a', loc: { page: '2' } }] }],
+      sections: [{ kind: 'overview', quotes: [q('e1')] }]
+    })
+    // Loaded after the 1978 revolution, read before it.
+    const idx = buildIndex([...fixture(), { path: 'events/earlier-uprising.ts', entity: earlier }])
+    const view = article(idx, 'person:sample-person', { ...ctx(), note: null })!
+    expect(view.appearsIn.map((a) => a.ref)).toEqual(['event:earlier-uprising', 'event:sample-revolution'])
+  })
+
+  it('resolves a request only to a page whose name equals it', () => {
+    expect(resolveRequest(index, 'Sample Revolution')).toBe('event:sample-revolution')
+    // A prefix or a word inside a longer name is not the page asked for.
+    expect(resolveRequest(index, 'sample rev')).toBeNull()
+    expect(resolveRequest(index, 'Sample')).toBeNull()
+    expect(resolveRequest(index, 'Revolution')).toBeNull()
+    // A source's title or author is not a page.
+    expect(resolveRequest(index, 'Fixture Book')).toBeNull()
+    expect(resolveRequest(index, 'Kingdom of Benin')).toBeNull()
+    expect(resolveRequest(index, '  ')).toBeNull()
+    // Case and spacing fold as in search.
+    expect(resolveRequest(index, '  SAMPLE   revolution ')).toBe('event:sample-revolution')
   })
 })
 

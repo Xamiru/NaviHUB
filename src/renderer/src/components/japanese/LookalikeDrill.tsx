@@ -97,8 +97,7 @@ export default function LookalikeDrill() {
   return (
     <div>
       <p className="mb-3 text-sm text-gray-400">
-        待 or 持? 末 or 未? The wrong options here are computed look-alikes, so every question
-        drills the exact discrimination that trips people up.
+        待 or 持? 末 or 未? The wrong options are computed look-alikes.
       </p>
       <div className="card p-5 space-y-5">
         <Group label="Kanji from">

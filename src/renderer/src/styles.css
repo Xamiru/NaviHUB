@@ -1284,7 +1284,7 @@ html[data-theme='metal-gear'] .home-hero-stats { font-family: var(--font-body); 
 }
 .archive-sidebar[data-expanded='true'] .archive-brand-link img { width: 36px; height: 42px; }
 .archive-sidebar[data-expanded='true'] .sidebar-brand { font-size: 30px !important; }
-html[data-theme='metal-gear'] .archive-sidebar nav a { font-family: var(--font-body); font-size: 13px; }
+html[data-theme='metal-gear'] .archive-sidebar nav a:not(.archive-rail-item) { font-family: var(--font-body); font-size: 13px; }
 html[data-theme='metal-gear'] .archive-sidebar nav h2 { font-size: 16px; }
 html[data-theme='metal-gear'] .archive-topbar nav a { font-size: 14px; }
 
@@ -1428,7 +1428,7 @@ html[data-theme='twin-peaks'] .archive-player { background: #711c16; }
 html[data-theme='twin-peaks'] .section-heading { background: #861e17; border-color: #bb4a37; }
 html[data-theme='twin-peaks'] .section-heading :is(h2, span) { color: #f4e8d2; }
 html[data-theme='twin-peaks'] .section-heading h2 { font-size: 1.125rem; }
-html[data-theme='twin-peaks'] .archive-sidebar nav a { font-family: var(--font-body); font-size: 13px; }
+html[data-theme='twin-peaks'] .archive-sidebar nav a:not(.archive-rail-item) { font-family: var(--font-body); font-size: 13px; }
 html[data-theme='twin-peaks'] .archive-topbar :is(nav, input, kbd),
 html[data-theme='twin-peaks'] :is(.input, .label, .chip, .pill, th) { font-family: var(--font-body); }
 html[data-theme='twin-peaks'] .home-hero { background: #611810; border: 1px solid #a34232; padding-bottom: 12px; }

@@ -355,7 +355,7 @@ export default function JapaneseReadingPage() {
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Graded reading"
-        subtitle="Connected passages N5 to N1 with optional furigana, four comprehension questions, and the mining panel one double-click away."
+        subtitle="Connected passages N5 to N1 with optional furigana and four comprehension questions."
         actions={
           <button className="btn-ghost" aria-pressed={furigana} onClick={() => setFurigana((v) => !v)}>
             {furigana ? 'Furigana on' : 'Furigana off'}

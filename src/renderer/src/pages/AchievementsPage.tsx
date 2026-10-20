@@ -137,7 +137,7 @@ export default function AchievementsPage() {
       <div className="relative">
         <PageHeader
           title="Achievement archive"
-          subtitle={`Your Steam and RetroAchievements sets, tracked locally. ${OVERLAY_HINT}`}
+          subtitle={`Your Steam and RetroAchievements sets. ${OVERLAY_HINT}`}
           actions={<PopupTestAction />}
         />
 

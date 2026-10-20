@@ -264,7 +264,6 @@ export default function LibrarylePage() {
         <PageHeader
           back={{ to: '/quiz', label: 'Quiz' }}
           title="Libraryle"
-          subtitle="Find the hidden movie or TV title using year, genre, company, director, and cast feedback."
           className="mb-6"
         />
         <div className="card space-y-6 p-6">

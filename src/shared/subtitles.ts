@@ -654,21 +654,29 @@ export function parseSubtitleFileName(name: string): {
 // Seeds the two track slots from the user's language preferences. The clickable
 // slot avoids signs tracks (thirty lines of sign translations is not a script),
 // and the crutch slot never repeats whatever the clickable slot picked.
-export function pickDefaultTracks<T extends { lang: SubLang; signs?: boolean; forced?: boolean }>(
+// Image tracks: PGS can fill only the primary slot (it is drawn as pictures,
+// the second slot is text) and loses to a text track in the same language;
+// any other image track (VobSub) cannot be drawn and is never picked.
+export function pickDefaultTracks<
+  T extends { lang: SubLang; signs?: boolean; forced?: boolean; textual?: boolean; format?: string }
+>(
   tracks: T[],
   prefs: { primary: SubLang; secondary: SubLang }
 ): { primary: T | null; secondary: T | null } {
+  const isPicture = (t: T): boolean => t.textual === false
   const rank = (t: T, want: SubLang): number => {
     let score = t.lang === want ? 100 : t.lang === 'other' ? 10 : 0
     if (t.signs) score -= 60
     if (t.forced) score -= 30
+    if (isPicture(t)) score -= 5
     return score
   }
-  const best = (want: SubLang, exclude: T | null): T | null => {
+  const best = (want: SubLang, exclude: T | null, textOnly = false): T | null => {
     let winner: T | null = null
     let winning = 0
     for (const t of tracks) {
       if (t === exclude) continue
+      if (isPicture(t) && (textOnly || t.format !== 'pgs')) continue
       const score = rank(t, want)
       if (score > winning) {
         winning = score
@@ -678,7 +686,11 @@ export function pickDefaultTracks<T extends { lang: SubLang; signs?: boolean; fo
     return winner
   }
   const primary = best(prefs.primary, null)
-  return { primary, secondary: best(prefs.secondary, primary) }
+  // A release with only the second language (English-only fansubs, Blu-ray
+  // PGS) must not leave the primary slot empty: the styled layer, the picture
+  // layer, the signs filter and mining all follow the primary track.
+  if (!primary) return { primary: best(prefs.secondary, null), secondary: null }
+  return { primary, secondary: best(prefs.secondary, primary, true) }
 }
 
 // The English "tokenizer" — pure and synchronous, so an English subtitle row is

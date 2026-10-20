@@ -55,7 +55,7 @@ export function StorageUsageSettings() {
   return (
     <SettingCard
       title="Storage usage"
-      description="How much space each part of NaviHUB uses on this machine. Measuring reads every file in Media and Pictures, so it runs only when you ask."
+      description="Measuring reads every file in Media and Pictures, so it runs only when you ask."
     >
       <div className="flex flex-wrap gap-2">
         <button className="btn-ghost" disabled={usage.isFetching} onClick={() => void usage.refetch()}>

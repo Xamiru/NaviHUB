@@ -176,7 +176,7 @@ export default function FootballLineupPage() {
     const count = availability.data?.football.lineup ?? 0
     return (
       <div className="mx-auto max-w-3xl p-6">
-        <PageHeader title="Name the XI" subtitle="A famous match's starting eleven, laid out by formation with shirt numbers. Type every name you can." back={{ to: '/football/quiz', label: 'Football quiz room' }} />
+        <PageHeader title="Name the XI" subtitle="Type every name you can." back={{ to: '/football/quiz', label: 'Football quiz room' }} />
         <div className="card space-y-4 p-6">
           <p className="text-sm text-gray-400">Finals, knockout ties and tournament matches come first. Full names, aliases and unique surnames all count. Each player named is 100 points.</p>
           <p className="text-sm text-gray-400">{count.toLocaleString()} matches with complete lineups.</p>

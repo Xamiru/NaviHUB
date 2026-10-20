@@ -19,7 +19,6 @@ export default function HistoryQuizPage() {
     <div className="mx-auto max-w-[1100px] p-6">
       <PageHeader
         title="History quiz"
-        subtitle="Rounds dealt from the dates, quotes and map borders of the History pages."
         back={{ to: '/history', label: 'History' }}
         className="mb-5"
       />

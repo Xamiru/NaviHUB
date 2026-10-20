@@ -260,6 +260,12 @@ export interface GlobalSearchResults {
   companies: Company[]
   characters: Character[]
   history: HistorySearchHit[]
+  /**
+   * True only when History search ran and no page is named exactly (after
+   * normalisation) as the query, so the palette may offer a page request. Absent when the
+   * catalog could not answer: an empty `history` alone does not mean "no page".
+   */
+  historyRequestable?: boolean
 }
 
 // ---- Lists (user-curated collections) ----
@@ -2044,6 +2050,23 @@ export interface PersonDirectoryEntry {
   covers: PersonDirectoryWork[]
 }
 
+// The Studios directory: companies linked to one media type's titles, shown
+// through those titles' covers (AniList has no studio logos).
+export interface CompanyDirectoryQuery {
+  mediaType: MediaType
+  // Statuses that count a title as watched, as for PersonDirectoryQuery.
+  readStatuses: string[]
+}
+
+export interface CompanyDirectoryEntry {
+  company: Company
+  works: number
+  readWorks: number
+  meanScore: number | null
+  // Watched titles first, then the user's highest scored, at most three.
+  covers: PersonDirectoryWork[]
+}
+
 // A character's appearance in one work, with everyone who voiced them there
 // (a character can have multiple VAs in the same show, e.g. young/adult).
 export interface CharacterAppearance {
@@ -3545,8 +3568,9 @@ export interface VideoSubtitleTrack {
   id: string // 'sidecar:<hash>' | 'embedded:<streamIndex>'
   label: string
   lang: 'ja' | 'en' | 'other'
-  format: 'srt' | 'vtt' | 'ass'
-  url: string | null // null = textual but not yet extracted (needs ffmpeg)
+  // 'pgs' = Blu-ray image subtitles, drawn as pictures (never clickable).
+  format: 'srt' | 'vtt' | 'ass' | 'pgs'
+  url: string | null // null = not yet extracted from the container (needs ffmpeg)
   signs: boolean
   forced: boolean
   textual: boolean // false = a bitmap track (PGS/VobSub) that can never be text
@@ -4708,7 +4732,7 @@ export interface LibraryInsights {
   unknownYear: number // finished titles with no usable release year
 }
 
-// "Who your time went to": people and studios ranked by the minutes of the
+// "Who you kept coming back to": people and studios ranked by how many
 // consumed titles they are credited on. Computed in the quiz-pool process.
 export type CreditTimeGroupKey = 'voice' | 'actor' | 'director' | 'writer' | 'studio'
 
@@ -4716,15 +4740,14 @@ export interface CreditTimeEntry {
   id: number // person.id, or company.id for the studio group
   name: string
   imagePath: string | null
-  minutes: number
   titleCount: number
-  estimated: boolean
+  coverPaths: string[] // studios: up to 3 covers of their titles; empty for people
 }
 
 export interface CreditTimeGroup {
   key: CreditTimeGroupKey
   label: string
-  entries: CreditTimeEntry[] // top 10 by minutes
+  entries: CreditTimeEntry[] // top 10 by title count
 }
 
 // Japanese-roadmap immersion milestones, counted from the real library.
@@ -6584,6 +6607,22 @@ export interface HistoryNote {
 
 export interface HistoryNoteRow extends HistoryNote {
   target: HistoryRefInfo
+}
+
+/** A page the user looked up and did not find, kept for the next research session. */
+export interface HistoryRequestRecord {
+  id: number
+  /** The name as the user typed it. */
+  query: string
+  /** Optional note: where they heard it, what they want to know. */
+  body: string
+  createdAt: string
+  doneAt: string | null
+}
+
+export interface HistoryRequest extends HistoryRequestRecord {
+  /** The catalog page whose name now matches the request, once one exists. */
+  resolved: HistoryRefInfo | null
 }
 
 export interface HistoryParticipation {

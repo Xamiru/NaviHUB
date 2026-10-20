@@ -89,7 +89,6 @@ export default function EnglishDictionaryPage() {
       <PageHeader
         back={{ to: '/english', label: 'English' }}
         title="Dictionary"
-        subtitle="Look a word up, save the definition that fits — every saved word joins the review deck."
       />
 
       {dictInfo === null && (

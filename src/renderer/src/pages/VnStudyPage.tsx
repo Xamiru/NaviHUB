@@ -75,7 +75,6 @@ export default function VnStudyPage() {
       <PageHeader
         title={`${overview.data.title}: Text and study`}
         back={{ to: `/visual-novels/${mediaId}/reading`, label: 'Reading workspace' }}
-        subtitle="Save local Japanese text, look up words and mine sentences for review."
       />
       <p className="mb-4 max-w-prose text-sm text-ink-muted">
         Statistics describe your saved captures only. Offline analysis needs the Japanese tokenizer;

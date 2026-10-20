@@ -24,7 +24,6 @@ export default function MusicSmartPage() {
     <div className="mx-auto max-w-7xl p-4 sm:p-6">
       <PageHeader
         title="Smart playlists"
-        subtitle="Save rules once. Matching tracks update as you listen, tag, and rate your library."
         actions={
           <Link className="btn-primary" to="/music/smart/new">
             New smart playlist
@@ -69,7 +68,6 @@ export default function MusicSmartPage() {
                 </h2>
                 <p className="mt-3 max-w-2xl text-sm text-ink-muted">
                   Try rarely played favorites or a study mix using your personal tags.
-                  Everything matches against your local music library.
                 </p>
               </div>
             )}

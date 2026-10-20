@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { archiveContextForPath, contextTabForPath } from '../lib/adaptiveNav'
+import { openTab, useBrowserTabs } from '../lib/browserTabs'
 import { useSettings } from '../lib/hooks'
 import { SIDEBAR_HIDDEN_SETTING, parseHiddenSections } from '../lib/sidebarSections'
 import GameSessionIndicator from './GameSessionIndicator'
@@ -20,6 +21,7 @@ export default function Topbar() {
   const navigate = useNavigate()
   const location = useLocation()
   const { data: settings } = useSettings()
+  const { tabs } = useBrowserTabs()
   const theme = resolveAppTheme(settings?.[APP_THEME_SETTING])
   const [q, setQ] = useState('')
   const tabsRef = useRef<HTMLElement>(null)
@@ -101,6 +103,19 @@ export default function Topbar() {
         <div className="flex shrink-0 items-center gap-2">
           <GameSessionIndicator />
           <TasksIndicator />
+          {/* The tab strip (and its own +) appears only with two tabs, so with
+              one this is the mouse way to open a second. */}
+          {tabs.length < 2 && (
+            <button
+              type="button"
+              className="btn-ghost h-8 w-8 p-0 text-base"
+              aria-label="New tab"
+              title="New tab (Ctrl+T)"
+              onClick={() => void openTab('/')}
+            >
+              +
+            </button>
+          )}
         </div>
       </div>
 

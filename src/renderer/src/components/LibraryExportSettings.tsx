@@ -55,7 +55,7 @@ export default function LibraryExportSettings(): React.JSX.Element {
     <>
       <QuietWorkspace
         title="Library export"
-        description="Create a portable, privacy-controlled copy of your imported library. Logs, credentials, machine paths and large local collections are always excluded."
+        description="Logs, credentials, machine paths and large local collections are always excluded."
         actions={
           // Ghost: on Backup & about the one filled button is "Back up now".
           <button className="btn-ghost" onClick={() => setOpen(true)}>
@@ -196,9 +196,6 @@ function LibraryExportDialog({
             <h2 id="library-export-title" className="text-lg font-semibold text-white">
               Export library
             </h2>
-            <p className="mt-1 text-sm text-gray-400">
-              Build a portable database and only the small assets it still references.
-            </p>
           </div>
           <button className="text-gray-400 hover:text-white" aria-label="Close" onClick={onClose}>
             ✕

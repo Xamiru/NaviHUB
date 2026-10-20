@@ -67,7 +67,6 @@ export default function JapaneseSentencesPage() {
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Sentence games"
-        subtitle="Real sentences from the bank, tokenised on the fly — no authored content, so the pool never runs dry."
       />
       <Tabs
         id="sentence-games"

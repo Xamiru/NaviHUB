@@ -97,6 +97,7 @@ describe('main-process loading boundaries', () => {
       'src/main/quizPoolsCore.ts',
       'src/main/repos/quizRepo.ts',
       'src/main/repos/creditTimeRepo.ts',
+      'src/main/repos/directoryRepo.ts',
       'src/shared/timeStats.ts'
     ]) {
       const src = read(file)

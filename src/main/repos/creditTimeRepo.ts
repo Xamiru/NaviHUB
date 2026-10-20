@@ -1,28 +1,30 @@
 import { getSqlite } from '../db/sqliteHandle'
+import { STUDIO_ROLES } from './directoryRepo'
 import {
   STAT_TYPES,
   STAT_ROW_COLUMNS,
   COMPLETED_STATUS_SQL,
   completedLabels,
   isConsumed,
-  rowMinutes,
   type StatRow,
   type TimeStatsConfig
 } from '@shared/timeStats'
 import type {
   CreditRole,
   CreditTimeGroup,
-  CreditTimeGroupKey,
-  MediaCompanyRole
+  CreditTimeGroupKey
 } from '@shared/types'
 
-// "Who your time went to" on /stats: people and studios ranked by the minutes
-// of the consumed titles they are credited on. It reads every credit of every
-// consumed title, so it runs in the quiz pool process (quizPoolsCore) with its
-// own read-only connection; it must not import electron or db/connection.
-// Main reads the settings into the TimeStatsConfig it passes in.
+// "Who you kept coming back to" on /stats: people and studios ranked by how
+// many consumed titles they are credited on. Titles, not minutes: a long TV
+// run credits its whole cast for every hour, which buried everyone else. It
+// reads every credit of every consumed title, so it runs in the quiz pool
+// process (quizPoolsCore) with its own read-only connection; it must not
+// import electron or db/connection. Main reads the settings into the
+// TimeStatsConfig it passes in.
 
 const TOP = 10
+const STUDIO_COVERS = 3
 
 const PERSON_GROUPS: { key: CreditTimeGroupKey; label: string; roles: CreditRole[] }[] = [
   { key: 'voice', label: 'Voice actors', roles: ['voice_actor'] },
@@ -30,14 +32,6 @@ const PERSON_GROUPS: { key: CreditTimeGroupKey; label: string; roles: CreditRole
   { key: 'director', label: 'Directors', roles: ['director'] },
   { key: 'writer', label: 'Writers and authors', roles: ['writer', 'mangaka'] }
 ]
-
-const STUDIO_ROLES: MediaCompanyRole[] = ['animation_studio', 'production_studio', 'developer']
-
-interface Tally {
-  minutes: number
-  titles: Set<number>
-  estimated: boolean
-}
 
 // The consumed filter, aliased m, shared by the three reads below.
 function consumedWhere(cfg: TimeStatsConfig): { sql: string; args: string[] } {
@@ -50,30 +44,19 @@ function consumedWhere(cfg: TimeStatsConfig): { sql: string; args: string[] } {
   }
 }
 
-function addTo(
-  tallies: Map<number, Tally>,
-  id: number,
-  mediaId: number,
-  title: { minutes: number; estimated: boolean }
-): void {
-  let t = tallies.get(id)
-  if (!t) {
-    t = { minutes: 0, titles: new Set(), estimated: false }
-    tallies.set(id, t)
+// A person voicing three characters in one show counts that show once.
+function addTo(tallies: Map<number, Set<number>>, id: number, mediaId: number): void {
+  let titles = tallies.get(id)
+  if (!titles) {
+    titles = new Set()
+    tallies.set(id, titles)
   }
-  // A person voicing three characters in one show counts that show once.
-  if (t.titles.has(mediaId)) return
-  t.titles.add(mediaId)
-  t.minutes += title.minutes
-  if (title.estimated) t.estimated = true
+  titles.add(mediaId)
 }
 
-function topOf(tallies: Map<number, Tally>): [number, Tally][] {
+function topOf(tallies: Map<number, Set<number>>): [number, Set<number>][] {
   return [...tallies.entries()]
-    .sort(
-      (a, b) =>
-        b[1].minutes - a[1].minutes || b[1].titles.size - a[1].titles.size || a[0] - b[0]
-    )
+    .sort((a, b) => b[1].size - a[1].size || a[0] - b[0])
     .slice(0, TOP)
 }
 
@@ -81,16 +64,14 @@ export function creditTime(cfg: TimeStatsConfig): CreditTimeGroup[] {
   const db = getSqlite()
   const where = consumedWhere(cfg)
 
-  const minutesById = new Map<number, { minutes: number; estimated: boolean }>()
+  const consumed = new Map<number, { cover: string | null; score: number | null }>()
   const rows = db
-    .prepare(`SELECT ${STAT_ROW_COLUMNS} FROM media_item m WHERE ${where.sql}`)
-    .all(...where.args) as StatRow[]
+    .prepare(`SELECT ${STAT_ROW_COLUMNS}, m.score FROM media_item m WHERE ${where.sql}`)
+    .all(...where.args) as (StatRow & { score: number | null })[]
   for (const r of rows) {
-    if (!isConsumed(r, cfg)) continue
-    const m = rowMinutes(r, cfg)
-    if (m.minutes > 0) minutesById.set(r.id, m)
+    if (isConsumed(r, cfg)) consumed.set(r.id, { cover: r.cover_path, score: r.score })
   }
-  if (minutesById.size === 0) return []
+  if (consumed.size === 0) return []
 
   // Joining from media_item seeks idx_credit_media / idx_mc_media per title.
   const personRoles = PERSON_GROUPS.flatMap((g) => g.roles)
@@ -104,14 +85,13 @@ export function creditTime(cfg: TimeStatsConfig): CreditTimeGroup[] {
 
   const groupOfRole = new Map<CreditRole, CreditTimeGroupKey>()
   for (const g of PERSON_GROUPS) for (const role of g.roles) groupOfRole.set(role, g.key)
-  const personTallies = new Map<CreditTimeGroupKey, Map<number, Tally>>(
+  const personTallies = new Map<CreditTimeGroupKey, Map<number, Set<number>>>(
     PERSON_GROUPS.map((g) => [g.key, new Map()])
   )
   for (const c of credits) {
-    const title = minutesById.get(c.media_id)
     const group = groupOfRole.get(c.role)
-    if (!title || !group) continue
-    addTo(personTallies.get(group)!, c.person_id, c.media_id, title)
+    if (!consumed.has(c.media_id) || !group) continue
+    addTo(personTallies.get(group)!, c.person_id, c.media_id)
   }
 
   const studioLinks = db
@@ -121,10 +101,9 @@ export function creditTime(cfg: TimeStatsConfig): CreditTimeGroup[] {
        WHERE ${where.sql} AND mc.role IN (${STUDIO_ROLES.map(() => '?').join(',')})`
     )
     .all(...where.args, ...STUDIO_ROLES) as { media_id: number; company_id: number }[]
-  const studioTallies = new Map<number, Tally>()
+  const studioTallies = new Map<number, Set<number>>()
   for (const l of studioLinks) {
-    const title = minutesById.get(l.media_id)
-    if (title) addTo(studioTallies, l.company_id, l.media_id, title)
+    if (consumed.has(l.media_id)) addTo(studioTallies, l.company_id, l.media_id)
   }
 
   // Names and images only for the handful that made a top list.
@@ -150,11 +129,22 @@ export function creditTime(cfg: TimeStatsConfig): CreditTimeGroup[] {
     for (const c of found) companies.set(c.id, { name: c.name, image: c.logo_path })
   }
 
+  // Studio logos are rare and sit badly in a small square, so a studio shows
+  // the covers of its best-scored titles the user has seen.
+  const coversOf = (titles: Set<number>): string[] =>
+    [...titles]
+      .map((id) => ({ id, ...consumed.get(id)! }))
+      .filter((t) => t.cover)
+      .sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || b.id - a.id)
+      .slice(0, STUDIO_COVERS)
+      .map((t) => t.cover!)
+
   const entries = (
-    top: [number, Tally][],
-    names: Map<number, { name: string; image: string | null }>
+    top: [number, Set<number>][],
+    names: Map<number, { name: string; image: string | null }>,
+    withCovers: boolean
   ): CreditTimeGroup['entries'] =>
-    top.flatMap(([id, t]) => {
+    top.flatMap(([id, titles]) => {
       const n = names.get(id)
       if (!n) return []
       return [
@@ -162,9 +152,8 @@ export function creditTime(cfg: TimeStatsConfig): CreditTimeGroup[] {
           id,
           name: n.name,
           imagePath: n.image,
-          minutes: t.minutes,
-          titleCount: t.titles.size,
-          estimated: t.estimated
+          titleCount: titles.size,
+          coverPaths: withCovers ? coversOf(titles) : []
         }
       ]
     })
@@ -172,8 +161,8 @@ export function creditTime(cfg: TimeStatsConfig): CreditTimeGroup[] {
   const groups: CreditTimeGroup[] = personTops.map(({ g, top }) => ({
     key: g.key,
     label: g.label,
-    entries: entries(top, people)
+    entries: entries(top, people, false)
   }))
-  groups.push({ key: 'studio', label: 'Studios', entries: entries(studioTop, companies) })
+  groups.push({ key: 'studio', label: 'Studios', entries: entries(studioTop, companies, true) })
   return groups.filter((g) => g.entries.length > 0)
 }

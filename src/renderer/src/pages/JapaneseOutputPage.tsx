@@ -127,8 +127,7 @@ export default function JapaneseOutputPage() {
           <>
             <SessionEvidence title="Honest feedback">
               <p>
-                The structure check only detects the listed language signals. It cannot prove that every
-                sentence is natural or that a different valid answer is wrong.
+                The structure check only detects the listed language signals.
               </p>
             </SessionEvidence>
             <SessionEvidence title="Unit goal">
@@ -241,7 +240,7 @@ export default function JapaneseOutputPage() {
         <PageHeader
           back={{ to: '/japanese/tutor', label: 'Tutor' }}
           title="Output unit complete"
-          subtitle={`${unit.title}: ${percent}% self-rated first-draft readiness. This is not automatic language grading.`}
+          subtitle={`${unit.title}: ${percent}% self-rated first-draft readiness.`}
         />
         <div className="flex flex-wrap gap-2">
           <button className="btn-primary" onClick={start}>Repeat unit</button>
@@ -266,7 +265,7 @@ export default function JapaneseOutputPage() {
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Controlled Japanese output"
-        subtitle="Thirty prompts progress from sentence building through role-play, retelling, and reasoned writing. Produce first, compare second, then repair and rate honestly."
+        subtitle="Thirty prompts from sentence building through role-play, retelling and reasoned writing."
         actions={<Link to="/japanese/tutor" className="btn-ghost">Tutor plan</Link>}
       />
 
@@ -307,7 +306,7 @@ export default function JapaneseOutputPage() {
             ))}
           </div>
           <p className="mt-5 max-w-3xl text-sm leading-6 text-gray-400">
-            Model answers are examples, not the only valid Japanese. The offline checker reports only whether expected structures appear; your self-rating refers to the first draft before comparison.
+            Model answers are examples, not the only valid Japanese.
           </p>
           <button className="btn-primary mt-5" onClick={start}>Start this three-prompt unit</button>
           {transfer && <>

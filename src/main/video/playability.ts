@@ -35,8 +35,10 @@ export function buildSubtitleExtractArgs(input: {
   input: string
   output: string
   typeIndex: number
-  format: 'ass' | 'srt' | 'vtt'
+  format: 'ass' | 'srt' | 'vtt' | 'pgs'
 }): string[] {
+  // PGS is copied bit for bit into a .sup, the container the player parses.
+  const muxer = input.format === 'vtt' ? 'webvtt' : input.format === 'pgs' ? 'sup' : input.format
   return [
     '-nostdin',
     '-hide_banner',
@@ -50,7 +52,7 @@ export function buildSubtitleExtractArgs(input: {
     '-c:s',
     input.format === 'vtt' ? 'webvtt' : 'copy',
     '-f',
-    input.format === 'vtt' ? 'webvtt' : input.format,
+    muxer,
     ffInputArg(input.output)
   ]
 }

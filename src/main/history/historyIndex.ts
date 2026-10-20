@@ -350,6 +350,13 @@ export function buildIndex(entries: CatalogEntry[], personal: HistoryUserEntity[
     return (e && e.kind === 'event' && startYear(e.start)) || 0
   }
   for (const list of index.polityEvents.values()) list.sort((a, b) => startOf(a) - startOf(b))
+  // A person's events read as a chronology too; an undated event goes last.
+  const personStart = (ref: string): number => {
+    const e = lookup(c, ref)
+    const y = e && e.kind === 'event' ? startYear(e.start) : null
+    return y ?? Number.POSITIVE_INFINITY
+  }
+  for (const list of index.personEvents.values()) list.sort((a, b) => personStart(a.ref) - personStart(b.ref))
   for (const s of c.sources.values()) {
     docs.push({
       ref: refOf('source', s.id),

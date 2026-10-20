@@ -43,6 +43,8 @@ import type {
   PersonDirectoryQuery,
   PersonDirectoryEntry,
   Company,
+  CompanyDirectoryEntry,
+  CompanyDirectoryQuery,
   Character,
   Tag,
   TagWithCounts,
@@ -76,6 +78,8 @@ import type {
   HistoryNote,
   HistoryNoteKind,
   HistoryNoteRow,
+  HistoryRequest,
+  HistoryRequestRecord,
   HistoryOverview,
   HistoryBorders,
   HistoryMapPin,
@@ -555,6 +559,8 @@ export interface NaviApi {
   }
   companies: {
     list(search?: string, mediaType?: MediaType | MediaType[], limit?: number): Promise<Company[]>
+    // The Studios directory: companies on one type's titles, with covers.
+    directory(query: CompanyDirectoryQuery): Promise<CompanyDirectoryEntry[]>
     get(id: number): Promise<Company | null>
     media(id: number): Promise<MediaItem[]>
     // Crew credited on two or more of this company's works, most shared first.
@@ -1114,6 +1120,11 @@ export interface NaviApi {
     // An empty body removes the note.
     saveNote(ref: string, body: string, kind: HistoryNoteKind): Promise<HistoryNote | null>
     notes(kind?: HistoryNoteKind): Promise<HistoryNoteRow[]>
+    // Pages the user looked up and did not find, for the next research session.
+    requests(): Promise<HistoryRequest[]>
+    addRequest(query: string, body: string): Promise<HistoryRequestRecord>
+    setRequestDone(id: number, done: boolean): Promise<boolean>
+    removeRequest(id: number): Promise<void>
     linkMedia(ref: string, mediaId: number, kind: string): Promise<number>
     unlinkMedia(id: number): Promise<void>
     userEntities(): Promise<HistoryUserEntity[]>
@@ -1500,6 +1511,12 @@ export interface NaviApi {
       startSec: number
       endSec: number
     }): Promise<{ audioPath: string } | null>
+  }
+  episodeFavorites: {
+    // Hearted episode numbers of one title, ascending. Keyed by number, not by
+    // a linked file, so they need no folder and survive rescan and Unlink.
+    list(mediaId: number): Promise<number[]>
+    set(mediaId: number, number: number, favorite: boolean): Promise<void>
   }
   music: {
     // Standalone local-music library (<root>/<Artist>/<Album>/<tracks>).

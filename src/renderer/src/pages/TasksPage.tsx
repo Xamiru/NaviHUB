@@ -41,7 +41,6 @@ export default function TasksPage() {
     <div className="mx-auto max-w-[1600px] p-4 sm:p-6">
       <PageHeader
         title="Work and maintenance"
-        subtitle="A list-first task canvas for imports, downloads, scans, conversions and their structured logs."
         actions={
           <ActionMenu
             items={[
@@ -69,7 +68,7 @@ export default function TasksPage() {
             {active.length === 0 ? (
               <EmptyState
                 title="Nothing running"
-                body="Imports, downloads, scans and conversions show up here while they work. Each row shows only the controls that task can honor."
+                body="Imports, downloads, scans and conversions show up here while they work."
                 action={
                   <Link className="btn-primary" to="/bulk">
                     Bulk Import

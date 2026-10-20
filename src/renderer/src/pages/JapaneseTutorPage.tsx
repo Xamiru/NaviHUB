@@ -97,7 +97,7 @@ export default function JapaneseTutorPage() {
               <Rhythm title="40 minutes" body="Reviews, listening and reading." />
               <Rhythm title="60 minutes" body="Adds making your own sentences, and either the next lesson or a few minutes on your weakest measured skill." />
               <Rhythm title="Starting out" body="Kana comes first until you can read it. Listening uses the sound-system units until you know enough words to understand sentences." />
-              <Rhythm title="Nothing is forced" body="Every block links to a tool you can also open any time. A skill you have not tried yet is never treated as a weakness." />
+              <Rhythm title="Nothing is forced" body="A skill you have not tried yet is never treated as a weakness." />
             </dl>
           </Section>
 
@@ -227,7 +227,7 @@ export default function JapaneseTutorPage() {
                         {phase.exitEvidence.map((item) => <li key={item}>{item}</li>)}
                       </ul>
                       <p className="mt-4 text-xs leading-5 text-gray-500">
-                        Nothing is locked. Until these are true, a full session spends a few minutes on them.
+                        Until these are true, a full session spends a few minutes on them.
                       </p>
                     </div>
                   </article>

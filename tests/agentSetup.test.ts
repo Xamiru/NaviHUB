@@ -29,6 +29,17 @@ describe('dual-agent setup stays synchronized', () => {
     expect(Buffer.compare(claude, agents)).toBe(0)
   })
 
+  for (const dir of ['src/main', 'src/renderer', 'src/shared']) {
+    it(`keeps the nested ${dir} CLAUDE.md and AGENTS.md identical, with resolvable imports`, () => {
+      const claude = readFileSync(join(root, dir, 'CLAUDE.md'))
+      const agents = readFileSync(join(root, dir, 'AGENTS.md'))
+      expect(Buffer.compare(claude, agents)).toBe(0)
+      const imports = [...claude.toString('utf8').matchAll(/^@(\S+)$/gm)].map((m) => m[1])
+      expect(imports.length).toBeGreaterThan(0)
+      for (const p of imports) expect(existsSync(resolve(root, dir, p)), p).toBe(true)
+    })
+  }
+
   it('provides a Codex adapter for every authoritative Claude skill', () => {
     expect(skillNames(codexSkillsRoot)).toEqual(skillNames(claudeSkillsRoot))
   })

@@ -85,3 +85,14 @@ const page = await app.firstWindow()
   up to the API's request-size limit long before the context fills, and the
   session then stalls with "No response from API". Past ~30, `/compact`.
 - Capture `page.on('pageerror')` + console errors — a clean run prints none.
+
+## Close every build with a verification table
+
+Before reporting a task done, run the full gate once after the last edit (`npm run typecheck`,
+`npm run test`), exercise every changed screen in the app, and end the completion message with:
+
+| Change | Test coverage | Checked in app |
+|---|---|---|
+| one row per user-visible change | test file, or "none" | yes / no, and why not (no data on the laptop, Windows-only path, missing media) |
+
+A "no" row is the user's to-check list for the PC; name exactly what to click.

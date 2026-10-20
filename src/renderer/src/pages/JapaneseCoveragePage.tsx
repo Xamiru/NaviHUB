@@ -39,7 +39,6 @@ export default function JapaneseCoveragePage() {
       <PageHeader
         back={{ to: "/japanese", label: "Japanese" }}
         title="Comprehension"
-        subtitle="How much of each scanned series you know, and what suits assisted reading."
       />
 
       <div className="mb-4">

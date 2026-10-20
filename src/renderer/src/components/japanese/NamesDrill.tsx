@@ -58,7 +58,7 @@ export default function NamesDrillSetup() {
   return (
     <div>
       <p className="mb-3 text-sm text-gray-400">
-        Names are where readings go feral — this drills the common ones until 田中 vs 中田 is
+        Drills common names until 田中 vs 中田 is
         automatic. Any attested reading counts.
       </p>
       <Section title="Names" className="mb-5">

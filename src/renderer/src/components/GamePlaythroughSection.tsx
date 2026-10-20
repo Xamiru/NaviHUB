@@ -68,11 +68,7 @@ export function GameResumeCard({ mediaId, onOpen }: { mediaId: number; onOpen: (
             </p>
           )}
         </>
-      ) : (
-        <p className="text-sm text-ink-muted">
-          Keep your current objective, build, and notes together for your next session.
-        </p>
-      )}
+      ) : null}
       <button className="btn mt-3" onClick={onOpen}>
         {active ? 'Update playthrough' : 'Manage playthroughs'}
       </button>

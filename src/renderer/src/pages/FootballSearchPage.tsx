@@ -32,7 +32,7 @@ export default function FootballSearchPage() {
 
   return (
     <div className="mx-auto max-w-5xl p-6">
-      <PageHeader title="Search the Football Archive" subtitle="Find a competition, season, team, player, manager or match in the installed history." back={{ to: '/football', label: 'Football Archive' }} />
+      <PageHeader title="Search the Football Archive" back={{ to: '/football', label: 'Football Archive' }} />
       <label className="mb-7 block max-w-2xl"><span className="label mb-2 block">Search the installed archive</span><input
           className="input"
           autoFocus

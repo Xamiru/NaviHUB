@@ -3,9 +3,12 @@ import type Database from 'better-sqlite3'
 import { createTestDb } from './helpers'
 import * as peopleRepo from '../src/main/repos/peopleRepo'
 import * as mediaRepo from '../src/main/repos/mediaRepo'
+import * as directoryRepo from '../src/main/repos/directoryRepo'
 
 let db: Database.Database
 vi.mock('../src/main/db/connection', () => ({ getSqlite: () => db }))
+// The directories run in the quiz pool process and read through sqliteHandle.
+vi.mock('../src/main/db/sqliteHandle', () => ({ getSqlite: () => db }))
 
 beforeEach(() => {
   db = createTestDb()
@@ -40,7 +43,7 @@ describe('person directory', () => {
     const anime = mediaRepo.create({ mediaType: 'anime', title: 'Anime' })
     credit(anime, other, 'mangaka')
 
-    const entries = peopleRepo.directory({
+    const entries = directoryRepo.personDirectory({
       role: 'mangaka',
       mediaType: 'manga',
       readStatuses: ['Reading', 'Completed']

@@ -139,7 +139,6 @@ export default function QuizLandingPage() {
     <div className="p-6 max-w-[1600px] mx-auto">
       <PageHeader
         title="Quiz broadcast"
-        subtitle="Replayable solo challenges and shared-room games built from the library you have completed."
         actions={<Link to="/quiz/party" className="btn-primary">Start party</Link>}
       />
       <section className="card mb-6 flex flex-wrap items-center gap-3 p-4" aria-label="Open play">

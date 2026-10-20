@@ -117,14 +117,16 @@ function urlToRelPath(url: string): string {
   return decodeURIComponent(u.host + u.pathname)
 }
 
-// Which track becomes the corpus. Textual only, Japanese preferred, and signs
-// and forced tracks pushed DOWN — a "Signs & Songs" track is thirty lines of
-// sign translations and would report absurd comprehension.
-export function pickCorpusTrack(tracks: VideoSubtitleTrack[]): VideoSubtitleTrack | null {
-  let best: VideoSubtitleTrack | null = null
+type TextSubtitleTrack = VideoSubtitleTrack & { format: Exclude<VideoSubtitleTrack['format'], 'pgs'> }
+
+// Which track becomes the corpus. Textual only (never PGS pictures), Japanese
+// preferred, and signs and forced tracks pushed DOWN — a "Signs & Songs" track
+// is thirty lines of sign translations and would report absurd comprehension.
+export function pickCorpusTrack(tracks: VideoSubtitleTrack[]): TextSubtitleTrack | null {
+  let best: TextSubtitleTrack | null = null
   let bestScore = -Infinity
   for (const t of tracks) {
-    if (!t.textual) continue
+    if (!isTextTrack(t)) continue
     let score = t.lang === 'ja' ? 100 : t.lang === 'other' ? 10 : 0
     if (t.signs) score -= 60
     if (t.forced) score -= 30
@@ -134,6 +136,10 @@ export function pickCorpusTrack(tracks: VideoSubtitleTrack[]): VideoSubtitleTrac
     }
   }
   return best
+}
+
+function isTextTrack(t: VideoSubtitleTrack): t is TextSubtitleTrack {
+  return t.textual && t.format !== 'pgs'
 }
 
 export async function* capturedTexts(id: string): AsyncGenerator<string> {

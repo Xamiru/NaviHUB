@@ -214,7 +214,7 @@ export default function ImportDialog({ cfg, onClose, onImported, initialQuery }:
               {mcBusy ? 'Filling…' : 'Run'}
             </button>
             <span className="text-xs text-gray-500">
-              Throttled for Steam&apos;s limits — a long library takes a while; safe to re-run.
+              A long library takes a while; safe to re-run.
             </span>
           </div>
         )}

@@ -205,9 +205,6 @@ function WritingSetup({
 
   return (
     <div>
-      <p className="mb-3 text-sm text-gray-400">
-        You&apos;ll see the meaning and readings — draw the character stroke by stroke.
-      </p>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <select
           aria-label="Kanji writing course"

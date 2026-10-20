@@ -64,7 +64,7 @@ export default function CliPracticePage() {
       <PageHeader
         back={{ to: '/programming', label: 'Programming' }}
         title="CLI practice"
-        subtitle="Read the task, type the command. Checked as you type; misses come back around until you stop. Flags matter, file names don't."
+        subtitle="Flags matter, file names don't."
       />
 
       <div className="card p-4">

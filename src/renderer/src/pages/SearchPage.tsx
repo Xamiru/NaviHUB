@@ -47,19 +47,15 @@ export default function SearchPage() {
         subtitle={
           q ? (
             <>
-              {isLoading ? 'Searching…' : `${total} results`} for “{q}”. Focus a result to inspect
-              its place in your library.
+              {isLoading ? 'Searching…' : `${total} results`} for “{q}”
             </>
-          ) : (
-            'Titles, people, characters and studios share one relationship-aware index.'
-          )
+          ) : undefined
         }
       />
 
       {!q.trim() && (
         <EmptyState
           title="Search from the top bar"
-          body="Look for a title, person, character, studio or History entry already in your local archive."
         />
       )}
 

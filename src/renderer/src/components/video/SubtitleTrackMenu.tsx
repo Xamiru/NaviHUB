@@ -5,16 +5,42 @@ import type { VideoSubtitleTrack } from '@shared/types'
 // clickable/mineable one, the other is a crutch you can read past. The owner
 // (VideoControls) drives open/close through usePopover; this is the panel.
 
+// Why an image track's row is disabled or how it behaves; null for text tracks.
+function imageNote(
+  track: VideoSubtitleTrack,
+  slot: 'primary' | 'secondary'
+): { disabled: boolean; title: string } | null {
+  if (track.textual) return null
+  if (track.format !== 'pgs') {
+    return {
+      disabled: true,
+      title: "DVD image subtitles (VobSub) can't be shown here. Open the file externally to see them."
+    }
+  }
+  return slot === 'primary'
+    ? {
+        disabled: false,
+        title: 'Image subtitles are shown as pictures, so their words cannot be clicked.'
+      }
+    : {
+        disabled: true,
+        title: 'Image subtitles can only go in the first slot, since the second track is text.'
+      }
+}
+
 function TrackRow({
   track,
+  slot,
   selected,
   onPick
 }: {
   track: VideoSubtitleTrack | null
+  slot: 'primary' | 'secondary'
   selected: boolean
   onPick: () => void
 }): JSX.Element {
-  const disabled = track != null && !track.textual
+  const note = track ? imageNote(track, slot) : null
+  const disabled = note?.disabled ?? false
   return (
     <button
       type="button"
@@ -23,18 +49,14 @@ function TrackRow({
       }`}
       disabled={disabled}
       aria-pressed={selected}
-      title={
-        disabled
-          ? "Image-based subtitles (PGS/VobSub) can't be turned into text, so there is nothing to click."
-          : undefined
-      }
+      title={note?.title}
       onClick={onPick}
     >
       <span className="min-w-0 flex-1 truncate">{track ? track.label : 'Off'}</span>
       {track?.signs && <span className="chip shrink-0 text-xs">signs</span>}
       {track?.forced && <span className="chip shrink-0 text-xs">forced</span>}
       {track && !track.textual && <span className="chip shrink-0 text-xs">image</span>}
-      {track && track.textual && !track.url && (
+      {track && (track.textual || track.format === 'pgs') && !track.url && (
         <span className="chip shrink-0 text-xs" title="Pulled out of the video file when picked">
           embedded
         </span>
@@ -87,11 +109,17 @@ export default function SubtitleTrackMenu({
       ) : (
         <>
           <p className="label mb-1 px-2">Clickable track</p>
-          <TrackRow track={null} selected={primaryId === null} onPick={() => onPick('primary', null)} />
+          <TrackRow
+            track={null}
+            slot="primary"
+            selected={primaryId === null}
+            onPick={() => onPick('primary', null)}
+          />
           {tracks.map((t) => (
             <TrackRow
               key={t.id}
               track={t}
+              slot="primary"
               selected={primaryId === t.id}
               onPick={() => onPick('primary', t.id)}
             />
@@ -99,6 +127,7 @@ export default function SubtitleTrackMenu({
           <p className="label mb-1 mt-3 px-2">Second track</p>
           <TrackRow
             track={null}
+            slot="secondary"
             selected={secondaryId === null}
             onPick={() => onPick('secondary', null)}
           />
@@ -106,6 +135,7 @@ export default function SubtitleTrackMenu({
             <TrackRow
               key={t.id}
               track={t}
+              slot="secondary"
               selected={secondaryId === t.id}
               onPick={() => onPick('secondary', t.id)}
             />

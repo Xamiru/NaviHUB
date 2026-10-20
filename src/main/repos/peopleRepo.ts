@@ -7,10 +7,7 @@ import type {
   PersonCredit,
   PersonCostar,
   CreditRole,
-  MediaType,
-  PersonDirectoryEntry,
-  PersonDirectoryQuery,
-  PersonDirectoryWork
+  MediaType
 } from '@shared/types'
 
 // Sorted by how many works they're credited in (most prolific first).
@@ -70,74 +67,6 @@ export function list(
     )
     .all(...joinParams, ...params, ...(limit == null ? [] : [Math.max(0, Math.trunc(limit))]))
     .map(mapPerson)
-}
-
-// A role-scoped creator directory (the Mangaka page). One indexed pass from
-// the type's titles to their crew credits; grouping, counts and the cover pick
-// happen in JS so no per-person subquery runs. Sorted by works by default;
-// the renderer re-sorts and filters the returned list.
-export function directory(query: PersonDirectoryQuery): PersonDirectoryEntry[] {
-  const statuses = query.readStatuses.length ? query.readStatuses : ['']
-  const placeholders = statuses.map(() => '?').join(', ')
-  const rows = getSqlite()
-    .prepare(
-      `SELECT DISTINCT cr.person_id AS person_id, m.id AS media_id, m.title AS media_title,
-              m.cover_path AS media_cover, m.score AS media_score,
-              (m.status IN (${placeholders}) OR m.progress > 0 OR m.rewatch_count > 0) AS media_read,
-              p.*
-       FROM media_item m
-       -- CROSS JOIN pins the order: seek the type's titles, then their credits
-       -- by idx_credit_media. Left free, SQLite walks every crew credit in the
-       -- library through idx_credit_character instead.
-       CROSS JOIN credit cr ON cr.media_id = m.id AND cr.role = ? AND cr.character_id IS NULL
-       JOIN person p ON p.id = cr.person_id
-       WHERE m.media_type = ?`
-    )
-    .all(...statuses, query.role, query.mediaType) as Record<string, unknown>[]
-
-  const byPerson = new Map<
-    number,
-    { person: Person; works: (PersonDirectoryWork & { score: number | null })[] }
-  >()
-  for (const r of rows) {
-    const id = r.person_id as number
-    let entry = byPerson.get(id)
-    if (!entry) {
-      entry = { person: mapPerson(r), works: [] }
-      byPerson.set(id, entry)
-    }
-    entry.works.push({
-      id: r.media_id as number,
-      title: r.media_title as string,
-      coverPath: (r.media_cover as string | null) ?? null,
-      read: !!r.media_read,
-      score: (r.media_score as number | null) ?? null
-    })
-  }
-
-  return [...byPerson.values()]
-    .map(({ person, works }) => {
-      const scored = works.filter((w) => w.score != null)
-      const covers = [...works]
-        .sort(
-          (a, b) =>
-            Number(b.read) - Number(a.read) ||
-            (b.score ?? -1) - (a.score ?? -1) ||
-            a.title.localeCompare(b.title)
-        )
-        .slice(0, 3)
-        .map(({ id, title, coverPath, read }) => ({ id, title, coverPath, read }))
-      return {
-        person,
-        works: works.length,
-        readWorks: works.filter((w) => w.read).length,
-        meanScore: scored.length
-          ? scored.reduce((sum, w) => sum + (w.score as number), 0) / scored.length
-          : null,
-        covers
-      }
-    })
-    .sort((a, b) => b.works - a.works || a.person.name.localeCompare(b.person.name))
 }
 
 export function get(id: number): Person | null {

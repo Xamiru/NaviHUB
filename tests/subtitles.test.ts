@@ -515,6 +515,35 @@ describe('pickDefaultTracks', () => {
       secondary: null
     })
   })
+
+  it('promotes the second-language track when the first language is missing', () => {
+    // An English-only fansub ASS track used to land in the second slot, so the
+    // styled layer (primary only) never drew it.
+    const english = t('en')
+    const picked = pickDefaultTracks([english], { primary: 'ja', secondary: 'en' })
+    expect(picked.primary).toBe(english)
+    expect(picked.secondary).toBeNull()
+  })
+
+  it('draws a PGS track only as the primary and never picks VobSub', () => {
+    const pgs = { lang: 'en' as const, textual: false, format: 'pgs' }
+    const vobsub = { lang: 'ja' as const, textual: false, format: 'srt' }
+    // Blu-ray release with only image subtitles: the PGS track is the primary.
+    expect(pickDefaultTracks([pgs], { primary: 'ja', secondary: 'en' })).toEqual({
+      primary: pgs,
+      secondary: null
+    })
+    // A Japanese text track keeps the primary; the second slot stays text-only.
+    const japanese = { lang: 'ja' as const, textual: true, format: 'ass' }
+    expect(pickDefaultTracks([pgs, japanese], { primary: 'ja', secondary: 'en' })).toEqual({
+      primary: japanese,
+      secondary: null
+    })
+    expect(pickDefaultTracks([vobsub], { primary: 'ja', secondary: 'en' }).primary).toBeNull()
+    // A text track in the same language wins over the picture one.
+    const text = { lang: 'en' as const, textual: true, format: 'srt' }
+    expect(pickDefaultTracks([pgs, text], { primary: 'en', secondary: 'ja' }).primary).toBe(text)
+  })
 })
 
 describe('splitEnglishWords', () => {

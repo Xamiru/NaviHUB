@@ -180,7 +180,7 @@ export default function EnglishWritingPage() {
           <ContextFact label="Draft length">{words} words</ContextFact>
           <ContextFact label="Feedback history">{writings?.length ?? 0} graded submissions</ContextFact>
           <ContextFact label="Evaluation">
-            Feedback uses the configured provider and preserves every saved result locally.
+            Configured AI provider
           </ContextFact>
         </ContextPanel>
       }
@@ -188,7 +188,6 @@ export default function EnglishWritingPage() {
       <PageHeader
         back={{ to: '/english', label: 'English' }}
         title="Writing"
-        subtitle="Write against a task, get graded with corrections and a model rewrite."
       />
 
       <div className="card space-y-5 p-5">

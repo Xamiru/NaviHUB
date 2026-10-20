@@ -213,7 +213,6 @@ export default function EnglishMechanicsPage() {
         <PageHeader
           back={{ to: '/english', label: 'English' }}
           title="Mechanics"
-          subtitle="Accuracy drills on the details that separate good writing from polished writing."
         />
 
         <div className="card p-5 space-y-5">

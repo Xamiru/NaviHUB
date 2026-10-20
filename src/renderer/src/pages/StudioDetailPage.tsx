@@ -55,7 +55,12 @@ export default function StudioDetailPage() {
     return {
       types,
       completed: works.filter(isCompleted).length,
-      knownFor: pickTopWorks(works, isCompleted)
+      knownFor: pickTopWorks(works, isCompleted),
+      // AniList has no studio logos; the header shows the studio's own covers
+      // instead, the user's highest scored first.
+      mosaic: sortWorks(works.filter((m) => m.coverPath), 'score')
+        .slice(0, 4)
+        .map((m) => m.coverPath as string)
     }
   }, [works, settings])
   // A remembered type this company has no works in falls back to All.
@@ -83,6 +88,11 @@ export default function StudioDetailPage() {
       </RelationshipTrail>
       <EntityHeader
         imageShape="logo"
+        imagePlaceholder={
+          summary.mosaic.length > 0
+            ? (className) => <CoverMosaic covers={summary.mosaic} className={className} />
+            : undefined
+        }
         initial={{
           name: company.name,
           native: company.nameNative ?? '',
@@ -250,5 +260,26 @@ function WorkGrid({ works }: { works: MediaItem[] }) {
       </div>
       {hasMore && <div ref={sentinelRef} />}
     </>
+  )
+}
+
+// Two to four covers tile the square slot; three give the first one the left
+// column. A single cover fills it.
+function CoverMosaic({ covers, className }: { covers: string[]; className: string }) {
+  const grid =
+    covers.length === 1 ? 'grid-cols-1' : covers.length === 2 ? 'grid-cols-2' : 'grid-cols-2 grid-rows-2'
+  return (
+    <div aria-hidden="true" className={`grid gap-0.5 overflow-hidden bg-base-900 ${grid} ${className}`}>
+      {covers.map((path, i) => (
+        <CoverImage
+          key={`${i}:${path}`}
+          path={path}
+          alt=""
+          thumbWidth={240}
+          rounded="rounded-none"
+          className={`h-full min-h-0 w-full ${covers.length === 3 && i === 0 ? 'row-span-2' : ''}`}
+        />
+      ))}
+    </div>
   )
 }

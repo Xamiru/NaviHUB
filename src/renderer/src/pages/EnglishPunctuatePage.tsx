@@ -165,7 +165,6 @@ export default function EnglishPunctuatePage() {
       <PageHeader
         back={{ to: '/english', label: 'English' }}
         title="Punctuate it"
-        subtitle="The sentence has lost its commas, semicolons, colons, dashes and apostrophes. Put them back."
       />
       <div className="card p-5 space-y-5">
         <Group label="Focus">

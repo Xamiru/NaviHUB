@@ -48,10 +48,7 @@ export function AiSettings({
       title="AI model"
       description={
         <>
-          Powers English writing feedback. The default is Google Gemini — a free API key
-          from <span className="text-gray-400">aistudio.google.com</span>, no credit card. Claude
-          (via a paid Anthropic key or Google Cloud Vertex AI) is available too. The keys themselves
-          live under Accounts &amp; keys.
+          Powers English writing feedback: Google Gemini (free key from <span className="text-gray-400">aistudio.google.com</span>) or Claude. Keys live under Accounts &amp; keys.
         </>
       }
     >

@@ -67,7 +67,6 @@ export default function JapaneseCourseFormPage() {
 
       <QuietWorkspace
         title="Course structure"
-        description="A calm editor for the course name, scope and its place in the knowledge map."
       >
       <div className="space-y-4">
         <div>

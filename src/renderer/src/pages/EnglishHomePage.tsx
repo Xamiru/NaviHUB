@@ -63,7 +63,7 @@ function ErrorLog({ due, leeches }: { due: number; leeches: number }) {
             {CATEGORY_LABEL[top[0].category] ?? top[0].category}
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-gray-400">
-            {top[0].count} corrections in your graded work. Start here, then return to the ledger to see whether the pattern recedes.
+            {top[0].count} corrections in your graded work.
           </p>
           <Link to={`/english/repair?category=${top[0].category}`} className="btn-ghost mt-6 self-start">
             Learn and repair this pattern
@@ -122,7 +122,6 @@ export default function EnglishHomePage() {
     <div className="p-6 max-w-[1600px] mx-auto">
       <PageHeader
         title="Mistake ledger"
-        subtitle="Use your own corrections and review pressure as the map for advanced English practice."
         actions={
           <Link to={due > 0 ? '/english/review' : '/english/writing'} className="btn-primary">
             {due > 0 ? `Review ${due} cards` : 'Start writing task'}

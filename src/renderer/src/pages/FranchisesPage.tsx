@@ -17,8 +17,6 @@ import {
 import type { MediaType } from '@shared/types'
 import PageHeader from '../components/PageHeader'
 
-const SUBTITLE = 'Curated series pages across games, novels, anime, film and TV, mapped onto your library.'
-
 // The franchise index: one hero card per curated franchise with the user's
 // completion state. Everything derives from the bundled canon + the per-type
 // library lists HomePage-style pages already share, plus the hero art cache
@@ -63,7 +61,7 @@ export default function FranchisesPage() {
   if (isLoading || error) {
     return (
       <div className="p-6">
-        <PageHeader title="Franchises" subtitle={SUBTITLE} />
+        <PageHeader title="Franchises" />
         {isLoading ? (
           <p className="text-sm text-gray-400" role="status">Loading your library…</p>
         ) : (
@@ -80,7 +78,7 @@ export default function FranchisesPage() {
 
   return (
     <div className="p-6">
-      <PageHeader title="Franchises" subtitle={SUBTITLE} />
+      <PageHeader title="Franchises" />
       <div className="mb-4 flex flex-wrap gap-1.5" role="group" aria-label="Filter by type">
         {(['all', ...FRANCHISE_MEDIA_TYPES] as const).map((t) => (
           <button

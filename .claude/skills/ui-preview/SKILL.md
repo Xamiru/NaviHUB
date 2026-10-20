@@ -42,7 +42,7 @@ likes). Never ask what CLAUDE.md or the code already answers.
   `EmptyState`, `ActionMenu`, `Pager`, `.pill/.pill-active`, `.chip-toggle`, `.card`,
   `.card-glow`, `.kbd`). A mockup built from these ports mechanically; one that invents new
   idioms creates a second design system.
-- CLAUDE.md "Renderer conventions" — one `btn-primary` per screen, `gray-600` decorative-only,
+- `docs/architecture/renderer.md` — one `btn-primary` per screen, `gray-600` decorative-only,
   no Cancel button on forms, Delete lives in `ActionMenu`, `text-gray-400`+ for readable
   secondary copy, and **no emoji or decorative glyphs** (functional `✕ ✓ ○ ★ ← ▸ ›` only; like/favorite is the SVG `FavoriteButton`, never `♥`).
 

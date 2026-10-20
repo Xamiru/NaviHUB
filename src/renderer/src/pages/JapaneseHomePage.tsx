@@ -100,8 +100,7 @@ export default function JapaneseHomePage() {
         <section className="card-glow mb-6 p-6" aria-labelledby="jp-welcome">
           <h2 id="jp-welcome" className="text-xl font-semibold text-white">New to Japanese?</h2>
           <p className="mt-2 max-w-2xl text-gray-300">
-            Everything here works offline. If you cannot read hiragana and katakana yet, start
-            there: it takes a couple of weeks of short sessions and makes everything else possible.
+            If you cannot read hiragana and katakana yet, start there.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <button type="button" className="btn-primary" onClick={() => void chooseKana(false)}>

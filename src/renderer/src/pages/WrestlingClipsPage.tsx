@@ -70,7 +70,6 @@ export default function WrestlingClipsPage(): JSX.Element {
       <PageHeader
         back={{ to: '/wrestling', label: 'Wrestling' }}
         title="Clips"
-        subtitle="Highlights, promos, interviews and documentaries from your Wrestling folder. Files stay where you put them."
         actions={
           <button className="btn-primary" onClick={() => setEditing('new')}>
             Add clip

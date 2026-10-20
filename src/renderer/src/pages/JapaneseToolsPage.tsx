@@ -31,7 +31,6 @@ export default function JapaneseToolsPage() {
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Tools"
-        subtitle="Six places to practise, then the tools that stand alone. Today’s session picks from these for you."
       />
 
       <Field label="Search tools" hiddenLabel className="mb-6 max-w-md">

@@ -7,7 +7,6 @@ import { useScoreMax } from '../../lib/hooks'
 import { usePersistedState } from '../../lib/navState'
 import { configFor } from '../../lib/mediaConfig'
 import { MEDIA_TYPE_COLORS } from '../../lib/mediaColors'
-import { approx, fmtStatHours } from '../../lib/statsFormat'
 import Section from '../Section'
 import StatTile from '../StatTile'
 import BarChart, { type Bar } from '../BarChart'
@@ -19,7 +18,7 @@ import { FilterPills } from '../PillGroup'
 import type { CreditTimeGroupKey, LibraryInsights, MediaType } from '@shared/types'
 
 // The /stats sections beyond time: score distribution, finished titles by
-// release decade, and the people and studios the time went to.
+// release decade, and the people and studios behind the most titles.
 
 // Stacking order for the decade chart: chosen so neighbouring segments are the
 // most distinguishable pairs of the fixed per-type palette (blue never touches
@@ -195,7 +194,7 @@ export function CreditTimeSection() {
 
   if (isPending) {
     return (
-      <Section title="Who your time went to">
+      <Section title="Who you kept coming back to">
         <p className="text-sm text-gray-400" role="status">
           Counting credits…
         </p>
@@ -204,7 +203,7 @@ export function CreditTimeSection() {
   }
   if (isError) {
     return (
-      <Section title="Who your time went to">
+      <Section title="Who you kept coming back to">
         <SectionFailure what="people and studios" retry={() => void refetch()} />
       </Section>
     )
@@ -212,10 +211,14 @@ export function CreditTimeSection() {
   if (data.length === 0) return null
 
   const group = data.find((g) => g.key === picked) ?? data[0]
-  const top = group.entries[0]?.minutes || 1
-  const base = group.key === 'studio' ? '/studios' : '/people'
+  const top = group.entries[0]?.titleCount || 1
+  const studios = group.key === 'studio'
+  const base = studios ? '/studios' : '/people'
   return (
-    <Section title="Who your time went to" subtitle="by the time of the titles they are credited on">
+    <Section
+      title="Who you kept coming back to"
+      subtitle="by how many of the titles you watched, read or played they are credited on"
+    >
       <Tabs
         id="stats-credit-time"
         label="People and studios"
@@ -236,32 +239,45 @@ export function CreditTimeSection() {
                 {i + 1}
               </span>
               <Link to={`${base}/${e.id}`} className="shrink-0" tabIndex={-1} aria-hidden="true">
-                <CoverImage
-                  path={e.imagePath}
-                  alt={e.name}
-                  thumbWidth={96}
-                  fallback="monogram"
-                  className="h-12 w-12 object-cover"
-                  rounded={group.key === 'studio' ? 'rounded' : 'rounded-full'}
-                />
+                {studios && e.coverPaths.length > 0 ? (
+                  // A small fan of the studio's covers; logos are rare and crop badly.
+                  <span className="flex h-12 w-[4.5rem] items-center">
+                    {e.coverPaths.map((p, j) => (
+                      <CoverImage
+                        // Two titles can share one downloaded cover file.
+                        key={`${j}:${p}`}
+                        path={p}
+                        alt=""
+                        thumbWidth={96}
+                        className={`h-12 w-8 object-cover ring-2 ring-base-900 ${j > 0 ? '-ml-3' : ''}`}
+                        rounded="rounded"
+                      />
+                    ))}
+                  </span>
+                ) : (
+                  <CoverImage
+                    path={e.imagePath}
+                    alt={e.name}
+                    thumbWidth={96}
+                    fallback="monogram"
+                    className={`h-12 object-cover ${studios ? 'w-[4.5rem]' : 'w-12'}`}
+                    rounded={studios ? 'rounded' : 'rounded-full'}
+                  />
+                )}
               </Link>
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline justify-between gap-2">
                   <Link to={`${base}/${e.id}`} className="truncate text-sm hover:text-white">
                     {e.name}
                   </Link>
-                  <span className="shrink-0 text-sm text-gray-300">
-                    {approx(e.estimated)}
-                    {fmtStatHours(e.minutes)}
+                  <span className="shrink-0 text-sm tabular-nums text-gray-300">
+                    {e.titleCount} {e.titleCount === 1 ? 'title' : 'titles'}
                   </span>
                 </div>
-                <div className="mt-0.5 text-xs text-gray-400">
-                  {e.titleCount} {e.titleCount === 1 ? 'title' : 'titles'}
-                </div>
-                <div className="mt-1 h-1 rounded-full bg-base-700">
+                <div className="mt-1.5 h-1 rounded-full bg-base-700">
                   <div
                     className="h-full rounded-full bg-accent/70"
-                    style={{ width: `${(e.minutes / top) * 100}%` }}
+                    style={{ width: `${(e.titleCount / top) * 100}%` }}
                   />
                 </div>
               </div>

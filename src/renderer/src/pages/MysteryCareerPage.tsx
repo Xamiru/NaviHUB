@@ -195,7 +195,6 @@ export default function MysteryCareerPage() {
         <PageHeader
           back={{ to: '/quiz', label: 'Quiz' }}
           title="Mystery Career"
-          subtitle="Identify an actor or director as their movie and TV credits are revealed."
           className="mb-6"
         />
         <div className="card space-y-6 p-6">

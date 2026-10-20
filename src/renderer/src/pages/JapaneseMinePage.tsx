@@ -97,7 +97,6 @@ export default function JapaneseMinePage() {
       <PageHeader
         back={{ to: "/japanese", label: "Japanese" }}
         title="Mine words"
-        subtitle="Hit a word while reading? Look it up, tweak it, save it — it goes straight into your review queue."
       />
 
       <QuietWorkspace

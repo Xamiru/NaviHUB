@@ -128,7 +128,6 @@ export default function EnglishSpellingPage() {
       <PageHeader
         back={{ to: '/english', label: 'English' }}
         title="Spelling"
-        subtitle="The definition and pronunciation are shown — type the word, spelled exactly."
       />
 
       <div className="card p-5 space-y-5">

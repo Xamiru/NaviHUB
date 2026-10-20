@@ -90,8 +90,7 @@ export default function KeigoDrillSetup() {
   return (
     <div>
       <p className="mb-3 text-sm text-gray-400">
-        Textbooks teach the keigo forms; choosing them in the moment is what needs reps. The
-        suppletive verbs（行く→いらっしゃる・参る）are memorized; regular verbs train the
+        The suppletive verbs（行く→いらっしゃる・参る）are memorized; regular verbs train the
         お〜になる／お〜する patterns.
       </p>
       <Section title="Register" className="mb-5">

@@ -145,9 +145,6 @@ export default function MusicDownloadDialog({ onClose }: { onClose: () => void }
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold">Save audio from a link</h2>
-            <p className="mt-1 text-sm text-gray-400">
-              Save audio into an artist and album folder, then add it to your music library.
-            </p>
           </div>
           <button className="px-2 text-gray-500 hover:text-white" aria-label="Close" onClick={onClose}>
             ✕

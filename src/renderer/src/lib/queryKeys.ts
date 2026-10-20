@@ -132,6 +132,8 @@ export const qk = {
   companies: {
     ...entity('companies'),
     homeTop: ['companies', 'homeTop'] as const,
+    directory: (query: import('@shared/types').CompanyDirectoryQuery) =>
+      ['companies', 'directory', query] as const,
     media: (companyId: number) => ['companies', 'media', companyId] as const,
     collaborators: (companyId: number) => ['companies', 'collaborators', companyId] as const
   },
@@ -280,6 +282,11 @@ export const qk = {
       ['video', 'subtitleTrack', kind, id, trackId] as const,
     cues: (url: string) => ['video', 'cues', url] as const
   },
+  episodeFavorites: {
+    // Hearted episode numbers, shown only on the title's Episodes tab.
+    all: ['episodeFavorites'] as const,
+    forMedia: (mediaId: number) => ['episodeFavorites', mediaId] as const
+  },
   japanese: {
     all: ['japanese'] as const,
     // "You may be confusing X with Y" (stats page) — under the ['japanese']
@@ -356,6 +363,7 @@ export const qk = {
     sources: ['history', 'sources'] as const,
     source: (id: string) => ['history', 'source', id] as const,
     notes: (kind: string) => ['history', 'notes', kind] as const,
+    requests: ['history', 'requests'] as const,
     userEntities: ['history', 'userEntities'] as const,
     userEntity: (id: string) => ['history', 'userEntity', id] as const,
     backlinks: (mediaId: number) => ['history', 'backlinks', mediaId] as const,

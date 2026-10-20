@@ -101,14 +101,14 @@ const credits: CreditTimeGroup[] = [
     key: 'writer',
     label: 'Writers and authors',
     entries: [
-      { id: 9, name: 'Kentaro Miura', imagePath: null, minutes: 1200, titleCount: 2, estimated: true }
+      { id: 9, name: 'Kentaro Miura', imagePath: null, titleCount: 2, coverPaths: [] }
     ]
   },
   {
     key: 'studio',
     label: 'Studios',
     entries: [
-      { id: 4, name: 'Studio Four', imagePath: null, minutes: 300, titleCount: 1, estimated: false }
+      { id: 4, name: 'Studio Four', imagePath: null, titleCount: 1, coverPaths: ['covers/a.jpg'] }
     ]
   }
 ]
@@ -168,13 +168,18 @@ describe('Stats page', () => {
   })
 
   it('switches people and studios with the keyboard', async () => {
-    renderPage()
+    const { container } = renderPage()
     const writers = await screen.findByRole('tab', { name: 'Writers and authors' })
     expect(screen.getByRole('link', { name: 'Kentaro Miura' })).toHaveAttribute('href', '/people/9')
+    // Ranked by titles; no hours.
+    expect(screen.getByText('2 titles')).toBeInTheDocument()
     writers.focus()
     await userEvent.keyboard('{ArrowRight}')
     expect(screen.getByRole('tab', { name: 'Studios' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByRole('link', { name: 'Studio Four' })).toHaveAttribute('href', '/studios/4')
+    // A studio with covers shows them instead of a monogram.
+    expect(container.querySelector('[aria-label="Studio Four"]')).toBeNull()
+    expect(container.querySelectorAll('li img')).toHaveLength(1)
   })
 
   it('shows scores, release decades and passes axe', async () => {

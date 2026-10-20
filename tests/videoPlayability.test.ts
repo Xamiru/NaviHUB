@@ -12,6 +12,7 @@ import {
 } from '../src/main/video/playability'
 import {
   fontAttachments,
+  isPgsSubtitle,
   isTextualSubtitle,
   parseProbeJson,
   pickAudioStream,
@@ -88,6 +89,8 @@ describe('parseProbeJson', () => {
     expect(isTextualSubtitle('subrip')).toBe(true)
     expect(isTextualSubtitle('mov_text')).toBe(true)
     expect(isTextualSubtitle('hdmv_pgs_subtitle')).toBe(false)
+    expect(isPgsSubtitle('hdmv_pgs_subtitle')).toBe(true)
+    expect(isPgsSubtitle('dvd_subtitle')).toBe(false)
   })
 })
 
@@ -132,6 +135,18 @@ describe('ffmpeg argv safety', () => {
     expect(subtitle[subtitle.indexOf('-i') + 1]).toBe('file:/a/in.mkv')
     expect(subtitle).toContain('0:s:2')
     expect(subtitle.at(-1)).toBe('file:/b/out.ass')
+  })
+
+  it('copies a PGS track into a .sup container', () => {
+    const args = buildSubtitleExtractArgs({
+      input: '/a/in.mkv',
+      output: '/b/out.sup',
+      typeIndex: 0,
+      format: 'pgs'
+    })
+    expect(args[args.indexOf('-c:s') + 1]).toBe('copy')
+    expect(args[args.indexOf('-f') + 1]).toBe('sup')
+    expect(args.at(-1)).toBe('file:/b/out.sup')
   })
 })
 

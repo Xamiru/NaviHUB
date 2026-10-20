@@ -198,11 +198,7 @@ export default function BulkImportPage(): React.JSX.Element {
     <div className="mx-auto max-w-[1400px] p-4 sm:p-6">
       <PageHeader
         title="Bulk Import"
-        subtitle={
-          tab === 'import'
-            ? 'Fill a shelf in one run — preview a top list, then import the whole selection.'
-            : 'Care for what you already own — refresh source metadata or maintain local files.'
-        }
+        
       />
 
       <Tabs

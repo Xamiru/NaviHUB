@@ -600,6 +600,44 @@ describe('video player', () => {
     expect(screen.getByText('0.0s')).toBeInTheDocument()
   })
 
+  it('draws a Blu-ray PGS track as pictures, only from the first slot', async () => {
+    const fetchSpy = vi.fn(async () => new Response(new Uint8Array(0)))
+    vi.stubGlobal('fetch', fetchSpy)
+    m.source.mockResolvedValue(
+      source({
+        subtitles: [
+          {
+            id: 'sidecar:pgs',
+            label: 'English (PGS)',
+            lang: 'en',
+            format: 'pgs',
+            url: 'navimg://video/Frieren/03.en.sup',
+            signs: false,
+            forced: false,
+            textual: false
+          }
+        ]
+      })
+    )
+    const user = userEvent.setup()
+    const { container } = renderAt()
+    await screen.findByRole('heading', { name: /Episode 3/ })
+    await vi.waitFor(() => {
+      expect(container.querySelector('[data-testid="pgs-subtitles"]')).not.toBeNull()
+      expect(fetchSpy).toHaveBeenCalledWith('navimg://video/Frieren/03.en.sup')
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Tracks' }))
+    const rows = screen.getAllByRole('button', { name: /English \(PGS\)/ })
+    expect(rows).toHaveLength(2)
+    expect(rows[0]).toBeEnabled()
+    expect(rows[0]).toHaveAttribute('aria-pressed', 'true')
+    expect(rows[1]).toBeDisabled()
+    // An empty .sup has no pictures; the panel says so instead of going blank.
+    expect(await screen.findByText(/image subtitles could not be read/)).toBeInTheDocument()
+    vi.unstubAllGlobals()
+  })
+
   it('shows keyboard changes on screen and lists every shortcut in the help', async () => {
     m.source.mockResolvedValue(source())
     const user = userEvent.setup()

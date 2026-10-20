@@ -53,7 +53,6 @@ export default function JapaneseTutorSessionPage() {
         <PageHeader
           back={{ to: '/japanese', label: 'Japanese' }}
           title="Today’s session"
-          subtitle="Pick how long you have. The session walks you through each part in order."
         />
         <div className="card space-y-6 p-6">
           <BudgetPicker value={budget} onChange={pickBudget} />
@@ -307,9 +306,7 @@ export default function JapaneseTutorSessionPage() {
           })}
         </ol>
         <p className="mt-3 text-xs text-gray-500">
-          Reviews, quiz results, lessons and chapter progress tick blocks off on their own. Mark a
-          block done yourself when you practised in a way the app cannot see; it is recorded as
-          marked by you.
+          Reviews, quiz results, lessons and chapter progress tick blocks off on their own. Mark a block done yourself for practice the app cannot see.
         </p>
       </section>
     </div>

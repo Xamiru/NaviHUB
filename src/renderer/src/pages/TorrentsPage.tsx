@@ -97,7 +97,6 @@ export default function TorrentsPage(): React.JSX.Element {
             ) : (
               <EmptyState
                 title="Ready to search"
-                body="Enter a title or release name, choose a category, and start the fan-out."
                 className="py-10 text-center"
               />
             )}

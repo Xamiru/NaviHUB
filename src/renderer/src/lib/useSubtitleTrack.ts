@@ -38,7 +38,10 @@ export function useSubtitleTrack(
   ref: VideoSourceRef,
   track: VideoSubtitleTrack | null
 ): SubtitleTrackState {
-  const needsExtract = !!track && track.textual && !track.url
+  // A PGS track is extracted too (as a .sup for the picture layer), but only a
+  // text track is parsed into cues. textFormat is that one gate.
+  const textFormat = track?.textual && track.format !== 'pgs' ? track.format : null
+  const needsExtract = !!track && (textFormat != null || track.format === 'pgs') && !track.url
   const extracted = useQuery({
     queryKey: qk.video.subtitleTrack(ref.kind, refId(ref), track?.id ?? ''),
     queryFn: () => api.video.subtitleTrack(ref, track!.id),
@@ -49,14 +52,14 @@ export function useSubtitleTrack(
   const url = track?.url ?? extracted.data?.url ?? ''
   const cues = useQuery({
     queryKey: qk.video.cues(url),
-    enabled: !!url && (track?.textual ?? false),
+    enabled: !!url && textFormat != null,
     staleTime: Infinity, // a subtitle file is immutable for the session
     retry: false,
     queryFn: async () => {
       const res = await fetch(url)
       if (!res.ok) throw new Error(`Could not read that subtitle file (${res.status})`)
       const text = decodeSubtitleBytes(new Uint8Array(await res.arrayBuffer()))
-      return buildTrack(parseSubtitles(text, track?.format))
+      return buildTrack(parseSubtitles(text, textFormat ?? undefined))
     }
   })
   const extractFailed = needsExtract && extracted.isSuccess && !extracted.data?.url

@@ -141,7 +141,6 @@ export default function EnglishReadingPage() {
         <PageHeader
           back={{ to: '/english', label: 'English' }}
           title="Reading"
-          subtitle="Advanced passages with exam-style questions — read closely, the traps are deliberate."
         />
 
         <div className="space-y-2">

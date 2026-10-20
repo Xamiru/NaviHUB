@@ -12,7 +12,8 @@ export async function globalAll(query: string): Promise<GlobalSearchResults> {
   const library = global(query)
   if (!query.trim()) return library
   try {
-    return { ...library, history: (await loadHistory()).search(query) }
+    const history = await loadHistory()
+    return { ...library, history: history.search(query), historyRequestable: history.requestable(query) }
   } catch (err) {
     // A broken History catalog must not take the library results down with it.
     logWarn('app', `search: History results unavailable: ${err instanceof Error ? err.message : String(err)}`)

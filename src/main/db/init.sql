@@ -521,6 +521,17 @@ CREATE TABLE IF NOT EXISTS tv_episode (
 );
 CREATE INDEX IF NOT EXISTS idx_tv_episode_media ON tv_episode(media_id, season, number);
 
+-- media_episode_favorite — anime episodes the user hearted on the Episodes tab
+-- (personal). Keyed by episode NUMBER, never video_file.id: most anime have no
+-- linked folder, and a rescan or Unlink must not forget a favorite. Shown only
+-- on the title's own Episodes tab; no other screen lists them.
+CREATE TABLE IF NOT EXISTS media_episode_favorite (
+  media_id    INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+  number      INTEGER NOT NULL,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (media_id, number)
+);
+
 -- list — a user-curated, ordered collection (Letterboxd-style). entity_kind is
 -- fixed per list ('media' | 'person' | 'character' | 'company'); ranked toggles
 -- visible numbering. Items live in list_item and target the kind's table.
@@ -2301,6 +2312,16 @@ CREATE TABLE IF NOT EXISTS history_note (
   body       TEXT NOT NULL,
   kind       TEXT NOT NULL DEFAULT 'note' CHECK(kind IN ('note','correction')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+-- Pages the user looked up and did not find, for the next research session
+-- (the Corrections page's Requests tab copies them). Free text, not a ref:
+-- the page does not exist yet.
+CREATE TABLE IF NOT EXISTS history_request (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  query      TEXT NOT NULL,
+  body       TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  done_at    TEXT
 );
 -- The user's own title links, on top of the curated media files.
 CREATE TABLE IF NOT EXISTS history_media_link (

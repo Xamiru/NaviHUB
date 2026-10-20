@@ -236,7 +236,6 @@ export default function HistoryMapPage() {
     <div className="mx-auto max-w-[1600px] p-6">
       <PageHeader
         title="Map"
-        subtitle="The world's borders in any year, with each event pinned where its sources place it."
         className="mb-5"
       />
       <div className="history-stage relative overflow-hidden rounded-2xl border border-black/40 shadow-2xl">

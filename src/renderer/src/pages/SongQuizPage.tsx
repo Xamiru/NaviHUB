@@ -647,7 +647,7 @@ export default function SongQuizPage() {
             {mode === 'arcade' &&
               'Endless run, timer always on, 3 misses end it. Faster answers score more points.'}
             {mode === 'reverse' &&
-              'The anime is named — clip 1 starts automatically; audition the choices and lock in the match.'}
+              'The anime is named; clip 1 starts automatically.'}
           </p>
 
           <Group label="Song type">

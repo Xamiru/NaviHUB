@@ -4,15 +4,14 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { toast, toastError } from '../lib/toast'
 import { useGameSession, fmtDurationSec } from '../lib/useGameSession'
-import { fmtMinutesAsHours } from '../lib/mediaConfig'
 import Section from './Section'
-import StatTile from './StatTile'
 import WaysToPlay from './WaysToPlay'
-import type { MediaDetail, HltbTimes } from '@shared/types'
+import type { MediaDetail } from '@shared/types'
 
-// Launch-from-app + tracked playtime for games/VNs (cfg.hasGameLaunch), on the
-// Playtime tab beside the HLTB estimates: link a per-title executable, see the
-// tracked total. Launching itself is NOT here —
+// Launch-from-app setup for games/VNs (cfg.hasGameLaunch), on the Playtime tab
+// below the estimates: link a per-title executable and its game files, see the
+// running session. The tracked total sits in PlaytimeSection's tile row above,
+// beside the HLTB estimates. Launching itself is NOT here —
 // GameLaunchButton in the detail page's action row owns it, so Play is
 // reachable from every tab and exists exactly once.
 
@@ -25,9 +24,6 @@ export default function GameLaunchSection({ m }: { m: MediaDetail }) {
     queryKey: qk.games.overview(m.id),
     queryFn: () => api.games.overview(m.id)
   })
-
-  const meta = (m.metadata ?? {}) as Record<string, unknown>
-  const hltbMain = ((meta.hltb as HltbTimes | undefined) ?? null)?.main ?? null
 
   // This title's session vs some other title's — both block Play, different copy.
   const runningHere = session.running && session.status?.mediaId === m.id
@@ -112,19 +108,6 @@ export default function GameLaunchSection({ m }: { m: MediaDetail }) {
           )}
         </div>
       )}
-
-      {/* Tracked totals vs the HLTB estimate */}
-      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <StatTile
-          label="Tracked"
-          value={ov.totalSeconds > 0 ? fmtDurationSec(ov.totalSeconds) : '—'}
-          sub={ov.sessionCount > 0 ? `${ov.sessionCount} session${ov.sessionCount === 1 ? '' : 's'}` : undefined}
-          accent={ov.totalSeconds > 0}
-        />
-        {hltbMain != null && (
-          <StatTile label="HLTB Main" value={fmtMinutesAsHours(hltbMain)} sub="estimate" />
-        )}
-      </div>
     </Section>
   )
 }

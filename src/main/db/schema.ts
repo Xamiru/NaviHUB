@@ -589,6 +589,19 @@ export const tvEpisode = sqliteTable(
   })
 )
 
+// Hearted anime episodes, keyed by number — see init.sql for why not video_file.
+export const mediaEpisodeFavorite = sqliteTable(
+  'media_episode_favorite',
+  {
+    mediaId: integer('media_id')
+      .notNull()
+      .references(() => mediaItem.id, { onDelete: 'cascade' }),
+    number: integer('number').notNull(),
+    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`)
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.mediaId, t.number] }) })
+)
+
 // ---------------------------------------------------------------------------
 // media_relation — links between titles (anime seasons, manga source, etc.),
 // stored by the related work's AniList id so links resolve regardless of the
@@ -2701,6 +2714,13 @@ export const historyNote = sqliteTable('history_note', {
 }, (t) => ({
   kind: check('history_note_kind', sql`${t.kind} IN ('note','correction')`)
 }))
+export const historyRequest = sqliteTable('history_request', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  query: text('query').notNull(),
+  body: text('body').notNull().default(''),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  doneAt: text('done_at')
+})
 export const historyMediaLink = sqliteTable('history_media_link', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   ref: text('ref').notNull(),

@@ -35,7 +35,6 @@ export default function JapaneseListenPage() {
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Listening"
-        subtitle="Train comprehension first, then compare your own shadowing with a native recording."
       />
 
       {!isLoading && !bank ? (
@@ -114,7 +113,6 @@ function GuidedListening() {
           <p className="text-2xl font-semibold text-white">{length} sentences</p>
           <p className="mt-2 text-sm text-gray-400">
             Hear each sentence before you see it, pick its meaning, then read it and say it back.
-            Your recording is only for you to compare; the app does not grade your accent.
           </p>
         </div>
       }

@@ -154,7 +154,7 @@ export default function LessonCheck({
       {questions === null ? (
         <div>
           <p className="mb-3 text-sm text-gray-400">
-            A quick quiz over this lesson&apos;s cards — see if it stuck before marking it learned.
+            Quiz this lesson&apos;s cards before marking it learned.
           </p>
           <button className="btn-primary" disabled={loading} onClick={() => void start()}>
             {loading ? 'Preparing…' : 'Start check'}

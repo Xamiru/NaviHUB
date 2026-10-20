@@ -235,7 +235,6 @@ export default function EnglishVocabQuizPage() {
         <PageHeader
           back={{ to: '/english', label: 'English' }}
           title="Vocabulary"
-          subtitle="Advanced words by frequency band — the rarer the band, the deeper the water."
         />
 
         <div className="card p-5 space-y-5">

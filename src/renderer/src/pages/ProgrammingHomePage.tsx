@@ -198,8 +198,7 @@ export default function ProgrammingHomePage() {
         <section className="card-glow mb-8 p-6" aria-label="Pick a focus">
           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">Pick a focus</p>
           <p className="mt-2 max-w-[60ch] text-sm leading-relaxed text-gray-300">
-            Choosing a course turns this page into your next lesson, from your latest checks and unread lessons. Every
-            course stays open to explore.
+            Choosing a course turns this page into your next lesson.
           </p>
           <Field label="Course to focus on" className="mt-4 max-w-md">
             {courseSelect}

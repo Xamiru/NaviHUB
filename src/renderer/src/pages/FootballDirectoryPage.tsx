@@ -34,7 +34,6 @@ export default function FootballDirectoryPage({ kind }: { kind: 'teams' | 'peopl
     <div className="mx-auto max-w-[1450px] p-6">
       <PageHeader
         title={kind === 'teams' ? 'Teams' : 'Players and managers'}
-        subtitle={kind === 'teams' ? 'Club and national-team records across the installed competition archive.' : 'Portraits, senior club spells, appearances and honours across playing and managerial careers.'}
         back={{ to: '/football', label: 'Football Archive' }}
       />
       <div className="mb-7 max-w-xl">

@@ -4,7 +4,7 @@ import { createHash } from 'crypto'
 import { mediaUrl } from '@shared/mediaUrl'
 import { detectSubFormat, parseSubtitleFileName, type SubFormat } from '@shared/subtitles'
 import { buildSubtitleExtractArgs } from './playability'
-import { isTextualSubtitle, subtitleStreams, type MediaProbe, type ProbeStream } from './probeParse'
+import { isPgsSubtitle, isTextualSubtitle, subtitleStreams, type MediaProbe, type ProbeStream } from './probeParse'
 import { runFfmpegOnce, hasFfmpeg } from './ffmpeg'
 import * as cache from './cache'
 import type { VideoSubtitleTrack } from '@shared/types'
@@ -31,14 +31,15 @@ function trackFromSidecar(videoStem: string, absPath: string, relPath: string): 
   const meta = parseSubtitleFileName(name)
   const ext = extname(name).toLowerCase()
   const textual = SUB_EXTS.has(ext)
+  const pgs = ext === '.sup'
   // Strip the stem so the label is the distinguishing part, not the filename.
   const tail = name.startsWith(videoStem) ? name.slice(videoStem.length).replace(/^[.\-_\s]+/, '') : name
   return {
     id: `sidecar:${shortHash(relPath)}`,
     label: tail.replace(/\.[^.]+$/, '') || (meta.lang === 'ja' ? 'Japanese' : 'Subtitles'),
     lang: meta.lang,
-    format: (detectSubFormat(name) ?? 'srt') as SubFormat,
-    url: textual ? mediaUrl(relPath) : null,
+    format: pgs ? 'pgs' : ((detectSubFormat(name) ?? 'srt') as SubFormat),
+    url: textual || pgs ? mediaUrl(relPath) : null,
     signs: meta.signs,
     forced: meta.forced,
     textual
@@ -107,18 +108,17 @@ function discoverSidecars(absVideo: string, relVideo: string): VideoSubtitleTrac
   if (out.length === 0) {
     const videos = siblings.filter((n) => /\.(mkv|mp4|avi|m4v|mov|webm)$/i.test(n))
     if (videos.length === 1) {
-      for (const name of siblings) {
-        if (SUB_EXTS.has(extname(name).toLowerCase())) add(join(dir, name), `${relDir}${name}`)
-      }
+      for (const name of siblings) add(join(dir, name), `${relDir}${name}`)
     }
   }
 
   return out
 }
 
-function embeddedFormat(codec: string): SubFormat {
+function embeddedFormat(codec: string): VideoSubtitleTrack['format'] {
   const c = codec.toLowerCase()
   if (c === 'ass' || c === 'ssa') return 'ass'
+  if (isPgsSubtitle(c)) return 'pgs'
   if (c === 'webvtt' || c === 'mov_text') return 'vtt'
   return 'srt'
 }
@@ -165,16 +165,16 @@ export function listTracks(
   return [...discoverSidecars(absVideo, relVideo), ...discoverEmbedded(absVideo, probe)]
 }
 
-// Pulls an embedded track out to disk and fills in its URL. Runs through
-// execFile rather than the prepare session, so a subtitle can be extracted
-// while a conversion is running.
+// Pulls an embedded track out to disk and fills in its URL: text tracks for
+// the overlay, PGS tracks as a .sup the player draws as pictures. VobSub stays
+// listed and refused.
 export async function ensureExtracted(
   absVideo: string,
   track: VideoSubtitleTrack,
   timeoutMs?: number
 ): Promise<VideoSubtitleTrack> {
   if (track.url || !track.id.startsWith('embedded:')) return track
-  if (!track.textual) return track
+  if (!track.textual && track.format !== 'pgs') return track
   if (!(await hasFfmpeg())) return track
 
   const typeIndex = Number(track.id.slice('embedded:'.length))
@@ -190,7 +190,7 @@ export async function ensureExtracted(
 
   // Keyed by source identity so an unchanged file reuses its extracted track.
   const base = cache.sourceKey(absVideo, st.mtimeMs, st.size)
-  const fileName = `${base}-s${typeIndex}.${track.format}`
+  const fileName = `${base}-s${typeIndex}.${track.format === 'pgs' ? 'sup' : track.format}`
   const absOut = join(cache.subsDir(), fileName)
   const relOut = `videocache/subs/${fileName}`
 
@@ -218,11 +218,12 @@ export async function ensureExtracted(
   return { ...track, url: mediaUrl(relOut) }
 }
 
+// Text tracks only: its callers read words, and a PGS track has none.
 export async function extractAll(
   absVideo: string,
   tracks: VideoSubtitleTrack[]
 ): Promise<VideoSubtitleTrack[]> {
   const out: VideoSubtitleTrack[] = []
-  for (const t of tracks) out.push(await ensureExtracted(absVideo, t))
+  for (const t of tracks) out.push(t.textual ? await ensureExtracted(absVideo, t) : t)
   return out
 }

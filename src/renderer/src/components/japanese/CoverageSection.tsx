@@ -84,9 +84,6 @@ export default function CoverageSection({ m }: { m: MediaDetail }) {
     >
       {!coverage ? (
         <div className="card p-4">
-          <p className="mb-3 text-sm text-gray-400">
-            Read this series&apos; own text and work out how much of its vocabulary you already know.
-          </p>
           <button className="btn-ghost" disabled={busy} onClick={() => void scan()}>
             {scanLabel}
           </button>

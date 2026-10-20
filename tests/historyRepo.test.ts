@@ -39,6 +39,46 @@ describe('History marks and notes', () => {
   })
 })
 
+describe('History page requests', () => {
+  it('adds, folds repeats, marks done and removes', () => {
+    const a = repo.addRequest('  Kingdom   of Benin ', 'heard on a podcast')
+    expect(a).toMatchObject({ query: 'Kingdom of Benin', body: 'heard on a podcast', doneAt: null })
+    // The same open name again is the same row; a new note replaces the old one.
+    const again = repo.addRequest('kingdom of benin', 'the 1897 expedition')
+    expect(again.id).toBe(a.id)
+    expect(again.body).toBe('the 1897 expedition')
+    expect(repo.addRequest('kingdom of benin', '').body).toBe('the 1897 expedition')
+    const b = repo.addRequest('Roman Empire', '')
+    expect(() => repo.addRequest('   ', '')).toThrow()
+
+    repo.setRequestDone(a.id, true)
+    const done = repo.requests().find((r) => r.id === a.id)!
+    expect(done.doneAt).toMatch(/^\d{4}-\d{2}-\d{2}/)
+    // Open requests come first.
+    expect(repo.requests().map((r) => r.id)).toEqual([b.id, a.id])
+    // A done request does not swallow a new request for the same name.
+    expect(repo.addRequest('Kingdom of Benin', '').id).not.toBe(a.id)
+
+    // Reopening while that new request is open would duplicate it: refused.
+    expect(repo.setRequestDone(a.id, false)).toBe(false)
+    expect(repo.requests().find((r) => r.id === a.id)!.doneAt).not.toBeNull()
+    repo.removeRequest(repo.requests().find((r) => r.id !== a.id && r.query === 'Kingdom of Benin')!.id)
+    expect(repo.setRequestDone(a.id, false)).toBe(true)
+    expect(repo.requests().find((r) => r.id === a.id)!.doneAt).toBeNull()
+    repo.removeRequest(b.id)
+    expect(repo.requests().some((r) => r.id === b.id)).toBe(false)
+  })
+
+  it('folds names the way History search does', () => {
+    // Arabic yeh, a zero-width non-joiner and non-ASCII case are the same request.
+    const a = repo.addRequest('روح‌الله خمینی', '')
+    expect(repo.addRequest('روحالله خميني', '').id).toBe(a.id)
+    const u = repo.addRequest('Ürümqi', '')
+    expect(repo.addRequest('ürümqi', '').id).toBe(u.id)
+    expect(repo.requests().filter((r) => !r.doneAt)).toHaveLength(2)
+  })
+})
+
 describe('History personal links and archive rows', () => {
   function addMedia(id: number): void {
     db.prepare("INSERT INTO media_item (id, media_type, title) VALUES (?, 'movie', 'A film')").run(id)

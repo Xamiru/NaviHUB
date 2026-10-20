@@ -27,6 +27,9 @@ This is the part that decays if skipped, and the rule is now about **which** fil
 
 - A new **rule or invariant** — something an agent must or must not do → the contract
   (`CLAUDE.md` and its byte-identical mirror `AGENTS.md`), in *Hard invariants*. Stated once, not repeated per feature.
+  A file pair that must move together or a never-do goes in `CLAUDE.md`; a per-subsystem data-integrity
+  rule, personal-state rule or frozen key goes in `docs/architecture/data-integrity.md`, and a renderer
+  convention in `docs/architecture/renderer.md`.
 - A new **standing user preference** ("always…", "never…", "I don't want…") → `CLAUDE.md`, in
   *Standing user directives*, with the date.
 - **How a subsystem works** — the narrative, the decisions, the gotchas → the matching file in

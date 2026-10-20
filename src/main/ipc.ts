@@ -16,6 +16,7 @@ import { app, ipcMain, shell, BrowserWindow, type IpcMainInvokeEvent } from 'ele
 import { clampUiScale, parseUiScale } from '@shared/uiScale'
 import * as mediaRepo from './repos/mediaRepo'
 import * as tvRepo from './repos/tvRepo'
+import * as episodeFavoriteRepo from './repos/episodeFavoriteRepo'
 import * as libraryRefresh from './libraryRefresh'
 import * as peopleRepo from './repos/peopleRepo'
 import * as companyRepo from './repos/companyRepo'
@@ -339,7 +340,7 @@ export function registerIpc(): void {
   ipcMain.handle('people:get', (_e, id) => peopleRepo.get(id))
   ipcMain.handle('people:credits', (_e, id) => peopleRepo.credits(id))
   ipcMain.handle('people:costars', (_e, id, limit) => peopleRepo.costars(id, limit))
-  ipcMain.handle('people:directory', (_e, query) => peopleRepo.directory(query))
+  ipcMain.handle('people:directory', (_e, query) => callQuizPools('personDirectory', query))
   ipcMain.handle('people:upsert', (_e, input) => peopleRepo.upsert(input))
   ipcMain.handle('people:remove', (_e, id) => peopleRepo.remove(id))
 
@@ -347,6 +348,7 @@ export function registerIpc(): void {
   ipcMain.handle('companies:list', (_e, search, mediaType, limit) =>
     companyRepo.list(search, mediaType, limit)
   )
+  ipcMain.handle('companies:directory', (_e, query) => callQuizPools('companyDirectory', query))
   ipcMain.handle('companies:get', (_e, id) => companyRepo.get(id))
   ipcMain.handle('companies:media', (_e, id) => companyRepo.media(id))
   ipcMain.handle('companies:collaborators', (_e, id, limit) => companyRepo.collaborators(id, limit))
@@ -883,6 +885,12 @@ export function registerIpc(): void {
     }
   })
 
+  // ---- favorite episodes (anime Episodes tab) ----
+  ipcMain.handle('episodeFavorite:list', (_e, mediaId) => episodeFavoriteRepo.list(mediaId))
+  ipcMain.handle('episodeFavorite:set', (_e, mediaId, number, favorite) =>
+    episodeFavoriteRepo.set(mediaId, number, favorite)
+  )
+
   // ---- AniList import (anime + manga) ----
   // Imports run inside withActivity so the renderer can poll activity:status
   // for a live progress bar (phases: fetching → images → writing).
@@ -1109,6 +1117,10 @@ export function registerIpc(): void {
   ipcMain.handle('history:setMark', async (_e, ref, field, value) => (await loadHistory()).setMark(ref, field, value))
   ipcMain.handle('history:saveNote', async (_e, ref, body, kind) => (await loadHistory()).saveNote(ref, body, kind))
   ipcMain.handle('history:notes', async (_e, kind) => (await loadHistory()).notes(kind))
+  ipcMain.handle('history:requests', async () => (await loadHistory()).requests())
+  ipcMain.handle('history:addRequest', async (_e, query: string, body: string) => (await loadHistory()).addRequest(query, body))
+  ipcMain.handle('history:setRequestDone', async (_e, id: number, done: boolean) => (await loadHistory()).setRequestDone(id, done))
+  ipcMain.handle('history:removeRequest', async (_e, id: number) => (await loadHistory()).removeRequest(id))
   ipcMain.handle('history:linkMedia', async (_e, ref, mediaId, kind) => (await loadHistory()).linkMedia(ref, mediaId, kind))
   ipcMain.handle('history:unlinkMedia', async (_e, id: number) => (await loadHistory()).unlinkMedia(id))
   ipcMain.handle('history:userEntities', async () => (await loadHistory()).userEntities())

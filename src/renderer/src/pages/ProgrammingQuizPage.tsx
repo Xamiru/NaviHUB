@@ -192,7 +192,6 @@ export default function ProgrammingQuizPage() {
         <PageHeader
           back={{ to: '/programming', label: 'Programming' }}
           title="Programming Quiz"
-          subtitle="Multiple choice over the courses' questions, the command cheatsheets, and code snippets."
         />
 
         <div className="card p-5 space-y-5">

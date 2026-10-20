@@ -136,7 +136,6 @@ export function AboutSettings() {
   return (
     <SettingCard
       title="About NaviHUB"
-      description="A personal, local-only media hub. Everything it knows lives in the data folder below."
     >
       {about.isError ? (
         <p className="text-sm text-signal-anomaly">Could not read the build details.</p>

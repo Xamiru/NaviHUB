@@ -44,6 +44,7 @@ import ShortcutHelp from '../components/reader/ShortcutHelp'
 import QuoteDialog, { type QuoteSeed } from '../components/quotes/QuoteDialog'
 import DecodePanel from '../components/video/DecodePanel'
 import StyledSubtitleLayer from '../components/video/StyledSubtitleLayer'
+import PgsSubtitleLayer from '../components/video/PgsSubtitleLayer'
 import SubtitleOverlay, { type SubtitleWordPick } from '../components/video/SubtitleOverlay'
 import TranscriptPanel from '../components/video/TranscriptPanel'
 import VideoControls from '../components/video/VideoControls'
@@ -298,6 +299,20 @@ function Player({
     prefs.styledSubs && prefs.subsOn && primaryTrack?.format === 'ass' && !styledFailure
       ? primary.url
       : null
+
+  // ---- image (PGS) subtitles ----
+  // Drawn as pictures whether playing or paused; there are no words to mine.
+  // The track (often 30-50 MB) loads the first time subtitles are on for it and
+  // the layer then stays mounted while they are off, so toggling them neither
+  // fetches nor parses it again, and a file watched with subtitles off never
+  // loads it at all.
+  const [pgsFailure, setPgsFailure] = useState<string | null>(null)
+  const pgsTrackUrl = primaryTrack?.format === 'pgs' ? primary.url : null
+  const [pgsLoadedUrl, setPgsLoadedUrl] = useState<string | null>(null)
+  useEffect(() => {
+    if (prefs.subsOn && pgsTrackUrl) setPgsLoadedUrl(pgsTrackUrl)
+  }, [prefs.subsOn, pgsTrackUrl])
+  const pgsUrl = pgsTrackUrl && pgsTrackUrl === pgsLoadedUrl ? pgsTrackUrl : null
 
   // The signs/songs filter is applied once, so the overlay, the ticks and the
   // transcript agree on what "the script" is.
@@ -1157,6 +1172,17 @@ function Player({
             />
           )}
 
+          {pgsUrl && (
+            <PgsSubtitleLayer
+              key={pgsUrl}
+              videoRef={videoRef}
+              trackUrl={pgsUrl}
+              offsetSec={subOffset}
+              visible={prefs.subsOn && !pgsFailure}
+              onFailure={setPgsFailure}
+            />
+          )}
+
           {prefs.subsOn && hasSubs && (
             <SubtitleOverlay
               primary={activeCues}
@@ -1164,7 +1190,7 @@ function Player({
               primaryLang={primaryTrack?.lang ?? 'other'}
               secondaryLang={secondaryTrack?.lang ?? 'other'}
               look={look}
-              showPrimary={!styledDrawing}
+              showPrimary={!styledDrawing && !pgsUrl}
               barsVisible={barsVisible}
               onWordPick={onWordPick}
               onTextSelect={(text, cue, lang) => openMining(cue.text, text, lang)}
@@ -1240,7 +1266,7 @@ function Player({
           dialogueOnly={prefs.dialogueOnly}
           subDelaySec={subDelay}
           extracting={primary.extracting || secondary.extracting}
-          trackError={primary.error ?? secondary.error}
+          trackError={primary.error ?? (pgsUrl && prefs.subsOn ? pgsFailure : null) ?? secondary.error}
           transcriptOpen={showTranscript}
           miningOpen={panelOpen}
           hasPrev={!!source.prev}

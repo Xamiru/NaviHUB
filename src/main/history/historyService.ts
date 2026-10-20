@@ -6,6 +6,7 @@
 
 import { existsSync } from 'fs'
 import { ID_LOCK, loadCatalogEntries } from '@shared/history/catalog'
+import { normalizeForSearch } from '@shared/history/search'
 import { buildCatalog, lookup, type CatalogEntry } from '@shared/history/model'
 import { HISTORY_SCHEMA_VERSION, primaryName, refOf, type ArchiveSuggestion, type HistoryEntity } from '@shared/history/schema'
 import { validateEntity } from '@shared/history/validate'
@@ -24,6 +25,8 @@ import type {
   HistoryNote,
   HistoryNoteKind,
   HistoryNoteRow,
+  HistoryRequest,
+  HistoryRequestRecord,
   HistoryMapPin,
   HistoryMapPolity,
   HistoryThemeRow,
@@ -219,6 +222,33 @@ export function notes(kind?: HistoryNoteKind): HistoryNoteRow[] {
   const rows = repo.notes(kind).map((n) => ({ ...n, target: refInfo(idx, n.ref, cachedUrl) }))
   ensureImages(missingImages(rows.map((r) => r.target)), 'Caching History images')
   return rows
+}
+
+export function requests(): HistoryRequest[] {
+  const idx = index()
+  const rows = repo.requests().map((r) => {
+    const ref = r.doneAt ? null : views.resolveRequest(idx, r.query)
+    return { ...r, resolved: ref ? refInfo(idx, ref, cachedUrl) : null }
+  })
+  ensureImages(missingImages(rows.flatMap((r) => (r.resolved ? [r.resolved] : []))), 'Caching History images')
+  return rows
+}
+
+/** True when no catalog page bears the query as a name: the palette offers a request then. */
+export function requestable(query: string): boolean {
+  return normalizeForSearch(query).length > 0 && views.resolveRequest(index(), query) === null
+}
+
+export function addRequest(query: string, body: string): HistoryRequestRecord {
+  return repo.addRequest(query, body)
+}
+
+export function setRequestDone(id: number, done: boolean): boolean {
+  return repo.setRequestDone(id, done)
+}
+
+export function removeRequest(id: number): void {
+  repo.removeRequest(id)
 }
 
 export function linkMedia(ref: string, mediaId: number, kind: string): number {

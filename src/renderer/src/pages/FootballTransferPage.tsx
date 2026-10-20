@@ -132,7 +132,7 @@ export default function FootballTransferPage() {
       <div className="mx-auto max-w-3xl p-6">
         <PageHeader title="Transfer Higher or Lower" subtitle="Did this move cost more or less than the last one? Three lives; each right call carries the transfer forward." back={{ to: '/football/quiz', label: 'Football quiz room' }} />
         <div className="card space-y-4 p-6">
-          <p className="text-sm text-gray-400">Only priced moves of at least €5m are used, so the transfers are ones people talk about.</p>
+          <p className="text-sm text-gray-400">Only priced moves of at least €5m are used.</p>
           <p className="text-sm text-gray-400">{count.toLocaleString()} eligible transfers.</p>
           {error && <p className="text-sm text-red-300">{error}</p>}
           <button className="btn-primary" disabled={loading || count < 2} onClick={() => void start()}>{loading ? 'Dealing transfers…' : 'Start'}</button>

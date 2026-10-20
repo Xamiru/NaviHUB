@@ -124,7 +124,7 @@ export default function JapaneseRoleplayPage() {
         <PageHeader
           back={{ to: '/japanese', label: 'Japanese' }}
           title="Role-play complete"
-          subtitle={`${scenario.title}. You carried the exchange through ${turns.length} constrained turns without a network model.`}
+          subtitle={`${scenario.title}. You carried the exchange through ${turns.length} turns.`}
         />
         <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_280px]">
           <div className="divide-y divide-base-700 border-y border-base-700">

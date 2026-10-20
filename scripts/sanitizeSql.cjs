@@ -141,9 +141,10 @@ const FIXED_WIPES = [
   'DELETE FROM achievement_progress',
   'DELETE FROM checklist_log',
   // History's personal layer: reading marks, private notes, own links, files
-  // on this machine and the user's own entities.
+  // on this machine, the user's own entities and their page requests.
   'DELETE FROM history_mark',
   'DELETE FROM history_note',
+  'DELETE FROM history_request',
   'DELETE FROM history_media_link',
   'DELETE FROM history_archive',
   'DELETE FROM history_user_entity',
@@ -244,6 +245,7 @@ function sanitizeDb(db, input) {
     run('UPDATE wrestling_event SET local_dir=NULL, poster_path=NULL')
     run('UPDATE wrestling_match SET video_id=NULL')
     if (!options.includeRatings) {
+      run('DELETE FROM media_episode_favorite')
       run('UPDATE wrestling_event SET favorite=0')
       run('UPDATE wrestling_match SET rating=NULL, favorite=0')
       run('UPDATE wrestling_wrestler SET favorite=0')

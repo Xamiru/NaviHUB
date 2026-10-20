@@ -9,6 +9,30 @@ import { toast, toastError } from '../lib/toast'
 import Section from './Section'
 import { confirmDialog } from '../lib/confirm'
 import { celebrateProgress } from '../lib/themeFx'
+import FavoriteButton from './FavoriteButton'
+import { useEpisodeFavorites } from './FavoriteEpisodesSection'
+
+// Which file numbers are the entry's own episodes, so a file row can heart its
+// number in the Favorite episodes grid. A folder spanning several seasons
+// numbers episodes per season, while an AniList entry is one season: hearts
+// would collide (S01E05 and S02E05), so none. A folder whose every number is
+// past the entry's known total counts across seasons (a second cour as 13-24),
+// so none either; otherwise a file past the total (an OVA numbered 13) offers
+// none on its own row. Without a known total (airing; some sources store 0)
+// the file numbers are all there is, and the grid follows them. Either way the
+// grid stays the place to heart.
+export function episodeNumberHeartable(
+  files: Pick<VideoFile, 'season' | 'number'>[],
+  totalUnits: number | null
+): (number: number) => boolean {
+  const whole = (n: number | null): n is number => n != null && Number.isInteger(n) && n >= 1
+  if (new Set(files.map((f) => f.season ?? 1)).size > 1) return () => false
+  const total = totalUnits != null && totalUnits > 0 ? totalUnits : null
+  if (total == null) return whole
+  const numbers = files.map((f) => f.number).filter(whole)
+  if (numbers.length > 0 && numbers.every((n) => n > total)) return () => false
+  return (n) => whole(n) && n <= total
+}
 
 // Linked-video entry point on an anime/movie/tv detail page. Mirrors
 // MangaChaptersSection: attach a folder from the video library, list what was
@@ -18,6 +42,9 @@ import { celebrateProgress } from '../lib/themeFx'
 export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Element {
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
+  // Anime only: a file row hearts its episode number in the same table as the
+  // Favorite episodes grid below it.
+  const episodeFavorites = useEpisodeFavorites(m.id, m.mediaType === 'anime')
 
   const { data } = useQuery({
     queryKey: qk.video.library(m.id),
@@ -67,6 +94,7 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
   }
 
   const files = data?.files ?? []
+  const heartable = episodeNumberHeartable(files, m.totalUnits)
   const continueFile = files.find((f) => !f.watchedAt)
   const watched = files.filter((f) => f.watchedAt).length
 
@@ -108,7 +136,22 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
           </div>
           <div className="max-h-72 space-y-1 overflow-y-auto pr-1">
             {files.map((f) => (
-              <EpisodeRow key={f.id} f={f} onExternal={() => openExternal(f)} onChange={refresh} />
+              <EpisodeRow
+                key={f.id}
+                f={f}
+                onExternal={() => openExternal(f)}
+                onChange={refresh}
+                favorite={
+                  m.mediaType === 'anime' &&
+                  f.number != null &&
+                  heartable(f.number)
+                    ? {
+                        active: episodeFavorites.favorites.has(f.number),
+                        toggle: () => episodeFavorites.toggle(f.number as number)
+                      }
+                    : null
+                }
+              />
             ))}
           </div>
         </>
@@ -120,11 +163,14 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
 function EpisodeRow({
   f,
   onExternal,
-  onChange
+  onChange,
+  favorite
 }: {
   f: VideoFile
   onExternal: () => void
   onChange: () => void
+  // Null when the file has no whole episode number to key a favorite on.
+  favorite: { active: boolean; toggle: () => Promise<void> } | null
 }): JSX.Element {
   async function toggleWatched(): Promise<void> {
     try {
@@ -159,6 +205,15 @@ function EpisodeRow({
         <span className="chip shrink-0 text-xs">
           {formatTime(f.duration)}
         </span>
+      )}
+      {favorite && (
+        <FavoriteButton
+          variant="compact"
+          active={favorite.active}
+          activeLabel={`Remove episode ${f.number} from favorites`}
+          inactiveLabel={`Add episode ${f.number} to favorites`}
+          onClick={favorite.toggle}
+        />
       )}
       <button
         className="btn-ghost shrink-0 px-2 py-0.5 text-xs"

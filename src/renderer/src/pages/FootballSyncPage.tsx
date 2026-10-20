@@ -85,7 +85,7 @@ export default function FootballSyncPage() {
     <div className="mx-auto max-w-[1200px] p-6">
       <PageHeader
         title="Football setup"
-        subtitle="Three steps build the whole archive. Each runs in the background; you can pause, leave the page or quit, and it picks up where it stopped."
+        subtitle="Each step runs in the background and resumes where it stopped."
         back={{ to: '/football', label: 'Football Archive' }}
         actions={<Link to="/settings?tab=keys" className="btn-ghost">Accounts and keys</Link>}
       />

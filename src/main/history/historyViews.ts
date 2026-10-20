@@ -33,7 +33,7 @@ import {
   type MediaLink,
   type RegionKey
 } from '@shared/history/schema'
-import { searchDocs } from '@shared/history/search'
+import { normalizeForSearch, searchDocs } from '@shared/history/search'
 import type {
   HistoryArchiveItem,
   HistoryArticleView,
@@ -722,6 +722,39 @@ export function search(index: HistoryIndex, q: string, cached: CachedLookup, lim
     const info = refInfo(index, h.ref, cached)
     return { ref: h.ref, kind: info.kind, title: h.title, subtitle: h.subtitle ?? null, image: info.image }
   })
+}
+
+/**
+ * The catalog page a page request now names: one whose name or
+ * transliteration equals the request once normalised. Not a prefix, so "Iran"
+ * does not resolve to the Iranian Revolution and "Roman Empire" not to the Holy
+ * Roman Empire; and never a source, whose names are book titles and authors.
+ * Null while no such page exists. Ties go to the first title.
+ */
+export function resolveRequest(index: HistoryIndex, query: string): string | null {
+  const q = normalizeForSearch(query)
+  if (!q) return null
+  return pageNames(index).get(q)?.ref ?? null
+}
+
+// Every normalised page name, built once per index, so the Requests tab and
+// the palette resolve a name with one lookup instead of a scan over every doc.
+const nameMaps = new WeakMap<HistoryIndex, Map<string, { ref: string; title: string }>>()
+
+function pageNames(index: HistoryIndex): Map<string, { ref: string; title: string }> {
+  let map = nameMaps.get(index)
+  if (!map) {
+    map = new Map()
+    for (const d of index.docs) {
+      if (d.kind === 'source') continue
+      for (const name of d.normNames) {
+        const held = map.get(name)
+        if (!held || d.title.localeCompare(held.title) < 0) map.set(name, { ref: d.ref, title: d.title })
+      }
+    }
+    nameMaps.set(index, map)
+  }
+  return map
 }
 
 export function backlinks(

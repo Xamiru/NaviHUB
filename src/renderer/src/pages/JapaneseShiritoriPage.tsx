@@ -150,7 +150,7 @@ export default function JapaneseShiritoriPage() {
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Shiritori"
-        subtitle="Word chain against the dictionary. ん loses. Every reply teaches you a word."
+        subtitle="Word chain against the dictionary. ん loses."
       />
 
       <StudySessionFrame

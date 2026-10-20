@@ -9,6 +9,10 @@ things that were tried and rejected, and the gotchas that were paid for once alr
 
 | Working on… | Read |
 |---|---|
+| Any delete, prune, partial refresh, re-import, scanner, progress write, image override, folder move or stored key | [data-integrity.md](data-integrity.md) |
+| Anything under `src/renderer/` | [renderer.md](renderer.md) |
+| A new media type, section, overlay or importer | [adding-features.md](adding-features.md) |
+| IPC handlers, utility processes, long-running jobs, shutdown order | [main-process.md](main-process.md) |
 | Adding or changing a media type; wallpapers/fan art; books; game launching and playtime; seasonal shelves; list filtering and sorting | [media-types.md](media-types.md) |
 | A games importer, or wondering why RAWG/IGDB/Steam all appear in the tree | [importers.md](importers.md) |
 | Emulators, linked game files, the game-folder scan, native ports, session screenshots, GameBanana mods and the install ledger | [emulation.md](emulation.md) |
