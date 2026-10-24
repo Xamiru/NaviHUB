@@ -46,6 +46,7 @@ import { usePlayerControls } from '../lib/player'
 import { useTabLeaveGuard } from '../lib/browserTabs'
 import { audioOnsetSeconds } from '../lib/audioOnset'
 import { useQuizClip } from '../lib/quizClip'
+import { quizAvailabilityQuery } from '../lib/quizAvailability'
 
 type Phase = 'setup' | 'play' | 'summary'
 type ThemeScope = 'completed' | 'all'
@@ -214,10 +215,7 @@ export default function GuessTrackPage() {
     () => ({ scope: 'consumed' as const, statuses: completedStatuses }),
     [completedStatuses]
   )
-  const { data: availability } = useQuery({
-    queryKey: qk.quiz.availability(availabilityRequest),
-    queryFn: () => api.quiz.availability(availabilityRequest)
-  })
+  const { data: availability } = useQuery(quizAvailabilityQuery(availabilityRequest))
   const { data: playlists = [] } = useQuery({
     queryKey: qk.music.playlists,
     queryFn: () => api.music.playlists(),

@@ -119,6 +119,8 @@ const CONTEXT_TAB_PARENTS: [prefix: string, tab: string][] = [
   ...[...new Set([...JP_HUBS.flatMap((h) => h.tools.map((t) => t.to)), ...JP_TOOLS.flatMap((t) => (t.to ? [t.to] : []))])]
     .filter((to) => to !== '/japanese/dictionary')
     .map((to): [string, string] => [to, '/japanese/tools']),
+  // Linked TV sits under the one Linked tab of Movies & TV, not under TV Shows.
+  ['/tv/linked', '/movies/linked'],
   ['/japanese/courses', '/japanese/roadmap'],
   ['/japanese/lessons', '/japanese/roadmap']
 ]
@@ -217,6 +219,7 @@ function mediaContext(pathname: string): ArchiveContext | null {
       items: [
         { to: '/anime', label: 'Anime' },
         { to: '/anime/seasonal', label: 'Seasonal' },
+        { to: '/anime/linked', label: 'Linked' },
         { to: '/anime/songs', label: 'Songs' },
         { to: '/people', label: 'Voice Actors' },
         { to: '/artists', label: 'Artists' },
@@ -276,6 +279,7 @@ function mediaContext(pathname: string): ArchiveContext | null {
       items: [
         { to: '/movies', label: 'Movies' },
         { to: '/tv', label: 'TV Shows' },
+        { to: '/movies/linked', label: 'Linked' },
         { to: '/actors', label: 'Actors' },
         { to: '/directors', label: 'Directors' }
       ]

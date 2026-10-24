@@ -160,6 +160,11 @@ describe('Which linked files heart an episode', () => {
     expect(heartable([file(5, 1), file(5, 2)], 24, 5)).toBe(false)
   })
 
+  it('does not count specials as a second season, and never hearts one', () => {
+    const files = [file(1, null), file(2, null), file(1, 0)]
+    expect(heartable(files, 12, 2)).toBe(true)
+  })
+
   it('refuses a second cour numbered on from the first', () => {
     expect(heartable([file(13), file(24)], 12, 13)).toBe(false)
   })

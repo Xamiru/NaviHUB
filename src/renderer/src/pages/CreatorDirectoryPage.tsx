@@ -48,7 +48,11 @@ export default function CreatorDirectoryPage({
       .filter((e) => directoryNameMatches(needle, e.person.name, e.person.nameNative))
       .sort(directoryCompare(sort, byPerson))
   }, [data, readOnly, needle, sort])
-  const { visible, sentinelRef, hasMore } = useIncrementalList(rows)
+  const { visible, sentinelRef, hasMore } = useIncrementalList(
+    rows,
+    96,
+    `${cfg.key}:${role}|${readOnly}|${needle}|${sort}`
+  )
 
   if (isError)
     return (

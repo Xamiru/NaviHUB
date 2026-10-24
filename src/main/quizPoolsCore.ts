@@ -50,6 +50,10 @@ const vaPoolFor = (filter: QuizLibFilter): QuizVaItem[] =>
 
 export const QUIZ_POOL_METHODS = {
   availability: (request: QuizAvailabilityRequest) => quizRepo.availability(request),
+  footballAvailability: () => quizRepo.footballAvailability(),
+  // The availability cache's change signature (quizAvailabilityCache.ts); it
+  // counts whole tables, so it is read here rather than on main.
+  availabilityFingerprint: () => quizRepo.availabilityFingerprint(),
   challengePool: (request: QuizChallengeRequest) => quizRepo.challengePool(request),
   songPool: (filter: QuizSongFilter) => quizRepo.songPool(filter),
   castPool: (filter: QuizLibFilter) => quizRepo.castPool(filter),

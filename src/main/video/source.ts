@@ -110,11 +110,12 @@ function resolve(ref: VideoSourceRef): Resolved {
     const scope = scopeOfFile(ref)
     const row = scan.scopedFileById(scope, ref.fileId)
     if (!row) throw new Error('That video is no longer in the library. Rescan its folder.')
-    const relPath = `${scope.prefix}/${row.filePath}`
+    const place = scope.place(row.ownerId)
+    const relPath = `${place.prefix}/${row.filePath}`
     const absPath = safeAbs(relPath)
     if (!absPath) {
       throw new Error(
-        `Video file not found on disk. Rescan the folder, or check the ${scope.label} library root in Settings.`
+        `Video file not found on disk. Rescan the folder, or check the ${place.label} library root in Settings.`
       )
     }
     return {

@@ -2,7 +2,7 @@ import { join } from 'path'
 import { readFileSync } from 'fs'
 import { setImmediate as yieldToLoop } from 'timers/promises'
 import { getSqlite } from './db/connection'
-import { absoluteMediaPath, mangaRootDir, videoRootDir } from './files'
+import { absoluteMediaPath, mangaRootDir } from './files'
 import { listChapterPages } from './manga'
 import { getChapterOcr } from './mokuro'
 import { isEpubFile, listEpubPages } from './epub'
@@ -10,6 +10,7 @@ import { readArchiveEntry } from './archive'
 import { tokenize } from './tokenizer'
 import { probeFile } from './video/ffmpeg'
 import * as videoSubs from './video/subtitles'
+import { VIDEO_SCOPES } from './video/scope'
 import { dialogueText, parseSubtitles } from '@shared/subtitles'
 import type { VideoSubtitleTrack } from '@shared/types'
 
@@ -84,15 +85,21 @@ export function seriesCorpus(mediaId: number): CorpusUnit[] {
   const videos = db
     .prepare('SELECT file_path, title FROM video_file WHERE media_id = ? ORDER BY sort_order, id')
     .all(mediaId) as { file_path: string; title: string }[]
-  return videos.map((v) => ({ kind: 'video', path: v.file_path, label: v.title }))
+  const prefix = VIDEO_SCOPES.video.place(mediaId).prefix
+  return videos.map((v) => ({ kind: 'video', path: `${prefix}/${v.file_path}`, label: v.title }))
 }
 
 // Subtitle lines of one video, dialogue only. A file with no textual track
 // contributes nothing and the scan carries on — a season with three subbed
 // episodes still produces a usable corpus.
-export async function* videoTexts(filePath: string): AsyncGenerator<string> {
-  const abs = join(videoRootDir(), filePath)
-  const relPath = `video/${filePath}`
+// `relPath` carries the file's navimg prefix (video/, movies/ or tv/).
+export async function* videoTexts(relPath: string): AsyncGenerator<string> {
+  let abs: string
+  try {
+    abs = absoluteMediaPath(relPath)
+  } catch {
+    return
+  }
   let tracks: Awaited<ReturnType<typeof videoSubs.extractAll>>
   try {
     const probe = await probeFile(abs)

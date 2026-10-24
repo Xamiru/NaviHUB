@@ -48,6 +48,8 @@ export const MACHINE_LOCAL_SETTING_KEYS = [
   'pictures.dir',
   'slideshow.dir',
   'video.dir',
+  'video.movieDir',
+  'video.tvDir',
   'wrestling.dir',
   'ffmpeg.path',
   'ffprobe.path',

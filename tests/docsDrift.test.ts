@@ -40,6 +40,8 @@ const NOT_IN_REPO = new Set([
   '.navihub-goldberg.json',
   'latest-linux.yml',
   'app-update.yml',
+  // The quiz availability cache in userData (quizAvailabilityCache.ts).
+  'quiz-availability.json',
   // Files inside a library backup and the restore marker in userData
   // (libraryBackupCore.ts), written at runtime.
   'manifest.json',

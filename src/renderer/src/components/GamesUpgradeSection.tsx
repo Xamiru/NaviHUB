@@ -190,7 +190,7 @@ function ReviewList({
 }): React.JSX.Element {
   const qc = useQueryClient()
   const [busy, setBusy] = useState<number | null>(null)
-  const { visible, sentinelRef } = useIncrementalList(items, 24, items.length)
+  const { visible, sentinelRef } = useIncrementalList(items, 24)
 
   async function act(mediaId: number, action: () => Promise<unknown>): Promise<void> {
     setBusy(mediaId)

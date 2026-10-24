@@ -10,7 +10,7 @@ import { WRESTLING_JOURNEYS } from '@shared/wrestlingJourneys'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { useDebouncedValue } from '../lib/hooks'
-import { usePersistedState } from '../lib/navState'
+import { useLeaveDeleted, usePersistedState } from '../lib/navState'
 import { useHobbyAction, localInputDate } from '../lib/hobbyForms'
 import { confirmDialog } from '../lib/confirm'
 import PageHeader from '../components/PageHeader'
@@ -116,7 +116,7 @@ function Journeys() {
 }
 function Journey({ id }: { id: number }) {
   const qc = useQueryClient()
-  const navigate = useNavigate()
+  const leaveDeleted = useLeaveDeleted()
   const query = useQuery({
     queryKey: qk.journeys.detail(id),
     queryFn: () => api.journeys.detail(id)
@@ -199,8 +199,8 @@ function Journey({ id }: { id: number }) {
                   )
                 ) {
                   await api.journeys.remove(id)
-                  await refresh()
-                  navigate('/wrestling/journeys', { replace: true })
+                  leaveDeleted((path) => path === `/wrestling/journeys/${id}`, '/wrestling/journeys')
+                  void refresh()
                 }
               })
             }

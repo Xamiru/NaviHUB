@@ -5,7 +5,7 @@ import { beforeEach, expect, it } from 'vitest'
 import BackButton from '@/components/BackButton'
 import TabbedRouter from '@/components/TabbedRouter'
 import { activeTab, resetBrowserTabs } from '@/lib/browserTabs'
-import { useLeaveDeleted } from '@/lib/navState'
+import { useLeaveDeleted, usePersistedState } from '@/lib/navState'
 
 let go: ReturnType<typeof useNavigate>
 let leave: ReturnType<typeof useLeaveDeleted>
@@ -20,6 +20,13 @@ function Shell() {
       <BackButton fallback="/music" />
     </>
   )
+}
+
+function FilteredList() {
+  go = useNavigate()
+  leave = useLeaveDeleted()
+  const [search, setSearch] = usePersistedState('search', '')
+  return <input aria-label="Search" value={search} onChange={(e) => setSearch(e.target.value)} />
 }
 
 function renderApp() {
@@ -58,6 +65,28 @@ it('skips every page that no longer exists, then falls back when nothing is left
     leave((p) => p === '/music/albums/2' || p === '/music/artists/1' || p === '/', '/music')
   )
   expect(path()).toBe('/music')
+})
+
+it('returns to the list with its filter intact, and Forward cannot reach the deleted page', async () => {
+  const user = userEvent.setup()
+  render(
+    <TabbedRouter>
+      <Routes>
+        <Route path="/anime" element={<FilteredList />} />
+        <Route path="*" element={<Shell />} />
+      </Routes>
+    </TabbedRouter>
+  )
+  await visit('/anime')
+  await user.type(screen.getByRole('textbox', { name: 'Search' }), 'bleach')
+  await visit('/anime/7', '/anime/7/edit', '/anime/7')
+
+  await act(async () =>
+    leave((p) => p === '/anime/7' || p.startsWith('/anime/7/'), '/anime')
+  )
+  expect(screen.getByRole('textbox', { name: 'Search' })).toHaveValue('bleach')
+  expect(activeTab().history.entries.map((e) => e.pathname)).toEqual(['/', '/anime'])
+  expect(activeTab().history.canGoForward).toBe(false)
 })
 
 it('Back on the first page of a tab goes to its fallback', async () => {

@@ -46,7 +46,7 @@ export default function VnStudyPage() {
     queryFn: () => api.japanese.prepDeckStatus(),
     refetchInterval: (query) => (job === 'deck' || query.state.data?.running ? 400 : false)
   })
-  const { visible, sentinelRef } = useIncrementalList(captures.data ?? [], 30)
+  const { visible, sentinelRef } = useIncrementalList(captures.data ?? [], 30, mediaId)
   const busy = action.busy || !!scan.data?.running || !!deck.data?.running
   async function refresh() {
     setAnalysis(null)

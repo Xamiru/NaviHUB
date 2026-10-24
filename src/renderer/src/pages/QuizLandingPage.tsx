@@ -10,6 +10,7 @@ import { quizScorePolicy, quizSessionCorrect } from '@shared/quizCore'
 import { usePersistedState } from '../lib/navState'
 import { parseSavedTournament } from '@shared/tournamentSave'
 import { HISTORY_QUIZ_GAMES } from '../lib/historyQuiz'
+import { quizAvailabilityQuery } from '../lib/quizAvailability'
 
 interface GameCard {
   to: string
@@ -19,7 +20,7 @@ interface GameCard {
   body: string
   availability?: Exclude<
     keyof QuizAvailability,
-    'higherLowerOptions' | 'guessTrackOptions' | 'screenGameOptions' | 'football'
+    'higherLowerOptions' | 'guessTrackOptions' | 'screenGameOptions' | 'football' | 'refreshing'
   >
   footballAvailability?: keyof QuizAvailability['football']
   minimum?: number
@@ -98,10 +99,7 @@ export default function QuizLandingPage() {
     () => ({ scope: 'consumed' as const, statuses: completedStatuses }),
     [completedStatuses]
   )
-  const { data: availability } = useQuery({
-    queryKey: qk.quiz.availability(request),
-    queryFn: () => api.quiz.availability(request)
-  })
+  const { data: availability } = useQuery(quizAvailabilityQuery(request))
   const solo = GROUPS.flatMap((group) => group.games).filter((game) => {
     if (!availability) return false
     if (game.footballAvailability) {
@@ -178,18 +176,23 @@ export default function QuizLandingPage() {
                   : typeof footballCount === 'number'
                     ? footballCount
                     : null
-                const ready = count == null || count >= (game.minimum ?? 1)
+                // Until the first counts arrive a counted tile stays playable
+                // and says so; each game checks its own pool when it starts.
+                const checking = !availability && (game.availability != null || game.footballAvailability != null)
+                const ready = checking || count == null || count >= (game.minimum ?? 1)
                 const inner = (
                   <>
                     <p className="font-semibold">{game.title}</p>
                     <p className="mt-1 text-sm text-gray-400">{game.body}</p>
                     <p className="mt-3 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs">
                       <span className="text-gray-500">
-                        {count == null
-                          ? game.note ?? 'Uses your selected contender source'
-                          : ready
-                            ? game.availabilityLabel?.(count) ?? `${count} eligible sources`
-                            : `Needs at least ${game.minimum}; ${count} eligible`}
+                        {checking
+                          ? 'Checking...'
+                          : count == null
+                            ? game.note ?? 'Uses your selected contender source'
+                            : ready
+                              ? game.availabilityLabel?.(count) ?? `${count} eligible sources`
+                              : `Needs at least ${game.minimum}; ${count} eligible`}
                       </span>
                       <TileRecord kinds={game.kinds} />
                     </p>

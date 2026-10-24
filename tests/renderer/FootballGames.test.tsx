@@ -16,7 +16,7 @@ const slots = ['Goalkeeper', 'Right-Back', 'Centre-Back', 'Centre-Back', 'Left-B
 vi.mock('../../src/renderer/src/lib/api', () => ({
   api: {
     quiz: {
-      availability: async () => ({ football: { wordle: 10, lineup: 3, transfer: 5 } }),
+      footballAvailability: async () => ({ wordle: 10, lineup: 3, transfer: 5 }),
       history: async () => ({ recent: [], best: null, bestStreak: 0, totalSessions: 0 }),
       logSession: async () => ({ id: 1 }),
       challengePool: async (request: { kind: string }) =>

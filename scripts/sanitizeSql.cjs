@@ -163,7 +163,7 @@ const FIXED_WIPES = [
   'DELETE FROM sync_batch',
   `DELETE FROM settings WHERE key IN
      ('tmdb.api_key','rawg.api_key','igdb.client_id','igdb.client_secret','omdb.api_key','ytdlp.path','spotdl.path','spotdl.cookieFile','spotdl.pythonPath','music.ffmpegPath',
-      'music.dir','manga.dir','books.dir','audio.dir','media.dir','pictures.dir','slideshow.dir','pictures.slideshowSource','video.dir','wrestling.dir','football.dir','history.dir',
+      'music.dir','manga.dir','books.dir','audio.dir','media.dir','pictures.dir','slideshow.dir','pictures.slideshowSource','video.dir','video.movieDir','video.tvDir','wrestling.dir','football.dir','history.dir',
       'ffmpeg.path','ffprobe.path','mokuro.path',
       'gemini.api_key','anthropic.api_key',
       'steam.web_api_key','ra.username','ra.api_key','football.api_key','football.api_quota',

@@ -94,6 +94,32 @@ export class TabHistory implements Navigator {
     this.emit()
   }
 
+  // The current page's subject was deleted. It and every entry `gone` matches
+  // leave the stack, behind and ahead, so neither Back nor Forward reaches a
+  // dead page. The tab lands on the nearest earlier survivor as a Pop, so its
+  // persisted state and scroll restore; with none, `fallback` takes the current
+  // entry's place. One emit either way.
+  forget(gone: (pathname: string) => boolean, fallback: To): void {
+    const keep = (entry: Location, i: number): boolean => i !== this.idx && !gone(entry.pathname)
+    let landing: Location | null = null
+    for (let i = this.idx - 1; i >= 0 && !landing; i--) {
+      if (keep(this.stack[i], i)) landing = this.stack[i]
+    }
+    if (landing) {
+      this.stack = this.stack.filter(keep)
+      this.lastAction = NavigationType.Pop
+    } else {
+      landing = makeEntry(fallback, null)
+      const fresh = landing
+      this.stack = this.stack
+        .map((entry, i) => (i === this.idx ? fresh : entry))
+        .filter((entry) => entry === fresh || !gone(entry.pathname))
+      this.lastAction = NavigationType.Replace
+    }
+    this.idx = this.stack.indexOf(landing)
+    this.emit()
+  }
+
   // Its tab came back to the front: the page remounts the way a back/forward
   // visit would, so navState restores persisted state and scroll.
   markRestored(): void {

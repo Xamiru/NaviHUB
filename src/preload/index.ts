@@ -157,6 +157,7 @@ const api: NaviApi = {
   },
   quiz: {
     availability: (request) => ipcRenderer.invoke('quiz:availability', request),
+    footballAvailability: () => ipcRenderer.invoke('quiz:footballAvailability'),
     challengePool: (request) => ipcRenderer.invoke('quiz:challengePool', request),
     songPool: (filter) => ipcRenderer.invoke('quiz:songPool', filter),
     castPool: (filter) => ipcRenderer.invoke('quiz:castPool', filter),
@@ -669,9 +670,11 @@ const api: NaviApi = {
   },
   video: {
     attachFolder: (mediaId) => ipcRenderer.invoke('video:attachFolder', mediaId),
+    attachFile: (mediaId) => ipcRenderer.invoke('video:attachFile', mediaId),
     rescan: (mediaId) => ipcRenderer.invoke('video:rescan', mediaId),
     detach: (mediaId) => ipcRenderer.invoke('video:detach', mediaId),
     files: (mediaId) => ipcRenderer.invoke('video:files', mediaId),
+    linked: (mediaType) => ipcRenderer.invoke('video:linked', mediaType),
     openExternal: (ref) => ipcRenderer.invoke('video:openExternal', ref),
     tools: () => ipcRenderer.invoke('video:tools'),
     markWatched: (ref, watched) => ipcRenderer.invoke('video:markWatched', ref, watched),

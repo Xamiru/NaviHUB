@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
+import { useLeaveDeleted } from '../lib/navState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -18,7 +19,7 @@ import type { TierRowInput } from '@shared/types'
 export default function TierListEditorPage() {
   const { id } = useParams()
   const listId = Number(id)
-  const navigate = useNavigate()
+  const leaveDeleted = useLeaveDeleted()
   const qc = useQueryClient()
 
   const { data: board, isLoading } = useQuery({
@@ -51,8 +52,9 @@ export default function TierListEditorPage() {
     })
     if (!ok) return
     await api.tierLists.remove(listId)
+    const base = `/lists/tier/${listId}`
+    leaveDeleted((path) => path === base || path.startsWith(`${base}/`), '/lists')
     invalidate()
-    navigate('/lists', { replace: true })
   }
 
   async function exportPng() {

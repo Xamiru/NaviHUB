@@ -340,7 +340,7 @@ export default function PersonDetailPage() {
                     />
                   )}
                   {view.acting.map(({ type, entries }) => (
-                    <RoleGrid key={type} title={`${typeLabel(type)} · ${entries.length}`} entries={entries} />
+                    <RoleGrid key={`${id}:${type}`} title={`${typeLabel(type)} · ${entries.length}`} entries={entries} />
                   ))}
                   {crewList}
                   {view.acting.length === 0 && view.staff.length === 0 && (
@@ -349,6 +349,7 @@ export default function PersonDetailPage() {
                 </>
               ) : (
                 <Chronology
+                  key={id}
                   entries={view.chronology}
                   songsByMedia={songsByMedia}
                   onPlaySong={playSong}

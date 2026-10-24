@@ -12,8 +12,10 @@ import {
   historyRootDir,
   mangaRootDir,
   mediaRoot,
+  movieVideoRootDir,
   musicRootDir,
   picturesDir,
+  tvVideoRootDir,
   videoRootDir,
   wrestlingRootDir
 } from './files'
@@ -272,6 +274,8 @@ function otherRoots(root: StorageRoot): { label: string; dir: string }[] {
     { label: 'manga library', dir: mangaRootDir() },
     { label: 'books library', dir: booksRootDir() },
     { label: 'video library', dir: videoRootDir() },
+    { label: 'movie video folder', dir: movieVideoRootDir() },
+    { label: 'TV video folder', dir: tvVideoRootDir() },
     { label: 'wrestling library', dir: wrestlingRootDir() },
     { label: 'Football media folder', dir: footballRootDir() }
   ]

@@ -81,7 +81,7 @@ export default function JapaneseGrammarPage() {
     })
   }, [points, level, debounced])
 
-  const { visible, sentinelRef, hasMore } = useIncrementalList(filtered)
+  const { visible, sentinelRef, hasMore } = useIncrementalList(filtered, 96, `${level}|${debounced}`)
 
   async function stagePoint(id: number): Promise<void> {
     setAddingId(id)
@@ -155,7 +155,7 @@ export default function JapaneseGrammarPage() {
       <TabPanel tabsId="japanese-grammar" value={tab}>
       {filters}
       {tab === 'lessons' ? (
-        <LessonList entries={lessonHits} />
+        <LessonList key={`${level}|${debounced}`} entries={lessonHits} />
       ) : !isLoading && !bank ? (
         <EmptyState
           title="Grammar pack not installed"

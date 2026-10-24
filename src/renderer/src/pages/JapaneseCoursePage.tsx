@@ -10,6 +10,7 @@ import EmptyState from '../components/EmptyState'
 import ActionMenu from '../components/ActionMenu'
 import type { JpLessonKind, JpLessonSummary } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
+import { useLeaveDeleted } from '../lib/navState'
 import EditorialDetailFrame from '../components/EditorialDetailFrame'
 import ContextPanel from '../components/ContextPanel'
 
@@ -23,6 +24,7 @@ export default function JapaneseCoursePage() {
   const { id } = useParams()
   const courseId = Number(id)
   const navigate = useNavigate()
+  const leaveDeleted = useLeaveDeleted()
   const qc = useQueryClient()
 
   const { data: course, isLoading } = useQuery({
@@ -37,10 +39,12 @@ export default function JapaneseCoursePage() {
       danger: true
     })
     if (!ok) return
+    // Its lessons go with it, so their pages leave the history too.
+    const gone = [`/japanese/courses/${courseId}`, ...course.lessons.map((l) => `/japanese/lessons/${l.id}`)]
     await api.japanese.removeCourse(courseId)
-    await qc.invalidateQueries({ queryKey: qk.japanese.all })
     toast('Course deleted', 'success')
-    navigate('/japanese')
+    leaveDeleted((path) => gone.some((g) => path === g || path.startsWith(`${g}/`)), '/japanese')
+    void qc.invalidateQueries({ queryKey: qk.japanese.all })
   }
 
   if (isLoading) return <PageStatus>Loading…</PageStatus>

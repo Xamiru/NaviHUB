@@ -2,6 +2,8 @@
   "extends": "./tsconfig.web.json",
   "compilerOptions": {
     "composite": false,
+    "incremental": true,
+    "tsBuildInfoFile": "./tsconfig.renderer-tests.tsbuildinfo",
     "types": ["node", "vitest/globals", "@testing-library/jest-dom"]
   },
   "include": [

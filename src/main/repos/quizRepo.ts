@@ -7,6 +7,7 @@ import type {
   QuizAvailabilityRequest,
   QuizChallengeQuestion,
   QuizChallengeRequest,
+  QuizFootballAvailability,
   QuizCastItem,
   QuizHistory,
   QuizHigherLowerAvailability,
@@ -568,31 +569,10 @@ function screenChallengeCandidates(statuses: readonly string[]): ChallengeMediaC
   return [...media.values()]
 }
 
-// Availability runs every pool builder synchronously on the main process, so
-// repeat reads reuse the last result until any write lands. SQLite's change
-// counters invalidate conservatively: total_changes() for this connection,
-// data_version for external writers such as the bulk-import script.
-const availabilityCache = new WeakMap<ReturnType<typeof getSqlite>, {
-  changes: number
-  version: number
-  results: Map<string, QuizAvailability>
-}>()
-
+// Main caches availability by availabilityFingerprint() below
+// (quizAvailabilityCache.ts), so every call here is a rebuild it asked for.
 export function availability(request: QuizAvailabilityRequest = {}): QuizAvailability {
-  const db = getSqlite()
-  const { changes } = db.prepare('SELECT total_changes() AS changes').get() as { changes: number }
-  const version = db.pragma('data_version', { simple: true }) as number
-  let cached = availabilityCache.get(db)
-  if (cached?.changes !== changes || cached.version !== version) {
-    cached = { changes, version, results: new Map() }
-    availabilityCache.set(db, cached)
-  }
-  const key = JSON.stringify([request.scope ?? 'consumed', request.statuses ?? []])
-  const hit = cached.results.get(key)
-  if (hit) return structuredClone(hit)
-  const result = computeAvailability(request)
-  cached.results.set(key, result)
-  return structuredClone(result)
+  return computeAvailability(request)
 }
 
 function computeAvailability(request: QuizAvailabilityRequest): QuizAvailability {
@@ -805,17 +785,6 @@ function computeAvailability(request: QuizAvailabilityRequest): QuizAvailability
   const libraryle = Math.max(...screenGameOptions.map((option) => option.libraryle))
   const mysteryCareer = Math.max(...screenGameOptions.map((option) => option.mysteryCareer))
   const linkWall = Math.max(...screenGameOptions.map((option) => option.linkWall))
-  const footballChampions = footballChampionCandidates()
-  const footballScores = footballScorelineCandidates()
-  const footballCareers = footballCareerCandidates()
-  const footballGrid = footballGridPool()
-  const footballGridReady = buildFootballPlayerGrid(footballGrid, 1).length > 0
-  const footballRevision = [
-    ...footballChampions.map((item) => item.datasetRevision),
-    ...footballScores.map((item) => item.datasetRevision),
-    ...footballCareers.map((item) => item.datasetRevision),
-    footballGrid.datasetRevision
-  ].filter((value) => value !== 'unknown').sort().at(-1) ?? null
   return {
     song,
     guessTrack: Math.max(guessTrackThemes, guessTrackMusic),
@@ -833,18 +802,82 @@ function computeAvailability(request: QuizAvailabilityRequest): QuizAvailability
     libraryle,
     mysteryCareer,
     linkWall,
-    football: {
-      champion: footballChampions.length,
-      scoreline: footballScores.length,
-      careerPath: footballCareers.length,
-      chronology: footballChampions.length,
-      playerGrid: footballGridReady ? 1 : 0,
-      playerGridPlayers: footballGrid.players.length,
-      ...footballGameCounts(),
-      datasetRevision: footballRevision
-    },
+    football: footballAvailability(),
     screenGameOptions
   }
+}
+
+// The Football block alone: its pools ignore the library scope, so the
+// Football pages read it without building every library quiz first.
+export function footballAvailability(): QuizFootballAvailability {
+  const footballChampions = footballChampionCandidates()
+  const footballScores = footballScorelineCandidates()
+  const footballCareers = footballCareerCandidates()
+  const footballGrid = footballGridPool()
+  const footballGridReady = buildFootballPlayerGrid(footballGrid, 1).length > 0
+  const footballRevision = [
+    ...footballChampions.map((item) => item.datasetRevision),
+    ...footballScores.map((item) => item.datasetRevision),
+    ...footballCareers.map((item) => item.datasetRevision),
+    footballGrid.datasetRevision
+  ].filter((value) => value !== 'unknown').sort().at(-1) ?? null
+  return {
+    champion: footballChampions.length,
+    scoreline: footballScores.length,
+    careerPath: footballCareers.length,
+    chronology: footballChampions.length,
+    playerGrid: footballGridReady ? 1 : 0,
+    playerGridPlayers: footballGrid.players.length,
+    ...footballGameCounts(),
+    datasetRevision: footballRevision
+  }
+}
+
+// Tables whose rows feed availability. The fingerprint below reads their row
+// counts and highest rowids. COUNT(*) walks a whole b-tree, so on a large
+// library this is tens of milliseconds: it runs in the quiz pool process.
+const AVAILABILITY_TABLES = [
+  'media_item', 'credit', 'person', 'character', 'media_character', 'media_company', 'company',
+  'media_relation', 'media_tag', 'tag', 'media_image', 'media_external_link', 'theme_song',
+  'theme_artist', 'music_track', 'music_album', 'music_artist', 'football_competition',
+  'football_season', 'football_stage', 'football_team', 'football_person', 'football_tenure',
+  'football_match', 'football_lineup', 'football_honour', 'football_transfer', 'football_alias',
+  'football_source_ref', 'football_coverage', 'football_conflict', 'football_import_run'
+] as const
+
+// A change signature for the availability inputs, read in the quiz pool
+// process; main asks for it only after one of its change counters moved
+// (quizAvailabilityCache.ts), so an unchanged library is never fingerprinted. Unlike
+// data_version it ignores writes availability never reads (a logged round,
+// a setting, a play count). Row counts and top rowids catch inserts and
+// deletes; per-type, per-status sums over media_item catch the in-place edits
+// that move a title in or out of a pool (status, cover, dates, lengths,
+// scores), and theme_song's audio counts catch a theme download. Edits the
+// signature cannot see (a synopsis, a refreshed community score) are picked up
+// by the once-per-session refresh in quizAvailabilityCache.ts.
+export function availabilityFingerprint(): string {
+  const db = getSqlite()
+  const tables = db
+    .prepare(
+      `SELECT ${AVAILABILITY_TABLES.map(
+        (t) => `(SELECT COUNT(*) FROM ${t}), (SELECT MAX(rowid) FROM ${t})`
+      ).join(', ')}`
+    )
+    .raw()
+    .get() as unknown[]
+  const media = db
+    .prepare(
+      `SELECT media_type, status, COUNT(*), TOTAL(id), COUNT(cover_path), COUNT(release_date),
+              COUNT(total_units), TOTAL(total_units), COUNT(score), TOTAL(score)
+       FROM media_item GROUP BY media_type, status ORDER BY media_type, status`
+    )
+    .raw()
+    .all() as unknown[][]
+  const themes = db
+    .prepare('SELECT COUNT(audio_url), COUNT(audio_path), TOTAL(media_id) FROM theme_song')
+    .raw()
+    .get() as unknown[]
+  return JSON.stringify([tables, media, themes])
 }
 
 // Readiness counts for the newer football games, under the same rules as

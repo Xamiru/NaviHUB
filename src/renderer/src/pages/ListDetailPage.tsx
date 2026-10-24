@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
+import { useLeaveDeleted } from '../lib/navState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -17,7 +18,7 @@ import { confirmDialog } from '../lib/confirm'
 export default function ListDetailPage() {
   const { id } = useParams()
   const listId = Number(id)
-  const navigate = useNavigate()
+  const leaveDeleted = useLeaveDeleted()
   const qc = useQueryClient()
 
   const { data: list, isLoading } = useQuery({
@@ -70,8 +71,9 @@ export default function ListDetailPage() {
     })
     if (!ok) return
     await api.lists.remove(listId)
+    const base = `/lists/${listId}`
+    leaveDeleted((path) => path === base || path.startsWith(`${base}/`), '/lists')
     invalidate()
-    navigate('/lists', { replace: true })
   }
 
   return (

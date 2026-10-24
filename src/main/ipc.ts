@@ -29,6 +29,7 @@ import * as secretStorage from './secretStorage'
 import { isSecretSettingKey } from '@shared/secretSettings'
 import * as searchRepo from './repos/searchRepo'
 import * as quizRepo from './repos/quizRepo'
+import * as quizAvailability from './quizAvailabilityCache'
 import { callQuizPools } from './quizPools'
 import { timeIpcHandlers } from './ipcTiming'
 import * as themeRepo from './repos/themeRepo'
@@ -388,7 +389,8 @@ export function registerIpc(): void {
 
   // ---- quiz ----
   // Library-wide quiz reads run in the quiz pool process (quizPools.ts).
-  ipcMain.handle('quiz:availability', (_e, request) => callQuizPools('availability', request))
+  ipcMain.handle('quiz:availability', (_e, request) => quizAvailability.availability(request))
+  ipcMain.handle('quiz:footballAvailability', () => quizAvailability.footballAvailability())
   ipcMain.handle('quiz:challengePool', (_e, request) => callQuizPools('challengePool', request))
   ipcMain.handle('quiz:songPool', (_e, filter) => callQuizPools('songPool', filter))
   ipcMain.handle('quiz:castPool', (_e, filter) => callQuizPools('castPool', filter))
@@ -846,9 +848,11 @@ export function registerIpc(): void {
     ref.kind === 'file' || ref.kind === 'wrestling'
 
   ipcMain.handle('video:attachFolder', (_e, mediaId) => video.attachFolder(mediaId))
+  ipcMain.handle('video:attachFile', (_e, mediaId) => video.attachFile(mediaId))
   ipcMain.handle('video:rescan', (_e, mediaId) => video.rescan(mediaId))
   ipcMain.handle('video:detach', (_e, mediaId) => video.detach(mediaId))
   ipcMain.handle('video:files', (_e, mediaId) => video.files(mediaId))
+  ipcMain.handle('video:linked', (_e, mediaType) => video.linkedTitles(mediaType))
   // One external-open call for every source kind, so the player's fallback
   // never branches per kind. Clips and Football media keep their own guards.
   ipcMain.handle('video:openExternal', (_e, ref: VideoSourceRef) => video.openExternal(ref))

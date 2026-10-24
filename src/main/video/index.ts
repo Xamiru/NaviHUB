@@ -8,11 +8,13 @@ import * as scan from './scan'
 // default application (normally VLC), the fallback for anything undecodable.
 
 export {
+  attachFile,
   attachFolder,
   attachFolderIn,
   detach,
   detachIn,
   files,
+  linkedTitles,
   markProgressIn,
   markWatched,
   markWatchedIn,

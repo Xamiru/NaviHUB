@@ -41,7 +41,25 @@ export function FoldersSettings({ data, onSave }: { data?: Record<string, string
         onSave={onSave}
         title="Video library folder"
         placeholder="/home/you/Videos"
-        description="The root folder your anime, movie and TV episodes live in. Set automatically the first time you attach a folder from a title page; file paths are stored relative to this root, so if you move the library, just update this and rescan."
+        description="The root folder your anime episodes live in, and movies and TV too while their own folders below are blank. Set automatically the first time you link a video from a title page; file paths are stored relative to this root, so if you move the library, just update this and rescan."
+      />
+      <TextSetting
+        folder
+        settingKey="video.movieDir"
+        data={data}
+        onSave={onSave}
+        title="Movie video folder"
+        placeholder="/home/you/Movies"
+        description="The root folder your movie files live in. Set automatically the first time you link a movie; blank means the video library folder. Paths are stored relative to this root, so only change it after moving the movies themselves, then rescan."
+      />
+      <TextSetting
+        folder
+        settingKey="video.tvDir"
+        data={data}
+        onSave={onSave}
+        title="TV video folder"
+        placeholder="/home/you/TV"
+        description="The root folder your TV shows live in. Set automatically the first time you link a show; blank means the video library folder. Paths are stored relative to this root, so only change it after moving the shows themselves, then rescan."
       />
       <TextSetting
         folder

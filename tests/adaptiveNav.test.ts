@@ -174,6 +174,7 @@ describe('adaptive archive navigation', () => {
     expect(animeLabels).toEqual([
       'Anime',
       'Seasonal',
+      'Linked',
       'Songs',
       'Voice Actors',
       'Artists',
@@ -207,6 +208,11 @@ describe('adaptive archive navigation', () => {
     expect(contextTabForPath('/japanese/dictionary', jp)).toBe('/japanese/dictionary')
     expect(contextTabForPath('/japanese/tutor', jp)).toBe('/japanese')
     expect(contextTabForPath('/anime/12', ['/anime', '/anime/seasonal'])).toBe('/anime')
+    expect(contextTabForPath('/anime/linked', ['/anime', '/anime/linked'])).toBe('/anime/linked')
+    const screenTabs = archiveContextForPath('/tv/linked').items.map((item) => item.to)
+    expect(screenTabs).toContain('/movies/linked')
+    expect(contextTabForPath('/tv/linked', screenTabs)).toBe('/movies/linked')
+    expect(contextTabForPath('/tv/42', screenTabs)).toBe('/tv')
   })
 })
 

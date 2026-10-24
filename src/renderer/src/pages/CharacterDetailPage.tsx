@@ -135,7 +135,7 @@ export default function CharacterDetailPage() {
               No appearances yet. Add this character to a title&apos;s cast.
             </p>
           ) : (
-            <AppearanceGrid roles={chronologicalRoles} />
+            <AppearanceGrid key={id} roles={chronologicalRoles} />
           )}
         </Section>
       </EntityHeader>

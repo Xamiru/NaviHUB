@@ -967,6 +967,9 @@ export interface QuizAvailability {
   linkWall: number
   football: QuizFootballAvailability
   screenGameOptions: QuizScreenGameAvailability[]
+  // Set when this is the last cached result and a rebuild is running in the
+  // background; the renderer polls until it is gone.
+  refreshing?: boolean
 }
 
 export interface QuizFootballAvailability {
@@ -981,6 +984,8 @@ export interface QuizFootballAvailability {
   lineup: number
   transfer: number
   datasetRevision: string | null
+  // As on QuizAvailability; only set on the quiz.footballAvailability reply.
+  refreshing?: boolean
 }
 
 export type QuizScreenMediaMode = 'movie' | 'tv' | 'both'
@@ -3542,8 +3547,32 @@ export interface VideoFile {
 }
 
 export interface VideoLibrary {
-  localDir: string | null // attached folder (relative to root); null = not attached
+  localDir: string | null // attached folder or file (relative to root); null = not attached
+  // 'file' when the title is linked to one video file (a movie, an OVA)
+  // rather than a folder; null when nothing is attached.
+  linkKind: 'folder' | 'file' | null
   files: VideoFile[]
+}
+
+// One title with linked local video (the Linked page): what is linked and how
+// far through it the user is. Read from the database only, so a title on an
+// unplugged drive still lists; the player reports a missing file.
+export interface LinkedVideoTitle {
+  mediaId: number
+  title: string
+  mediaType: MediaType
+  coverPath: string | null
+  status: string | null
+  localDir: string
+  linkKind: 'folder' | 'file'
+  fileCount: number
+  watchedCount: number
+  // The first unwatched file in episode order, or the first file once every
+  // one is watched; null for a linked folder with no files.
+  nextFile: { id: number; title: string; resumeSeconds: number | null } | null
+  // Latest watched mark or saved position, whichever is newer (UTC, SQLite text).
+  lastActivityAt: string | null
+  linkedAt: string | null
 }
 
 export interface VideoAttachResult {

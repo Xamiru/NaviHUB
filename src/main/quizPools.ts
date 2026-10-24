@@ -9,8 +9,8 @@ import { runQuizPoolRequest, type QuizPoolMethod, type QuizPoolMethods } from '.
 // pools and VA deals each read the whole library; on main they blocked every
 // IPC call and every navimg:// image for seconds on a large library. They run
 // in a utility process (quizPoolChild.ts) with its own read-only connection,
-// kept warm between rounds (availability and VA pools stay cached until the
-// library changes) and dropped after IDLE_MS of silence.
+// kept warm between rounds (VA pools and the directories stay cached until
+// the library changes) and dropped after IDLE_MS of silence.
 //
 // When the process cannot start or dies under a request, that request runs
 // here as it did before, and the rest of the session stays in-process instead

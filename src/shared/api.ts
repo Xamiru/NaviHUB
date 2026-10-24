@@ -128,6 +128,7 @@ import type {
   QuizCastItem,
   QuizAvailability,
   QuizAvailabilityRequest,
+  QuizFootballAvailability,
   QuizChallengeQuestion,
   QuizChallengeRequest,
   QuizHistory,
@@ -311,6 +312,7 @@ import type {
   VideoSourceRef,
   VideoSubtitleTrack,
   VideoLibrary,
+  LinkedVideoTitle,
   VideoToolsResult,
   JpToken,
   ActivityStatus,
@@ -608,6 +610,8 @@ export interface NaviApi {
   }
   quiz: {
     availability(request: QuizAvailabilityRequest): Promise<QuizAvailability>
+    // The Football block of availability alone, for the Football quiz pages.
+    footballAvailability(): Promise<QuizFootballAvailability>
     challengePool(request: QuizChallengeRequest): Promise<QuizChallengeQuestion[]>
     // The pool of playable anime theme songs for the song quiz, narrowed by the
     // given filter (OP/ED, list statuses). Game logic runs in the renderer.
@@ -1478,12 +1482,17 @@ export interface NaviApi {
   }
   video: {
     // Linked local videos. Episodes are attached PER TITLE, mirroring manga:
-    // a folder under the video root (settings key video.dir, bootstrapped from
-    // the first attach) becomes video_file rows on an anime/movie/tv item.
+    // a folder under the type's video root (video.dir for anime, video.movieDir
+    // and video.tvDir falling back to it, each bootstrapped from the first
+    // attach) becomes video_file rows on an anime/movie/tv item.
     attachFolder(mediaId: number): Promise<VideoAttachResult>
+    // One video file as the whole title (a movie, a one-episode OVA).
+    attachFile(mediaId: number): Promise<VideoAttachResult>
     rescan(mediaId: number): Promise<VideoAttachResult>
     detach(mediaId: number): Promise<void>
     files(mediaId: number): Promise<VideoLibrary>
+    // Every title of one type with linked video (the Linked page).
+    linked(mediaType: MediaType): Promise<LinkedVideoTitle[]>
 
     // Opens the file in the OS default video application (normally VLC), for
     // any source kind. The in-app player's fallback for undecodable files.

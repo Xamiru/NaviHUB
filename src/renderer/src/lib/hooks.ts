@@ -251,13 +251,20 @@ export function useDebouncedValue<T>(value: T, delayMs = 250): T {
 // the grid: <div ref={sentinelRef} />. The observer re-arms after every
 // append, so a deep restored scroll position keeps pulling batches until the
 // content around it exists (navState's multi-frame scroll retry rides on that).
-export function useIncrementalList<T>(items: T[], batch = 96, resetKey: unknown = items) {
+export function useIncrementalList<T>(items: T[], batch = 96, resetKey?: unknown) {
   const [count, setCount] = useState(batch)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
-  // Most result sets reset on new data. Polling/recovery views can supply a
-  // stable scope key to preserve the rendered window while rows change.
-  useEffect(() => setCount(batch), [resetKey, batch])
+  // New data never shrinks the window: a delete, a like or a poll refetches a
+  // fresh array, and starting over from the first batch jumped the page up from
+  // wherever the user had scrolled (and a list derived anew each render could
+  // never grow). Only a change of the explicit `resetKey` scope starts over.
+  const scope = useRef(resetKey)
+  useEffect(() => {
+    if (Object.is(scope.current, resetKey)) return
+    scope.current = resetKey
+    setCount(batch)
+  }, [resetKey, batch])
 
   const hasMore = count < items.length
   useEffect(() => {

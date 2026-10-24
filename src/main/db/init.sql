@@ -626,8 +626,9 @@ CREATE INDEX IF NOT EXISTS idx_manga_chapter_media ON manga_chapter(media_id);
 
 -- video_file — a locally-playable episode/film of an anime/movie/tv media_item,
 -- discovered by scanning the attached folder (media_item.local_dir, reused —
--- an anime row is never also a manga row). file_path is relative to the video
--- library root (settings key video.dir).
+-- an anime row is never also a manga row), or the one linked file of a movie or
+-- OVA. file_path is relative to the owner's video root (video.dir for anime,
+-- video.movieDir / video.tvDir falling back to it; video/scope.ts).
 --
 -- Column groups, deliberately: identity + freshness (file_path/file_mtime/
 -- file_size, the rescan fast path), the ffprobe snapshot (all NULL when ffprobe

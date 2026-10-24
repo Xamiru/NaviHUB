@@ -139,23 +139,20 @@ export function usePreviousEntry(): () => { pathname: string; search: string } |
 }
 
 // Leaves a page whose subject was just deleted: back to the nearest earlier
-// entry that still exists (so Back afterwards never revisits the deleted page
-// or lands on a duplicate), or — with no such entry — replace it with `fallback`.
+// entry that still exists, with its filters and scroll, or — with no such
+// entry — replace it with `fallback`. The deleted page and every entry `gone`
+// matches drop out of the tab's history (TabHistory.forget), so neither Back nor
+// Forward revisits them. `gone` should match the subject's sub-routes too.
+// Leave first, then invalidate without awaiting: awaiting the refetch first
+// re-renders the still-mounted page with the deleted row gone ("Not found.").
 export function useLeaveDeleted(): (gone: (pathname: string) => boolean, fallback: string) => void {
   const navigate = useNavigate()
   const { navigator } = useContext(UNSAFE_NavigationContext)
   return useCallback(
     (gone, fallback) => {
       const tab = tabHistoryOf(navigator)
-      if (tab) {
-        for (let i = tab.index - 1; i >= 0; i--) {
-          if (!gone(tab.entries[i].pathname)) {
-            navigate(i - tab.index)
-            return
-          }
-        }
-      }
-      navigate(fallback, { replace: true })
+      if (tab) tab.forget(gone, fallback)
+      else navigate(fallback, { replace: true })
     },
     [navigate, navigator]
   )

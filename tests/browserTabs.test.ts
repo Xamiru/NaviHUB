@@ -84,6 +84,60 @@ describe('TabHistory', () => {
   })
 })
 
+describe('TabHistory.forget', () => {
+  const paths = (h: TabHistory) => h.entries.map((e) => e.pathname)
+  const title = (p: string) => p === '/anime/7' || p.startsWith('/anime/7/')
+
+  it('lands on the earlier entry as a Pop, keeping its key, and drops the deleted page', () => {
+    const h = new TabHistory('/')
+    h.push('/anime')
+    const list = h.location.key
+    h.push('/anime/7')
+    const seen: string[] = []
+    h.listen(() => seen.push(h.action))
+    h.forget(title, '/anime')
+    expect(paths(h)).toEqual(['/', '/anime'])
+    expect(h.location.key).toBe(list)
+    expect(h.action).toBe('POP')
+    expect(h.canGoForward).toBe(false)
+    expect(seen).toEqual(['POP'])
+  })
+
+  it('removes every matching entry behind and ahead, sub-routes included', () => {
+    const h = new TabHistory('/anime')
+    h.push('/anime/7')
+    h.push('/anime/7/edit')
+    h.push('/people/3')
+    h.push('/anime/7')
+    h.push('/manga/2')
+    h.go(-1)
+    h.forget(title, '/anime')
+    expect(paths(h)).toEqual(['/anime', '/people/3', '/manga/2'])
+    expect(h.location.pathname).toBe('/people/3')
+    h.go(-1)
+    expect(h.location.pathname).toBe('/anime')
+  })
+
+  it('drops the current entry even when the predicate misses it', () => {
+    const h = new TabHistory('/lists')
+    h.push('/lists/4')
+    h.forget(() => false, '/lists')
+    expect(paths(h)).toEqual(['/lists'])
+  })
+
+  it('replaces the current entry with the fallback when nothing earlier survives', () => {
+    const h = new TabHistory('/anime/7/edit')
+    h.push('/anime/7')
+    h.push('/people/3')
+    h.go(-1)
+    h.forget(title, '/anime')
+    expect(paths(h)).toEqual(['/anime', '/people/3'])
+    expect(h.index).toBe(0)
+    expect(h.action).toBe('REPLACE')
+    expect(new Set(h.entries.map((e) => e.key)).size).toBe(2)
+  })
+})
+
 describe('TabHistory.clone', () => {
   it('copies the stack and position under fresh keys', () => {
     const h = new TabHistory('/')

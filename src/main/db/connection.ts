@@ -487,6 +487,8 @@ export function runMigrations(sqlite: Database.Database): string[] {
   // switch, once per deck, from its own review log (fsrsMigration.ts).
   migrateToFsrs(sqlite)
 
+  pinLegacyVideoRoots(sqlite)
+
   // Retired features whose downloaded images go with them. Each collects its
   // media/ paths before dropping its schema; a file anything else still
   // references is kept.
@@ -496,6 +498,23 @@ export function runMigrations(sqlite: Database.Database): string[] {
   if (!retired.length) return []
   const inUse = referencedMediaPaths(sqlite)
   return [...new Set(retired)].filter((p) => !p.includes('..') && !inUse.has(p))
+}
+
+// 2026-10-23: movies and TV gained roots of their own (video.movieDir,
+// video.tvDir), blank meaning video.dir. An install with movies or shows already
+// linked under video.dir has the root written out, so Settings shows where those
+// files are and moving the anime folder later cannot strand them. Idempotent: a
+// root that is already set is left alone.
+export function pinLegacyVideoRoots(sqlite: Database.Database): void {
+  const pin = sqlite.prepare(
+    `INSERT INTO settings (key, value)
+       SELECT ?, value FROM settings
+        WHERE key = 'video.dir' AND TRIM(value) <> ''
+          AND EXISTS (SELECT 1 FROM media_item WHERE media_type = ? AND local_dir IS NOT NULL)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value WHERE TRIM(settings.value) = ''`
+  )
+  pin.run('video.movieDir', 'movie')
+  pin.run('video.tvDir', 'tv')
 }
 
 // 2026-09: the detail-page hero and its imported wide art (AniList bannerImage /

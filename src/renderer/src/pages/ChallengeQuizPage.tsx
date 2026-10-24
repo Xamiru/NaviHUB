@@ -31,6 +31,7 @@ import type {
 } from '@shared/types'
 import { useTabLeaveGuard } from '../lib/browserTabs'
 import { loadChallengeSetup, saveChallengeSetup, setupOption } from '../lib/challengePrefs'
+import { quizAvailabilityQuery } from '../lib/quizAvailability'
 
 const LENGTHS = [5, 10, 20] as const
 const MEDIA_TYPE_KEYS = HIGHER_LOWER_MEDIA_TYPES.map((option) => option.key)
@@ -136,8 +137,7 @@ export default function ChallengeQuizPage({ kind }: { kind: StandardChallengeKin
     [scope, completedStatuses]
   )
   const { data: availability } = useQuery({
-    queryKey: qk.quiz.availability(availabilityRequest),
-    queryFn: () => api.quiz.availability(availabilityRequest),
+    ...quizAvailabilityQuery(availabilityRequest),
     enabled: kind === 'higherLower'
   })
 

@@ -7,7 +7,7 @@ import Tabs, { TabPanel, type TabDef } from '../components/Tabs'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import { usePersistedState } from '../lib/navState'
+import { useLeaveDeleted, usePersistedState } from '../lib/navState'
 import { useScoreMax, useStatuses } from '../lib/hooks'
 import { qk } from '../lib/queryKeys'
 import { usePlayerControls, type Track } from '../lib/player'
@@ -83,10 +83,24 @@ const GAME_TAB_ORDER: DetailTab[] = [
   'mods'
 ]
 
+// Every query group a deleted title can be listed in.
+const DELETED_TITLE_QUERIES = [
+  qk.media.all,
+  qk.mediaCounts.all,
+  qk.people.all,
+  qk.companies.all,
+  qk.characters.all,
+  qk.tags.all,
+  qk.lists.all,
+  qk.tierLists.all,
+  qk.quotes.all,
+  qk.searchAll
+]
+
 export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const { id } = useParams()
   const mediaId = Number(id)
-  const navigate = useNavigate()
+  const leaveDeleted = useLeaveDeleted()
   const qc = useQueryClient()
   const scoreMax = useScoreMax()
   const { theme } = useAppTheme()
@@ -163,12 +177,23 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
       { confirmLabel: 'Delete', danger: true }
     )
     if (!ok) return
+    // Its linked video rows cascade with the title, so read their ids first:
+    // their player pages leave the tab history too.
+    const fileIds = await api.video
+      .files(mediaId)
+      .then((lib) => lib.files.map((f) => f.id))
+      .catch(() => [] as number[])
     await api.media.remove(mediaId)
-    await qc.invalidateQueries({ queryKey: qk.media.all })
-    await qc.invalidateQueries({ queryKey: qk.mediaCounts.all })
-    // replace: the detail route for a row that no longer exists must leave the
-    // history stack, or Back returns to a "Not found." page.
-    navigate(cfg.basePath, { replace: true })
+    // Back to wherever the title was opened from (a filtered list, Home, a
+    // person, a search), with its filters and scroll. Its sub-pages (edit,
+    // readers, VN editions/study/reading) and players go too.
+    const base = `${cfg.basePath}/${mediaId}`
+    const players = new Set(fileIds.map((id) => `/watch/file/${id}`))
+    leaveDeleted(
+      (path) => path === base || path.startsWith(`${base}/`) || players.has(path),
+      cfg.basePath
+    )
+    for (const queryKey of DELETED_TITLE_QUERIES) void qc.invalidateQueries({ queryKey })
   }
 
   if (isLoading) return <PageStatus>Loading…</PageStatus>

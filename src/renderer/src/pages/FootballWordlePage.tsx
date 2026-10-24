@@ -18,6 +18,7 @@ import {
   type FootballWordleFeedback
 } from '@shared/footballGames'
 import type { FootballWordlePlayer, QuizCareerPerson, QuizFootballWordleQuestion } from '@shared/types'
+import { footballAvailabilityQuery } from '../lib/quizAvailability'
 
 type Phase = 'setup' | 'play' | 'summary'
 type Outcome = 'playing' | 'solved' | 'failed' | 'gaveUp'
@@ -80,10 +81,7 @@ export default function FootballWordlePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const loggedRef = useRef(false)
-  const availability = useQuery({
-    queryKey: qk.quiz.availability({ scope: 'all' }),
-    queryFn: () => api.quiz.availability({ scope: 'all' })
-  })
+  const availability = useQuery(footballAvailabilityQuery())
   const playerByKey = useMemo(() => new Map(question?.players.map((player) => [player.key, player]) ?? []), [question])
   const people = useMemo<QuizCareerPerson[]>(
     () => question?.players.map((player) => ({ key: player.key, label: player.label, roles: [], photoPath: player.photoPath })) ?? [],
@@ -173,7 +171,7 @@ export default function FootballWordlePage() {
   ) : null
 
   if (phase === 'setup') {
-    const count = availability.data?.football.wordle ?? 0
+    const count = availability.data?.wordle ?? 0
     return (
       <div className="mx-auto max-w-3xl p-6">
         <PageHeader title="Football Wordle" subtitle="Find the mystery player in eight guesses from nation, position, club, league, age, height and shirt feedback." back={{ to: '/football/quiz', label: 'Football quiz room' }} />

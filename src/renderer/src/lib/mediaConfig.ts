@@ -205,6 +205,7 @@ export const ANIME: MediaConfig = {
   companyPickerPlaceholder: 'Add studio / company…',
   children: [
     { to: '/anime/seasonal', label: 'Seasonal' },
+    { to: '/anime/linked', label: 'Linked' },
     { to: '/anime/songs', label: 'Songs' },
     { to: '/people', label: 'Voice Actors', role: 'voice_actor' },
     { to: '/artists', label: 'Artists', role: 'artist' },
@@ -414,7 +415,8 @@ export const MOVIE: MediaConfig = {
   companyPickerPlaceholder: 'Add production company…',
   children: [
     { to: '/actors', label: 'Actors', role: 'actor' },
-    { to: '/directors', label: 'Directors', role: 'director' }
+    { to: '/directors', label: 'Directors', role: 'director' },
+    { to: '/movies/linked', label: 'Linked' }
   ],
   sidebarLabel: 'Movies & TV', // short enough not to wrap in the mono sidebar
   hasVideoLibrary: true,
@@ -459,7 +461,7 @@ export const TV: MediaConfig = {
   ],
   companyDefaultRole: 'production_studio',
   companyPickerPlaceholder: 'Add network / company…',
-  children: [],
+  children: [{ to: '/tv/linked', label: 'Linked' }],
   hideFromSidebar: true,
   hasVideoLibrary: true,
   // 'Files' rather than 'Episodes': the Seasons tab below is where episodes are

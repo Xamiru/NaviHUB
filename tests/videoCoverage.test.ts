@@ -53,10 +53,19 @@ describe('seriesCorpus', () => {
     const id = makeMedia()
     addVideo(id, 'Frieren/02.mkv', 1)
     addVideo(id, 'Frieren/01.mkv', 0)
+    // The path carries the owner's navimg prefix, so a movie or TV file reads
+    // from its own root.
     expect(seriesCorpus(id)).toEqual([
-      { kind: 'video', path: 'Frieren/01.mkv', label: 'Frieren/01.mkv' },
-      { kind: 'video', path: 'Frieren/02.mkv', label: 'Frieren/02.mkv' }
+      { kind: 'video', path: 'video/Frieren/01.mkv', label: 'Frieren/01.mkv' },
+      { kind: 'video', path: 'video/Frieren/02.mkv', label: 'Frieren/02.mkv' }
     ])
+  })
+
+  it('prefixes a movie file with the movie root', () => {
+    const id = makeMedia()
+    db.prepare(`UPDATE media_item SET media_type = 'movie' WHERE id = ?`).run(id)
+    addVideo(id, 'Heat/Heat.mkv', 0)
+    expect(seriesCorpus(id).map((u) => u.path)).toEqual(['movies/Heat/Heat.mkv'])
   })
 
   it('prefers manga chapters when a title has BOTH', () => {

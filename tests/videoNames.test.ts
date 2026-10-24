@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   cleanTitle,
+  dropSharedNumber,
   episodeTitle,
+  folderSeason,
   isVideoFile,
   looksLikeSample,
   parseEpisodeName
@@ -135,5 +137,59 @@ describe('cleanTitle / episodeTitle', () => {
     expect(episodeTitle(parseEpisodeName('Show.S02E11.mkv'))).toBe('S2 · Episode 11')
     expect(episodeTitle(parseEpisodeName('[Group] Show - 03.5.mkv'))).toBe('Episode 3.5')
     expect(episodeTitle(parseEpisodeName('Some.Film.2019.1080p.mkv'))).toBe('Some Film')
+  })
+})
+
+describe('parseEpisodeName — a bare resolution with no p', () => {
+  it('loses to an earlier number in the same name', () => {
+    expect(ep('[G] Show 03 [720][A1B2C3D4].mkv')).toEqual({ season: null, number: 3 })
+    expect(ep('Show_03_720.mkv')).toEqual({ season: null, number: 3 })
+    expect(ep('Show 12 (1080).mp4')).toEqual({ season: null, number: 12 })
+  })
+
+  it('is still the episode when nothing else is numbered (One Piece has an episode 720)', () => {
+    expect(ep('One Piece - 720.mkv').number).toBe(720)
+    expect(ep('One Piece 720 [1080p].mkv').number).toBe(720)
+    expect(ep('Detective Conan - 1080 [720p].mkv').number).toBe(1080)
+  })
+})
+
+describe('dropSharedNumber', () => {
+  const read = (names: string[]): (number | null)[] =>
+    dropSharedNumber(names, names.map((n) => parseEpisodeName(n))).map((p) => p.number)
+
+  it('re-reads a folder whose every name carries the same tag number', () => {
+    expect(read(['Show 01 [Disc 3].mkv', 'Show 02 [Disc 3].mkv', 'Show 03 [Disc 3].mkv'])).toEqual([1, 2, 3])
+  })
+
+  it('keeps the first reading when the re-read would not give each file its own number', () => {
+    expect(read(['Show - 05.mkv', 'Show - 05v2.mkv'])).toEqual([5, 5])
+  })
+
+  it('leaves a folder of distinct numbers and a lone file alone', () => {
+    expect(read(['One Piece - 719.mkv', 'One Piece - 720.mkv'])).toEqual([719, 720])
+    expect(read(['One Piece - 720.mkv'])).toEqual([720])
+  })
+})
+
+describe('folderSeason', () => {
+  it('reads the common season folder names', () => {
+    expect(folderSeason('Season 2')).toBe(2)
+    expect(folderSeason('Season 02 (2015)')).toBe(2)
+    expect(folderSeason('Series 3')).toBe(3)
+    expect(folderSeason('S02')).toBe(2)
+    expect(folderSeason('Show S2 [1080p]')).toBe(2)
+  })
+
+  it('maps specials and OVA folders to season 0', () => {
+    expect(folderSeason('Specials')).toBe(0)
+    expect(folderSeason('OVA')).toBe(0)
+    expect(episodeTitle({ season: 0, number: 1, label: 'x' })).toBe('Special 01')
+  })
+
+  it('returns null for folders that name no season', () => {
+    expect(folderSeason('Extras')).toBeNull()
+    expect(folderSeason('Mob Psycho 100')).toBeNull()
+    expect(folderSeason('1080p')).toBeNull()
   })
 })

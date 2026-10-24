@@ -29,6 +29,8 @@ vi.mock('../src/main/repos/settingsRepo', () => ({
 }))
 vi.mock('../src/main/files', () => ({
   videoRootDir: () => root,
+  movieVideoRootDir: () => settings.get('video.movieDir') ?? root,
+  tvVideoRootDir: () => settings.get('video.tvDir') ?? root,
   // The scanner is shared with the wrestling collection (video/scope.ts), so
   // both roots have to exist even though these tests only use the media one.
   wrestlingRootDir: () => root,
@@ -37,6 +39,7 @@ vi.mock('../src/main/files', () => ({
 
 import * as scan from '../src/main/video/scan'
 import * as video from '../src/main/video'
+import { VIDEO_SCOPES } from '../src/main/video/scope'
 
 beforeEach(() => {
   db = createTestDb()
@@ -110,6 +113,122 @@ describe('scanSeriesDir', () => {
     const dir = makeSeries('Film', ['Film.mkv', 'Film-sample.mkv'])
     const found = await scan.scanSeriesDir(dir)
     expect(found.map((f) => f.filePath)).toEqual(['Film.mkv'])
+  })
+})
+
+describe('scanSeriesDir — seasons from folders and media types', () => {
+  it('takes the season from a season folder and plays specials last', async () => {
+    const dir = makeSeries('Show', [
+      'Season 2/03 - Title.mkv',
+      'Season 1/03 - Title.mkv',
+      'Season 1/01 - Title.mkv',
+      'Specials/01 - Title.mkv'
+    ])
+    const found = await scan.scanSeriesDir(dir)
+    expect(found.map((f) => [f.season, f.number])).toEqual([
+      [1, 1],
+      [1, 3],
+      [2, 3],
+      [0, 1]
+    ])
+    expect(found[3].title).toBe('Special 01')
+  })
+
+  it('lets the file name beat its folder', async () => {
+    const found = await scan.scanSeriesDir(makeSeries('Show', ['Season 1/Show.S03E02.mkv']))
+    expect(found[0].season).toBe(3)
+  })
+
+  it('numbers an unseasoned TV file as season 1, matching TMDB', async () => {
+    const dir = makeSeries('Show', ['Show - 01.mkv'])
+    expect((await scan.scanSeriesDir(dir, 'tv'))[0].season).toBe(1)
+    expect((await scan.scanSeriesDir(dir, 'anime'))[0].season).toBeNull()
+  })
+
+  it('never reads a movie file as an episode', async () => {
+    const found = await scan.scanSeriesDir(makeSeries('Oceans', ["Ocean's 11 (2001) 1080p.mkv"]), 'movie')
+    expect(found[0]).toMatchObject({ number: null, season: null, title: "Ocean's 11" })
+  })
+
+  it('drops a number that every file in the folder shares', async () => {
+    const dir = makeSeries('Show', ['Show 01 [Disc 3].mkv', 'Show 02 [Disc 3].mkv'])
+    expect((await scan.scanSeriesDir(dir)).map((f) => f.number)).toEqual([1, 2])
+  })
+})
+
+describe('attachFile', () => {
+  async function attachOne(mediaId: number, file: string): Promise<ReturnType<typeof scan.attachFile>> {
+    showOpenDialog.mockResolvedValue({ canceled: false, filePaths: [file] })
+    return scan.attachFile(mediaId)
+  }
+
+  it('links one movie file, bootstrapping the movie root above its folder', async () => {
+    const mediaId = makeMedia('Heat', 'movie')
+    makeSeries('Movies/Heat (1995)', ['Heat.mkv', 'Heat-trailer.mkv'])
+    makeSeries('Movies', ['Collateral.mkv'])
+    const res = await attachOne(mediaId, join(root, 'Movies/Heat (1995)/Heat.mkv'))
+    expect(res).toEqual({ ok: true, fileCount: 1 })
+    expect(settings.get('video.movieDir')).toBe(join(root, 'Movies'))
+    expect(settings.get('video.dir')).toBeUndefined()
+
+    const lib = scan.files(mediaId)
+    expect(lib).toMatchObject({ localDir: 'Heat (1995)/Heat.mkv', linkKind: 'file' })
+    expect(lib.files.map((f) => [f.filePath, f.title, f.number, f.container])).toEqual([
+      ['Heat (1995)/Heat.mkv', 'Heat', null, '.mkv']
+    ])
+
+    // A rescan reads the one file again, never its neighbours.
+    expect(await scan.rescan(mediaId)).toEqual({ ok: true, fileCount: 1 })
+    expect(scan.files(mediaId).files).toHaveLength(1)
+  })
+
+  it('takes a flat movies folder as the root when other films share it', async () => {
+    const mediaId = makeMedia('Heat', 'movie')
+    makeSeries('Movies', ['Heat.mkv', 'Collateral.mkv'])
+    expect((await attachOne(mediaId, join(root, 'Movies/Heat.mkv'))).ok).toBe(true)
+    expect(settings.get('video.movieDir')).toBe(join(root, 'Movies'))
+    expect(scan.files(mediaId)).toMatchObject({ localDir: 'Heat.mkv', linkKind: 'file' })
+  })
+
+  it('refuses a file that is not a video', async () => {
+    const mediaId = makeMedia('Heat', 'movie')
+    makeSeries('Movies', ['notes.txt'])
+    const res = await attachOne(mediaId, join(root, 'Movies/notes.txt'))
+    expect(res.ok).toBe(false)
+    expect(res.error).toMatch(/not a video file/)
+  })
+
+  it('keeps a linked file\'s rows when the file has gone, instead of clearing them', async () => {
+    const mediaId = makeMedia('Heat', 'movie')
+    makeSeries('Movies/Heat', ['Heat.mkv'])
+    await attachOne(mediaId, join(root, 'Movies/Heat/Heat.mkv'))
+    rmSync(join(root, 'Movies/Heat/Heat.mkv'))
+    const res = await scan.rescan(mediaId)
+    expect(res.ok).toBe(false)
+    expect(scan.files(mediaId).files).toHaveLength(1)
+  })
+
+  it('keeps movies on video.dir while movies are still linked under it', async () => {
+    settings.set('video.dir', root)
+    const old = makeMedia('Heat', 'movie')
+    db.prepare(`UPDATE media_item SET local_dir = 'Heat' WHERE id = ?`).run(old)
+    const mediaId = makeMedia('Collateral', 'movie')
+    makeSeries('Collateral', ['Collateral.mkv'])
+    const res = await attachOne(mediaId, join(root, 'Collateral/Collateral.mkv'))
+    expect(res.ok).toBe(true)
+    expect(settings.get('video.movieDir')).toBeUndefined()
+    expect(scan.files(mediaId).localDir).toBe('Collateral/Collateral.mkv')
+  })
+  it('keeps movies on the default root when video.dir is blank and movies are linked', async () => {
+    // Blank video.dir: the fallback is the default folder (root in this mock).
+    const old = makeMedia('Heat', 'movie')
+    db.prepare(`UPDATE media_item SET local_dir = 'Heat' WHERE id = ?`).run(old)
+    const mediaId = makeMedia('Collateral', 'movie')
+    makeSeries('Collateral', ['Collateral.mkv'])
+    const res = await attachOne(mediaId, join(root, 'Collateral/Collateral.mkv'))
+    expect(res.ok).toBe(true)
+    expect(settings.get('video.movieDir')).toBeUndefined()
+    expect(scan.files(mediaId).localDir).toBe('Collateral/Collateral.mkv')
   })
 })
 
@@ -372,5 +491,65 @@ describe('detach', () => {
     const lib = scan.files(mediaId)
     expect(lib.files).toEqual([])
     expect(lib.localDir).toBeNull()
+  })
+})
+
+describe('linkedTitles', () => {
+  it('lists linked titles of one type with progress and the file to play next', async () => {
+    const anime = makeMedia('Frieren')
+    await attach(anime, makeSeries('Frieren', ['Frieren - 01.mkv', 'Frieren - 02.mkv', 'Frieren - 03.mkv']))
+    const rows = scan.rowsFor(VIDEO_SCOPES.video, anime) as { id: number }[]
+    scan.markWatched(rows[0].id, true)
+    scan.markProgressIn(VIDEO_SCOPES.video, rows[1].id, 300)
+
+    // Not linked, another type, and a manga whose local_dir is its own folder.
+    makeMedia('Unlinked')
+    const movie = makeMedia('Paprika', 'movie')
+    await attach(movie, makeSeries('Paprika', ['Paprika.mkv']))
+    const manga = makeMedia('Berserk', 'manga')
+    db.prepare('UPDATE media_item SET local_dir = ? WHERE id = ?').run('Berserk', manga)
+
+    const linked = video.linkedTitles('anime')
+    expect(linked.map((t) => t.title)).toEqual(['Frieren'])
+    expect(linked[0]).toMatchObject({
+      mediaId: anime,
+      linkKind: 'folder',
+      fileCount: 3,
+      watchedCount: 1,
+      nextFile: { id: rows[1].id, resumeSeconds: 300 }
+    })
+    expect(linked[0].lastActivityAt).not.toBeNull()
+    expect(video.linkedTitles('manga')).toEqual([])
+    expect(video.linkedTitles('movie').map((t) => t.title)).toEqual(['Paprika'])
+  })
+
+  it('reports a file link and restarts a finished title from its first file', async () => {
+    const movie = makeMedia('Akira', 'movie')
+    makeSeries('Films', ['Akira.mkv', 'Other.mkv'])
+    showOpenDialog.mockResolvedValue({ canceled: false, filePaths: [join(root, 'Films', 'Akira.mkv')] })
+    await scan.attachFile(movie)
+    const [file] = scan.rowsFor(VIDEO_SCOPES.video, movie) as { id: number }[]
+    scan.markWatched(file.id, true)
+
+    const [t] = video.linkedTitles('movie')
+    expect(t).toMatchObject({ linkKind: 'file', fileCount: 1, watchedCount: 1, nextFile: { id: file.id } })
+  })
+
+  it('does not count a rescan as watch activity', async () => {
+    const anime = makeMedia('Frieren')
+    await attach(anime, makeSeries('Frieren', ['Frieren - 01.mkv', 'Frieren - 02.mkv']))
+    const rows = scan.rowsFor(VIDEO_SCOPES.video, anime) as { id: number }[]
+    scan.markProgressIn(VIDEO_SCOPES.video, rows[0].id, 300)
+    db.prepare(`UPDATE video_file SET updated_at = '2020-01-01 00:00:00' WHERE media_id = ?`).run(anime)
+    expect(await scan.rescan(anime)).toMatchObject({ ok: true })
+    expect(video.linkedTitles('anime')[0].lastActivityAt).toBe('2020-01-01 00:00:00')
+  })
+
+  it('keeps a linked folder with no files, with nothing to play', () => {
+    const anime = makeMedia('Empty')
+    db.prepare('UPDATE media_item SET local_dir = ? WHERE id = ?').run('Empty', anime)
+    expect(video.linkedTitles('anime')).toMatchObject([
+      { title: 'Empty', fileCount: 0, watchedCount: 0, nextFile: null, lastActivityAt: null }
+    ])
   })
 })

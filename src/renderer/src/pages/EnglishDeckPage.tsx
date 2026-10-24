@@ -83,7 +83,7 @@ export default function EnglishDeckPage() {
     return sorted
   }, [words, filter, rareMin, q, sort, now])
 
-  const { visible, sentinelRef } = useIncrementalList(shown, 96)
+  const { visible, sentinelRef } = useIncrementalList(shown, 96, `${filter}|${rareMin}|${q}|${sort}`)
 
   async function removeOne(w: EnDeckWord): Promise<void> {
     await api.english.removeWord(w.id)

@@ -14,7 +14,9 @@ Custom privileged `navimg://` protocol serves everything (images, audio, manga p
 | `books/…` | `books.dir` setting — local EPUBs (reuse the manga machinery) |
 | `music/…` | `music.dir` setting |
 | `pictures/…` | `pictures.dir` setting — wallpapers/fan art, human-readable layout, deliberately NOT content-addressed. Pinned at startup (existing folder kept, fresh libraries in the OS Pictures folder) |
-| `video/…` | `video.dir` setting — local episodes/films |
+| `video/…` | `video.dir` setting — local anime episodes, and movies/TV while their own roots are unset |
+| `movies/…` | `video.movieDir` setting, falling back to `video.dir` — linked movie files |
+| `tv/…` | `video.tvDir` setting, falling back to `video.dir` — linked TV episodes |
 | `wrestling/…` | `wrestling.dir` setting — local PPV rips |
 | `football/…` | `football.dir` setting — local clips, highlights, full matches, interviews and documentaries |
 | `history/…` | `history.dir` setting, default `userData/history` — History archive files the user attached (copied in) or downloaded from a research suggestion, one folder per entity |

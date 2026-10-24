@@ -21,6 +21,7 @@ import type {
   QuizScreenTitle
 } from '@shared/types'
 import { useTabLeaveGuard } from '../lib/browserTabs'
+import { quizAvailabilityQuery } from '../lib/quizAvailability'
 
 type Phase = 'setup' | 'play' | 'summary'
 type Outcome = 'playing' | 'solved' | 'failed' | 'gaveUp'
@@ -128,10 +129,7 @@ export default function LibrarylePage() {
     () => ({ scope, statuses: scope === 'consumed' ? completedStatuses : null }),
     [scope, completedStatuses]
   )
-  const availability = useQuery({
-    queryKey: qk.quiz.availability(availabilityRequest),
-    queryFn: () => api.quiz.availability(availabilityRequest)
-  })
+  const availability = useQuery(quizAvailabilityQuery(availabilityRequest))
   const available = availability.data?.screenGameOptions.find(
     (option) => option.mediaMode === mediaMode
   )?.libraryle ?? 0

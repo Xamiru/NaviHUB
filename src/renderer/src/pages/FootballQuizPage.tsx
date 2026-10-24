@@ -2,9 +2,8 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
-import { api } from '../lib/api'
-import { qk } from '../lib/queryKeys'
 import { FootballFlag, footballCompetitionStyle } from '../components/football/FootballCommon'
+import { footballAvailabilityQuery } from '../lib/quizAvailability'
 
 const GAMES = [
   { key: 'champion', to: '/football/quiz/champion', title: 'Champion', body: 'Name the verified winner of a completed edition.', minimum: 5, competitionKey: 'champions-league' },
@@ -18,13 +17,10 @@ const GAMES = [
 ] as const
 
 export default function FootballQuizPage() {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: qk.quiz.availability({ scope: 'all' }),
-    queryFn: () => api.quiz.availability({ scope: 'all' })
-  })
+  const { data, isLoading, isError } = useQuery(footballAvailabilityQuery())
   if (isLoading) return <PageStatus>Preparing the Football quiz room...</PageStatus>
   if (isError) return <PageStatus>Could not load Football quiz eligibility.</PageStatus>
-  const availability = data?.football
+  const availability = data
   return (
     <div className="mx-auto max-w-[1300px] p-6">
       <PageHeader

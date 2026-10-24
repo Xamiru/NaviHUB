@@ -13,6 +13,7 @@ import { useTabLeaveGuard } from '../lib/browserTabs'
 import { quizScorePolicy, quizSeed } from '@shared/quizCore'
 import { formatTransferFee } from '@shared/footballGames'
 import type { QuizFootballTransferFact, QuizFootballTransferQuestion } from '@shared/types'
+import { footballAvailabilityQuery } from '../lib/quizAvailability'
 
 type Phase = 'setup' | 'play' | 'summary'
 const LIVES = 3
@@ -53,10 +54,7 @@ export default function FootballTransferPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const loggedRef = useRef(false)
-  const availability = useQuery({
-    queryKey: qk.quiz.availability({ scope: 'all' }),
-    queryFn: () => api.quiz.availability({ scope: 'all' })
-  })
+  const availability = useQuery(footballAvailabilityQuery())
   const question = chain[index]
 
   async function start() {
@@ -127,7 +125,7 @@ export default function FootballTransferPage() {
   }
 
   if (phase === 'setup') {
-    const count = availability.data?.football.transfer ?? 0
+    const count = availability.data?.transfer ?? 0
     return (
       <div className="mx-auto max-w-3xl p-6">
         <PageHeader title="Transfer Higher or Lower" subtitle="Did this move cost more or less than the last one? Three lives; each right call carries the transfer forward." back={{ to: '/football/quiz', label: 'Football quiz room' }} />

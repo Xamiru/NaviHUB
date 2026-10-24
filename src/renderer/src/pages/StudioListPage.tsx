@@ -49,7 +49,7 @@ export default function StudioListPage() {
       .filter((e) => directoryNameMatches(needle, e.company.name, e.company.nameNative))
       .sort(directoryCompare(sort, byStudio))
   }, [data, show, needle, sort])
-  const { visible, sentinelRef, hasMore } = useIncrementalList(rows)
+  const { visible, sentinelRef, hasMore } = useIncrementalList(rows, 96, `${show}|${needle}|${sort}`)
 
   if (isError)
     return (

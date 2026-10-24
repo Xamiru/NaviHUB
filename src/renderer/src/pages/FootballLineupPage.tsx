@@ -14,6 +14,7 @@ import { useTabLeaveGuard } from '../lib/browserTabs'
 import { quizScorePolicy, quizSeed } from '@shared/quizCore'
 import { FOOTBALL_LINEUP_POINTS_PER_PLAYER, matchFootballLineupName } from '@shared/footballGames'
 import type { QuizFootballLineupQuestion, QuizFootballLineupSlot } from '@shared/types'
+import { footballAvailabilityQuery } from '../lib/quizAvailability'
 
 type Phase = 'setup' | 'play' | 'summary'
 
@@ -78,10 +79,7 @@ export default function FootballLineupPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const loggedRef = useRef(false)
-  const availability = useQuery({
-    queryKey: qk.quiz.availability({ scope: 'all' }),
-    queryFn: () => api.quiz.availability({ scope: 'all' })
-  })
+  const availability = useQuery(footballAvailabilityQuery())
   const score = named.length * FOOTBALL_LINEUP_POINTS_PER_PLAYER
 
   async function start() {
@@ -173,7 +171,7 @@ export default function FootballLineupPage() {
   ) : null
 
   if (phase === 'setup') {
-    const count = availability.data?.football.lineup ?? 0
+    const count = availability.data?.lineup ?? 0
     return (
       <div className="mx-auto max-w-3xl p-6">
         <PageHeader title="Name the XI" subtitle="Type every name you can." back={{ to: '/football/quiz', label: 'Football quiz room' }} />

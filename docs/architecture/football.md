@@ -97,7 +97,7 @@ Player Grid is points-ranked. Champion, Scoreline and Chronology use the shared 
 - `footballLineup` (`/football/quiz/lineup`): one side's starting XI from a complete-lineup match, big matches first, laid out on pitch lines from `footballLineupLine`; typed full names, aliases or a surname unique among the unnamed starters fill slots (no suggestions), 100 points each.
 - `footballTransfer` (`/football/quiz/transfers`): a 60-step chain of transfers priced at least €5m (`FOOTBALL_TRANSFER_MIN_FEE`), more or less than the previous move, three lives.
 
-`quiz:availability` reports cheap counts for these three (`wordle`, `lineup`, `transfer`); the full pools are built only when a round starts. Every builder is seeded and pure; partial, ambiguous, conflicted, or unsupported facts are filtered in the repository before a deal.
+`quiz:footballAvailability` (the Football block of `quiz:availability`, cached in main like it) reports cheap counts for these three (`wordle`, `lineup`, `transfer`); the full pools are built only when a round starts. Every builder is seeded and pure; partial, ambiguous, conflicted, or unsupported facts are filtered in the repository before a deal.
 
 ## Export posture
 

@@ -1141,4 +1141,35 @@ describe('music URL queue migration', () => {
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
     db.close()
   })
+
+  it('writes out the movie and TV roots for titles linked before they had their own', () => {
+    const db = new Database(':memory:')
+    db.exec(initSql)
+    db.exec(`
+      INSERT INTO settings (key, value) VALUES ('video.dir', '/media/Video'), ('video.tvDir', '');
+      INSERT INTO media_item (media_type, title, local_dir) VALUES ('movie', 'Heat', 'Heat'), ('tv', 'Lost', 'Lost'),
+        ('anime', 'Frieren', 'Frieren')`)
+    runMigrations(db)
+    runMigrations(db)
+    const value = (key: string): unknown =>
+      (db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined)?.value
+    expect(value('video.movieDir')).toBe('/media/Video')
+    expect(value('video.tvDir')).toBe('/media/Video')
+
+    // A root the user already chose is never overwritten.
+    db.exec(`UPDATE settings SET value = '/media/Movies' WHERE key = 'video.movieDir'`)
+    runMigrations(db)
+    expect(value('video.movieDir')).toBe('/media/Movies')
+    db.close()
+  })
+
+  it('leaves the movie root unset when no movie is linked', () => {
+    const db = new Database(':memory:')
+    db.exec(initSql)
+    db.exec(`INSERT INTO settings (key, value) VALUES ('video.dir', '/media/Video');
+      INSERT INTO media_item (media_type, title) VALUES ('movie', 'Heat')`)
+    runMigrations(db)
+    expect(db.prepare(`SELECT 1 FROM settings WHERE key = 'video.movieDir'`).get()).toBeUndefined()
+    db.close()
+  })
 })

@@ -1,5 +1,6 @@
 import { resolve } from 'node:path'
 import { defineConfig } from 'vitest/config'
+import { testWorkers } from './vitest.workers'
 
 // Tests live in tests/ (outside both tsconfig projects) and run against the
 // real repos with an in-memory SQLite — see tests/helpers.ts.
@@ -14,6 +15,7 @@ export default defineConfig({
   // script in package.json) would try to require() it and fail.
   css: { postcss: {} },
   test: {
-    include: ['tests/**/*.test.ts']
+    include: ['tests/**/*.test.ts'],
+    ...testWorkers()
   }
 })

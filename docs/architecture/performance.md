@@ -95,5 +95,8 @@ Chain deal from 8.2 s to 0.6 s, and Silhouette from 2.1 s to 0.55 s.
 - Cast and synopsis still cross IPC as whole pools (3 MB and 4.5 MB on the laptop; 12-18 MB on
   the ×4 copy). Building them in the quiz pool process, as `quiz:vaQuestions` does, is the fix if
   they show up as slow.
-- Availability is recomputed in the quiz pool process after any library write; it no longer blocks
-  main, but a quiz page shows readiness later on a large library.
+- Availability itself still costs 0.4 s (completed titles) to 1.5 s (whole library) of CPU on the
+  laptop library, most of it Synopsis reading unseen titles too. Since 2026-10-23 it is cached in
+  main and rebuilt in the background only when its input tables change or once per session
+  ([music-quiz.md](music-quiz.md) "Quiz pool process"), so nobody waits for it; count-only paths
+  for Synopsis and Voice Actor are the next step if the background rebuild shows up.

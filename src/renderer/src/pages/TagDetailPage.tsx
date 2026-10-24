@@ -134,7 +134,7 @@ export default function TagDetailPage() {
             )}
             <FilterPills label="Sort titles" options={WORK_SORT_OPTIONS} value={sort} onChange={(k) => setSort(k as WorkSort)} />
           </div>
-          <TitleGrid items={shown} showType={activeType === 'all' && typesPresent.length > 1} />
+          <TitleGrid key={`${id}:${activeType}`} items={shown} showType={activeType === 'all' && typesPresent.length > 1} />
         </Section>
       )}
     </div>

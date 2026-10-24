@@ -79,7 +79,11 @@ export default function EntityListView({
   })
   // A role like voice_actor matches thousands of people; mounting them all at
   // once froze the app. Reveal the grid in batches as the user scrolls instead.
-  const { visible, sentinelRef, hasMore } = useIncrementalList(rows)
+  const { visible, sentinelRef, hasMore } = useIncrementalList(
+    rows,
+    96,
+    `${kind}|${personRole ?? ''}|${mediaType ?? ''}|${debouncedSearch}`
+  )
 
   async function add() {
     const name = newName.trim()

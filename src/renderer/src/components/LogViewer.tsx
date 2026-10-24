@@ -83,7 +83,11 @@ export default function LogViewer() {
     return out.reverse()
   }, [rows, minLevel, hidden, debounced])
 
-  const { visible, sentinelRef, hasMore } = useIncrementalList(filtered)
+  const { visible, sentinelRef, hasMore } = useIncrementalList(
+    filtered,
+    96,
+    `${minLevel}|${hidden.join(',')}|${debounced}`
+  )
 
   // Follow pins to the top, where the newest row is.
   useEffect(() => {

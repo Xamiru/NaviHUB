@@ -183,6 +183,17 @@ export function videoRootDir(): string {
   return custom && custom.length ? custom : join(app.getPath('userData'), 'video')
 }
 
+// Movie and TV roots (`video.movieDir`, `video.tvDir`; "movies/" and "tv/"
+// prefixes), so they can live on other drives than the anime folder. Unset,
+// each is video.dir: titles linked before the split still resolve.
+export function movieVideoRootDir(): string {
+  return getSetting('video.movieDir')?.trim() || videoRootDir()
+}
+
+export function tvVideoRootDir(): string {
+  return getSetting('video.tvDir')?.trim() || videoRootDir()
+}
+
 // Remuxed/transcoded playback copies and subtitle tracks extracted out of
 // containers. Always under userData: it's derived, rebuildable data, and
 // dropping a cache on the user's media drive would surprise them.
@@ -301,6 +312,8 @@ export function absoluteMediaPath(relPath: string): string {
   if (norm.startsWith('music/')) return join(musicRootDir(), norm.slice('music/'.length))
   if (norm.startsWith('pictures/')) return join(picturesDir(), norm.slice('pictures/'.length))
   if (norm.startsWith('video/')) return join(videoRootDir(), norm.slice('video/'.length))
+  if (norm.startsWith('movies/')) return join(movieVideoRootDir(), norm.slice('movies/'.length))
+  if (norm.startsWith('tv/')) return join(tvVideoRootDir(), norm.slice('tv/'.length))
   if (norm.startsWith('wrestling/')) {
     return join(wrestlingRootDir(), norm.slice('wrestling/'.length))
   }

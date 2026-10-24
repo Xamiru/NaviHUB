@@ -64,7 +64,7 @@ export default function VnEditionPage() {
         </p>
       )}
       <EditionEditor
-        key={`${d.selected?.id ?? ''}:${d.notes}`}
+        key={`${id}:${d.selected?.id ?? ''}:${d.notes}`}
         value={d}
         onSave={async (releaseId, notes) => {
           await api.vnExplore.saveEdition(id, releaseId, notes)

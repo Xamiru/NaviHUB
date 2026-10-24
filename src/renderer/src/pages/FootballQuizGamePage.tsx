@@ -25,6 +25,7 @@ import type {
   QuizKind
 } from '@shared/types'
 import { useTabLeaveGuard } from '../lib/browserTabs'
+import { footballAvailabilityQuery } from '../lib/quizAvailability'
 
 export type FootballQuizGameKind =
   | 'footballChampion'
@@ -93,10 +94,7 @@ export default function FootballQuizGamePage({ kind }: { kind: FootballQuizGameK
   const [duelTurn, setDuelTurn] = useState<1 | 2>(1)
   const [duelOwners, setDuelOwners] = useState<Record<string, 1 | 2>>({})
   const loggedRef = useRef(false)
-  const availabilityQuery = useQuery({
-    queryKey: qk.quiz.availability({ scope: 'all' }),
-    queryFn: () => api.quiz.availability({ scope: 'all' })
-  })
+  const availabilityQuery = useQuery(footballAvailabilityQuery())
   const availability = availabilityQuery.data
   const question = questions[index]
   const grid = question?.kind === 'footballPlayerGrid' ? question : null
@@ -325,7 +323,7 @@ export default function FootballQuizGamePage({ kind }: { kind: FootballQuizGameK
   if (phase === 'setup') {
     if (availabilityQuery.isLoading) return <PageStatus>Checking Football quiz eligibility...</PageStatus>
     if (availabilityQuery.isError) return <PageStatus>Could not load Football quiz eligibility.</PageStatus>
-    const count = kind === 'footballChampion' ? availability?.football.champion : kind === 'footballScoreline' ? availability?.football.scoreline : kind === 'footballCareerPath' ? availability?.football.careerPath : kind === 'footballChronology' ? availability?.football.chronology : availability?.football.playerGrid
+    const count = kind === 'footballChampion' ? availability?.champion : kind === 'footballScoreline' ? availability?.scoreline : kind === 'footballCareerPath' ? availability?.careerPath : kind === 'footballChronology' ? availability?.chronology : availability?.playerGrid
     const lengths = kind === 'footballCareerPath' ? [5, 10] : kind === 'footballPlayerGrid' ? [1] : kind === 'footballChronology' ? [5] : [5, 10, 20]
     const minimumFacts = kind === 'footballChronology' ? 4 : kind === 'footballPlayerGrid' ? 1 : length
     return (

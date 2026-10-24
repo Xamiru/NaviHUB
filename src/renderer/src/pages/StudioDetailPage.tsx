@@ -191,7 +191,7 @@ export default function StudioDetailPage() {
                   onChange={(k) => setWorkSort(k as WorkSort)}
                 />
               </div>
-              <WorkGrid works={shownWorks} />
+              <WorkGrid key={id} works={shownWorks} />
             </>
           )}
         </Section>

@@ -44,6 +44,7 @@ const MediaDetailPage = lazy(() => import('./pages/MediaDetailPage'))
 const MediaFormPage = lazy(() => import('./pages/MediaFormPage'))
 const SeasonalAnimePage = lazy(() => import('./pages/SeasonalAnimePage'))
 const InstalledGamesPage = lazy(() => import('./pages/InstalledGamesPage'))
+const LinkedVideoPage = lazy(() => import('./pages/LinkedVideoPage'))
 const EmulatorsPage = lazy(() => import('./pages/EmulatorsPage'))
 const FranchisesPage = lazy(() => import('./pages/FranchisesPage'))
 const VnDiscoverPage = lazy(() => import('./pages/VnDiscoverPage'))
@@ -323,6 +324,7 @@ export default function App() {
             <Route path="/anime/new" element={<MediaFormPage cfg={ANIME} />} />
             <Route path="/anime/seasonal" element={<SeasonalAnimePage />} />
             <Route path="/anime/songs" element={<ThemeSongsPage />} />
+            <Route path="/anime/linked" element={<LinkedVideoPage cfg={ANIME} />} />
             <Route path="/anime/:id" element={<MediaDetailPage cfg={ANIME} />} />
             <Route path="/anime/:id/edit" element={<MediaFormPage cfg={ANIME} />} />
 
@@ -371,10 +373,12 @@ export default function App() {
             {/* Movies + TV (shared section: same actors, separate lists) */}
             <Route path="/movies" element={<MediaListPage cfg={MOVIE} />} />
             <Route path="/movies/new" element={<MediaFormPage cfg={MOVIE} />} />
+            <Route path="/movies/linked" element={<LinkedVideoPage cfg={MOVIE} />} />
             <Route path="/movies/:id" element={<MediaDetailPage cfg={MOVIE} />} />
             <Route path="/movies/:id/edit" element={<MediaFormPage cfg={MOVIE} />} />
             <Route path="/tv" element={<MediaListPage cfg={TV} />} />
             <Route path="/tv/new" element={<MediaFormPage cfg={TV} />} />
+            <Route path="/tv/linked" element={<LinkedVideoPage cfg={TV} />} />
             <Route path="/tv/:id" element={<MediaDetailPage cfg={TV} />} />
             <Route path="/tv/:id/edit" element={<MediaFormPage cfg={TV} />} />
 

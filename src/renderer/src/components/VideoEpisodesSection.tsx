@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { formatTime } from '@shared/subtitles'
@@ -20,12 +20,14 @@ import { useEpisodeFavorites } from './FavoriteEpisodesSection'
 // so none either; otherwise a file past the total (an OVA numbered 13) offers
 // none on its own row. Without a known total (airing; some sources store 0)
 // the file numbers are all there is, and the grid follows them. Either way the
-// grid stays the place to heart.
+// grid stays the place to heart. Specials (season 0) never heart and never
+// count as a second season: their numbers are not the entry's episodes.
 export function episodeNumberHeartable(
   files: Pick<VideoFile, 'season' | 'number'>[],
   totalUnits: number | null
 ): (number: number) => boolean {
   const whole = (n: number | null): n is number => n != null && Number.isInteger(n) && n >= 1
+  files = files.filter((f) => f.season !== 0)
   if (new Set(files.map((f) => f.season ?? 1)).size > 1) return () => false
   const total = totalUnits != null && totalUnits > 0 ? totalUnits : null
   if (total == null) return whole
@@ -39,6 +41,8 @@ export function episodeNumberHeartable(
 // scanned, then play files in the in-app player (which falls back to the
 // system player for codecs it cannot decode). Every row also opens externally.
 // Finishing a file in the player, or ticking it by hand, credits progress.
+// A one-episode title (every movie, an anime OVA or film) can link its single
+// video file instead of a folder.
 export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Element {
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
@@ -68,9 +72,9 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
     }
   }
 
-  const attach = (): Promise<void> =>
+  const attach = (kind: 'folder' | 'file'): Promise<void> =>
     run(async () => {
-      const res = await api.video.attachFolder(m.id)
+      const res = await (kind === 'file' ? api.video.attachFile(m.id) : api.video.attachFolder(m.id))
       if (res.ok) toast(`Found ${res.fileCount} file${res.fileCount === 1 ? '' : 's'}`, 'success')
       else if (res.error) toast(res.error)
     })
@@ -83,7 +87,8 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
     })
 
   const detach = async (): Promise<void> => {
-    const ok = await confirmDialog('Unlink the local folder? Watched marks will be forgotten.', {
+    const what = data?.linkKind === 'file' ? 'video file' : 'folder'
+    const ok = await confirmDialog(`Unlink the local ${what}? Watched marks will be forgotten.`, {
       confirmLabel: 'Unlink',
       danger: true
     })
@@ -94,6 +99,9 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
   }
 
   const files = data?.files ?? []
+  const singleUnit = m.mediaType === 'movie' || m.totalUnits === 1
+  const asOneVideo = data?.linkKind === 'file' || (m.mediaType === 'movie' && files.length <= 1)
+  const seasons = new Set(files.map((f) => f.season ?? 1))
   const heartable = episodeNumberHeartable(files, m.totalUnits)
   const continueFile = files.find((f) => !f.watchedAt)
   const watched = files.filter((f) => f.watchedAt).length
@@ -104,16 +112,27 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
 
   return (
     <Section
-      title={`Episodes${files.length ? ` · ${watched}/${files.length} watched` : ''}`}
+      title={
+        asOneVideo
+          ? 'Video'
+          : `Episodes${files.length ? ` · ${watched}/${files.length} watched` : ''}`
+      }
       className="mb-6"
     >
       {!data?.localDir ? (
-        <div className="flex items-center gap-3">
-          <button className="btn-ghost px-3 py-1 text-sm" disabled={busy} onClick={() => void attach()}>
+        <div className="flex flex-wrap items-center gap-3">
+          {singleUnit && (
+            <button className="btn-ghost px-3 py-1 text-sm" disabled={busy} onClick={() => void attach('file')}>
+              Link video file
+            </button>
+          )}
+          <button className="btn-ghost px-3 py-1 text-sm" disabled={busy} onClick={() => void attach('folder')}>
             Link video folder
           </button>
           <span className="text-xs text-gray-400">
-            Point at this title&apos;s folder to play its episodes here.
+            {singleUnit
+              ? 'Pick the video file, or its folder if it has subtitles or parts beside it.'
+              : 'Point at this title\u2019s folder to play its episodes here.'}
           </span>
         </div>
       ) : (
@@ -121,7 +140,11 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
           <div className="mb-2 flex items-center gap-2 text-sm">
             {continueFile && (
               <Link className="btn-ghost px-3 py-1" to={`/watch/file/${continueFile.id}`}>
-                {continueFile.resumeSeconds ? 'Resume' : 'Play next'} · {continueFile.title}
+                {files.length === 1
+                  ? continueFile.resumeSeconds
+                    ? 'Resume'
+                    : 'Play'
+                  : `${continueFile.resumeSeconds ? 'Resume' : 'Play next'} · ${continueFile.title}`}
               </Link>
             )}
             <button className="btn-ghost px-3 py-1" disabled={busy} onClick={() => void rescan()}>
@@ -135,23 +158,30 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
             </span>
           </div>
           <div className="max-h-72 space-y-1 overflow-y-auto pr-1">
-            {files.map((f) => (
-              <EpisodeRow
-                key={f.id}
-                f={f}
-                onExternal={() => openExternal(f)}
-                onChange={refresh}
-                favorite={
-                  m.mediaType === 'anime' &&
-                  f.number != null &&
-                  heartable(f.number)
-                    ? {
-                        active: episodeFavorites.favorites.has(f.number),
-                        toggle: () => episodeFavorites.toggle(f.number as number)
-                      }
-                    : null
-                }
-              />
+            {files.map((f, i) => (
+              <Fragment key={f.id}>
+                {seasons.size > 1 && (i === 0 || (files[i - 1].season ?? 1) !== (f.season ?? 1)) && (
+                  <h3 className="px-1 pt-2 text-xs font-medium uppercase tracking-wide text-gray-400">
+                    {f.season === 0 ? 'Specials' : `Season ${f.season ?? 1}`}
+                  </h3>
+                )}
+                <EpisodeRow
+                  f={f}
+                  onExternal={() => openExternal(f)}
+                  onChange={refresh}
+                  favorite={
+                    m.mediaType === 'anime' &&
+                    f.number != null &&
+                    f.season !== 0 &&
+                    heartable(f.number)
+                      ? {
+                          active: episodeFavorites.favorites.has(f.number),
+                          toggle: () => episodeFavorites.toggle(f.number as number)
+                        }
+                      : null
+                  }
+                />
+              </Fragment>
             ))}
           </div>
         </>

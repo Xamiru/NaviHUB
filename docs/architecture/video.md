@@ -50,11 +50,21 @@ Rules the page keeps:
 
 ## Folder scanner and data ownership
 
-Anime, movie, and TV detail pages attach one folder beneath `video.dir`. Wrestling events reuse the same scanner under `wrestling.dir`. `video/scope.ts:VIDEO_SCOPES` supplies the fixed table, owner column, root, and label; SQL identifiers never come from user input. Files are ordered naturally from parsed season/episode names and synchronized by relative path.
+Anime, movie, and TV detail pages attach one folder beneath their type's root, or one video file for a one-episode title (every movie, and an anime or show whose total is 1). Wrestling events reuse the same scanner under `wrestling.dir`. `video/scope.ts:VIDEO_SCOPES` supplies the fixed table and owner column, and `scope.place(ownerId)` the root, navimg prefix, setting key and label; SQL identifiers never come from user input. Files are ordered naturally from parsed season/episode names and synchronized by relative path.
+
+**Roots (2026-10-23).** Anime use `video.dir` (`video/`), movies `video.movieDir` (`movies/`) and TV `video.tvDir` (`tv/`), so the three can sit on different drives. An unset movie or TV root resolves to `video.dir`, and `pinLegacyVideoRoots` (in `runMigrations`) writes `video.dir` out as the movie or TV root on an install that already has titles of that type linked, so Settings shows where they are and moving the anime folder cannot strand them. Otherwise the first link of a type bootstraps its own root: a folder's parent; for a file, its folder when other videos share it (a flat Movies folder), else that folder's parent (a film in its own folder). Every consumer reaches a file through `place.prefix` (`source.ts`, `seriesCorpus`), never a hardcoded `video/`.
+
+**Single-file links.** `video:attachFile` stores the file's relative path in `media_item.local_dir`, and its one `video_file` row has `file_path` equal to it (`storedPath`); `files()` reports `linkKind: 'file'` from exactly that shape. A rescan stats the path and reads that one file, never its neighbours, so a movie in a shared folder stays alone. A file link carries no number or season.
+
+**Naming.** A movie's files are never episodes (title only). A season folder ("Season 2", "S02", "Series 3") supplies the season when the file name has none, Specials/OVA folders are season 0 and sort after the main run, and an unseasoned TV file is season 1 so the Seasons tab's `(season, number)` join with `tv_episode` finds it. A bare resolution with no `p` ("[720]") loses to an earlier number in the same name, and `dropSharedNumber` re-reads a folder whose names mostly share one number (a whole season once parsed as episode 720); neither ever masks a lone number, since One Piece has an episode 720. Linked files and the TV episode catalogue keep separate watched marks: finishing a file does not tick its `tv_episode` row.
 
 The destructive-sync guard remains load-bearing: when a scan finds zero files but rows already exist, it refuses to prune. An unavailable drive must not erase watched marks. Rescans refresh canonical file metadata while preserving `watched_at` and legacy `resume_seconds` for unchanged paths.
 
 `video:openExternal` accepts a typed `VideoSourceRef`, resolves the row within its declared scope (or the clip/Football record), verifies that the path exists under that scope's configured root, and calls `shell.openPath`. A non-empty return string from Electron is surfaced as an error. The action never accepts an arbitrary absolute path.
+
+## The Linked page
+
+`/anime/linked`, `/movies/linked` and `/tv/linked` (`pages/LinkedVideoPage.tsx`, parameterized by `MediaConfig`; Movies & TV has one Linked tab and the page switches between the two through their `listTabs`) are the video counterpart of Games > Installed: every title of one type with a linked folder or file, a Continue watching shelf, and a searchable grid whose Play link opens the next unwatched file (the first once all are watched). `video:linked` (`scan.ts:linkedTitles`) reads the database only, so a title on an unplugged drive still lists, and answers only for anime, movie and TV: `local_dir` is also the manga and book folder column. The query key sits under `qk.video.all`, which every attach, rescan, unlink and watched write already invalidates.
 
 ## Watched progress
 

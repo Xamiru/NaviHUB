@@ -110,6 +110,26 @@ describe('video source', () => {
     expect(src.offsetKey).toBe(`media:${mediaId}`)
   })
 
+  it('serves a movie from the movie root and a show from the TV root', async () => {
+    const movie = makeMedia('Heat')
+    const show = makeMedia('Severance')
+    db.prepare(`UPDATE media_item SET media_type = 'movie' WHERE id = ?`).run(movie)
+    db.prepare(`UPDATE media_item SET media_type = 'tv' WHERE id = ?`).run(show)
+    const insert = (mediaId: number, filePath: string): number =>
+      Number(
+        db
+          .prepare(`INSERT INTO video_file (media_id, file_path, title) VALUES (?, ?, 'x')`)
+          .run(mediaId, filePath).lastInsertRowid
+      )
+    touch('movies/Heat/Heat.mkv')
+    touch('tv/Severance/S01E01.mkv')
+
+    const film = await video.source({ kind: 'file', fileId: insert(movie, 'Heat/Heat.mkv') })
+    expect(film.url).toBe('navimg://movies/Heat/Heat.mkv')
+    const episode = await video.source({ kind: 'file', fileId: insert(show, 'Severance/S01E01.mkv') })
+    expect(episode.url).toBe('navimg://tv/Severance/S01E01.mkv')
+  })
+
   it('refuses an undecodable episode before any <video> mounts', async () => {
     const mediaId = makeMedia()
     const id = addEpisode(mediaId, 'Show/01.mkv', 1, { v: 'h264', a: 'dts' })

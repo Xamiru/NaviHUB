@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { toast } from '../lib/toast'
-import { usePersistedState } from '../lib/navState'
+import { useLeaveDeleted, usePersistedState } from '../lib/navState'
 import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
@@ -32,7 +32,7 @@ const KIND_CHIP: Record<JpLessonKind, { cls: string; label: string }> = {
 export default function JapaneseLessonPage() {
   const { id } = useParams()
   const lessonId = Number(id)
-  const navigate = useNavigate()
+  const leaveDeleted = useLeaveDeleted()
   const qc = useQueryClient()
 
   const { data: lesson, isLoading } = useQuery({
@@ -70,9 +70,10 @@ export default function JapaneseLessonPage() {
     if (!ok) return
     const courseId = lesson.courseId
     await api.japanese.removeLesson(lessonId)
-    await qc.invalidateQueries({ queryKey: qk.japanese.all })
     toast('Lesson deleted', 'success')
-    navigate(`/japanese/courses/${courseId}`)
+    const base = `/japanese/lessons/${lessonId}`
+    leaveDeleted((path) => path === base || path.startsWith(`${base}/`), `/japanese/courses/${courseId}`)
+    void qc.invalidateQueries({ queryKey: qk.japanese.all })
   }
 
   if (isLoading) return <PageStatus>Loading…</PageStatus>

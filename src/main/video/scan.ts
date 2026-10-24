@@ -1,13 +1,25 @@
 import { dialog } from 'electron'
-import { dirname, extname, isAbsolute, join, relative } from 'path'
+import { basename, dirname, extname, isAbsolute, join, relative } from 'path'
 import { existsSync } from 'fs'
 import { readdir, stat } from 'fs/promises'
 import { getSqlite } from '../db/connection'
 import { get as getSetting, set as setSetting } from '../repos/settingsRepo'
 import * as tasks from '../tasks'
-import { VIDEO_SCOPES, type VideoScope } from './scope'
-import { episodeTitle, isVideoFile, looksLikeSample, parseEpisodeName } from './names'
+import { VIDEO_SCOPES, type VideoPlace, type VideoScope } from './scope'
+import {
+  cleanTitle,
+  dropSharedNumber,
+  episodeTitle,
+  folderSeason,
+  isVideoFile,
+  looksLikeSample,
+  parseEpisodeName,
+  VIDEO_EXTS,
+  type ParsedEpisode
+} from './names'
 import type {
+  LinkedVideoTitle,
+  MediaType,
   ScannedVideo,
   VideoAttachResult,
   VideoFile,
@@ -17,8 +29,9 @@ import type {
 } from '@shared/types'
 
 // The local video library: episodes attached PER TITLE, exactly like manga.
-// media_item.local_dir holds the attached folder (an anime row is never also a
-// manga row, so the column is shared), file_path is relative to the video root.
+// media_item.local_dir holds the attached folder or, for a one-episode title,
+// the attached file (an anime row is never also a manga row, so the column is
+// shared); file_path is relative to the owner's root (scope.place).
 //
 // Everything ffprobe-shaped is injected (see Prober) so tests exercise the real
 // SQL with no binary — the music.ts:TagReader pattern.
@@ -32,9 +45,18 @@ const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'bas
 // Every video under the attached folder, natural-sorted with numbered episodes
 // first. Async readdir on purpose: sync bursts here block the main process (and
 // with it keyboard input) on big or slow libraries — see walkMusicRoot.
-export async function scanSeriesDir(absDir: string): Promise<ScannedVideo[]> {
+//
+// The media type decides the naming: a movie's files are never episodes (title
+// only, no number), and a TV file with no season is season 1, which is how
+// TMDB numbers the episodes the Seasons tab matches it against.
+export async function scanSeriesDir(
+  absDir: string,
+  mediaType: MediaType | null = null
+): Promise<ScannedVideo[]> {
   const found: ScannedVideo[] = []
-  const walk = async (dir: string, rel: string, depth: number): Promise<void> => {
+  // `season` is the nearest subfolder that names one ("Season 2", "Specials");
+  // the attached folder's own name never counts.
+  const walk = async (dir: string, rel: string, depth: number, season: number | null): Promise<void> => {
     if (depth > 4) return
     let entries: import('fs').Dirent[]
     try {
@@ -42,6 +64,7 @@ export async function scanSeriesDir(absDir: string): Promise<ScannedVideo[]> {
     } catch {
       return
     }
+    const here: { name: string; filePath: string; mtimeMs: number; size: number }[] = []
     for (const e of entries) {
       if (e.name.startsWith('.') || e.isSymbolicLink()) continue
       const childRel = rel === '' ? e.name : `${rel}/${e.name}`
@@ -49,34 +72,29 @@ export async function scanSeriesDir(absDir: string): Promise<ScannedVideo[]> {
         // Sidecar subtitle folders are read on demand by subtitles.ts, never
         // walked for videos.
         if (/^(subs?|subtitles)$/i.test(e.name)) continue
-        await walk(join(dir, e.name), childRel, depth + 1)
+        await walk(join(dir, e.name), childRel, depth + 1, folderSeason(e.name) ?? season)
         continue
       }
       if (!e.isFile() || !isVideoFile(e.name) || looksLikeSample(e.name)) continue
-      let mtimeMs = 0
-      let size = 0
       try {
         const st = await stat(join(dir, e.name))
-        mtimeMs = Math.floor(st.mtimeMs)
-        size = st.size
+        here.push({ name: e.name, filePath: childRel, mtimeMs: Math.floor(st.mtimeMs), size: st.size })
       } catch {
         continue
       }
-      const parsed = parseEpisodeName(e.name)
-      found.push({
-        filePath: childRel,
-        title: episodeTitle(parsed),
-        number: parsed.number,
-        season: parsed.season,
-        mtimeMs,
-        size
-      })
     }
+    const parsed = dropSharedNumber(
+      here.map((f) => f.name),
+      here.map((f) => parseEpisodeName(f.name))
+    )
+    here.forEach((f, i) => {
+      found.push({ ...nameFile(parsed[i], season, mediaType), filePath: f.filePath, mtimeMs: f.mtimeMs, size: f.size })
+    })
   }
-  await walk(absDir, '', 0)
+  await walk(absDir, '', 0, null)
   found.sort((a, b) => {
-    const as = a.season ?? 0
-    const bs = b.season ?? 0
+    const as = seasonOrder(a.season)
+    const bs = seasonOrder(b.season)
     if (as !== bs) return as - bs
     const an = a.number ?? Infinity
     const bn = b.number ?? Infinity
@@ -84,6 +102,52 @@ export async function scanSeriesDir(absDir: string): Promise<ScannedVideo[]> {
     return collator.compare(a.filePath, b.filePath)
   })
   return found
+}
+
+// Specials (season 0) play after the main run, not before episode 1.
+function seasonOrder(season: number | null): number {
+  if (season === 0) return Number.MAX_SAFE_INTEGER
+  return season ?? 0
+}
+
+function nameFile(
+  parsed: ParsedEpisode,
+  folderSeason: number | null,
+  mediaType: MediaType | null
+): Pick<ScannedVideo, 'title' | 'number' | 'season'> {
+  if (mediaType === 'movie') return { title: parsed.label, number: null, season: null }
+  // The file's own marker beats its folder.
+  let season = parsed.season ?? folderSeason
+  if (season == null && mediaType === 'tv' && parsed.number != null) season = 1
+  return { title: episodeTitle({ ...parsed, season }), number: parsed.number, season }
+}
+
+// A title linked to one file rather than a folder (a movie, an OVA): the file
+// is the whole title, so it carries no episode number and no season. Null when
+// the path is not a readable video file.
+async function scanOneFile(absFile: string): Promise<ScannedVideo[] | null> {
+  if (!isVideoFile(basename(absFile))) return null
+  try {
+    const st = await stat(absFile)
+    if (!st.isFile()) return null
+    return [
+      {
+        filePath: '',
+        title: cleanTitle(basename(absFile)),
+        number: null,
+        season: null,
+        mtimeMs: Math.floor(st.mtimeMs),
+        size: st.size
+      }
+    ]
+  } catch {
+    return null
+  }
+}
+
+// A scanned file's stored path. A single-file link's one row IS the link.
+function storedPath(localDir: string, filePath: string): string {
+  return filePath === '' ? localDir : `${localDir}/${filePath}`
 }
 
 // ---------------------------------------------------------------------------
@@ -173,10 +237,94 @@ export function localDirFor(scope: VideoScope, ownerId: number): string | null {
 }
 
 export function files(mediaId: number): VideoLibrary {
-  return {
-    localDir: localDirOf(VIDEO_SCOPES.video, mediaId),
-    files: rowsFor(VIDEO_SCOPES.video, mediaId).map(rowToFile)
+  const localDir = localDirOf(VIDEO_SCOPES.video, mediaId)
+  const rows = rowsFor(VIDEO_SCOPES.video, mediaId).map(rowToFile)
+  // A file link's one row is stored at the link path itself (storedPath).
+  const linkKind =
+    localDir == null ? null : rows.length === 1 && rows[0].filePath === localDir ? 'file' : 'folder'
+  return { localDir, linkKind, files: rows }
+}
+
+// Every title of one type with linked video, for the Linked page. One pass over
+// the type's linked files, folded per title in JS. The type filter is
+// load-bearing: local_dir is also the manga and book folder column, so only the
+// video types answer.
+const VIDEO_MEDIA_TYPES: ReadonlySet<MediaType> = new Set<MediaType>(['anime', 'movie', 'tv'])
+
+export function linkedTitles(mediaType: MediaType): LinkedVideoTitle[] {
+  if (!VIDEO_MEDIA_TYPES.has(mediaType)) return []
+  const rows = getSqlite()
+    .prepare(
+      `SELECT m.id, m.title, m.media_type, m.cover_path, m.status, m.local_dir,
+              f.id AS file_id, f.file_path, f.title AS file_title, f.watched_at,
+              f.resume_seconds, f.updated_at, f.created_at
+         FROM media_item m
+         LEFT JOIN video_file f ON f.media_id = m.id
+        WHERE m.media_type = ? AND m.local_dir IS NOT NULL
+        ORDER BY m.id, f.sort_order, f.id`
+    )
+    .all(mediaType) as {
+    id: number
+    title: string
+    media_type: MediaType
+    cover_path: string | null
+    status: string | null
+    local_dir: string
+    file_id: number | null
+    file_path: string | null
+    file_title: string | null
+    watched_at: string | null
+    resume_seconds: number | null
+    updated_at: string | null
+    created_at: string | null
+  }[]
+  const later = (a: string | null, b: string | null): string | null =>
+    a == null ? b : b == null ? a : a > b ? a : b
+  const byId = new Map<number, LinkedVideoTitle & { firstFile: LinkedVideoTitle['nextFile']; onlyPath: string | null }>()
+  for (const r of rows) {
+    let t = byId.get(r.id)
+    if (!t) {
+      t = {
+        mediaId: r.id,
+        title: r.title,
+        mediaType: r.media_type,
+        coverPath: r.cover_path ?? null,
+        status: r.status ?? null,
+        localDir: r.local_dir,
+        linkKind: 'folder',
+        fileCount: 0,
+        watchedCount: 0,
+        nextFile: null,
+        lastActivityAt: null,
+        linkedAt: null,
+        firstFile: null,
+        onlyPath: null
+      }
+      byId.set(r.id, t)
+    }
+    if (r.file_id == null) continue
+    const file = { id: r.file_id, title: r.file_title ?? '', resumeSeconds: r.resume_seconds ?? null }
+    t.fileCount++
+    t.onlyPath = t.fileCount === 1 ? r.file_path : null
+    t.firstFile ??= file
+    if (r.watched_at) {
+      t.watchedCount++
+      t.lastActivityAt = later(t.lastActivityAt, r.watched_at)
+    } else {
+      t.nextFile ??= file
+      // A saved position on an unfinished file is activity too (resumePoints).
+      if (r.resume_seconds != null && r.resume_seconds > 0) {
+        t.lastActivityAt = later(t.lastActivityAt, r.updated_at)
+      }
+    }
+    if (r.created_at && (t.linkedAt == null || r.created_at < t.linkedAt)) t.linkedAt = r.created_at
   }
+  return [...byId.values()].map(({ firstFile, onlyPath, ...t }) => ({
+    ...t,
+    // The files() rule: a file link's one row is stored at the link path.
+    linkKind: onlyPath != null && onlyPath === t.localDir ? 'file' : 'folder',
+    nextFile: t.nextFile ?? firstFile
+  }))
 }
 
 // A file row normalized across scopes for external launch and manual tracking.
@@ -215,6 +363,8 @@ export function scopedFileById(scope: VideoScope, fileId: number): ScopedFileRow
 // Upserts the scanned files in ONE transaction. Matched by (media_id,
 // file_path), so a rescan refreshes title/number/probe data while
 // resume_seconds and watched_at — which the scanner never writes — survive.
+// updated_at is left alone too: it dates the last watch or resume write, and
+// resumePoints and linkedTitles read it as watch activity.
 function syncVideos(
   scope: VideoScope,
   ownerId: number,
@@ -244,11 +394,10 @@ function syncVideos(
          video_codec = COALESCE(excluded.video_codec, ${scope.table}.video_codec),
          audio_codec = COALESCE(excluded.audio_codec, ${scope.table}.audio_codec),
          container = excluded.container,
-         playability = COALESCE(excluded.playability, ${scope.table}.playability),
-         updated_at = datetime('now')`
+         playability = COALESCE(excluded.playability, ${scope.table}.playability)`
     )
     scanned.forEach((v, i) => {
-      const filePath = `${localDir}/${v.filePath}`
+      const filePath = storedPath(localDir, v.filePath)
       keep.push(filePath)
       const p = probes.get(v.filePath) ?? null
       upsert.run(
@@ -265,7 +414,7 @@ function syncVideos(
         p?.height ?? null,
         p?.videoCodec ?? null,
         p?.audioCodec ?? null,
-        extname(v.filePath).toLowerCase() || null,
+        extname(filePath).toLowerCase() || null,
         p?.playability ?? null
       )
     })
@@ -303,7 +452,7 @@ async function probeChanged(
     existing.set(r.file_path, { file_mtime: r.file_mtime, file_size: r.file_size })
   }
   const stale = scanned.filter((v) => {
-    const prev = existing.get(`${localDir}/${v.filePath}`)
+    const prev = existing.get(storedPath(localDir, v.filePath))
     return !prev || prev.file_mtime !== v.mtimeMs || prev.file_size !== v.size
   })
 
@@ -313,7 +462,7 @@ async function probeChanged(
   scanState.phase = 'probing'
   scanState.done = 0
   scanState.total = stale.length
-  const root = scope.root()
+  const root = scope.place(ownerId).root()
   const workers = Math.min(4, stale.length)
   let cursor = 0
   await Promise.all(
@@ -324,7 +473,7 @@ async function probeChanged(
         if (i >= stale.length) return
         const v = stale[i]
         try {
-          out.set(v.filePath, await activeProber(join(root, localDir, v.filePath)))
+          out.set(v.filePath, await activeProber(join(root, storedPath(localDir, v.filePath))))
         } catch {
           out.set(v.filePath, null)
         }
@@ -347,7 +496,7 @@ async function runScan(
   return tasks.runTask(
     {
       kind: 'videoScan',
-      label: `Scanning ${scope.label}: ${localDir}`,
+      label: `Scanning ${scope.place(ownerId).label}: ${localDir}`,
       project: () => ({ detail: scanState.phase, done: scanState.done, total: scanState.total })
     },
     () => runScanInner(scope, ownerId, localDir, absDir)
@@ -366,7 +515,10 @@ async function runScanInner(
   scanState.total = 0
   scanState.error = null
   try {
-    const scanned = await scanSeriesDir(absDir)
+    const isFile = await stat(absDir).then((st) => st.isFile(), () => false)
+    const scanned = isFile
+      ? ((await scanOneFile(absDir)) ?? [])
+      : await scanSeriesDir(absDir, scope.place(ownerId).mediaType)
 
     // Destructive-sync guard (music.ts:startScan). A walk that finds nothing
     // while rows exist means the folder moved or a drive is unmounted — pruning
@@ -397,46 +549,107 @@ async function runScanInner(
   }
 }
 
-export async function attachFolderIn(
+// The root a new link must sit under. The first link of a kind bootstraps it:
+// a folder's parent, and for a file the folder holding it when other videos
+// share it (a flat Movies folder), else that folder's parent (the film's own
+// folder sits in the library). A movie or TV link with no root of its own
+// keeps using video.dir while titles of that type are still linked under it,
+// because setting a new root would strand them (pinLegacyVideoRoots normally
+// writes that root out at startup). That holds for a blank video.dir too: the
+// fallback is then the default folder, which place.root() resolves.
+async function linkRoot(
   scope: VideoScope,
-  ownerId: number
+  place: VideoPlace,
+  ownerId: number,
+  picked: string,
+  kind: 'folder' | 'file'
+): Promise<string> {
+  const own = getSetting(place.settingKey)?.trim()
+  if (own) return own
+  if (place.fallbackKey && place.mediaType) {
+    const linked = getSqlite()
+      .prepare(
+        `SELECT 1 FROM ${scope.ownerTable} WHERE media_type = ? AND local_dir IS NOT NULL AND id <> ? LIMIT 1`
+      )
+      .get(place.mediaType, ownerId)
+    if (linked) return place.root()
+  }
+  const root =
+    kind === 'file' && !(await sharesFolder(picked)) ? dirname(dirname(picked)) : dirname(picked)
+  setSetting(place.settingKey, root)
+  return root
+}
+
+// Async like the scanner's walk: a flat Movies folder on a slow drive can
+// hold thousands of entries.
+async function sharesFolder(file: string): Promise<boolean> {
+  try {
+    const name = basename(file)
+    return (await readdir(dirname(file))).some(
+      (n) => n !== name && isVideoFile(n) && !looksLikeSample(n)
+    )
+  } catch {
+    return false
+  }
+}
+
+export async function attachIn(
+  scope: VideoScope,
+  ownerId: number,
+  kind: 'folder' | 'file' = 'folder'
 ): Promise<VideoAttachResult> {
   if (!scope.owner(ownerId)) return { ok: false, error: 'Not found' }
+  const place = scope.place(ownerId)
+  const startIn =
+    getSetting(place.settingKey)?.trim() ||
+    (place.fallbackKey ? getSetting(place.fallbackKey)?.trim() : '') ||
+    undefined
 
-  const res = await dialog.showOpenDialog({
-    title: 'Choose the folder holding this title\u2019s video files',
-    defaultPath: getSetting(scope.settingKey)?.trim() || undefined,
-    properties: ['openDirectory']
-  })
+  const res = await dialog.showOpenDialog(
+    kind === 'file'
+      ? {
+          title: 'Choose this title\u2019s video file',
+          defaultPath: startIn,
+          properties: ['openFile'],
+          filters: [{ name: 'Video', extensions: [...VIDEO_EXTS].map((e) => e.slice(1)) }]
+        }
+      : {
+          title: 'Choose the folder holding this title\u2019s video files',
+          defaultPath: startIn,
+          properties: ['openDirectory']
+        }
+  )
   if (res.canceled || res.filePaths.length === 0) return { ok: false }
   const picked = res.filePaths[0]
-
-  // First attach bootstraps the library root as the picked folder's parent;
-  // afterwards every attached title must live under that root so stored paths
-  // stay relative and the library stays relocatable. Same contract as manga.
-  let root = getSetting(scope.settingKey)?.trim()
-  if (!root) {
-    root = dirname(picked)
-    setSetting(scope.settingKey, root)
+  if (kind === 'file' && !isVideoFile(basename(picked))) {
+    return { ok: false, error: 'That is not a video file' }
   }
+
+  // Every linked title must live under its root, so stored paths stay relative
+  // and the library stays relocatable. Same contract as manga.
+  const root = await linkRoot(scope, place, ownerId, picked, kind)
   const rel = relative(root, picked)
   if (rel === '' || rel.startsWith('..') || isAbsolute(rel)) {
     return {
       ok: false,
-      error: `Folder must be inside the ${scope.label} library root (${root} — change it in Settings)`
+      error: `${kind === 'file' ? 'The file' : 'The folder'} must be inside the ${place.label} library root (${root} \u2014 change it in Settings)`
     }
   }
   return runScan(scope, ownerId, rel.split('\\').join('/'), picked)
 }
 
+export const attachFolderIn = (scope: VideoScope, ownerId: number): Promise<VideoAttachResult> =>
+  attachIn(scope, ownerId, 'folder')
+
 export async function rescanIn(scope: VideoScope, ownerId: number): Promise<VideoAttachResult> {
   const localDir = localDirOf(scope, ownerId)
   if (!localDir) return { ok: false, error: 'No folder attached' }
-  const abs = join(scope.root(), localDir)
+  const place = scope.place(ownerId)
+  const abs = join(place.root(), localDir)
   if (!existsSync(abs)) {
     return {
       ok: false,
-      error: `Folder not found: ${abs} — is the ${scope.label} root set correctly?`
+      error: `Not found: ${abs} \u2014 is the ${place.label} root set correctly?`
     }
   }
   return runScan(scope, ownerId, localDir, abs)
@@ -455,7 +668,9 @@ export function detachIn(scope: VideoScope, ownerId: number): void {
 
 // The media-library surface, unchanged for every existing caller.
 export const attachFolder = (mediaId: number): Promise<VideoAttachResult> =>
-  attachFolderIn(VIDEO_SCOPES.video, mediaId)
+  attachIn(VIDEO_SCOPES.video, mediaId, 'folder')
+export const attachFile = (mediaId: number): Promise<VideoAttachResult> =>
+  attachIn(VIDEO_SCOPES.video, mediaId, 'file')
 export const rescan = (mediaId: number): Promise<VideoAttachResult> =>
   rescanIn(VIDEO_SCOPES.video, mediaId)
 export const detach = (mediaId: number): void => detachIn(VIDEO_SCOPES.video, mediaId)

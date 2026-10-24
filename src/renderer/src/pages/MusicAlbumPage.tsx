@@ -63,7 +63,7 @@ export default function MusicAlbumPage() {
   const tracks = useMemo(() => album?.tracks ?? [], [album?.tracks])
   const shown = useMemo(() => filterTracks(tracks, search), [tracks, search])
   const trackNumbers = useMemo(() => albumTrackNumbers(tracks), [tracks])
-  const { visible, sentinelRef, hasMore, reveal } = useIncrementalList(shown)
+  const { visible, sentinelRef, hasMore, reveal } = useIncrementalList(shown, 96, `${id}|${search}`)
 
   if (isLoading) return <PageStatus>Loading…</PageStatus>
   if (isError) return <PageStatus>Could not load album. <button className="btn" onClick={() => void refetch()}>Retry album</button></PageStatus>

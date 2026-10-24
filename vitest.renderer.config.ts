@@ -1,6 +1,7 @@
 import react from '@vitejs/plugin-react'
 import { resolve } from 'node:path'
 import { defineConfig } from 'vitest/config'
+import { testWorkers } from './vitest.workers'
 
 // Renderer tests run in Node + jsdom. Keep them separate from vitest.config.ts:
 // the main-process suite must continue to run through Electron-as-Node so its
@@ -23,6 +24,7 @@ export default defineConfig({
     setupFiles: ['tests/renderer/setup.ts'],
     globals: true,
     clearMocks: true,
-    restoreMocks: true
+    restoreMocks: true,
+    ...testWorkers()
   }
 })

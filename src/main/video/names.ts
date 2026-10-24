@@ -81,7 +81,15 @@ function num(raw: string): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-export function parseEpisodeName(fileName: string): ParsedEpisode {
+// Bare numbers that are usually a resolution tag missing its "p" ("[720]",
+// "Show_03_720"). Never masked outright: One Piece and Conan have episodes
+// 720 and 1080, so one only loses to an earlier number in the same name.
+const BARE_RESOLUTIONS = new Set([360, 480, 540, 576, 720, 1080, 1440, 2160])
+
+// `ignore` is a number the folder pass found in every name (scanSeriesDir), so
+// it cannot be the episode; it is masked before the bare-number fallback only,
+// never against an explicit marker.
+export function parseEpisodeName(fileName: string, ignore?: number): ParsedEpisode {
   const stem = fileName.slice(0, fileName.length - extname(fileName).length)
   const label = cleanTitle(fileName)
 
@@ -101,7 +109,15 @@ export function parseEpisodeName(fileName: string): ParsedEpisode {
   if (ep) return { season: standaloneSeason(stem), number: num(ep[1]), label }
 
   // 2. Fallback: a bare number, but only once the noise is masked out.
-  const masked = maskNoise(stem)
+  let masked = maskNoise(stem)
+  if (ignore != null) {
+    // Only its last occurrence: "Show 03 [Disc 3]" still keeps episode 3.
+    const hits = [...masked.matchAll(/\d+(?:\.\d+)?/g)].filter((h) => num(h[0]) === ignore)
+    const last = hits[hits.length - 1]
+    if (last?.index != null) {
+      masked = masked.slice(0, last.index) + ' '.repeat(last[0].length) + masked.slice(last.index + last[0].length)
+    }
+  }
 
   // The dominant fansub convention is "<Title> - 03", so a number that follows
   // a dash separator is far more trustworthy than any other bare number.
@@ -111,7 +127,11 @@ export function parseEpisodeName(fileName: string): ParsedEpisode {
   // Otherwise the LAST standalone number wins: titles carry leading numbers
   // ("86 - Eighty Six", "5-toubun no Hanayome") but the episode is at the end.
   const all = [...masked.matchAll(/(?:^|[\s._-])(\d{1,4}(?:\.\d+)?)(?=$|[\s._-])/g)]
-  if (all.length > 0) return { season: standaloneSeason(stem), number: num(all[all.length - 1][1]), label }
+  if (all.length > 0) {
+    let pick = all.length - 1
+    if (pick > 0 && BARE_RESOLUTIONS.has(num(all[pick][1]) ?? -1)) pick -= 1
+    return { season: standaloneSeason(stem), number: num(all[pick][1]), label }
+  }
 
   return { season: standaloneSeason(stem), number: null, label }
 }
@@ -123,6 +143,42 @@ function standaloneSeason(stem: string): number | null {
   // Guard the common false positive: "Subs", "Sample" etc. are already excluded
   // by requiring digits, but "S1080p" style junk is not.
   return num(m[1])
+}
+
+// A number in most names of one folder is a tag, not the episode: a release
+// that writes its resolution as a bare "720" once numbered a whole season 720.
+// Those names are read again without it, and the result is kept only when it
+// gives each of them its own number; otherwise the first reading stands.
+export function dropSharedNumber(names: string[], parsed: ParsedEpisode[]): ParsedEpisode[] {
+  const counts = new Map<number, number>()
+  for (const p of parsed) {
+    if (p.number != null) counts.set(p.number, (counts.get(p.number) ?? 0) + 1)
+  }
+  let shared: number | null = null
+  let best = 0
+  for (const [n, c] of counts) {
+    if (c > best) {
+      shared = n
+      best = c
+    }
+  }
+  if (shared == null || best < 2 || best * 2 < names.length) return parsed
+  const again = new Map<number, ParsedEpisode>()
+  parsed.forEach((p, i) => {
+    if (p.number === shared) again.set(i, parseEpisodeName(names[i], shared))
+  })
+  const keys = [...again.values()].map((p) => `${p.season}:${p.number}`)
+  const valid = [...again.values()].every((p) => p.number != null) && new Set(keys).size === keys.length
+  return valid ? parsed.map((p, i) => again.get(i) ?? p) : parsed
+}
+
+// The season a FOLDER name stands for: "Season 2", "Series 02", "S02",
+// "Show S2 [1080p]", and Specials/OVA folders as season 0 (TMDB's number for
+// specials). Null for any other folder, so the file's own name decides.
+export function folderSeason(name: string): number | null {
+  if (/^(specials?|sps?|ovas?|oads?)$/i.test(name.trim())) return 0
+  const m = /(?:^|[^a-z])(?:s|season|series)[\s._-]?(\d{1,3})(?![\d])/i.exec(maskNoise(name))
+  return m ? num(m[1]) : null
 }
 
 // A readable title: brackets and technical tags gone, separators normalized.
@@ -146,5 +202,6 @@ export function episodeTitle(parsed: ParsedEpisode): string {
   const n = Number.isInteger(parsed.number)
     ? String(parsed.number).padStart(2, '0')
     : String(parsed.number)
+  if (parsed.season === 0) return `Special ${n}`
   return parsed.season != null ? `S${parsed.season} · Episode ${n}` : `Episode ${n}`
 }

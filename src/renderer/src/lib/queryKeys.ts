@@ -177,6 +177,7 @@ export const qk = {
   quiz: {
     all: ['quiz'] as const,
     availability: (request: QuizAvailabilityRequest) => ['quiz', 'availability', request] as const,
+    footballAvailability: () => ['quiz', 'footballAvailability'] as const,
     challengePool: (request: import('@shared/types').QuizChallengeRequest) =>
       ['quiz', 'challengePool', request] as const,
     songPool: (filter: QuizSongFilter) => ['quiz', 'songPool', filter] as const,
@@ -274,6 +275,7 @@ export const qk = {
     // Linked local videos and their manual watched marks.
     all: ['video'] as const,
     library: (mediaId: number) => ['video', 'library', mediaId] as const,
+    linked: (mediaType: string) => ['video', 'linked', mediaType] as const,
     scanStatus: ['video', 'scanStatus'] as const,
     // The in-app player's source for one /watch/:kind/:id route.
     source: (kind: string, id: number) => ['video', 'source', kind, id] as const,

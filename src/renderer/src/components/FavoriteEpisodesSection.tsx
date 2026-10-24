@@ -69,8 +69,9 @@ export default function FavoriteEpisodesSection({ m }: { m: MediaDetail }): JSX.
   })
   const lastFile = Math.max(
     0,
+    // Specials (season 0) are numbered apart from the main run.
     ...(library?.files ?? []).map((f) =>
-      f.number != null && Number.isInteger(f.number) ? f.number : 0
+      f.season !== 0 && f.number != null && Number.isInteger(f.number) ? f.number : 0
     )
   )
   // Without a known total (airing, or never imported; some sources store 0),
