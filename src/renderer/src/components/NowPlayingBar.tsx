@@ -8,7 +8,8 @@ import { musicIdOf, themeIdOf } from '../lib/playerTrackIds'
 import { qk } from '../lib/queryKeys'
 import { toastError } from '../lib/toast'
 import CoverImage from './CoverImage'
-import MusicPlaylistButton from './MusicPlaylistButton'
+import MusicPlaylistButton, { MusicLinkTitleButton } from './MusicPlaylistButton'
+import LinkToTitleDialog from './music/LinkToTitleDialog'
 import FavoriteButton from './FavoriteButton'
 import QueuePanel, { QueueLikeButton, useLikedTrackIds } from './QueuePanel'
 import {
@@ -286,30 +287,58 @@ export function NowPlayingTrackActions({
   track: Track
   prominent?: boolean
 }): React.JSX.Element | null {
+  // Held here, above the per-track key, so a dialog opened for one song stays
+  // open (and keeps linking that song) when the next one starts.
+  const [linking, setLinking] = useState<{ trackId: number; title: string } | null>(null)
+  const dialog = linking && (
+    <LinkToTitleDialog
+      subject={{ kind: 'tracks', trackIds: [linking.trackId], title: linking.title }}
+      onClose={() => setLinking(null)}
+    />
+  )
+
   const musicId = musicIdOf(track.id)
   if (musicId != null)
-    return <MusicTrackActions key={track.id} trackId={musicId} prominent={prominent} />
+    return (
+      <>
+        <MusicTrackActions
+          key={track.id}
+          trackId={musicId}
+          prominent={prominent}
+          linking={linking?.trackId === musicId}
+          onLink={() => setLinking({ trackId: musicId, title: track.title })}
+        />
+        {dialog}
+      </>
+    )
 
   const themeId = themeIdOf(track.id)
   if (themeId != null)
     return (
-      <ThemeLikeButton
-        key={track.id}
-        themeId={themeId}
-        mediaId={track.mediaId}
-        prominent={prominent}
-      />
+      <>
+        <ThemeLikeButton
+          key={track.id}
+          themeId={themeId}
+          mediaId={track.mediaId}
+          prominent={prominent}
+        />
+        {dialog}
+      </>
     )
 
-  return null
+  return dialog || null
 }
 
 function MusicTrackActions({
   trackId,
-  prominent
+  prominent,
+  linking,
+  onLink
 }: {
   trackId: number
   prominent: boolean
+  linking: boolean
+  onLink: () => void
 }): React.JSX.Element {
   const likedIds = useLikedTrackIds()
   return (
@@ -321,6 +350,7 @@ function MusicTrackActions({
         prominent={prominent}
       />
       <MusicPlaylistButton trackId={trackId} prominent={prominent} />
+      <MusicLinkTitleButton prominent={prominent} active={linking} onOpen={onLink} />
     </div>
   )
 }

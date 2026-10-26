@@ -136,6 +136,24 @@ export function HeartIcon({ className, filled = true }: HeartIconProps) {
   )
 }
 
+export function LinkIcon({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <g
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M6.5 9.5l3-3" />
+        <path d="M7.2 4.8l1.3-1.3a2.5 2.5 0 0 1 3.5 3.5l-1.3 1.3" />
+        <path d="M8.8 11.2l-1.3 1.3a2.5 2.5 0 0 1-3.5-3.5l1.3-1.3" />
+      </g>
+    </Svg>
+  )
+}
+
 export function PlaylistAddIcon({ className }: IconProps) {
   return (
     <Svg className={className}>

@@ -6,6 +6,8 @@ import { qk } from '../lib/queryKeys'
 import { confirmDialog } from '../lib/confirm'
 import { toast, toastError } from '../lib/toast'
 import { useGameSession } from '../lib/useGameSession'
+import { consoleArt } from '../lib/consoleArt'
+import { consolePath } from '../lib/emulationHub'
 import { Field } from './Field'
 import { PLATFORM_KEYS, PLATFORMS, type PlatformKey } from '@shared/emulation/platforms'
 import { EMULATOR_PRESETS } from '@shared/emulation/emulatorPresets'
@@ -44,13 +46,16 @@ function RomRow({
   emulators,
   onChanged,
   onPlay,
-  playDisabled
+  playDisabled,
+  playDefault
 }: {
   rom: GameRom
   emulators: { id: number; name: string; platforms: PlatformKey[] }[]
   onChanged: () => Promise<void>
   onPlay: (choice: GameLaunchChoice) => void
   playDisabled: boolean
+  // The Play button opens this file (shown only when there is a choice).
+  playDefault: boolean
 }) {
   const [code, setCode] = useState<string | null>(null)
 
@@ -71,18 +76,41 @@ function RomRow({
   }
 
   const able = emulators.filter((e) => e.platforms.includes(rom.platform))
+  const platform = PLATFORMS[rom.platform]
+  const art = consoleArt(rom.platform, 'tile')
+  const name = fileName(rom.romPath)
 
   return (
-    <li className="rounded-lg border border-base-700 bg-base-800/60 p-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium" title={rom.romPath}>
-            {fileName(rom.romPath)}
+    <li className="overflow-hidden rounded-lg border border-line-subtle bg-surface-panel">
+      <div className="flex flex-wrap items-center gap-4 p-3">
+        <Link
+          to={consolePath(rom.platform)}
+          className="flex h-14 w-20 shrink-0 items-center justify-center"
+          aria-label={`${platform.label} console page`}
+          title={platform.label}
+        >
+          {art && <img src={art} alt="" className="max-h-14 max-w-20 object-contain drop-shadow-lg" />}
+        </Link>
+        <div className="min-w-0 flex-1">
+          <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-ink">
+            Play on {platform.short}
+            {rom.effectiveEmulatorName ? ` / ${rom.effectiveEmulatorName}` : ''}
+            {playDefault && <span className="chip text-[10px]">Play button</span>}
           </p>
-          <p className="break-all font-mono text-[11px] text-gray-500">{rom.romPath}</p>
+          <p className="truncate text-xs text-ink-muted" title={rom.romPath}>
+            {name}
+          </p>
           {!rom.exists && (
             <p className="text-xs text-signal-caution" role="status">
               The file is not at this path any more.
+            </p>
+          )}
+          {rom.effectiveEmulatorName == null && (
+            <p className="text-xs text-signal-caution">
+              No emulator plays {platform.label} yet.{' '}
+              <Link className="underline" to={consolePath(rom.platform)}>
+                Set one up
+              </Link>
             </p>
           )}
         </div>
@@ -91,76 +119,72 @@ function RomRow({
             type="button"
             className="btn text-xs"
             disabled={playDisabled}
+            aria-label={`Play ${name}`}
             onClick={() => onPlay({ kind: 'rom', romId: rom.id })}
           >
-            Play this
+            Play
           </button>
-          <button type="button" className="btn-ghost text-xs" onClick={() => void unlink()}>
+          <button type="button" className="btn-ghost text-xs" aria-label={`Unlink ${name}`} onClick={() => void unlink()}>
             Unlink
           </button>
         </div>
       </div>
-      <div className="mt-3 grid gap-3 sm:grid-cols-3">
-        <Field label="Console">
-          <select
-            className="input w-full"
-            value={rom.platform}
-            onChange={(e) => void run(() => api.games.updateRom(rom.id, { platform: e.target.value as PlatformKey }))}
-          >
-            {PLATFORM_KEYS.map((p) => (
-              <option key={p} value={p}>
-                {PLATFORMS[p].label}
+      <details className="border-t border-line-subtle px-3 py-2">
+        <summary className="cursor-pointer text-xs text-ink-muted hover:text-ink-secondary">Options</summary>
+        <p className="mt-2 break-all font-mono text-[11px] text-gray-500">{rom.romPath}</p>
+        <div className="mt-3 grid gap-3 pb-1 sm:grid-cols-3">
+          <Field label="Console">
+            <select
+              className="input w-full"
+              value={rom.platform}
+              onChange={(e) => void run(() => api.games.updateRom(rom.id, { platform: e.target.value as PlatformKey }))}
+            >
+              {PLATFORM_KEYS.map((p) => (
+                <option key={p} value={p}>
+                  {PLATFORMS[p].label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Emulator">
+            <select
+              className="input w-full"
+              value={rom.emulatorId ?? ''}
+              onChange={(e) =>
+                void run(() => api.games.updateRom(rom.id, { emulatorId: e.target.value ? Number(e.target.value) : null }))
+              }
+            >
+              <option value="">
+                Console default{rom.emulatorId == null && rom.effectiveEmulatorName ? ` (${rom.effectiveEmulatorName})` : ''}
               </option>
-            ))}
-          </select>
-        </Field>
-        <Field
-          label="Emulator"
-          description={
-            rom.effectiveEmulatorName == null ? (
-              <>
-                None plays {PLATFORMS[rom.platform].label} yet — <Link className="underline" to="/games/emulators">add one</Link>.
-              </>
-            ) : undefined
-          }
-        >
-          <select
-            className="input w-full"
-            value={rom.emulatorId ?? ''}
-            onChange={(e) =>
-              void run(() => api.games.updateRom(rom.id, { emulatorId: e.target.value ? Number(e.target.value) : null }))
+              {able.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field
+            label="Game code"
+            description={
+              rom.gameCodeSource === 'file'
+                ? 'Read from the file. Mods are filed under it.'
+                : 'Mods and texture packs are filed under this, e.g. SLUS-20312.'
             }
           >
-            <option value="">
-              Console default{rom.emulatorId == null && rom.effectiveEmulatorName ? ` (${rom.effectiveEmulatorName})` : ''}
-            </option>
-            {able.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field
-          label="Game code"
-          description={
-            rom.gameCodeSource === 'file'
-              ? 'Read from the file. Mods are filed under it.'
-              : 'Mods and texture packs are filed under this, e.g. SLUS-20312.'
-          }
-        >
-          <input
-            className="input w-full font-mono"
-            value={code ?? rom.gameCode ?? ''}
-            placeholder="Not known"
-            onChange={(e) => setCode(e.target.value)}
-            onBlur={() => {
-              if (code == null || code === (rom.gameCode ?? '')) return
-              void run(() => api.games.updateRom(rom.id, { gameCode: code || null })).then(() => setCode(null))
-            }}
-          />
-        </Field>
-      </div>
+            <input
+              className="input w-full font-mono"
+              value={code ?? rom.gameCode ?? ''}
+              placeholder="Not known"
+              onChange={(e) => setCode(e.target.value)}
+              onBlur={() => {
+                if (code == null || code === (rom.gameCode ?? '')) return
+                void run(() => api.games.updateRom(rom.id, { gameCode: code || null })).then(() => setCode(null))
+              }}
+            />
+          </Field>
+        </div>
+      </details>
     </li>
   )
 }
@@ -184,7 +208,7 @@ export default function WaysToPlay({ mediaId, title }: { mediaId: number; title:
         toast(
           rom.gameCode
             ? `Linked as ${PLATFORMS[rom.platform].label} (${rom.gameCode}).`
-            : `Linked as ${PLATFORMS[rom.platform].label}. Change the console below if that is wrong.`,
+            : `Linked as ${PLATFORMS[rom.platform].label}. Change the console under Options if that is wrong.`,
           'success'
         )
         await refresh()
@@ -267,6 +291,7 @@ export default function WaysToPlay({ mediaId, title }: { mediaId: number; title:
               onChanged={refresh}
               onPlay={(c) => void play(c)}
               playDisabled={playDisabled}
+              playDefault={ways > 1 && choice?.kind === 'rom' && choice.romId === rom.id}
             />
           ))}
         </ul>

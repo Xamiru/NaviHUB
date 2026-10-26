@@ -25,7 +25,8 @@ export default function MusicEntityHeader({
   onClearArt,
   onDelete,
   deleteLabel,
-  addMusicItems = []
+  addMusicItems = [],
+  onLinkToTitle
 }: {
   coverPath: string | null
   title: string
@@ -42,6 +43,7 @@ export default function MusicEntityHeader({
   onDelete?: () => void // permanently deletes from disk (gated by a confirm)
   deleteLabel?: string
   addMusicItems?: ActionItem[]
+  onLinkToTitle?: () => void // album pages: link the album to a title or wrestler
 }) {
   const qc = useQueryClient()
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -89,6 +91,11 @@ export default function MusicEntityHeader({
           </button>
           <QueueMenu tracks={queueTracks} />
           {addMusicItems.length > 0 && <ActionMenu label="Add music" items={addMusicItems} />}
+          {onLinkToTitle && (
+            <button className="btn-ghost" onClick={onLinkToTitle}>
+              Link to title…
+            </button>
+          )}
           <ActionMenu label="Library maintenance" items={maintenanceItems} />
         </div>
       </div>

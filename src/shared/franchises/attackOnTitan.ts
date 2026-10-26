@@ -1,10 +1,12 @@
 // Attack on Titan — Hajime Isayama's manga and its MAPPA/Wit anime adaptation,
 // the Levi prequel No Regrets in both its manga and anime OVA forms, the
 // Lost Girls side-story OVA, the 2024 compilation film The Last Attack, and
-// the 2015 Japanese live-action duology. Chrono follows in-universe time: No
-// Regrets (Levi's past) sits before everything else at slot 1; the manga,
-// Season 1, its side-chapter OVA, Lost Girls and both live-action films share
-// slot 2 as tellings of the story's opening stretch; Seasons 2-3 Part 2 and
+// the 2015 Japanese live-action duology, and (2026-10-26) the Before the
+// Fall and Lost Girls manga. Chrono follows in-universe time: Before the
+// Fall, set decades before the series, is slot 1; No Regrets (Levi's past)
+// is slot 2; the manga, Season 1, its side-chapter OVA, Lost Girls (manga
+// and OVA) and both live-action films share slot 3 as tellings of the
+// story's opening stretch; Seasons 2-3 Part 2 and
 // the Final Season arcs each advance one slot in broadcast order; the Final
 // Chapters' two specials share the story's last two slots, and The Last
 // Attack (which compiles them with a new epilogue) shares the final slot
@@ -52,7 +54,7 @@ export const ATTACK_ON_TITAN: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '53390' }],
       year: 2009,
       releaseDate: '2009-09-09',
-      chrono: 2,
+      chrono: 3,
       mc: 84,
       note: 'Isayama’s manga, 2009-2021: Eren Yeager joins the fight to reclaim humanity’s land from the Titans'
     },
@@ -64,11 +66,24 @@ export const ATTACK_ON_TITAN: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '16498' }],
       year: 2013,
       releaseDate: '2013-04-07',
-      chrono: 2,
+      chrono: 3,
       route: 1,
       adaptation: true,
       mc: 85,
       note: 'The Colossal Titan breaches Wall Maria, and Eren, Mikasa and Armin enlist to fight back'
+    },
+    {
+      id: 'aot-before-the-fall-manga',
+      title: 'Attack on Titan: Before the Fall',
+      mediaType: 'manga',
+      aliases: ['Shingeki no Kyojin: Before the Fall'],
+      externalIds: [{ source: 'anilist', id: '85312' }],
+      year: 2013,
+      releaseDate: '2013-09-26',
+      chrono: 1,
+      mc: 71,
+      adaptation: true,
+      note: 'Manga of Ryo Suzukaze’s light novel, set decades before the series, when the first mobility gear is built'
     },
     {
       id: 'aot-no-regrets-manga',
@@ -78,7 +93,7 @@ export const ATTACK_ON_TITAN: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '85199' }],
       year: 2013,
       releaseDate: '2013-09-28',
-      chrono: 1,
+      chrono: 2,
       mc: 79,
       adaptation: true,
       note: 'Manga adaptation of the light novel: Levi’s life as a thug in the capital’s underground before he joins the Scouts'
@@ -91,7 +106,7 @@ export const ATTACK_ON_TITAN: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '18397' }],
       year: 2013,
       releaseDate: '2013-12-09',
-      chrono: 2,
+      chrono: 3,
       route: 2,
       optional: true,
       adaptation: true,
@@ -106,7 +121,7 @@ export const ATTACK_ON_TITAN: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '20811' }],
       year: 2014,
       releaseDate: '2014-12-09',
-      chrono: 1,
+      chrono: 2,
       route: 3,
       optional: true,
       adaptation: true,
@@ -120,12 +135,25 @@ export const ATTACK_ON_TITAN: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '295830' }],
       year: 2015,
       releaseDate: '2015-08-01',
-      chrono: 2,
+      chrono: 3,
       route: 12,
       optional: true,
       adaptation: true,
       remake: true,
       note: 'Japanese live-action retelling of the story’s opening: Wall Maria falls and Eren joins the fight'
+    },
+    {
+      id: 'aot-lost-girls-manga',
+      title: 'Attack on Titan: Lost Girls',
+      mediaType: 'manga',
+      aliases: ['Shingeki no Kyojin: Lost Girls'],
+      externalIds: [{ source: 'anilist', id: '95409' }],
+      year: 2015,
+      releaseDate: '2015-08-08',
+      chrono: 3,
+      mc: 73,
+      adaptation: true,
+      note: 'Two-volume manga of the Lost Girls side stories, following Annie and Mikasa; the source of the OVA'
     },
     {
       id: 'aot-live-action-2',
@@ -134,7 +162,7 @@ export const ATTACK_ON_TITAN: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '340382' }],
       year: 2015,
       releaseDate: '2015-09-19',
-      chrono: 2,
+      chrono: 3,
       route: 13,
       optional: true,
       adaptation: true,
@@ -149,7 +177,7 @@ export const ATTACK_ON_TITAN: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '20958' }],
       year: 2017,
       releaseDate: '2017-04-01',
-      chrono: 3,
+      chrono: 4,
       route: 4,
       adaptation: true,
       mc: 85,
@@ -163,7 +191,7 @@ export const ATTACK_ON_TITAN: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '99634' }],
       year: 2017,
       releaseDate: '2017-12-08',
-      chrono: 2,
+      chrono: 3,
       route: 7,
       optional: true,
       adaptation: true,
@@ -178,7 +206,7 @@ export const ATTACK_ON_TITAN: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '99147' }],
       year: 2018,
       releaseDate: '2018-07-23',
-      chrono: 4,
+      chrono: 5,
       route: 5,
       adaptation: true,
       mc: 86,
@@ -192,7 +220,7 @@ export const ATTACK_ON_TITAN: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '104578' }],
       year: 2019,
       releaseDate: '2019-04-29',
-      chrono: 5,
+      chrono: 6,
       route: 6,
       adaptation: true,
       mc: 89,
@@ -206,7 +234,7 @@ export const ATTACK_ON_TITAN: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '110277' }],
       year: 2020,
       releaseDate: '2020-12-07',
-      chrono: 6,
+      chrono: 7,
       route: 8,
       adaptation: true,
       mc: 87,
@@ -220,7 +248,7 @@ export const ATTACK_ON_TITAN: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '131681' }],
       year: 2022,
       releaseDate: '2022-01-10',
-      chrono: 7,
+      chrono: 8,
       route: 9,
       adaptation: true,
       mc: 86,
@@ -234,7 +262,7 @@ export const ATTACK_ON_TITAN: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '146984' }],
       year: 2023,
       releaseDate: '2023-03-04',
-      chrono: 8,
+      chrono: 9,
       route: 10,
       adaptation: true,
       mc: 87,
@@ -248,7 +276,7 @@ export const ATTACK_ON_TITAN: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '162314' }],
       year: 2023,
       releaseDate: '2023-11-05',
-      chrono: 9,
+      chrono: 10,
       route: 11,
       adaptation: true,
       mc: 87,
@@ -262,7 +290,7 @@ export const ATTACK_ON_TITAN: FranchiseCfg = {
       externalIds: [{ source: 'tmdb', id: '1333100' }],
       year: 2024,
       releaseDate: '2024-11-08',
-      chrono: 9,
+      chrono: 10,
       route: 14,
       optional: true,
       adaptation: true,

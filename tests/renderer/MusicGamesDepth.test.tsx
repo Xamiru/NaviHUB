@@ -31,7 +31,7 @@ const m = vi.hoisted(() => ({
   preview: vi.fn(),
   queue: vi.fn(),
   playQueue: vi.fn(),
-  playlistsForTrack: vi.fn(),
+  playlistsForTracks: vi.fn(),
   confirm: vi.fn(),
   toastError: vi.fn()
 }))
@@ -58,7 +58,7 @@ vi.mock('../../src/renderer/src/lib/api', () => ({
       preview: m.preview,
       queue: m.queue
     },
-    music: { playlistsForTrack: m.playlistsForTrack }
+    music: { playlistsForTracks: m.playlistsForTracks }
   }
 }))
 vi.mock('../../src/renderer/src/lib/player', () => ({
@@ -156,7 +156,7 @@ beforeEach(() => {
   m.smartList.mockResolvedValue([saved])
   m.preview.mockResolvedValue({ items: [track], total: 1, matching: 1 })
   m.queue.mockResolvedValue([track])
-  m.playlistsForTrack.mockResolvedValue([])
+  m.playlistsForTracks.mockResolvedValue([])
   m.confirm.mockResolvedValue(true)
 })
 

@@ -203,6 +203,9 @@ export function registerIpc(): void {
   ipcMain.handle('musicLinks:reorder', (_e, owner, orderedIds) => musicLinks.reorder(owner, orderedIds))
   ipcMain.handle('musicLinks:remove', (_e, id) => musicLinks.remove(id))
   ipcMain.handle('musicLinks:browse', (_e) => musicLinks.browse())
+  ipcMain.handle('musicLinks:usages', (_e, target) => musicLinks.usages(target))
+  ipcMain.handle('musicLinks:searchOwners', (_e, query) => musicLinks.searchOwners(query))
+  ipcMain.handle('musicLinks:linkTracks', (_e, input) => musicLinks.linkTracks(input))
 
   // ---- VN captured text ----
   // ---- VN discovery and editions ----
@@ -426,7 +429,7 @@ export function registerIpc(): void {
   ipcMain.handle('games:setPreferredRom', (_e, mediaId, romId) => emulation.setPreferred(mediaId, romId))
   ipcMain.handle('games:updateRom', (_e, romId, upd) => emulation.updateRom(romId, upd ?? {}))
   ipcMain.handle('games:importSessionShots', (_e, sessionId) => gameLaunch.importSessionShots(sessionId))
-  ipcMain.handle('games:romScanStart', () => romScan.start())
+  ipcMain.handle('games:romScanStart', (_e, platform) => romScan.start(platform))
   ipcMain.handle('games:romScanStatus', () => romScan.status())
   ipcMain.handle('games:romScanCancel', () => romScan.cancel())
   ipcMain.handle('games:romScanAccept', (_e, items) => romScan.accept(items ?? []))
@@ -451,7 +454,8 @@ export function registerIpc(): void {
 
   // ---- emulators ----
   ipcMain.handle('emulators:list', () => emulation.listEmulators())
-  ipcMain.handle('emulators:add', () => emulation.pickAndAddEmulator())
+  ipcMain.handle('emulators:add', (_e, platform) => emulation.pickAndAddEmulator(platform))
+  ipcMain.handle('emulators:icon', (_e, id) => emulation.emulatorIcon(id))
   ipcMain.handle('emulators:update', (_e, id, upd) => emulation.updateEmulatorFromRenderer(id, upd ?? {}))
   ipcMain.handle('emulators:remove', (_e, id) => emulation.removeEmulator(id))
   ipcMain.handle('emulators:setDefault', (_e, platform, emulatorId) =>
@@ -1356,7 +1360,7 @@ export function registerIpc(): void {
   ipcMain.handle('music:spotifyPickCookieFile', () => musicToolSetup.pickCookieFile())
   ipcMain.handle('music:spotifyTestYouTubeAccess', (_e, force) => musicToolSetup.testYoutubeAccess(Boolean(force)))
   ipcMain.handle('music:spotifyInstallDeno', () => musicToolSetup.installDeno())
-  ipcMain.handle('music:playlistsForTrack', (_e, trackId) => musicRepo.playlistsForTrack(trackId))
+  ipcMain.handle('music:playlistsForTracks', (_e, trackIds) => musicRepo.playlistsForTracks(trackIds))
   ipcMain.handle('music:setLiked', (_e, trackId, liked) => musicRepo.setLiked(trackId, liked))
   ipcMain.handle('music:logPlay', (_e, trackId) => musicRepo.logPlay(trackId))
   ipcMain.handle('music:recent', (_e, limit) => musicRepo.recentlyPlayed(limit))

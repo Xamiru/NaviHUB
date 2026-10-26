@@ -1,4 +1,5 @@
-// Ghost in the Shell — Masamune Shirow's manga and the several, largely
+// Ghost in the Shell — Masamune Shirow's manga (the original, 1.5 and 2:
+// Man-Machine Interface; added 2026-10-26) and the several, largely
 // independent anime/film continuities built on it: Mamoru Oshii's two films,
 // Kenji Kamiyama's Stand Alone Complex TV continuity and its compilation
 // movies, the Arise tetralogy reboot, the 2017 Hollywood live-action film,
@@ -55,6 +56,17 @@ export const GHOST_IN_THE_SHELL: FranchiseCfg = {
       note: 'Shirow’s original manga: Section 9’s cyberbrain-hacking cases, denser and more technical than any adaptation'
     },
     {
+      id: 'gits-manga-1-5',
+      title: 'The Ghost in the Shell 1.5: Human-Error Processor',
+      mediaType: 'manga',
+      aliases: ['Koukaku Kidoutai 1.5: Human-Error Processor'],
+      externalIds: [{ source: 'anilist', id: '31028' }],
+      year: 1991,
+      releaseDate: '1991-09-26',
+      mc: 67,
+      note: 'Shirow’s Section 9 stories from after the first manga, with Batou, Togusa and Aramaki working without the Major'
+    },
+    {
       id: 'gits-1995',
       title: 'Ghost in the Shell',
       mediaType: 'anime',
@@ -65,6 +77,17 @@ export const GHOST_IN_THE_SHELL: FranchiseCfg = {
       adaptation: true,
       mc: 80,
       note: 'Oshii’s film: Major Motoko Kusanagi tracks a hacker called the Puppet Master through Section 9’s cases'
+    },
+    {
+      id: 'gits-manga-2',
+      title: 'The Ghost in the Shell 2: Man-Machine Interface',
+      mediaType: 'manga',
+      aliases: ['Koukaku Kidoutai 2: Man-Machine Interface', 'Ghost in the Shell 2'],
+      externalIds: [{ source: 'anilist', id: '31026' }],
+      year: 1997,
+      releaseDate: '1997-07-14',
+      mc: 58,
+      note: 'Shirow’s sequel manga, years after the first: Motoko Aramaki, descended from the Major’s merger with the Puppet Master'
     },
     {
       id: 'gits-sac1',

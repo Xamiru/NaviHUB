@@ -215,7 +215,7 @@ export default function LinkMusicDialog({
   )
 }
 
-function ResultGroup({ title, children }: { title: string; children: ReactNode }) {
+export function ResultGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mb-4">
       <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">{title}</h3>
@@ -224,7 +224,7 @@ function ResultGroup({ title, children }: { title: string; children: ReactNode }
   )
 }
 
-function ResultButton({
+export function ResultButton({
   selected,
   linked,
   onSelect,

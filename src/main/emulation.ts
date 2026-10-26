@@ -121,12 +121,19 @@ function requireEmulator(id: number): EmulatorRow {
 
 // Registers an executable. Its platforms come from the preset, and it becomes
 // the default for any of them that has none yet, so a first emulator just works.
-export function registerEmulator(exePath: string): EmulatorInfo {
+// `forPlatform` is the console the user added it from: a custom emulator or a
+// multi-system preset with no fixed consoles (RetroArch) takes it on, while a
+// known preset keeps its own consoles (PCSX2 picked from the Wii never plays Wii).
+export function registerEmulator(exePath: string, forPlatform: PlatformKey | null = null): EmulatorInfo {
   assertLaunchableExe(exePath)
   const existing = emulatorRepo.list().find((r) => r.exe_path.toLowerCase() === exePath.toLowerCase())
-  if (existing) return toInfo(existing, emulatorRepo.defaults())
+  if (existing) {
+    adoptPlatform(existing, forPlatform)
+    return toInfo(requireEmulator(existing.id), emulatorRepo.defaults())
+  }
   const preset = detectPreset(exePath)
   const platforms = [...EMULATOR_PRESETS[preset].platforms]
+  if (forPlatform && adoptsPlatforms(preset) && !platforms.includes(forPlatform)) platforms.push(forPlatform)
   const name =
     preset === 'custom'
       ? (exePath.split(/[\\/]/).pop() ?? 'Emulator').replace(/\.exe$/i, '')
@@ -139,7 +146,23 @@ export function registerEmulator(exePath: string): EmulatorInfo {
   return toInfo(requireEmulator(id), emulatorRepo.defaults())
 }
 
-export async function pickAndAddEmulator(): Promise<EmulatorInfo | null> {
+// Presets whose consoles the user chooses: their own list is empty or open-ended.
+function adoptsPlatforms(preset: PresetKey): boolean {
+  return preset === 'custom' || EMULATOR_PRESETS[preset].platforms.length === 0
+}
+
+function adoptPlatform(row: EmulatorRow, platform: PlatformKey | null): void {
+  if (!platform || !adoptsPlatforms(presetOf(row))) return
+  const current = parsePlatforms(row.platforms)
+  if (!current.includes(platform)) {
+    emulatorRepo.update(row.id, { platforms: JSON.stringify([...current, platform]) })
+  }
+  if (!emulatorRepo.defaults().has(platform)) emulatorRepo.setDefault(platform, row.id)
+}
+
+export async function pickAndAddEmulator(forPlatform?: unknown): Promise<EmulatorInfo | null> {
+  const platform = forPlatform == null ? null : isPlatformKey(forPlatform) ? forPlatform : null
+  if (forPlatform != null && !platform) throw new Error('Unknown console')
   const res = await dialog.showOpenDialog({
     title: 'Add an emulator',
     properties: ['openFile'],
@@ -149,7 +172,34 @@ export async function pickAndAddEmulator(): Promise<EmulatorInfo | null> {
     ]
   })
   if (res.canceled || res.filePaths.length === 0) return null
-  return registerEmulator(res.filePaths[0])
+  return registerEmulator(res.filePaths[0], platform)
+}
+
+// The emulator program's own icon as a data URL, for the hub's chips. Windows
+// reads the exe's embedded icon; elsewhere the OS gives a generic one. Cached
+// per emulator until the program file changes; null when it is missing.
+const iconCache = new Map<number, { path: string; mtimeMs: number; url: string | null }>()
+
+export async function emulatorIcon(id: number): Promise<string | null> {
+  const row = requireEmulator(id)
+  let mtimeMs: number
+  try {
+    mtimeMs = (await stat(row.exe_path)).mtimeMs
+  } catch {
+    iconCache.delete(id)
+    return null
+  }
+  const hit = iconCache.get(id)
+  if (hit && hit.path === row.exe_path && hit.mtimeMs === mtimeMs) return hit.url
+  let url: string | null = null
+  try {
+    const image = await app.getFileIcon(row.exe_path, { size: 'large' })
+    url = image.isEmpty() ? null : image.toDataURL()
+  } catch {
+    url = null
+  }
+  iconCache.set(id, { path: row.exe_path, mtimeMs, url })
+  return url
 }
 
 export function updateEmulator(id: number, upd: EmulatorUpdate): EmulatorInfo {

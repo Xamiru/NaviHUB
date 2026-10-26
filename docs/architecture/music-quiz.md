@@ -25,6 +25,17 @@ and the Spotify import dialog in `components/music/`. Music pages never import a
 
 **Anime full versions.** A track link may carry `theme_external_id`: the `theme_song.external_id` it is the full version of, on the same anime (validated in the repo; one full version per theme). It is a key, not an FK, because a theme refresh deletes and re-inserts every `theme_song` row; reads join it back to the current row as `themeSongId`. The Theme Songs tab's `ThemeRow` then shows **Play full version**.
 
+**From the music side (2026-10-25).** `components/music/LinkToTitleDialog.tsx` makes the same rows
+starting from the music: **Link to title…** on a song's right-click and ⋯ menus, the now-playing
+actions (a `LinkIcon` button), the selection bar (several songs at once) and the album header (an
+album link). It searches titles of every type plus wrestlers (`musicLinks:searchOwners`, the media
+half of global search via `searchRepo.searchMediaItems`, plus wrestler name and real name), takes the
+same label and, for one song linked to an anime, the same **Full version of** choice. One song or an
+album first lists what it is linked to (`musicLinks:usages`, by the link table's track and album
+indexes; a song's album link shows as "through its album" and is unlinked from the album, not
+here). Several songs go through `musicLinks:linkTracks` in one transaction: a song already linked
+to that owner under that label is skipped and counted, any other failure rolls the batch back.
+
 **Elsewhere.** `/music/soundtracks` (`MusicSoundtracksPage`, a Music contextual tab) lists every title and wrestler with links (`musicLinks:browse`: one grouped read of the link table, with counts and labels), filtered by type and title, each expandable into the same section. Franchise pages render `FranchiseMusic` from `musicLinks:forMediaIds` over the matched entries (bounded by the franchise). Query keys live under `qk.music.links` inside the `music` prefix on purpose: a scan, like or tag edit refreshes linked rows; link mutations invalidate `qk.music.links.all`. Links are personal and wiped by `sanitizeSql.cjs`. Tests: `tests/musicLinkRepo.test.ts`, `tests/renderer/MusicLinks.test.tsx`.
 
 ## Personal track tags and smart playlists
@@ -503,15 +514,29 @@ step (finding recordings, checking them, downloading).
 
 **Track lists: selection, right-click and search (2026-09-30).** `components/music/TrackListScope.tsx`
 wraps each visible list (`TrackList`, album, playlist) and owns its multi-selection, a sticky
-selection bar (Play, Play next, Add to queue, Add to playlist, Remove from playlist on playlist
-pages, Delete…, Clear) and **Jump to playing** for lists of 30 or more, which grows an incremental
+selection bar (Play, Play next, Add to queue, Add to playlist, Link to title…, Remove from playlist
+on playlist pages, Delete…, Clear) and **Jump to playing** for lists of 30 or more, which grows an incremental
 list through `useIncrementalList().reveal` before scrolling. In a scope, Ctrl+click toggles a row,
 Shift+click extends from the last toggled row, and while anything is selected a plain click selects
 rather than plays; each row also has a checkbox (hover/focus revealed until a selection exists).
 Escape clears. Selection queues in list order and prunes rows a filter hides. The artist's Most
 played list is not selectable, so one page never shows two bars. Every `MusicTrackRow` has a
 right-click menu (the shared `ContextMenu`, destructive items behind a separator) whose
-**Add to playlist…** opens the row's own ⋯ popover. Album, artist and playlist headers and Liked
+**Add to playlist…** opens the row's ⋯ popover straight on the playlist picker, followed by a
+one-click **Add to “<last playlist>”** and **Link to title…**.
+
+**The playlist picker (2026-10-25).** `components/music/PlaylistPicker.tsx` is the ONE Add-to-playlist
+body, used by the row's ⋯ popover, the now-playing button and the selection bar; do not grow a
+second copy. It reads `music:playlistsForTracks` (every playlist A to Z with how many of the given
+tracks it holds; manual and matched Spotify rows count once) and its order never changes while it
+is open: a **Recent** group snapshotted at open from `lib/recentPlaylists.ts` (a localStorage
+convenience, five ids with cached titles, pruned against the real list on each open), then the
+rest A to Z. Sorting by `updated_at` was the old bug: a toggle bumped the playlist to the top under
+the pointer. The search box filters, Enter adds to the playlist with exactly the typed name (never removing
+a song already there) or creates that name, as the Create row offers, and arrow keys walk the rows. One song toggles and stays open; a selection adds
+only the missing songs, shows partial membership (`2/3`) and toasts `addPlaylistTracks`'
+`{ added, skipped }` counts. `addPlaylistTracks` throws `Playlist not found` for a deleted id,
+which is how the quick-add item drops a stale recent entry. Album, artist and playlist headers and Liked
 songs carry an **Add to queue** menu (Play next / Add to end for the whole list). Liked songs has search
 and a client-side sort; album pages, an artist's full track list and ordinary playlists show search
 from 25 tracks (`TRACK_SEARCH_MIN`). Header Play/Shuffle on Liked and album pages follow the filtered
@@ -594,7 +619,7 @@ track or awaiting local-path resolution. Failed lookups follow the missing-file
 fallback/skip path, and an older lookup cannot replace a newer selection. Unshuffle
 restores the current queue occurrence by object identity, even when song IDs repeat.
 
-**Source-aware player actions (2026-08-27).** Both the persistent bar and full Now Playing view identify tracks by their load-bearing id namespace through one shared action component. A `music-<id>` library track shows Like plus Add to playlist; the playlist menu can toggle existing playlists or create one without leaving playback. A `theme-<id>` anime song shows only its theme Favorite action. Quiz, tournament and arbitrary-file audio show neither. Theme favorite state has a dedicated `themes:favorite` read so both player surfaces reflect changes made on the Songs or anime detail pages instead of trusting a stale queue snapshot; mutations invalidate both theme queries and the owning anime detail.
+**Source-aware player actions (2026-08-27).** Both the persistent bar and full Now Playing view identify tracks by their load-bearing id namespace through one shared action component. A `music-<id>` library track shows Like, Add to playlist (the shared playlist picker) and Link to title. A `theme-<id>` anime song shows only its theme Favorite action. Quiz, tournament and arbitrary-file audio show neither. Theme favorite state has a dedicated `themes:favorite` read so both player surfaces reflect changes made on the Songs or anime detail pages instead of trusting a stale queue snapshot; mutations invalidate both theme queries and the owning anime detail.
 
 **No colour extraction (2026-08-16, decided with the user).** `NowPlayingPage` gets an ambient wash from the app's OWN accent — a radial `rgb(var(--accent) / 0.10)` behind the artwork — rather than a palette pulled from the cover. The Lain theme is one hue on purpose, and a per-album tint would make this the only screen in the app that isn't. It still lifts the artwork off a flat background, which was the point of the treatment.
 

@@ -34,7 +34,10 @@ const api: NaviApi = {
     update: (id, patch) => ipcRenderer.invoke('musicLinks:update', id, patch),
     reorder: (owner, orderedIds) => ipcRenderer.invoke('musicLinks:reorder', owner, orderedIds),
     remove: (id) => ipcRenderer.invoke('musicLinks:remove', id),
-    browse: () => ipcRenderer.invoke('musicLinks:browse')
+    browse: () => ipcRenderer.invoke('musicLinks:browse'),
+    usages: (target) => ipcRenderer.invoke('musicLinks:usages', target),
+    searchOwners: (query) => ipcRenderer.invoke('musicLinks:searchOwners', query),
+    linkTracks: (input) => ipcRenderer.invoke('musicLinks:linkTracks', input)
   },
   vnExplore: {
     discover: (input) => ipcRenderer.invoke('vnExplore:discover', input),
@@ -185,7 +188,7 @@ const api: NaviApi = {
     setPreferredRom: (mediaId, romId) => ipcRenderer.invoke('games:setPreferredRom', mediaId, romId),
     updateRom: (romId, upd) => ipcRenderer.invoke('games:updateRom', romId, upd),
     importSessionShots: (sessionId) => ipcRenderer.invoke('games:importSessionShots', sessionId),
-    romScanStart: () => ipcRenderer.invoke('games:romScanStart'),
+    romScanStart: (platform) => ipcRenderer.invoke('games:romScanStart', platform),
     romScanStatus: () => ipcRenderer.invoke('games:romScanStatus'),
     romScanCancel: () => ipcRenderer.invoke('games:romScanCancel'),
     romScanAccept: (items) => ipcRenderer.invoke('games:romScanAccept', items),
@@ -210,7 +213,8 @@ const api: NaviApi = {
   },
   emulators: {
     list: () => ipcRenderer.invoke('emulators:list'),
-    add: () => ipcRenderer.invoke('emulators:add'),
+    add: (platform) => ipcRenderer.invoke('emulators:add', platform),
+    icon: (id) => ipcRenderer.invoke('emulators:icon', id),
     update: (id, upd) => ipcRenderer.invoke('emulators:update', id, upd),
     remove: (id) => ipcRenderer.invoke('emulators:remove', id),
     setDefault: (platform, emulatorId) => ipcRenderer.invoke('emulators:setDefault', platform, emulatorId),
@@ -771,7 +775,7 @@ const api: NaviApi = {
     spotifyTestYouTubeAccess: (force) =>
       ipcRenderer.invoke('music:spotifyTestYouTubeAccess', force),
     spotifyInstallDeno: () => ipcRenderer.invoke('music:spotifyInstallDeno'),
-    playlistsForTrack: (trackId) => ipcRenderer.invoke('music:playlistsForTrack', trackId),
+    playlistsForTracks: (trackIds) => ipcRenderer.invoke('music:playlistsForTracks', trackIds),
     setLiked: (trackId, liked) => ipcRenderer.invoke('music:setLiked', trackId, liked),
     logPlay: (trackId) => ipcRenderer.invoke('music:logPlay', trackId),
     recent: (limit) => ipcRenderer.invoke('music:recent', limit),

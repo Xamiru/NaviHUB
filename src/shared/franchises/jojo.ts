@@ -10,7 +10,9 @@
 // Stardust Crusaders OVAs as optional detours (the 2007 Phantom Blood film,
 // never released on home video, sits outside the route), and the two still-unadapted
 // manga parts (JoJolion, The JOJOLands) left outside the route as source
-// material. Excluded: Araki's unrelated early manga and short stories,
+// material. Araki's own Rohan spin-off manga (Rohan at the Louvre and Thus
+// Spoke Rohan Kishibe, added 2026-10-26) share Part 4's slot and sit outside
+// the route. Excluded: Araki's unrelated early manga and short stories,
 // the light-novel-only side stories, and "Jojo Rabbit" (an unrelated TMDB
 // movie that only shares a nickname).
 // Ids and years from AniList, art from AniList, curl-verified 2026-10-05.
@@ -169,6 +171,19 @@ export const JOJO: FranchiseCfg = {
       note: 'A.P.P.P.’s theatrical film of Part 1, shown in Japan and never released on home video'
     },
     {
+      id: 'jojo-rohan-louvre',
+      title: 'Rohan at the Louvre',
+      mediaType: 'manga',
+      aliases: ['Kishibe Rohan Louvre e Iku'],
+      externalIds: [{ source: 'anilist', id: '49423' }],
+      year: 2011,
+      releaseDate: '2011-04-19',
+      chrono: 4,
+      spinOff: true,
+      mc: 76,
+      note: 'Araki’s full-colour one-shot drawn for the Louvre: Rohan hunts a cursed painting made with the blackest ink'
+    },
+    {
       id: 'jojo-manga-p8',
       title: 'JoJo no Kimyou na Bouken: JoJolion',
       mediaType: 'manga',
@@ -192,6 +207,19 @@ export const JOJO: FranchiseCfg = {
       adaptation: true,
       mc: 77,
       note: 'Covers Phantom Blood and Battle Tendency across one continuous 26-episode broadcast'
+    },
+    {
+      id: 'jojo-rohan-manga',
+      title: 'Thus Spoke Rohan Kishibe',
+      mediaType: 'manga',
+      aliases: ['Kishibe Rohan wa Ugokanai', 'Thus Spoke Kishibe Rohan'],
+      externalIds: [{ source: 'anilist', id: '103029' }],
+      year: 2013,
+      releaseDate: '2013-11-19',
+      chrono: 4,
+      spinOff: true,
+      mc: 78,
+      note: 'Araki’s ongoing one-shot series: the Part 4 manga artist Rohan investigates the supernatural with Heaven’s Door'
     },
     {
       id: 'jojo-sc',

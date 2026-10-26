@@ -15,7 +15,8 @@
 // the series has never released on Steam, so library matching for the games
 // is by title and version-name aliases only. The anime and First Movie use
 // AniList ids (matching how the user's own library already stores them);
-// Detective Pikachu uses TMDB. Character art is AniList's throughout — the
+// Detective Pikachu uses TMDB. Pokémon Adventures (added 2026-10-26), the
+// manga retelling of the games, uses AniList. Character art is AniList's throughout — the
 // anime cast and Mewtwo all come from the two anime/film entries already on
 // this page, so no fandom fallback was needed. Dates from Wikipedia and
 // AniList. All verified 2026-10-05.
@@ -71,6 +72,18 @@ export const POKEMON: FranchiseCfg = {
       releaseDate: '1997-04-01',
       adaptation: true,
       note: 'Ash Ketchum and Pikachu\'s journey begins'
+    },
+    {
+      id: 'pkmn-adventures',
+      title: 'Pokémon Adventures',
+      mediaType: 'manga',
+      aliases: ['Pocket Monsters Special', 'Pokemon Special'],
+      externalIds: [{ source: 'anilist', id: '30928' }],
+      year: 1997,
+      releaseDate: '1997-04-01',
+      adaptation: true,
+      mc: 79,
+      note: 'Hidenori Kusaka’s long-running manga, retelling each generation’s games with Red, Gold, Ruby and their successors'
     },
     {
       id: 'pkmn-first-movie',

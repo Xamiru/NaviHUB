@@ -23,6 +23,7 @@ import { confirmDialog } from '../lib/confirm'
 import SpotifyEntityDownloadDialog from '../components/SpotifyEntityDownloadDialog'
 import { TrackSearch } from '../components/music/MusicBrowse'
 import TrackListScope from '../components/music/TrackListScope'
+import LinkToTitleDialog from '../components/music/LinkToTitleDialog'
 
 export default function MusicAlbumPage() {
   const { id } = useParams()
@@ -32,6 +33,7 @@ export default function MusicAlbumPage() {
   const player = usePlayerControls()
   const [searchParams, setSearchParams] = useSearchParams()
   const [spotifyOpen, setSpotifyOpen] = useState(false)
+  const [linkOpen, setLinkOpen] = useState(false)
   const [search, setSearch] = usePersistedState('musicAlbumSearch', '')
 
   useEffect(() => {
@@ -151,7 +153,14 @@ export default function MusicAlbumPage() {
             onSelect: () => setSpotifyOpen(true)
           }
         ]}
+        onLinkToTitle={() => setLinkOpen(true)}
       />
+      {linkOpen && (
+        <LinkToTitleDialog
+          subject={{ kind: 'album', albumId, title: album.title }}
+          onClose={() => setLinkOpen(false)}
+        />
+      )}
 
       <div className="max-w-5xl">
         {(tracks.length >= TRACK_SEARCH_MIN || search) && (

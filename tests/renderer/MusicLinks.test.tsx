@@ -24,7 +24,7 @@ vi.mock('@/lib/api', () => ({
       remove: vi.fn(),
       forMediaIds: vi.fn()
     },
-    music: { setLiked: vi.fn(), playlistsForTrack: vi.fn(async () => []) }
+    music: { setLiked: vi.fn(), playlistsForTracks: vi.fn(async () => []) }
   }
 }))
 const confirm = vi.fn(async () => true)

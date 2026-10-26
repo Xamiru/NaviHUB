@@ -23,7 +23,7 @@ vi.mock('@/lib/api', () => ({
       tracks: vi.fn(),
       playlist: vi.fn(),
       playlists: vi.fn(async () => []),
-      playlistsForTrack: vi.fn(async () => []),
+      playlistsForTracks: vi.fn(async () => []),
       removePlaylistTrack: vi.fn(async () => undefined),
       spotifyDownloadQueue: vi.fn(async () => ({ pending: [], completed: [] }))
     }

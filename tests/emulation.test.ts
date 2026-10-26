@@ -11,8 +11,9 @@ import { createTestDb } from './helpers'
 
 let db: Database.Database
 vi.mock('../src/main/db/connection', () => ({ getSqlite: () => db }))
+const getFileIcon = vi.fn(async () => ({ isEmpty: () => false, toDataURL: () => 'data:image/png;base64,AA' }))
 vi.mock('electron', () => ({
-  app: { getPath: () => '/nonexistent-documents' },
+  app: { getPath: () => '/nonexistent-documents', getFileIcon: (...a: unknown[]) => getFileIcon(...(a as [])) },
   dialog: { showOpenDialog: vi.fn() }
 }))
 
@@ -71,6 +72,39 @@ describe('registerEmulator', () => {
     const b = emulation.registerEmulator(exe)
     expect(b.id).toBe(a.id)
     expect(emulation.listEmulators()).toHaveLength(1)
+  })
+
+  it('adopts the console it was added from only when the preset has no fixed consoles', () => {
+    const custom = emulation.registerEmulator(file('MyEmu.exe'), 'saturn')
+    expect(custom).toMatchObject({ presetKey: 'custom', platforms: ['saturn'], defaultFor: ['saturn'] })
+
+    const ra = emulation.registerEmulator(file('retroarch.exe'), 'ps1')
+    expect(ra.platforms).toEqual(['ps1'])
+    expect(ra.defaultFor).toEqual(['ps1'])
+    // Adding the same RetroArch again from another console extends it.
+    const again = emulation.registerEmulator(file('retroarch.exe'), 'snes')
+    expect(again.id).toBe(ra.id)
+    expect(again.platforms).toEqual(['ps1', 'snes'])
+
+    // A known preset keeps its own consoles: PCSX2 never plays Wii.
+    const pcsx2 = emulation.registerEmulator(file('pcsx2-qt.exe'), 'wii')
+    expect(pcsx2.platforms).toEqual(['ps2'])
+    expect(pcsx2.defaultFor).toEqual(['ps2'])
+    expect(emulation.registerEmulator(file('pcsx2-qt.exe'), 'wii').platforms).toEqual(['ps2'])
+  })
+
+  it('rejects an unknown console from the renderer', async () => {
+    await expect(emulation.pickAndAddEmulator('commodore')).rejects.toThrow(/Unknown console/)
+  })
+
+  it('reads the program icon and returns null once the file is gone', async () => {
+    const exe = file('Dolphin.exe')
+    const { id } = emulation.registerEmulator(exe)
+    expect(await emulation.emulatorIcon(id)).toBe('data:image/png;base64,AA')
+    expect(await emulation.emulatorIcon(id)).toBe('data:image/png;base64,AA')
+    expect(getFileIcon).toHaveBeenCalledTimes(1)
+    rmSync(exe)
+    expect(await emulation.emulatorIcon(id)).toBeNull()
   })
 
   it('validates edited arguments and resets to the preset on null', () => {

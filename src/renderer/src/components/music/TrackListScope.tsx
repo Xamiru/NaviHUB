@@ -10,7 +10,7 @@ import {
   type ReactNode
 } from 'react'
 import { useLocation } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
 import { usePlayerControls } from '../../lib/player'
@@ -20,6 +20,8 @@ import { useLeaveDeleted } from '../../lib/navState'
 import { confirmDialog } from '../../lib/confirm'
 import { toast, toastError } from '../../lib/toast'
 import ActionMenu from '../ActionMenu'
+import PlaylistPicker from './PlaylistPicker'
+import LinkToTitleDialog from './LinkToTitleDialog'
 import type { MusicDeleteResult, MusicTrack } from '@shared/types'
 
 // One visible track list: the rows' multi-selection, the selection bar that
@@ -172,6 +174,7 @@ function SelectionBar({
   const leaveEmptied = useLeaveEmptiedPage()
   const ids = tracks.map((t) => t.id)
   const count = `${tracks.length} ${tracks.length === 1 ? 'song' : 'songs'}`
+  const [linking, setLinking] = useState(false)
 
   async function remove(): Promise<void> {
     if (!onRemove) return
@@ -219,6 +222,9 @@ function SelectionBar({
       </button>
       <QueueButtons tracks={tracks} onDone={onClear} />
       <AddToPlaylistMenu trackIds={ids} onDone={onClear} />
+      <button className="btn-ghost py-1 text-sm" onClick={() => setLinking(true)}>
+        Link to title…
+      </button>
       {onRemove && (
         <button className="btn-ghost py-1 text-sm" onClick={() => void remove()}>
           Remove from playlist
@@ -230,6 +236,12 @@ function SelectionBar({
       <button className="btn-ghost ml-auto py-1 text-sm" onClick={onClear} title="Clear selection (Escape)">
         Clear
       </button>
+      {linking && (
+        <LinkToTitleDialog
+          subject={{ kind: 'tracks', trackIds: ids, title: tracks.length === 1 ? tracks[0].title : count }}
+          onClose={() => setLinking(false)}
+        />
+      )}
     </div>
   )
 }
@@ -295,35 +307,9 @@ function QueueButtons({ tracks, onDone }: { tracks: MusicTrack[]; onDone: () => 
 }
 
 function AddToPlaylistMenu({ trackIds, onDone }: { trackIds: number[]; onDone: () => void }) {
-  const qc = useQueryClient()
   const [open, setOpen] = useState(false)
-  const [newTitle, setNewTitle] = useState('')
-  const [pending, setPending] = useState(false)
   const panelId = useId()
-  const headingId = useId()
   const { panelRef, triggerRef } = usePopover(open, () => setOpen(false), { initialFocus: 'first' })
-  const { data: playlists = [], isLoading } = useQuery({
-    queryKey: qk.music.playlists,
-    queryFn: () => api.music.playlists(),
-    enabled: open
-  })
-
-  async function addTo(playlistId: number | null, title: string): Promise<void> {
-    if (pending) return
-    setPending(true)
-    try {
-      const id = playlistId ?? (await api.music.createPlaylist({ title }))
-      await api.music.addPlaylistTracks(id, trackIds)
-      await qc.invalidateQueries({ queryKey: qk.music.all })
-      toast(`Added to ${title}`, 'success')
-      setOpen(false)
-      onDone()
-    } catch (e) {
-      toastError(e)
-    } finally {
-      setPending(false)
-    }
-  }
 
   return (
     <div className="relative">
@@ -340,54 +326,15 @@ function AddToPlaylistMenu({ trackIds, onDone }: { trackIds: number[]; onDone: (
         <div
           id={panelId}
           ref={panelRef}
-          role="region"
-          aria-labelledby={headingId}
-          data-player-shortcuts="suspend"
-          className="absolute bottom-full left-0 z-40 mb-2 w-64 rounded-md border border-base-500 bg-base-800 p-2 shadow-lg"
+          className="absolute bottom-full left-0 z-40 mb-2 w-72 rounded-md border border-base-500 bg-base-800 p-2 shadow-lg"
         >
-          <p id={headingId} className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
-            Add {trackIds.length} to
-          </p>
-          <div className="max-h-48 overflow-y-auto">
-            {isLoading && <p className="px-1 py-2 text-xs text-gray-400">Loading playlists…</p>}
-            {!isLoading && playlists.length === 0 && (
-              <p className="px-1 py-2 text-xs text-gray-400">No playlists yet. Create one below.</p>
-            )}
-            {playlists.map((p) => (
-              <button
-                key={p.id}
-                className="block w-full truncate rounded px-1 py-1.5 text-left text-sm hover:bg-base-700 disabled:opacity-50"
-                disabled={pending}
-                onClick={() => void addTo(p.id, p.title)}
-              >
-                {p.title}
-              </button>
-            ))}
-          </div>
-          <div className="mt-1 flex gap-1 border-t border-base-700 pt-2">
-            <input
-              className="input min-w-0 flex-1 py-1 text-sm"
-              placeholder="New playlist…"
-              aria-label="New playlist name"
-              value={newTitle}
-              maxLength={200}
-              disabled={pending}
-              onChange={(e) => setNewTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newTitle.trim()) {
-                  e.preventDefault()
-                  void addTo(null, newTitle.trim())
-                }
-              }}
-            />
-            <button
-              className="btn-primary px-2 py-1 text-sm"
-              disabled={!newTitle.trim() || pending}
-              onClick={() => void addTo(null, newTitle.trim())}
-            >
-              Create
-            </button>
-          </div>
+          <PlaylistPicker
+            trackIds={trackIds}
+            onDone={() => {
+              setOpen(false)
+              onDone()
+            }}
+          />
         </div>
       )}
     </div>

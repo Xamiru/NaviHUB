@@ -2,6 +2,7 @@ import { getSqlite } from '../db/connection'
 import { recordingText, recordingVariantSignature } from '@shared/musicSourceMatch'
 import { normalizeSpotifyMatch, stripAlbumYearPrefix } from '../musicSpotifyMatch'
 import { TRACK_COLS, TRACK_JOINS, mapAlbumSummary, mapTrack } from './musicRepo'
+import { searchMediaItems } from './searchRepo'
 import type {
   MediaType,
   MusicAlbumSummary,
@@ -10,7 +11,12 @@ import type {
   MusicLinkCreate,
   MusicLinkKind,
   MusicLinkOwner,
+  MusicLinkOwnerCandidate,
+  MusicLinkTarget,
+  MusicLinkTracksInput,
+  MusicLinkTracksResult,
   MusicLinkUpdate,
+  MusicLinkUsage,
   MusicTrack,
   SoundtrackOwner
 } from '@shared/types'
@@ -243,7 +249,9 @@ function isIdentityConflict(err: unknown): boolean {
   )
 }
 
-export function create(input: MusicLinkCreate): number {
+// One link insert. Returns null when the same target is already linked to
+// the owner under the same label (idx_media_music_link_identity).
+function insertLink(input: MusicLinkCreate): number | null {
   const db = getSqlite()
   const { column, id } = ownerColumn(input.owner)
   const label = cleanLabel(input.label)
@@ -265,46 +273,151 @@ export function create(input: MusicLinkCreate): number {
           return themeExternalId(id, input.themeSongId)
         })()
       : null
-  return db.transaction(() => {
-    const next = (
-      db
-        .prepare(`SELECT COALESCE(MAX(sort_order), -1) + 1 AS n FROM media_music_link WHERE ${column} = ?`)
-        .get(id) as { n: number }
-    ).n
-    let result: { lastInsertRowid: number | bigint }
-    try {
-      result = db
-        .prepare(
-          `INSERT INTO media_music_link
-             (${column}, kind, album_id, track_id, label, sort_order,
-              snap_artist, snap_album, snap_title, snap_duration)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-        )
-        .run(
-          id,
-          input.kind,
-          input.kind === 'album' ? input.albumId : null,
-          input.kind === 'track' ? input.trackId : null,
-          label,
-          next,
-          snapshot.artist,
-          snapshot.album,
-          input.kind === 'track' ? snapshot.title : null,
-          input.kind === 'track' ? snapshot.duration : null
-        )
-    } catch (err) {
-      // idx_media_music_link_identity: the same target under the same label.
-      if (isIdentityConflict(err)) {
-        throw new Error(
-          `This ${input.kind} is already linked here${label ? ` as “${label}”` : ''}. Use a different label to link it again.`
-        )
-      }
-      throw err
+  const next = (
+    db
+      .prepare(`SELECT COALESCE(MAX(sort_order), -1) + 1 AS n FROM media_music_link WHERE ${column} = ?`)
+      .get(id) as { n: number }
+  ).n
+  let result: { lastInsertRowid: number | bigint }
+  try {
+    result = db
+      .prepare(
+        `INSERT INTO media_music_link
+           (${column}, kind, album_id, track_id, label, sort_order,
+            snap_artist, snap_album, snap_title, snap_duration)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        id,
+        input.kind,
+        input.kind === 'album' ? input.albumId : null,
+        input.kind === 'track' ? input.trackId : null,
+        label,
+        next,
+        snapshot.artist,
+        snapshot.album,
+        input.kind === 'track' ? snapshot.title : null,
+        input.kind === 'track' ? snapshot.duration : null
+      )
+  } catch (err) {
+    if (isIdentityConflict(err)) return null
+    throw err
+  }
+  const linkId = Number(result.lastInsertRowid)
+  if (theme && column === 'media_id') assignTheme(linkId, id, theme)
+  return linkId
+}
+
+export function create(input: MusicLinkCreate): number {
+  const linkId = getSqlite().transaction(() => insertLink(input))()
+  if (linkId == null) {
+    const label = cleanLabel(input.label)
+    throw new Error(
+      `This ${input.kind} is already linked here${label ? ` as “${label}”` : ''}. Use a different label to link it again.`
+    )
+  }
+  return linkId
+}
+
+// Link several tracks to one owner at once, from the music side. A track
+// already linked there under the same label is skipped and counted.
+export function linkTracks(input: MusicLinkTracksInput): MusicLinkTracksResult {
+  const trackIds = [...new Set(input.trackIds)]
+  if (input.themeSongId != null) {
+    if (trackIds.length !== 1) throw new Error('Only one track at a time can be a theme song’s full version')
+    // A theme link that would be skipped as a duplicate would drop the theme
+    // too; create() says why instead.
+    create({ owner: input.owner, kind: 'track', trackId: trackIds[0], label: input.label, themeSongId: input.themeSongId })
+    return { added: 1, skipped: 0 }
+  }
+  const added = getSqlite().transaction(() => {
+    let n = 0
+    for (const trackId of trackIds) {
+      const linkId = insertLink({
+        owner: input.owner,
+        kind: 'track',
+        trackId,
+        label: input.label,
+        themeSongId: input.themeSongId
+      })
+      if (linkId != null) n += 1
     }
-    const linkId = Number(result.lastInsertRowid)
-    if (theme && column === 'media_id') assignTheme(linkId, id, theme)
-    return linkId
+    return n
   })()
+  return { added, skipped: trackIds.length - added }
+}
+
+// Every title and wrestler a track (directly or through its album) or an
+// album is linked to. Bounded by the link table's track/album indexes.
+export function usages(target: MusicLinkTarget): MusicLinkUsage[] {
+  const where =
+    'trackId' in target
+      ? `(l.kind = 'track' AND l.track_id = @id)
+         OR (l.kind = 'album' AND l.album_id = (SELECT album_id FROM music_track WHERE id = @id))`
+      : `l.kind = 'album' AND l.album_id = @id`
+  const id = 'trackId' in target ? target.trackId : target.albumId
+  const rows = getSqlite()
+    .prepare(
+      `SELECT l.id, l.kind, l.label, l.media_id, l.wrestler_id, m.media_type,
+              COALESCE(m.title, w.name) AS title,
+              COALESCE(m.cover_path, w.photo_path) AS cover_path
+       FROM media_music_link l
+       LEFT JOIN media_item m ON m.id = l.media_id
+       LEFT JOIN wrestling_wrestler w ON w.id = l.wrestler_id
+       WHERE ${where}
+       ORDER BY COALESCE(m.title, w.name) COLLATE NOCASE ASC, l.label COLLATE NOCASE ASC, l.id ASC`
+    )
+    .all({ id }) as Record<string, unknown>[]
+  return rows.map((r) => ({
+    linkId: r.id as number,
+    kind: r.kind as MusicLinkKind,
+    viaAlbum: 'trackId' in target && r.kind === 'album',
+    label: r.label as string,
+    mediaId: (r.media_id as number) ?? null,
+    wrestlerId: (r.wrestler_id as number) ?? null,
+    mediaType: (r.media_type as MediaType) ?? null,
+    ownerTitle: (r.title as string) ?? '',
+    coverPath: (r.cover_path as string) ?? null
+  }))
+}
+
+const OWNER_SEARCH_MEDIA = 20
+const OWNER_SEARCH_WRESTLERS = 10
+
+// Library titles, then wrestlers, matching a search: what music can be linked to.
+export function searchOwners(query: string): MusicLinkOwnerCandidate[] {
+  const q = query.trim()
+  if (!q) return []
+  const media = searchMediaItems(q, OWNER_SEARCH_MEDIA).map((m) => {
+    const year = Number(m.releaseDate?.slice(0, 4))
+    return {
+      mediaId: m.id,
+      wrestlerId: null,
+      mediaType: m.mediaType,
+      title: m.title,
+      year: Number.isInteger(year) && year > 0 ? year : null,
+      coverPath: m.coverPath
+    }
+  })
+  const like = `%${q.replace(/[\\%_]/g, '\\$&')}%`
+  const wrestlers = (
+    getSqlite()
+      .prepare(
+        `SELECT id, name, photo_path, debut_year FROM wrestling_wrestler
+         WHERE name LIKE ? ESCAPE '\\' OR real_name LIKE ? ESCAPE '\\'
+         ORDER BY (name LIKE ? ESCAPE '\\') DESC, name COLLATE NOCASE ASC
+         LIMIT ${OWNER_SEARCH_WRESTLERS}`
+      )
+      .all(like, like, like) as { id: number; name: string; photo_path: string | null; debut_year: number | null }[]
+  ).map((w) => ({
+    mediaId: null,
+    wrestlerId: w.id,
+    mediaType: null,
+    title: w.name,
+    year: w.debut_year ?? null,
+    coverPath: w.photo_path
+  }))
+  return [...media, ...wrestlers]
 }
 
 export function update(id: number, patch: MusicLinkUpdate): void {

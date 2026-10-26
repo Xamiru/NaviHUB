@@ -1632,6 +1632,8 @@ export interface RomScanStatus {
   scanned: number
   found: number
   message: string | null
+  // The console the scan was limited to (a console page's scan); null for all.
+  platform: PlatformKey | null
   results: RomScanRow[]
 }
 
@@ -3764,6 +3766,46 @@ export interface MusicLinkCreate {
   themeSongId?: number | null
 }
 
+// What a song or an album is linked to, seen from the music side.
+export type MusicLinkTarget = { trackId: number } | { albumId: number }
+
+export interface MusicLinkUsage {
+  linkId: number
+  kind: MusicLinkKind
+  // A track's whole album is linked, not the track on its own.
+  viaAlbum: boolean
+  label: string
+  mediaId: number | null
+  wrestlerId: number | null
+  mediaType: MediaType | null
+  ownerTitle: string
+  coverPath: string | null
+}
+
+// A title or a wrestler that music can be linked to, from a library search.
+export interface MusicLinkOwnerCandidate {
+  mediaId: number | null
+  wrestlerId: number | null
+  mediaType: MediaType | null
+  title: string
+  year: number | null
+  coverPath: string | null
+}
+
+export interface MusicLinkTracksInput {
+  owner: MusicLinkOwner
+  trackIds: number[]
+  label: string
+  // Only with exactly one track and an anime owner.
+  themeSongId?: number | null
+}
+
+// Tracks already linked to the owner under the same label are skipped.
+export interface MusicLinkTracksResult {
+  added: number
+  skipped: number
+}
+
 export interface MusicLinkUpdate {
   label?: string
   themeSongId?: number | null
@@ -3886,6 +3928,20 @@ export interface MusicPlaylistSummary {
   source: 'local' | 'spotify'
   playableCount: number
   missingCount: number
+}
+
+// One row of the Add-to-playlist picker: how many of the songs being added
+// the playlist already holds.
+export interface MusicPlaylistMembership {
+  id: number
+  title: string
+  contains: number
+}
+
+// Songs already in the playlist are skipped, never added twice.
+export interface MusicPlaylistAddResult {
+  added: number
+  skipped: number
 }
 
 export interface MusicPlaylistEntry {

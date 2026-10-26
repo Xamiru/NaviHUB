@@ -6,7 +6,8 @@
 // retellings of its arcs (Episode of Alabasta, Episode of Chopper Plus), and
 // cannot be pinned to one point in the story. Route is the TV series, with
 // every film, the special and the live-action series as optional detours; the
-// manga sits outside the route as the source. Excluded: the Episode of ...
+// manga sits outside the route as the source, as does Boichi's Ace's Story
+// manga (added 2026-10-26). Excluded: the Episode of ...
 // TV recap specials (East Blue, Nami, Merry, Skypiea), the Heart of Gold and
 // Nebulandia TV specials, short promotional specials, the One Piece Log
 // re-edits, Film God Valley (2027) and the games.
@@ -247,6 +248,19 @@ export const ONE_PIECE: FranchiseCfg = {
       optional: true,
       mc: 80,
       note: 'Film 14: an anniversary crossover with dozens of pirates at a pirate festival'
+    },
+    {
+      id: 'op-ace-manga',
+      title: 'One Piece: Ace’s Story—The Manga',
+      mediaType: 'manga',
+      aliases: ['One Piece Episode A'],
+      externalIds: [{ source: 'anilist', id: '117802' }],
+      year: 2020,
+      releaseDate: '2020-09-16',
+      spinOff: true,
+      adaptation: true,
+      mc: 78,
+      note: 'Boichi’s two-volume manga of the Ace’s Story novel: Ace’s first years at sea, before the Whitebeard Pirates'
     },
     {
       id: 'op-film-red',

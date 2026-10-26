@@ -26,9 +26,7 @@ describe('Now Playing source actions', () => {
     expect(bar).toContain("variant={prominent ? 'pill' : 'default'}")
   })
 
-  it('supports existing playlists and creating a new one from the bar', () => {
-    expect(playlistButton).toContain('api.music.playlistsForTrack(trackId)')
-    expect(playlistButton).toContain('api.music.addPlaylistTracks(playlistId, [trackId])')
-    expect(playlistButton).toContain('api.music.createPlaylist({ title })')
+  it('opens the shared playlist picker from the bar', () => {
+    expect(playlistButton).toContain('<PlaylistPicker trackIds={[trackId]} />')
   })
 })

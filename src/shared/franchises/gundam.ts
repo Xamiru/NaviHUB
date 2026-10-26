@@ -5,9 +5,13 @@
 // "if" take on UC rather than a mainline entry, and the After Colony-era
 // Build/G-era spinoffs. Chrono ranks the in-universe Universal Century
 // year each release is set in (0068 = 1, 0079 = 2, 0083 = 3, 0087 = 4,
-// 0088 = 5, 0093 = 6, 0096 = 7, 0097 = 8, 0105 = 9, 0123 = 10, 0153 = 11);
-// stories set in the same year share a slot. The Origin's manga and OVA open
-// around UC 0068, years before the original 1979 TV series they lead into. Route is a release-order newcomer
+// 0088 = 5, 0093 = 6, 0095 = 7, 0096 = 8, 0097 = 9, 0105 = 10, 0120 = 11,
+// 0123 = 12, 0133 = 13, 0153 = 14); stories set in the same year share a
+// slot. The Origin's manga and OVA open around UC 0068, years before the
+// original 1979 TV series they lead into. Manga (added 2026-10-26): The
+// Origin, Thunderbolt (the source of its anime), Moon Gundam, F90,
+// Silhouette Formula 91 and Crossbone Gundam, all outside the route; the many
+// other UC side-story, gag and anthology manga are excluded. Route is a release-order newcomer
 // path; its non-optional backbone is the six-work core most guides treat as
 // essential — 0079, Zeta, ZZ, Char's Counterattack, Unicorn and Hathaway —
 // with every side story, compilation film and re-edit marked optional.
@@ -156,13 +160,26 @@ export const GUNDAM_UC: FranchiseCfg = {
       note: 'A child living near a neutral colony befriends a Zeon mobile suit pilot in the war’s final days'
     },
     {
+      id: 'uc-f90-manga',
+      title: 'Mobile Suit Gundam F90',
+      mediaType: 'manga',
+      aliases: ['Kidou Senshi Gundam F90'],
+      externalIds: [{ source: 'anilist', id: '39273' }],
+      year: 1990,
+      releaseDate: '1990-09-20',
+      chrono: 11,
+      spinOff: true,
+      mc: 56,
+      note: 'UC 0120: Zeon remnants steal the prototype F90 and the Federation pursues it to Mars'
+    },
+    {
       id: 'uc-f91',
       title: 'Mobile Suit Gundam F91',
       mediaType: 'anime',
       externalIds: [{ source: 'anilist', id: '88' }],
       year: 1991,
       releaseDate: '1991-03-16',
-      chrono: 10,
+      chrono: 12,
       route: 9,
       optional: true,
       mc: 63,
@@ -184,6 +201,18 @@ export const GUNDAM_UC: FranchiseCfg = {
       note: 'UC 0083: Zeon loyalists steal a prototype Gundam, setting off the incident that leads to Zeta’s AEUG'
     },
     {
+      id: 'uc-silhouette-formula-manga',
+      title: 'Mobile Suit Gundam Silhouette Formula 91',
+      mediaType: 'manga',
+      aliases: ['Kidou Senshi Gundam Silhouette Formula 91'],
+      externalIds: [{ source: 'anilist', id: '31873' }],
+      year: 1992,
+      chrono: 12,
+      spinOff: true,
+      mc: 55,
+      note: 'UC 0123: an Anaheim test team is caught between Crossbone Vanguard’s Dark Tiger unit and a Federation battleship'
+    },
+    {
       id: 'uc-victory',
       title: 'Mobile Suit Victory Gundam',
       mediaType: 'anime',
@@ -191,11 +220,23 @@ export const GUNDAM_UC: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '89' }],
       year: 1993,
       releaseDate: '1993-04-02',
-      chrono: 11,
+      chrono: 14,
       route: 11,
       optional: true,
       mc: 67,
       note: 'UC 0153: a militia of child soldiers fights a new Zeon remnant occupying Earth'
+    },
+    {
+      id: 'uc-crossbone-manga',
+      title: 'Mobile Suit Crossbone Gundam',
+      mediaType: 'manga',
+      aliases: ['Kidou Senshi Crossbone Gundam', 'Crossbone Gundam'],
+      externalIds: [{ source: 'anilist', id: '35202' }],
+      year: 1994,
+      releaseDate: '1994-10-26',
+      chrono: 13,
+      mc: 72,
+      note: 'UC 0133: Tomino’s manga sequel to F91, with Seabook and Cecily against the Jupiter Empire'
     },
     {
       id: 'uc-08th',
@@ -231,10 +272,23 @@ export const GUNDAM_UC: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '6336' }],
       year: 2010,
       releaseDate: '2010-02-20',
-      chrono: 7,
+      chrono: 8,
       route: 13,
       mc: 78,
       note: 'UC 0096: Banagher Links inherits a Gundam built to carry the Federation’s most dangerous secret'
+    },
+    {
+      id: 'uc-thunderbolt-manga',
+      title: 'Mobile Suit Gundam Thunderbolt',
+      mediaType: 'manga',
+      aliases: ['Kidou Senshi Gundam Thunderbolt'],
+      externalIds: [{ source: 'anilist', id: '67683' }],
+      year: 2012,
+      releaseDate: '2012-03-01',
+      chrono: 2,
+      spinOff: true,
+      mc: 75,
+      note: 'Yasuo Ohtagaki’s manga that the Thunderbolt anime adapts, running far past it to 27 volumes'
     },
     {
       id: 'uc-origin-ova',
@@ -273,7 +327,7 @@ export const GUNDAM_UC: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '21658' }],
       year: 2016,
       releaseDate: '2016-04-03',
-      chrono: 7,
+      chrono: 8,
       route: 16,
       optional: true,
       adaptation: true,
@@ -294,6 +348,19 @@ export const GUNDAM_UC: FranchiseCfg = {
       adaptation: true,
       mc: 78,
       note: 'Compilation film re-cutting Thunderbolt’s first season for theaters'
+    },
+    {
+      id: 'uc-moon-manga',
+      title: 'Mobile Suit Moon Gundam',
+      mediaType: 'manga',
+      aliases: ['Kidou Senshi Moon Gundam'],
+      externalIds: [{ source: 'anilist', id: '107801' }],
+      year: 2017,
+      releaseDate: '2017-09-26',
+      chrono: 7,
+      spinOff: true,
+      mc: 64,
+      note: 'UC 0095: Harutoshi Fukui’s manga set between Char’s Counterattack and Unicorn'
     },
     {
       id: 'uc-thunderbolt-bandit',
@@ -317,7 +384,7 @@ export const GUNDAM_UC: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '101554' }],
       year: 2018,
       releaseDate: '2018-11-30',
-      chrono: 8,
+      chrono: 9,
       route: 19,
       optional: true,
       spinOff: true,
@@ -347,7 +414,7 @@ export const GUNDAM_UC: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '105595' }],
       year: 2021,
       releaseDate: '2021-06-11',
-      chrono: 9,
+      chrono: 10,
       route: 21,
       mc: 79,
       note: 'UC 0105: Char’s Counterattack’s fallout, told through Bright Noa’s son turned anti-Federation terrorist'
@@ -391,7 +458,7 @@ export const GUNDAM_UC: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '113971' }],
       year: 2026,
       releaseDate: '2026-01-30',
-      chrono: 9,
+      chrono: 10,
       route: 24,
       mc: 79,
       note: 'Continues Hathaway’s story directly from the first film'

@@ -443,7 +443,11 @@ export const qk = {
       franchise: (mediaIds: number[]) => ['music', 'links', 'franchise', mediaIds] as const,
       labels: ['music', 'links', 'labels'] as const,
       search: (query: string) => ['music', 'links', 'search', query] as const,
-      browse: ['music', 'links', 'browse'] as const
+      browse: ['music', 'links', 'browse'] as const,
+      usages: (target: import('@shared/types').MusicLinkTarget) =>
+        ['music', 'links', 'usages', 'trackId' in target ? 'track' : 'album',
+          'trackId' in target ? target.trackId : target.albumId] as const,
+      owners: (query: string) => ['music', 'links', 'owners', query] as const
     },
     artists: (search: string) => ['music', 'artists', search] as const,
     albums: (search: string, scope: MusicBrowseScope = {}) =>
@@ -463,7 +467,7 @@ export const qk = {
     lyricsSearch: (q: string) => ['music', 'lyricsSearch', q] as const,
     playlists: ['music', 'playlists'] as const,
     playlist: (id: number) => ['music', 'playlist', id] as const,
-    playlistsForTrack: (trackId: number) => ['music', 'playlistsForTrack', trackId] as const,
+    playlistsForTracks: (trackIds: number[]) => ['music', 'playlistsForTracks', trackIds] as const,
     recent: (limit: number) => ['music', 'recent', limit] as const,
     statsDetail: (days: number | null) => ['music', 'statsDetail', days] as const,
     statsDetailAll: ['music', 'statsDetail'] as const, // prefix, for invalidation
@@ -567,6 +571,7 @@ export const qk = {
     // so a session or link change refreshes every launcher surface at once.
     playOptions: (mediaId: number) => ['games', 'playOptions', mediaId] as const,
     emulators: ['games', 'emulators'] as const,
+    emulatorIcon: (id: number) => ['games', 'emulatorIcon', id] as const,
     romScan: ['games', 'romScan'] as const,
     emulationStats: ['games', 'emulationStats'] as const,
     // GameBanana: the link is local. The lists and pages are network reads

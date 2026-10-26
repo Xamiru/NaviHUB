@@ -10,7 +10,9 @@ import type {
   MusicArtistDetail,
   MusicLibraryStats,
   MusicLyricMatch,
+  MusicPlaylistAddResult,
   MusicPlaylistDetail,
+  MusicPlaylistMembership,
   MusicPlaylistSummary,
   MusicPlaybackQueue,
   MusicSearchResults,
@@ -638,9 +640,15 @@ export function removePlaylist(id: number): void {
   getSqlite().prepare('DELETE FROM music_playlist WHERE id = ?').run(id)
 }
 
-export function addPlaylistTracks(playlistId: number, trackIds: number[]): void {
-  if (trackIds.length === 0) return
+// Appends in the given order; tracks already in the playlist (manually or as a
+// matched Spotify row) are skipped, and the result says how many of each.
+export function addPlaylistTracks(playlistId: number, trackIds: number[]): MusicPlaylistAddResult {
+  const unique = [...new Set(trackIds)]
+  if (unique.length === 0) return { added: 0, skipped: 0 }
   const db = getSqlite()
+  if (!db.prepare('SELECT 1 FROM music_playlist WHERE id = ?').get(playlistId)) {
+    throw new Error('Playlist not found')
+  }
   const tx = db.transaction(() => {
     let next = (
       db
@@ -658,12 +666,18 @@ export function addPlaylistTracks(playlistId: number, trackIds: number[]): void 
        SELECT ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM music_spotify_playlist_item
          WHERE playlist_id=? AND matched_track_id=?)`
     )
-    for (const trackId of trackIds) {
-      if (ins.run(playlistId, trackId, next, playlistId, trackId).changes > 0) next += 1
+    let added = 0
+    for (const trackId of unique) {
+      if (ins.run(playlistId, trackId, next, playlistId, trackId).changes > 0) {
+        next += 1
+        added += 1
+      }
     }
-    bump(playlistId)
+    if (added > 0) bump(playlistId)
+    return added
   })
-  tx()
+  const added = tx()
+  return { added, skipped: unique.length - added }
 }
 
 export function removePlaylistTrack(itemId: number): void {
@@ -703,21 +717,29 @@ export function reorderPlaylist(playlistId: number, orderedItemIds: number[]): v
   tx(orderedItemIds)
 }
 
-export function playlistsForTrack(
-  trackId: number
-): { id: number; title: string; contains: boolean }[] {
+// Every playlist, A to Z, with how many of the given tracks it already holds
+// (manual rows and matched Spotify rows count once each). Feeds the
+// Add-to-playlist picker for one song or a selection.
+export function playlistsForTracks(trackIds: number[]): MusicPlaylistMembership[] {
+  const ids = JSON.stringify([...new Set(trackIds)])
   return (
     getSqlite()
       .prepare(
-        `SELECT p.id, p.title,
-                EXISTS(SELECT 1 FROM music_playlist_track pt
-                       WHERE pt.playlist_id = p.id AND pt.track_id = ?)
-                OR EXISTS(SELECT 1 FROM music_spotify_playlist_item si
-                          WHERE si.playlist_id = p.id AND si.matched_track_id = ?) AS contains
-         FROM music_playlist p ORDER BY p.updated_at DESC, p.id DESC`
+        `WITH sel(id) AS (SELECT DISTINCT value FROM json_each(?)),
+         hits(playlist_id, track_id) AS (
+           SELECT playlist_id, track_id FROM music_playlist_track
+            WHERE track_id IN (SELECT id FROM sel)
+           UNION
+           SELECT playlist_id, matched_track_id FROM music_spotify_playlist_item
+            WHERE matched_track_id IN (SELECT id FROM sel)
+         )
+         SELECT p.id, p.title, COUNT(h.track_id) AS contains
+         FROM music_playlist p LEFT JOIN hits h ON h.playlist_id = p.id
+         GROUP BY p.id
+         ORDER BY p.title COLLATE NOCASE ASC, p.id ASC`
       )
-      .all(trackId, trackId) as { id: number; title: string; contains: number }[]
-  ).map((r) => ({ id: r.id, title: r.title, contains: !!r.contains }))
+      .all(ids) as { id: number; title: string; contains: number }[]
+  ).map((r) => ({ id: r.id, title: r.title, contains: r.contains }))
 }
 
 // ---- liked + play logging ----

@@ -5,11 +5,12 @@ import type { JpReviewDirection } from './japanese/reviewDirections'
 import type { VnDiscoverFilter, VnDiscoverPage, VnTagResult, VnEditionDetail } from './types'
 import type { VnCaptureInput, VnCapture, VnCaptureSummary } from './types'
 import type { SavedQuote, QuoteFilter, QuoteInput } from './types'
+import type { MusicPlaylistAddResult, MusicPlaylistMembership } from './types'
 import type { WrestlingJourneySummary, WrestlingJourneyInput, WrestlingJourneyDetail, WrestlingJourneyStepInput, WrestlingJourneyTarget } from './types'
 import type { VnReadingOverview, VnReadingNodeInput, VnReadingResume, VnNoteInput, VnNotePage } from './types'
 import type { BangumiCandidate, ExternalLinkSource, GameCastResult, GameLinksState, GameUpgradePlan, GameUpgradeStatus, GameWorkSummary } from './types'
 import type { BookEdition, ChosenBookEdition } from './types'
-import type { MusicLink, MusicLinkCandidates, MusicLinkCreate, MusicLinkOwner, MusicLinkUpdate, SoundtrackOwner } from './types'
+import type { MusicLink, MusicLinkCandidates, MusicLinkCreate, MusicLinkOwner, MusicLinkOwnerCandidate, MusicLinkTarget, MusicLinkTracksInput, MusicLinkTracksResult, MusicLinkUpdate, MusicLinkUsage, SoundtrackOwner } from './types'
 // The typed surface exposed on window.api. Both preload (which implements the
 // bridge) and the renderer (which consumes it) import this so they never drift.
 
@@ -454,6 +455,11 @@ export interface NaviApi {
     reorder(owner: MusicLinkOwner, orderedIds: number[]): Promise<void>
     remove(id: number): Promise<void>
     browse(): Promise<SoundtrackOwner[]>
+    // From the music side: what a song or album is linked to, the titles and
+    // wrestlers it could be linked to, and linking several songs at once.
+    usages(target: MusicLinkTarget): Promise<MusicLinkUsage[]>
+    searchOwners(query: string): Promise<MusicLinkOwnerCandidate[]>
+    linkTracks(input: MusicLinkTracksInput): Promise<MusicLinkTracksResult>
   }
   vnExplore: {
     discover(input: VnDiscoverFilter): Promise<VnDiscoverPage>
@@ -674,7 +680,8 @@ export interface NaviApi {
     // Copies the last emulated session's screenshots into the game's Art tab.
     importSessionShots(sessionId: string): Promise<{ added: number; skipped: number }>
     // "Find game files": folder picker in main, then a polled read-only walk.
-    romScanStart(): Promise<{ id: string } | null>
+    // A console limits the results to that console's files (its console page).
+    romScanStart(platform?: PlatformKey): Promise<{ id: string } | null>
     romScanStatus(): Promise<RomScanStatus | null>
     romScanCancel(): Promise<void>
     romScanAccept(items: { resultId: number; mediaId: number }[]): Promise<RomScanAcceptResult>
@@ -717,7 +724,11 @@ export interface NaviApi {
   // the renderer sends is ever executed as a path.
   emulators: {
     list(): Promise<EmulatorInfo[]>
-    add(): Promise<EmulatorInfo | null>
+    // `platform` is the console it was added from: a custom emulator or RetroArch
+    // takes it on; a known preset keeps its own consoles.
+    add(platform?: PlatformKey): Promise<EmulatorInfo | null>
+    // The program's icon as a data URL; null when the file is missing.
+    icon(id: number): Promise<string | null>
     update(id: number, upd: EmulatorUpdate): Promise<EmulatorInfo>
     remove(id: number): Promise<void>
     // null clears the platform's default.
@@ -1571,7 +1582,7 @@ export interface NaviApi {
       patch: { title?: string; description?: string | null }
     ): Promise<void>
     removePlaylist(id: number): Promise<void>
-    addPlaylistTracks(playlistId: number, trackIds: number[]): Promise<void>
+    addPlaylistTracks(playlistId: number, trackIds: number[]): Promise<MusicPlaylistAddResult>
     removePlaylistTrack(itemId: number): Promise<void>
     removePlaylistTrackByTrack(playlistId: number, trackId: number): Promise<void>
     reorderPlaylist(playlistId: number, orderedItemIds: number[]): Promise<void>
@@ -1607,9 +1618,7 @@ export interface NaviApi {
     spotifyPickCookieFile(): Promise<string | null>
     spotifyTestYouTubeAccess(force?: boolean): Promise<SpotifyYouTubeAccessTestResult>
     spotifyInstallDeno(): Promise<MusicToolsCheck>
-    playlistsForTrack(
-      trackId: number
-    ): Promise<{ id: number; title: string; contains: boolean }[]>
+    playlistsForTracks(trackIds: number[]): Promise<MusicPlaylistMembership[]>
     // liked + play history
     setLiked(trackId: number, liked: boolean): Promise<void>
     logPlay(trackId: number): Promise<void>

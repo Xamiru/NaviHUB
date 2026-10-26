@@ -22,8 +22,8 @@ never-killed session, playtime fold, playthrough capture and achievement watcher
   (not a known emulator) is already linked — a native port keeps Play.
 - **Presets** (`src/shared/emulation/emulatorPresets.ts`, frozen keys) carry each emulator's
   argument list, read from its own argument parser on 2026-10-16. `verified: false` marks lists
-  from community reports (Ryubing, PPSSPP, Xenia Canary, xemu, Flycast); the Emulators page says
-  so and the user can edit the list. A user list is stored as a JSON array with a `{rom}` element —
+  from community reports (Ryubing, PPSSPP, Xenia Canary, xemu, Flycast); the emulator's settings
+  card says so and the user can edit the list. A user list is stored as a JSON array with a `{rom}` element —
   never a string that gets split, never a shell.
 - **Argument safety**: the game file and RetroArch core pass `assertLaunchableExe` (absolute, not
   `-`-leading, no NUL), so neither can be read as an option. `--` appears only where the emulator
@@ -33,7 +33,7 @@ never-killed session, playtime fold, playthrough capture and achievement watcher
   (`detectPreset`). Linking a game file then registers it automatically, the card names it instead
   of calling it native, and offers to unlink the emulator executable.
 - `game_session.via` (`native` | `emu:<preset>`, frozen) and `game_session.platform` record how a
-  session was launched; they feed the Emulators page's playtime-by-console and by-emulator tables.
+  session was launched; they feed the console pages' playtime and the Tools page's by-console and by-emulator tables.
   Rows before 2026-10-16 have NULL. The Steam-emulator achievement check before Play
   (`confirmAchievementLaunch`) runs only for the native executable.
 - Launching stays Windows-only. The laptop cannot run a launch; the PC is where it is verified.
@@ -74,13 +74,54 @@ code once (`games:updateRom`). The PS2 serial is PCSX2's own folder form (`SLUS-
 
 ### Game-folder scan
 
-Emulators → Find game files walks folders the user picks (depth 6, 50,000 files), drops a CUE
+Find game files (on a console page, or on Emulators → Tools for every console) walks folders the user picks (depth 6, 50,000 files), drops a CUE
 sheet's BIN tracks and noisy extensions, reads ids for up to 5,000 files, and matches file names to
 library games by `romScanCore.matchKey` (the catalog `titleKey` with "the" removed anywhere, so
 No-Intro's "Legend of Zelda, The - …" matches). A game with platform tags must share a console.
 Only a unique match is preselected, and only once per game (disc 2 is listed, not chosen).
 Nothing links until the user accepts; the results live in memory and accepting sends result ids,
-never paths. Task kind `romScan`.
+never paths, and links a row only to a game among its own candidates (row ids restart at 1 each
+scan, so the renderer also keys its picks by scan id). Task kind `romScan`. A console page starts
+the scan with its console (`games:romScanStart(platform)`): only that console's matches are kept,
+the status carries the console, and each console page shows its own scan plus any scan still
+running. A file several consoles share (iso, chd) that no header identified defaults to the
+scanned console, but a library game tagged for another console still claims it, and only games
+that can be that console's are offered. On accept the file's own header wins over the scan's
+console.
+
+## The Emulators hub
+
+Games → Emulators (2026-10-26) is organised by **console**, not by emulator: an emulator is
+swappable and Dolphin or RetroArch play several consoles, while a game belongs to one.
+
+- **Hub** (`pages/EmulatorsPage.tsx`): the most recent emulated game in Installed's featured card
+  (`components/games/LaunchCards.tsx`, shared with Installed, including `useGameLauncher`), then a
+  tile per console that an emulator plays or a linked game is for (`lib/emulationHub.ts`
+  `hubConsoles`, most recently played first), then a strip of the remaining consoles. A strip
+  console opens `AddConsoleDialog`: the presets that play it, RetroArch, and the program picker.
+  Emulators with no console yet (a custom program added from the header) are listed with their
+  settings so their consoles can be ticked.
+- **Console page** (`/games/emulators/:platform`, `pages/EmulatorConsolePage.tsx`; an unknown key
+  shows Not found): a banner with the hardware photo, the user's covers and the console's stats;
+  a Games tab (Play on hover, the console-scoped scan) and a Setup tab (the console's default
+  emulator and each emulator's settings card, which notes when its settings also apply to other
+  consoles). Removing the console's last emulator when it has no games leaves through
+  `useLeaveDeleted`.
+- **Tools** (`/games/emulators/tools`): the all-console scan, playtime by console and emulator,
+  mods from removed games, and native ports.
+- **Adding for a console**: `emulators:add(platform)`. A custom program or a preset with no fixed
+  consoles (RetroArch) takes that console on, also when it is already registered; a known preset
+  keeps its own consoles, and the renderer tells the user ("PCSX2 plays PlayStation 2, not Wii")
+  and opens the console it does play. `emulators:icon(id)` returns the program's icon as a data
+  URL (`app.getFileIcon`, cached per id and mtime; a generic icon off Windows, null when missing).
+- **Console art** is bundled: `src/renderer/src/assets/consoles/<key>-tile.webp` (at most 640 x
+  400) and `<key>-banner.webp` (at most 1600 x 1000), transparent cutouts of Wikimedia Commons
+  product photos (mostly Evan-Amos, public domain), read through `lib/consoleArt.ts`. Provenance
+  and licences are in that folder's README; `tests/consoleArt.test.ts` fails when a platform key
+  has no tile, banner or README row, so a new console needs both images.
+- **Known limitation:** a game appears under one console, the console of its preferred (or only)
+  game file (`InstalledGame.platform`). A game with both PS1 and PS2 files is shown only under
+  the preferred one.
 
 ## Native ports and console shelves
 
@@ -88,7 +129,7 @@ never paths. Task kind `romScan`.
 decompilations and recompilations — Ship of Harkinian, 2 Ship 2 Harkinian, Zelda64Recomp, zelda3,
 Dusklight, OpenGOAL, Ghostship, SpaghettiKart, the Perfect Dark port, Starship, Banjo: Recompiled.
 Library titles are matched by `portTitleKey`; the Ways to play card suggests the port until its
-own program is the linked executable, and the Emulators page lists ports for games in the library.
+own program is the linked executable, and Emulators → Tools lists ports for games in the library.
 Update the list by hand when the readonlymemo list moves.
 
 The Installed page's "Group by console" toggle (a localStorage pref, `installed.groupByConsole`)
@@ -164,7 +205,7 @@ waiting for confirmation is cancelled by a new install, or after 30 minutes.
 Disable moves only listed, unchanged files and rolls back if a move fails partway; a file left
 behind because it changed stays listed, and uninstall looks for each listed file in both places.
 A folder name owned by a disabled install is never given to a new one. Installs whose game was
-deleted from the library (`media_id` NULL) are listed on the Emulators page so they can still be
+deleted from the library (`media_id` NULL) are listed on Emulators → Tools so they can still be
 removed. Downloads time out per attempt after ten minutes or the time at 100 KB/s, whichever is
 longer, because the timeout also covers streaming the body. `emulator`, `emulator_default`, `game_rom` and the ledger are machine
 paths, wiped from exports; `sevenzip.path` is machine-local in backups.

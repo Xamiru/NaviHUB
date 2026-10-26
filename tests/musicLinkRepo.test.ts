@@ -187,6 +187,76 @@ describe('anime full versions', () => {
   })
 })
 
+describe('linking from the music side', () => {
+  it('links several tracks at once and skips the ones already linked under that label', () => {
+    const a = track('Shoji Meguro', 'Persona 5 OST', 'Beneath the Mask')
+    const b = track('Shoji Meguro', 'Persona 5 OST', 'Rivers in the Desert')
+    links.create({ owner: { mediaId: 1 }, kind: 'track', trackId: a, label: 'OST' })
+    expect(links.linkTracks({ owner: { mediaId: 1 }, trackIds: [a, b, b], label: 'OST' })).toEqual({
+      added: 1,
+      skipped: 1
+    })
+    expect(links.listForOwner({ mediaId: 1 }).map((l) => [l.tracks[0].title, l.sortOrder])).toEqual([
+      ['Beneath the Mask', 0],
+      ['Rivers in the Desert', 1]
+    ])
+    // A different label is a second, deliberate link.
+    expect(links.linkTracks({ owner: { mediaId: 1 }, trackIds: [a], label: 'Battle' })).toEqual({ added: 1, skipped: 0 })
+  })
+
+  it('takes a theme only for one track, and rolls back the whole batch on a bad one', () => {
+    const t = track('Kessoku Band', 'Kessoku Band', 'Seishun Complex')
+    const other = track('Kessoku Band', 'Kessoku Band', 'Guitar to Kodoku to Aoi Hoshi')
+    const op = theme(2, 'op1')
+    expect(() =>
+      links.linkTracks({ owner: { mediaId: 2 }, trackIds: [t, other], label: '', themeSongId: op })
+    ).toThrow(/Only one track/)
+    expect(() => links.linkTracks({ owner: { mediaId: 1 }, trackIds: [t, 9999], label: '' })).toThrow('Track not found')
+    expect(rawLinks()).toHaveLength(0)
+    links.linkTracks({ owner: { mediaId: 2 }, trackIds: [t], label: 'Opening', themeSongId: op })
+    expect(links.listForOwner({ mediaId: 2 })[0].themeSongId).toBe(op)
+  })
+
+  it('says why a theme link to an already linked track did not take', () => {
+    const t = track('Kessoku Band', 'Kessoku Band', 'Seishun Complex')
+    const op = theme(2, 'op1')
+    links.linkTracks({ owner: { mediaId: 2 }, trackIds: [t], label: '' })
+    expect(() =>
+      links.linkTracks({ owner: { mediaId: 2 }, trackIds: [t], label: '', themeSongId: op })
+    ).toThrow(/already linked here/)
+    expect(links.listForOwner({ mediaId: 2 })[0].themeSongId).toBeNull()
+  })
+
+  it('lists what a track or an album is linked to, including through the album', () => {
+    const t = track('Shoji Meguro', 'Persona 5 OST', 'Last Surprise')
+    const albumId = album('Shoji Meguro', 'Persona 5 OST')
+    links.create({ owner: { mediaId: 1 }, kind: 'album', albumId, label: 'OST' })
+    links.create({ owner: { wrestlerId: 1 }, kind: 'track', trackId: t, label: 'Entrance' })
+    links.create({ owner: { mediaId: 3 }, kind: 'track', trackId: track('Kavinsky', 'Drive', 'Nightcall'), label: '' })
+
+    expect(links.usages({ trackId: t }).map((u) => [u.ownerTitle, u.mediaType, u.label, u.viaAlbum])).toEqual([
+      ['Persona 5', 'game', 'OST', true],
+      ['Stone Cold', null, 'Entrance', false]
+    ])
+    expect(links.usages({ albumId })).toEqual([
+      expect.objectContaining({ ownerTitle: 'Persona 5', mediaId: 1, kind: 'album', viaAlbum: false })
+    ])
+  })
+
+  it('searches library titles and wrestlers to link to', () => {
+    db.prepare(`UPDATE media_item SET release_date = '2016-09-15' WHERE id = 1`).run()
+    db.prepare(`INSERT INTO wrestling_wrestler (id, name, real_name, debut_year) VALUES (2, 'The Rock', 'Dwayne Johnson', 1996)`).run()
+    expect(links.searchOwners('Persona')).toEqual([
+      { mediaId: 1, wrestlerId: null, mediaType: 'game', title: 'Persona 5', year: 2016, coverPath: null }
+    ])
+    expect(links.searchOwners('dwayne')).toEqual([
+      { mediaId: null, wrestlerId: 2, mediaType: null, title: 'The Rock', year: 1996, coverPath: null }
+    ])
+    expect(links.searchOwners('Dr').map((o) => o.title)).toEqual(['Drive'])
+    expect(links.searchOwners('  ')).toEqual([])
+  })
+})
+
 describe('deletion', () => {
   it('cascades with the title and the wrestler', () => {
     const t = track('A', 'B', 'C')

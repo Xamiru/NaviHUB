@@ -11,7 +11,8 @@
 // Adaptations (2026-10-05): the game-canon CG films/series are anime rows
 // (AniList) with story-order slots; the live-action films and the Netflix
 // series are a separate continuity, so they carry no chrono and sink below
-// the story order. Ids from AniList and TMDB.
+// the story order. The canon manga The Marhawa Desire (added 2026-10-26)
+// shares 6's slot, set in 2012 just before it. Ids from AniList and TMDB.
 
 import type { FranchiseCfg } from './types'
 
@@ -191,6 +192,18 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       spinOff: true,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/222480/library_hero.jpg',
       note: 'Between 4 and 5, at sea'
+    },
+    {
+      id: 're-marhawa-desire',
+      title: 'Resident Evil: The Marhawa Desire',
+      mediaType: 'manga',
+      aliases: ['Biohazard: Marhawa Desire', 'Resident Evil: Marhawa Desire'],
+      externalIds: [{ source: 'anilist', id: '62315' }],
+      year: 2012,
+      releaseDate: '2012-02-23',
+      chrono: 10,
+      mc: 65,
+      note: 'Capcom-supervised canon manga: Chris and the BSAA at an elite Asian school in 2012, leading into 6'
     },
     {
       id: 're-film-retribution',

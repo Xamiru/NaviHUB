@@ -46,6 +46,8 @@ const SeasonalAnimePage = lazy(() => import('./pages/SeasonalAnimePage'))
 const InstalledGamesPage = lazy(() => import('./pages/InstalledGamesPage'))
 const LinkedVideoPage = lazy(() => import('./pages/LinkedVideoPage'))
 const EmulatorsPage = lazy(() => import('./pages/EmulatorsPage'))
+const EmulatorConsolePage = lazy(() => import('./pages/EmulatorConsolePage'))
+const EmulatorToolsPage = lazy(() => import('./pages/EmulatorToolsPage'))
 const FranchisesPage = lazy(() => import('./pages/FranchisesPage'))
 const VnDiscoverPage = lazy(() => import('./pages/VnDiscoverPage'))
 const VnEditionPage = lazy(() => import('./pages/VnEditionPage'))
@@ -357,6 +359,8 @@ export default function App() {
             <Route path="/games/installed" element={<InstalledGamesPage />} />
             <Route path="/games/achievements" element={<AchievementsPage />} />
             <Route path="/games/emulators" element={<EmulatorsPage />} />
+            <Route path="/games/emulators/tools" element={<EmulatorToolsPage />} />
+            <Route path="/games/emulators/:platform" element={<EmulatorConsolePage />} />
             {/* Franchises moved to /franchises when they went cross-media; the
                 old game-only and guide URLs redirect (guide ids became franchise ids). */}
             <Route path="/games/franchises" element={<Navigate to="/franchises" replace />} />

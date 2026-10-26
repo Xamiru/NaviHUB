@@ -1,15 +1,18 @@
 // Psycho-Pass — Production I.G's original anime: three TV seasons, the 2015
 // film, the Sinners of the System film trilogy, the First Inspector finale to
-// season three and the 2023 film Providence. Chrono follows in-universe time:
-// First Guardian (Sugo and Masaoka before the series) is slot 1; the seasons
-// and the 2015 film follow in order; Sinners of the System's first and third
-// cases share the slot after the film; Providence, which fills the gap
+// season three and the 2023 film Providence; the original prequel manga
+// Inspector Shinya Kogami; and the manga adaptations of the anime. Chrono
+// follows in-universe time: the Kogami manga (his years as an inspector) is
+// slot 1; First Guardian (Sugo and Masaoka before the series) is 2; the
+// seasons and the 2015 film follow in order; Sinners of the System's first and
+// third cases share the slot after the film; Providence, which fills the gap
 // before season three, comes next; then season three and First Inspector,
-// its conclusion. Route is release order, with First Guardian as an optional
-// detour. Excluded: the manga and novel adaptations (the anime is the
-// original), the spin-off and parody manga, and the games.
-// Ids, dates and scores from AniList; art from AniList, curl-verified
-// 2026-10-14.
+// its conclusion. Each manga adaptation shares its anime's slot. Route is
+// release order of the anime, with First Guardian as an optional detour; the
+// manga sit outside it. Excluded: the novels, the parody manga Gakuen
+// Psycho-Pass, and the games.
+// Ids, dates and scores from AniList (manga checked 2026-10-26); art from
+// AniList, curl-verified 2026-10-14.
 
 import type { FranchiseCfg } from './types'
 
@@ -45,10 +48,35 @@ export const PSYCHO_PASS: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '13601' }],
       year: 2012,
       releaseDate: '2012-10-12',
-      chrono: 2,
+      chrono: 3,
       route: 1,
       mc: 81,
       note: 'Rookie inspector Akane Tsunemori joins Division One as a string of crimes slips past Sibyl’s scanners'
+    },
+    {
+      id: 'pp-manga-akane',
+      title: 'Psycho-Pass: Inspector Akane Tsunemori',
+      mediaType: 'manga',
+      aliases: ['Psycho-Pass: Kanshikan Tsunemori Akane'],
+      externalIds: [{ source: 'anilist', id: '74933' }],
+      year: 2012,
+      releaseDate: '2012-11-02',
+      chrono: 3,
+      adaptation: true,
+      mc: 76,
+      note: 'Six-volume manga of the first season, drawn by Hikaru Miyoshi'
+    },
+    {
+      id: 'pp-manga-kogami',
+      title: 'Psycho-Pass: Inspector Shinya Kogami',
+      mediaType: 'manga',
+      aliases: ['Psycho-Pass: Kanshikan Kougami Shinya'],
+      externalIds: [{ source: 'anilist', id: '85411' }],
+      year: 2014,
+      releaseDate: '2014-06-30',
+      chrono: 1,
+      mc: 71,
+      note: 'Original prequel manga: Kogami as an inspector, before the case that made him an Enforcer'
     },
     {
       id: 'pp-s2',
@@ -57,10 +85,22 @@ export const PSYCHO_PASS: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '20513' }],
       year: 2014,
       releaseDate: '2014-10-10',
-      chrono: 3,
+      chrono: 4,
       route: 2,
       mc: 71,
       note: 'A year and a half later, Akane faces a criminal Sibyl cannot see at all'
+    },
+    {
+      id: 'pp-manga-s2',
+      title: 'Psycho-Pass 2',
+      mediaType: 'manga',
+      externalIds: [{ source: 'anilist', id: '102887' }],
+      year: 2014,
+      releaseDate: '2014-11-05',
+      chrono: 4,
+      adaptation: true,
+      mc: 68,
+      note: 'Five-volume manga of the second season, drawn by Saru Hashino'
     },
     {
       id: 'pp-movie',
@@ -70,7 +110,7 @@ export const PSYCHO_PASS: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '20514' }],
       year: 2015,
       releaseDate: '2015-01-09',
-      chrono: 4,
+      chrono: 5,
       route: 3,
       mc: 75,
       note: 'Sibyl’s system is exported abroad, and Akane follows a trail that leads to Kogami'
@@ -83,10 +123,21 @@ export const PSYCHO_PASS: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '102649' }],
       year: 2019,
       releaseDate: '2019-01-25',
-      chrono: 5,
+      chrono: 6,
       route: 4,
       mc: 70,
       note: 'Case 1: Inspector Shimotsuki and Enforcer Ginoza investigate a closed town'
+    },
+    {
+      id: 'pp-manga-sots',
+      title: 'Psycho-Pass: Sinners of the System',
+      mediaType: 'manga',
+      externalIds: [{ source: 'anilist', id: '105321' }],
+      year: 2019,
+      releaseDate: '2019-01-25',
+      chrono: 6,
+      adaptation: true,
+      note: 'Three-volume manga of the film trilogy, drawn by Natsuo Sai'
     },
     {
       id: 'pp-sots-2',
@@ -96,7 +147,7 @@ export const PSYCHO_PASS: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '104382' }],
       year: 2019,
       releaseDate: '2019-02-15',
-      chrono: 1,
+      chrono: 2,
       route: 5,
       optional: true,
       mc: 73,
@@ -110,7 +161,7 @@ export const PSYCHO_PASS: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '104990' }],
       year: 2019,
       releaseDate: '2019-03-08',
-      chrono: 5,
+      chrono: 6,
       route: 6,
       mc: 76,
       note: 'Case 3: Kogami, still a fugitive abroad, is caught up in a war in South Asia'
@@ -122,10 +173,21 @@ export const PSYCHO_PASS: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '108307' }],
       year: 2019,
       releaseDate: '2019-10-24',
-      chrono: 7,
+      chrono: 8,
       route: 7,
       mc: 73,
       note: 'New inspectors Arata Shindo and Kei Mikhail Ignatov take over a changing Division One'
+    },
+    {
+      id: 'pp-manga-s3',
+      title: 'Psycho-Pass 3',
+      mediaType: 'manga',
+      externalIds: [{ source: 'anilist', id: '112289' }],
+      year: 2019,
+      releaseDate: '2019-10-26',
+      chrono: 8,
+      adaptation: true,
+      note: 'Four-volume manga of the third season, drawn by Saru Hashino'
     },
     {
       id: 'pp-first-inspector',
@@ -134,10 +196,21 @@ export const PSYCHO_PASS: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '113917' }],
       year: 2020,
       releaseDate: '2020-03-27',
-      chrono: 8,
+      chrono: 9,
       route: 8,
       mc: 77,
       note: 'The three-part conclusion to season three'
+    },
+    {
+      id: 'pp-manga-first-inspector',
+      title: 'Psycho-Pass 3: First Inspector',
+      mediaType: 'manga',
+      externalIds: [{ source: 'anilist', id: '140907' }],
+      year: 2021,
+      releaseDate: '2021-10-30',
+      chrono: 9,
+      adaptation: true,
+      note: 'Two-volume manga of First Inspector, with two extra chapters'
     },
     {
       id: 'pp-providence',
@@ -147,7 +220,7 @@ export const PSYCHO_PASS: FranchiseCfg = {
       externalIds: [{ source: 'anilist', id: '153687' }],
       year: 2023,
       releaseDate: '2023-05-12',
-      chrono: 6,
+      chrono: 7,
       route: 9,
       mc: 76,
       note: 'Film filling the gap before season three, with Akane, Kogami and the Ministry of Foreign Affairs'

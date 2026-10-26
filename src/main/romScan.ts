@@ -9,7 +9,9 @@ import { dropCueTracks, matchScan, SCAN_SKIP_EXTENSIONS, type LibraryGame, type 
 import type { RomIdentity } from './romIdentity'
 import {
   ALL_GAME_EXTENSIONS,
+  PLATFORMS,
   fileExtension,
+  isPlatformKey,
   platformFromName,
   platformsForExtension,
   type PlatformKey
@@ -34,6 +36,8 @@ interface Job {
   found: number
   message: string | null
   cancelled: boolean
+  // The console a console page's scan is limited to; null scans for every console.
+  platform: PlatformKey | null
   results: Array<RomScanStatus['results'][number] & { path: string; identity: RomIdentity | null }>
 }
 
@@ -48,6 +52,7 @@ export function status(): RomScanStatus | null {
     scanned: job.scanned,
     found: job.found,
     message: job.message,
+    platform: job.platform,
     // Paths stay in main; the renderer shows the file and folder names.
     results: job.results.map(({ path: _path, identity: _identity, ...row }) => row)
   }
@@ -134,6 +139,8 @@ async function run(j: Job, roots: string[]): Promise<void> {
     if (j.cancelled) break
     const ext = fileExtension(path)
     let platforms = platformsForExtension(ext)
+    // A console page's scan skips files no header could make that console's.
+    if (j.platform && !platforms.includes(j.platform)) continue
     let gameCode: string | null = null
     if (IDENTIFY_EXTENSIONS.has(ext) && identified < MAX_IDENTIFIED) {
       identified += 1
@@ -143,6 +150,12 @@ async function run(j: Job, roots: string[]): Promise<void> {
         gameCode = identity.code
         if (identity.platform) platforms = [identity.platform]
       }
+    }
+    if (j.platform) {
+      if (!platforms.includes(j.platform)) continue
+      // A shared extension (iso, chd) defaults to the console being scanned,
+      // while a library game tagged for another console still claims its file.
+      platforms = [j.platform, ...platforms.filter((p) => p !== j.platform)]
     }
     files.push({ path, fileName: path.split(/[\\/]/).pop() ?? path, platforms, gameCode })
     j.found = files.length
@@ -154,22 +167,34 @@ async function run(j: Job, roots: string[]): Promise<void> {
   }
   const games = libraryGames()
   const titleOf = new Map(games.map((g) => [g.mediaId, g.title]))
-  j.results = matchScan(files, games).map((m, i) => ({
-    id: i + 1,
-    path: m.file.path,
-    identity: identities.has(m.file.path) ? identities.get(m.file.path) ?? null : null,
-    fileName: m.file.fileName,
-    folder: m.file.path.slice(0, m.file.path.length - m.file.fileName.length),
-    platform: m.platform,
-    gameCode: m.file.gameCode,
-    candidates: m.candidates.map((mediaId) => ({ mediaId, title: titleOf.get(mediaId) ?? '' })),
-    suggestedMediaId: m.suggested,
-    alreadyLinked: m.alreadyLinked
-  }))
+  // A console page's scan offers only games that can be that console's.
+  const fitsScan = new Set(
+    games
+      .filter((g) => j.platform == null || g.platforms.length === 0 || g.platforms.includes(j.platform))
+      .map((g) => g.mediaId)
+  )
+  const matches = matchScan(files, games).filter((m) => j.platform == null || m.platform === j.platform)
+  j.results = matches.map((m, i) => {
+    const candidates = m.candidates.filter((id) => fitsScan.has(id))
+    return {
+      id: i + 1,
+      path: m.file.path,
+      identity: identities.has(m.file.path) ? identities.get(m.file.path) ?? null : null,
+      fileName: m.file.fileName,
+      folder: m.file.path.slice(0, m.file.path.length - m.file.fileName.length),
+      platform: m.platform,
+      gameCode: m.file.gameCode,
+      candidates: candidates.map((mediaId) => ({ mediaId, title: titleOf.get(mediaId) ?? '' })),
+      suggestedMediaId: m.suggested != null && candidates.includes(m.suggested) ? m.suggested : null,
+      alreadyLinked: m.alreadyLinked
+    }
+  })
   j.state = 'done'
 }
 
-export async function start(): Promise<{ id: string } | null> {
+export async function start(forPlatform?: unknown): Promise<{ id: string } | null> {
+  if (forPlatform != null && !isPlatformKey(forPlatform)) throw new Error('Unknown console')
+  const platform = forPlatform == null ? null : (forPlatform as PlatformKey)
   if (job?.state === 'scanning') throw new Error('A game folder scan is already running.')
   const res = await dialog.showOpenDialog({
     title: 'Folders with your game files',
@@ -184,13 +209,14 @@ export async function start(): Promise<{ id: string } | null> {
     found: 0,
     message: null,
     cancelled: false,
+    platform,
     results: []
   }
   job = j
   tasks.create({
     kind: 'romScan',
-    label: 'Find game files',
-    route: '/games/emulators',
+    label: platform ? `Find ${PLATFORMS[platform].short} game files` : 'Find game files',
+    route: platform ? `/games/emulators/${platform}` : '/games/emulators/tools',
     controls: { cancel: () => cancel(), pauseNote: 'A folder scan cannot be paused' },
     project: () => {
       if (job?.id !== j.id) return null
@@ -217,6 +243,12 @@ export async function accept(items: { resultId: number; mediaId: number }[]): Pr
   for (const item of Array.isArray(items) ? items : []) {
     const row = byId.get(item?.resultId)
     if (!row || !Number.isInteger(item.mediaId)) continue
+    // Only a game the row offered: a pick left over from another scan's row
+    // with the same id must not link this file.
+    if (!row.candidates.some((c) => c.mediaId === item.mediaId)) {
+      failed.push(`${row.fileName}: that game is not one of its matches`)
+      continue
+    }
     try {
       // The scan already read the header; files it did not read are read now.
       const rom = await emulation.linkRom(
@@ -224,7 +256,11 @@ export async function accept(items: { resultId: number; mediaId: number }[]): Pr
         row.path,
         row.identity || !IDENTIFY_EXTENSIONS.has(fileExtension(row.path)) ? { identity: row.identity } : undefined
       )
-      if (rom.platform !== row.platform) emulation.updateRom(rom.id, { platform: row.platform })
+      // The file's own header wins; the scan's console only settles a file
+      // no header identified (a console page's iso or chd).
+      if (rom.gameCodeSource !== 'file' && rom.platform !== row.platform) {
+        emulation.updateRom(rom.id, { platform: row.platform })
+      }
       row.alreadyLinked = true
       row.suggestedMediaId = null
       linked += 1

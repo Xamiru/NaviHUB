@@ -1,7 +1,7 @@
 import MusicTrackPersonalDialog from './MusicTrackPersonalDialog'
 import { useCallback, useEffect, useId, useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePlayerControls } from '../lib/player'
@@ -17,6 +17,8 @@ import ContextMenu, { type ContextMenuItem } from './ContextMenu'
 import { contextMenuPoint } from '../lib/contextMenuPoint'
 import { useLeaveEmptiedPage, useTrackSelection } from './music/TrackListScope'
 import ArtistCredit from './music/ArtistCredit'
+import PlaylistPicker, { useQuickAddToPlaylist } from './music/PlaylistPicker'
+import LinkToTitleDialog from './music/LinkToTitleDialog'
 
 export function formatDuration(seconds: number | null): string {
   if (seconds == null || !Number.isFinite(seconds)) return '–:––'
@@ -35,7 +37,7 @@ export function formatLongDuration(seconds: number): string {
 // One track row, used by every music list (album, liked, history, search,
 // playlists). The page owns the queue context: onPlay should start playback
 // with the page's full track list at this row's position. The overflow menu
-// carries the queue actions and the add-to-playlist toggles.
+// carries the queue actions and opens the shared playlist picker.
 export default function MusicTrackRow({
   track,
   index,
@@ -67,10 +69,12 @@ export default function MusicTrackRow({
   const selection = useTrackSelection()
   const selected = selection?.isSelected(track.id) ?? false
   const isCurrent = player.track?.id === musicTrackId(track)
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState<TrackMenuView | null>(null)
   const [tagsOpen, setTagsOpen] = useState(false)
+  const [linkOpen, setLinkOpen] = useState(false)
   const [contextAt, setContextAt] = useState<{ x: number; y: number } | null>(null)
   const closeContext = useCallback(() => setContextAt(null), [])
+  const quickAdd = useQuickAddToPlaylist(contextAt != null)
   const deleteFromDisk = useDeleteFromDisk(track)
   const artist = track.tagArtist ?? track.artistName
   const showArtist = artist !== hideArtist
@@ -110,11 +114,15 @@ export default function MusicTrackRow({
     { label: 'Play', onSelect: onPlay },
     { label: 'Play next', onSelect: () => player.enqueue([musicTrackToPlayerTrack(track)], { next: true }) },
     { label: 'Add to queue', onSelect: () => player.enqueue([musicTrackToPlayerTrack(track)]) },
-    { label: 'Add to playlist…', onSelect: () => setMenuOpen(true) },
+    { label: 'Add to playlist…', onSelect: () => setMenuOpen('playlists') },
+    ...(quickAdd.last
+      ? [{ label: `Add to “${quickAdd.last.title}”`, onSelect: () => void quickAdd.add([track.id]) }]
+      : []),
     ...menuItems,
     ...(selection
       ? [{ label: selected ? 'Deselect' : 'Select', onSelect: () => selection.toggle(track.id) }]
       : []),
+    { label: 'Link to title…', onSelect: () => setLinkOpen(true) },
     ...goTo('Go to artist', `/music/artists/${track.artistId}`),
     ...goTo('Go to album', `/music/albums/${track.albumId}`),
     { label: 'Tags and standout track…', onSelect: () => setTagsOpen(true) },
@@ -129,6 +137,14 @@ export default function MusicTrackRow({
         selected ? 'bg-accent/15 ring-1 ring-inset ring-accent/40' : isCurrent ? 'bg-accent/10' : ''
       }`}
       onContextMenu={(e) => {
+        // A right-click in this row's dialogs or text fields keeps the native
+        // menu. React bubbles events out of portals, and the unportaled
+        // dialogs and the playlist search sit in the row.
+        const target = e.target as Element
+        if (!e.currentTarget.contains(target)) return
+        if (target.closest('input, textarea, select, [contenteditable="true"]')) return
+        const dialog = target.closest('[role="dialog"]')
+        if (dialog && e.currentTarget.contains(dialog)) return
         e.preventDefault()
         setContextAt(contextMenuPoint(e))
       }}
@@ -210,11 +226,18 @@ export default function MusicTrackRow({
         open={menuOpen}
         setOpen={setMenuOpen}
         onTags={() => setTagsOpen(true)}
+        onLink={() => setLinkOpen(true)}
         onDelete={deleteFromDisk}
         onRemove={onRemove}
         menuItems={menuItems}
       />
       {tagsOpen && <MusicTrackPersonalDialog track={track} onClose={() => setTagsOpen(false)} />}
+      {linkOpen && (
+        <LinkToTitleDialog
+          subject={{ kind: 'tracks', trackIds: [track.id], title: track.title }}
+          onClose={() => setLinkOpen(false)}
+        />
+      )}
       {contextAt && (
         <ContextMenu x={contextAt.x} y={contextAt.y} items={contextItems} onClose={closeContext} />
       )}
@@ -246,60 +269,50 @@ function useDeleteFromDisk(track: MusicTrack): () => Promise<void> {
   }
 }
 
+type TrackMenuView = 'actions' | 'playlists'
+
 function TrackMenu({
   track,
   open,
   setOpen,
   onTags,
+  onLink,
   onDelete,
   onRemove,
   menuItems
 }: {
   track: MusicTrack
-  open: boolean
-  setOpen: (open: boolean | ((v: boolean) => boolean)) => void
+  open: TrackMenuView | null
+  setOpen: (open: TrackMenuView | null | ((v: TrackMenuView | null) => TrackMenuView | null)) => void
   onTags: () => void
+  onLink: () => void
   onDelete: () => Promise<void>
   onRemove?: () => void
   menuItems: { label: string; onSelect: () => void }[]
 }) {
-  const qc = useQueryClient()
   const player = usePlayerControls()
   const { pathname } = useLocation()
-  const [newTitle, setNewTitle] = useState('')
   const triggerId = useId()
   const panelId = useId()
-  const { panelRef, triggerRef } = usePopover(open, () => setOpen(false), {
+  const { panelRef, triggerRef } = usePopover(open != null, () => setOpen(null), {
     initialFocus: 'first'
   })
-
-  const { data: playlists = [] } = useQuery({
-    queryKey: qk.music.playlistsForTrack(track.id),
-    queryFn: () => api.music.playlistsForTrack(track.id),
-    enabled: open
-  })
-  // A menu opened on a low row would otherwise hang below the window.
+  // A menu opened on a low row would otherwise hang below the window. The
+  // playlist view grows once its list loads, so it is kept in view as it does.
   useEffect(() => {
-    if (open) panelRef.current?.scrollIntoView({ block: 'nearest' })
-  }, [open, panelRef, playlists.length])
+    const panel = panelRef.current
+    if (!open || !panel) return
+    panel.scrollIntoView({ block: 'nearest' })
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(() => panel.scrollIntoView({ block: 'nearest' }))
+    observer.observe(panel)
+    return () => observer.disconnect()
+  }, [open, panelRef])
 
-  function refreshPlaylists(): void {
-    qc.invalidateQueries({ queryKey: qk.music.all })
-  }
-
-  async function togglePlaylist(playlistId: number, contains: boolean): Promise<void> {
-    if (contains) await api.music.removePlaylistTrackByTrack(playlistId, track.id)
-    else await api.music.addPlaylistTracks(playlistId, [track.id])
-    refreshPlaylists()
-  }
-
-  async function createAndAdd(): Promise<void> {
-    const title = newTitle.trim()
-    if (!title) return
-    const playlistId = await api.music.createPlaylist({ title })
-    await api.music.addPlaylistTracks(playlistId, [track.id])
-    setNewTitle('')
-    refreshPlaylists()
+  const item = 'block w-full rounded px-1 py-1.5 text-left text-sm hover:bg-base-700'
+  const act = (fn: () => void) => () => {
+    setOpen(null)
+    fn()
   }
 
   return (
@@ -310,9 +323,9 @@ function TrackMenu({
         className={`px-1 text-gray-500 transition-opacity hover:text-white ${open ? '' : 'opacity-60 group-hover:opacity-100 focus-visible:opacity-100'}`}
         title="More"
         aria-label={`More actions for ${track.title}`}
-        aria-expanded={open}
+        aria-expanded={open != null}
         aria-controls={open ? panelId : undefined}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen((v) => (v ? null : 'actions'))}
       >
         ⋯
       </button>
@@ -320,128 +333,72 @@ function TrackMenu({
         <div
           id={panelId}
           ref={panelRef}
-          className="absolute right-0 z-30 mt-1 w-60 rounded-md border border-base-500 bg-base-800 p-2 shadow-lg"
+          className={`absolute right-0 z-30 mt-1 rounded-md border border-base-500 bg-base-800 p-2 shadow-lg ${
+            open === 'playlists' ? 'w-72' : 'w-60'
+          }`}
           role="region"
           aria-labelledby={triggerId}
         >
-          {menuItems.map((item) => (
-            <button
-              key={item.label}
-              className="block w-full rounded px-1 py-1.5 text-left text-sm hover:bg-base-700"
-              onClick={() => {
-                setOpen(false)
-                item.onSelect()
-              }}
-            >
-              {item.label}
-            </button>
-          ))}
-          {menuItems.length > 0 && <div className="my-1 border-t border-base-600" />}
-          <button
-            className="block w-full rounded px-1 py-1.5 text-left text-sm hover:bg-base-700"
-            onClick={() => {
-              player.enqueue([musicTrackToPlayerTrack(track)], { next: true })
-              setOpen(false)
-            }}
-          >
-            <NextIcon className="mr-1 inline align-[-0.1em]" /> Play next
-          </button>
-          <button
-            className="block w-full rounded px-1 py-1.5 text-left text-sm hover:bg-base-700"
-            onClick={() => {
-              player.enqueue([musicTrackToPlayerTrack(track)])
-              setOpen(false)
-            }}
-          >
-            Add to queue
-          </button>
-          {pathname !== `/music/artists/${track.artistId}` && (
-            <Link
-              className="block rounded px-1 py-1.5 text-sm hover:bg-base-700"
-              to={`/music/artists/${track.artistId}`}
-              onClick={() => setOpen(false)}
-            >
-              Go to artist
-            </Link>
-          )}
-          {pathname !== `/music/albums/${track.albumId}` && (
-            <Link
-              className="block rounded px-1 py-1.5 text-sm hover:bg-base-700"
-              to={`/music/albums/${track.albumId}`}
-              onClick={() => setOpen(false)}
-            >
-              Go to album
-            </Link>
-          )}
-          <button className="block w-full rounded px-1 py-1.5 text-left text-sm hover:bg-base-700" onClick={() => { setOpen(false); onTags() }}>
-            Tags and standout track
-          </button>
-          {onRemove && (
-            <button
-              className="block w-full rounded px-1 py-1.5 text-left text-sm hover:bg-base-700"
-              onClick={() => {
-                onRemove()
-                setOpen(false)
-              }}
-            >
-              Remove from this playlist
-            </button>
-          )}
-          <div className="my-1 border-t border-base-600" />
-          <button
-            className="block w-full rounded px-1 py-1.5 text-left text-sm text-red-400 hover:bg-base-700"
-            onClick={() => {
-              setOpen(false)
-              void onDelete()
-            }}
-          >
-            Delete from computer
-          </button>
-          <div className="mt-1 border-t border-base-700 pt-1">
-            <div className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
-              Playlists
-            </div>
-            <div className="max-h-40 overflow-y-auto">
-              {playlists.length === 0 && (
-                <p className="px-1 py-1 text-xs text-gray-500">No playlists yet.</p>
-              )}
-              {playlists.map((p) => (
-                <button
-                  key={p.id}
-                  className="flex w-full items-center gap-2 rounded px-1 py-1.5 text-left text-sm hover:bg-base-700"
-                  onClick={() => togglePlaylist(p.id, p.contains)}
-                >
-                  <span
-                    className={`w-4 text-center ${p.contains ? 'text-accent' : 'text-gray-600'}`}
-                  >
-                    {p.contains ? '✓' : '○'}
-                  </span>
-                  <span className="truncate">{p.title}</span>
+          {open === 'playlists' ? (
+            <PlaylistPicker trackIds={[track.id]} />
+          ) : (
+            <>
+              {menuItems.map((m) => (
+                <button key={m.label} className={item} onClick={act(m.onSelect)}>
+                  {m.label}
                 </button>
               ))}
-            </div>
-            <div className="mt-1 flex gap-1 border-t border-base-700 pt-2">
-              <input
-                className="input py-1 text-sm"
-                placeholder="New playlist…"
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    void createAndAdd()
-                  }
-                }}
-              />
+              {menuItems.length > 0 && <div className="my-1 border-t border-base-600" />}
               <button
-                className="btn-primary px-2 py-1 text-sm"
-                disabled={!newTitle.trim()}
-                onClick={createAndAdd}
+                className={item}
+                onClick={act(() => player.enqueue([musicTrackToPlayerTrack(track)], { next: true }))}
               >
-                Add
+                <NextIcon className="mr-1 inline align-[-0.1em]" /> Play next
               </button>
-            </div>
-          </div>
+              <button className={item} onClick={act(() => player.enqueue([musicTrackToPlayerTrack(track)]))}>
+                Add to queue
+              </button>
+              <button className={item} onClick={() => setOpen('playlists')}>
+                Add to playlist…
+              </button>
+              <button className={item} onClick={act(onLink)}>
+                Link to title…
+              </button>
+              {pathname !== `/music/artists/${track.artistId}` && (
+                <Link
+                  className="block rounded px-1 py-1.5 text-sm hover:bg-base-700"
+                  to={`/music/artists/${track.artistId}`}
+                  onClick={() => setOpen(null)}
+                >
+                  Go to artist
+                </Link>
+              )}
+              {pathname !== `/music/albums/${track.albumId}` && (
+                <Link
+                  className="block rounded px-1 py-1.5 text-sm hover:bg-base-700"
+                  to={`/music/albums/${track.albumId}`}
+                  onClick={() => setOpen(null)}
+                >
+                  Go to album
+                </Link>
+              )}
+              <button className={item} onClick={act(onTags)}>
+                Tags and standout track
+              </button>
+              {onRemove && (
+                <button className={item} onClick={act(onRemove)}>
+                  Remove from this playlist
+                </button>
+              )}
+              <div className="my-1 border-t border-base-600" />
+              <button
+                className={`${item} text-red-400`}
+                onClick={act(() => void onDelete())}
+              >
+                Delete from computer
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

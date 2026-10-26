@@ -228,8 +228,10 @@ describe('playlists', () => {
     const t3 = seedTrack({ title: 'Three', path: 'p3' })
 
     const id = musicRepo.createPlaylist({ title: 'Mix' })
-    musicRepo.addPlaylistTracks(id, [t1, t2])
-    musicRepo.addPlaylistTracks(id, [t2, t3]) // t2 is a dupe -> ignored
+    expect(musicRepo.addPlaylistTracks(id, [t1, t2])).toEqual({ added: 2, skipped: 0 })
+    // t2 is a dupe -> skipped and counted; a repeated id counts once
+    expect(musicRepo.addPlaylistTracks(id, [t2, t3, t3])).toEqual({ added: 1, skipped: 1 })
+    expect(() => musicRepo.addPlaylistTracks(999, [t1])).toThrow('Playlist not found')
 
     let detail = musicRepo.getPlaylist(id)!
     expect(detail.items.map((i) => i.track.title)).toEqual(['One', 'Two', 'Three'])
@@ -250,14 +252,22 @@ describe('playlists', () => {
     expect(db.prepare('SELECT COUNT(*) AS n FROM music_playlist_track').get()).toEqual({ n: 0 })
   })
 
-  it('playlistsForTrack reports containment for the toggle menu', () => {
+  it('playlistsForTracks counts how many of the songs each playlist holds, A to Z', () => {
     const t1 = seedTrack({ title: 'One', path: 'p1' })
-    const a = musicRepo.createPlaylist({ title: 'A' })
-    musicRepo.createPlaylist({ title: 'B' })
+    const t2 = seedTrack({ title: 'Two', path: 'p2' })
+    const b = musicRepo.createPlaylist({ title: 'b mix' })
+    const a = musicRepo.createPlaylist({ title: 'A mix' })
+    const c = musicRepo.createPlaylist({ title: 'C mix' })
     musicRepo.addPlaylistTracks(a, [t1])
-    const rows = musicRepo.playlistsForTrack(t1)
-    expect(rows.find((r) => r.id === a)?.contains).toBe(true)
-    expect(rows.filter((r) => r.contains)).toHaveLength(1)
+    musicRepo.addPlaylistTracks(c, [t1, t2])
+    // A later add must not reorder the picker (it sorts by title, not recency).
+    musicRepo.addPlaylistTracks(b, [t2])
+    expect(musicRepo.playlistsForTracks([t1])).toEqual([
+      { id: a, title: 'A mix', contains: 1 },
+      { id: b, title: 'b mix', contains: 0 },
+      { id: c, title: 'C mix', contains: 1 }
+    ])
+    expect(musicRepo.playlistsForTracks([t1, t2, t2]).map((r) => r.contains)).toEqual([1, 1, 2])
   })
 
   it('deleting a track cascades out of playlists', () => {
@@ -1018,12 +1028,12 @@ describe('music audit regressions', () => {
   it('uses source membership for add/remove toggles and prevents double additions', () => {
     const local = seedTrack({})
     const { playlistId } = playlistWith(local)
-    expect(musicRepo.playlistsForTrack(local)).toContainEqual(expect.objectContaining({ id: playlistId, contains: true }))
-    musicRepo.addPlaylistTracks(playlistId, [local])
+    expect(musicRepo.playlistsForTracks([local])).toContainEqual(expect.objectContaining({ id: playlistId, contains: 1 }))
+    expect(musicRepo.addPlaylistTracks(playlistId, [local])).toEqual({ added: 0, skipped: 1 })
     expect(musicRepo.getPlaylist(playlistId)!.items).toHaveLength(1)
     musicRepo.removePlaylistTrackByTrack(playlistId, local)
     expect(musicRepo.getPlaylist(playlistId)!.items).toHaveLength(0)
-    expect(musicRepo.playlistsForTrack(local)[0].contains).toBe(false)
+    expect(musicRepo.playlistsForTracks([local])[0].contains).toBe(0)
   })
 
   it('excludes rejected candidates from local alternatives while permitting retry', () => {

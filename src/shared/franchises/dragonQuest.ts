@@ -6,8 +6,8 @@
 // worlds; the Erdrick trilogy runs III -> I -> II and the Zenithian trilogy
 // VI -> IV -> V, and both are noted on the rows.
 // All art URLs curl-verified 2026-08-15.
-// Adaptations (2026-10-05): the Abel and Dai anime and the Your Story film. Ids
-// from AniList/TMDB.
+// Adaptations (2026-10-05): the Abel and Dai anime and the Your Story film,
+// plus (2026-10-26) the Dai manga those anime adapt. Ids from AniList/TMDB.
 
 import type { FranchiseCfg } from './types'
 
@@ -37,6 +37,18 @@ export const DRAGON_QUEST: FranchiseCfg = {
     { id: 'dq-1', title: 'Dragon Quest', aliases: ['Dragon Warrior', 'Dragon Quest I'], year: 1986, bgUrl: 'https://static.wikia.nocookie.net/dragonquest/images/3/37/GvkNOEeWcAALZEG.jpg/revision/latest?cb=20250716154202', note: 'Erdrick trilogy — the one hero' },
     { id: 'dq-2', title: 'Dragon Quest II: Luminaries of the Legendary Line', aliases: ['Dragon Quest II', 'Dragon Warrior II'], year: 1987, bgUrl: 'https://dragon-quest.org/w/images/a/a7/Dragon-Quest-II-japanese-box-art.jpg', note: 'Erdrick trilogy — a party of three' },
     { id: 'dq-3', title: 'Dragon Quest III: The Seeds of Salvation', aliases: ['Dragon Quest III', 'Dragon Warrior III'], year: 1988, bgUrl: 'https://dragon-quest.org/w/images/4/4e/DQIII_Famicom_Box_%28Front_Side%29.jpg', note: 'Erdrick trilogy — the prequel that started the legend' },
+    {
+      id: 'dq-manga-dai',
+      title: 'Dragon Quest: The Adventure of Dai',
+      mediaType: 'manga',
+      aliases: ['Dragon Quest: Dai no Daibouken'],
+      externalIds: [{ source: 'anilist', id: '30871' }],
+      year: 1989,
+      releaseDate: '1989-10-10',
+      spinOff: true,
+      mc: 77,
+      note: 'Riku Sanjo and Koji Inada’s 37-volume Jump manga, supervised by Yuji Horii; the source of both Dai anime'
+    },
     {
       id: 'dq-anime-abel',
       title: 'Dragon Quest: Abel Yuusha Densetsu',

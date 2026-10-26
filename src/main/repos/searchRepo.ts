@@ -1,7 +1,7 @@
 import { getSqlite } from '../db/connection'
 import { logWarn } from '../logBus'
 import { mapMedia, mapPerson, mapCompany, mapCharacter } from './mappers'
-import type { GlobalSearchResults } from '@shared/types'
+import type { GlobalSearchResults, MediaItem } from '@shared/types'
 
 // History's content is a lazily loaded in-memory catalog, not a table, so it
 // joins the library results here through a cached dynamic import rather than
@@ -21,6 +21,27 @@ export async function globalAll(query: string): Promise<GlobalSearchResults> {
   }
 }
 
+// Library titles matching a search, best first — the media half of global
+// search, shared with the song-side Link to title dialog.
+export function searchMediaItems(query: string, limit = 20): MediaItem[] {
+  const term = query.trim()
+  if (!term) return []
+  // FTS5's trigram tokenizer indexes contains-search once the query has three
+  // characters. Short queries retain LIKE, escaped so % and _ are literal.
+  const useFts = [...term].length >= 3
+  const like = `%${term.replace(/[\\%_]/g, '\\$&')}%`
+  const sql = useFts
+    ? `SELECT m.* FROM global_search_fts
+       JOIN media_item m ON m.id = global_search_fts.entity_id
+       WHERE global_search_fts MATCH ? AND kind = 'media'
+       ORDER BY bm25(global_search_fts), m.title LIMIT ?`
+    : `SELECT * FROM media_item
+       WHERE title LIKE ? ESCAPE '\\' OR title_original LIKE ? ESCAPE '\\'
+       ORDER BY title LIMIT ?`
+  const params = useFts ? [`"${term.replaceAll('"', '""')}"`] : [like, like]
+  return getSqlite().prepare(sql).all(...params, limit).map(mapMedia)
+}
+
 // One query per entity, capped — feeds the global search dropdown / page.
 export function global(query: string): GlobalSearchResults {
   const db = getSqlite()
@@ -33,14 +54,6 @@ export function global(query: string): GlobalSearchResults {
   const useFts = [...term].length >= 3
   const match = `"${term.replaceAll('"', '""')}"`
   const q = `%${term.replace(/[\\%_]/g, '\\$&')}%`
-  const mediaSql = useFts
-    ? `SELECT m.* FROM global_search_fts
-       JOIN media_item m ON m.id = global_search_fts.entity_id
-       WHERE global_search_fts MATCH ? AND kind = 'media'
-       ORDER BY bm25(global_search_fts), m.title LIMIT 20`
-    : `SELECT * FROM media_item
-       WHERE title LIKE ? ESCAPE '\\' OR title_original LIKE ? ESCAPE '\\'
-       ORDER BY title LIMIT 20`
   const entitySql = (kind: 'person' | 'company' | 'character', table: string): string =>
     useFts
       ? `SELECT e.* FROM global_search_fts
@@ -53,10 +66,7 @@ export function global(query: string): GlobalSearchResults {
   const params = useFts ? [match] : [q, q]
 
   return {
-    media: db
-      .prepare(mediaSql)
-      .all(...params)
-      .map(mapMedia),
+    media: searchMediaItems(term),
     people: db
       .prepare(entitySql('person', 'person'))
       .all(...params)

@@ -15,7 +15,9 @@
 // in-universe order per the series' own numbering scheme — Birth by Sleep is
 // "0", so it opens the story, and 0.2 is placed directly before Kingdom Hearts
 // III, matching its ending (Aqua's rescue) and the 2.8 collection's own
-// positioning as KH3's immediate lead-in.
+// positioning as KH3's immediate lead-in. Shiro Amano's manga of KH, Chain
+// of Memories, KH2 and 358/2 Days (added 2026-10-26, AniList ids) share their
+// game's slot and sit outside the route.
 // Ids and dates from Wikipedia and the Steam store; no anime adaptations exist
 // for this franchise, so character art is from the Kingdom Hearts Wiki
 // (Fandom) — no Steam, AniList or Wikimedia Commons source carries official
@@ -58,6 +60,18 @@ export const KINGDOM_HEARTS: FranchiseCfg = {
       note: 'Sora, Riku and Kairi, the Destiny Islands, and the first Keyblade'
     },
     {
+      id: 'kh-1-manga',
+      title: 'Kingdom Hearts',
+      mediaType: 'manga',
+      externalIds: [{ source: 'anilist', id: '30396' }],
+      year: 2003,
+      releaseDate: '2003-10-01',
+      chrono: 2,
+      adaptation: true,
+      mc: 69,
+      note: 'Shiro Amano’s four-volume manga of the first game'
+    },
+    {
       id: 'kh-com',
       title: 'Kingdom Hearts: Chain of Memories',
       aliases: ['Kingdom Hearts Re:Chain of Memories'],
@@ -67,6 +81,18 @@ export const KINGDOM_HEARTS: FranchiseCfg = {
       chrono: 3,
       route: 2,
       note: 'Castle Oblivion erases memories with every floor Sora climbs'
+    },
+    {
+      id: 'kh-com-manga',
+      title: 'Kingdom Hearts: Chain of Memories',
+      mediaType: 'manga',
+      externalIds: [{ source: 'anilist', id: '30397' }],
+      year: 2005,
+      releaseDate: '2005-10-22',
+      chrono: 3,
+      adaptation: true,
+      mc: 69,
+      note: 'Shiro Amano’s two-volume manga of Chain of Memories'
     },
     {
       id: 'kh-2',
@@ -80,6 +106,18 @@ export const KINGDOM_HEARTS: FranchiseCfg = {
       note: 'A year asleep later, Organization XIII and Roxas'
     },
     {
+      id: 'kh-2-manga',
+      title: 'Kingdom Hearts II',
+      mediaType: 'manga',
+      externalIds: [{ source: 'anilist', id: '30398' }],
+      year: 2006,
+      releaseDate: '2006-12-22',
+      chrono: 5,
+      adaptation: true,
+      mc: 74,
+      note: 'Shiro Amano’s ten-volume manga of Kingdom Hearts II'
+    },
+    {
       id: 'kh-358',
       title: 'Kingdom Hearts 358/2 Days',
       externalIds: [{ source: 'steam', id: '2552430' }],
@@ -88,6 +126,18 @@ export const KINGDOM_HEARTS: FranchiseCfg = {
       chrono: 4,
       route: 4,
       note: 'Roxas\'s 358 days in Organization XIII, concurrent with Sora\'s sleep'
+    },
+    {
+      id: 'kh-358-manga',
+      title: 'Kingdom Hearts 358/2 Days',
+      mediaType: 'manga',
+      externalIds: [{ source: 'anilist', id: '45104' }],
+      year: 2009,
+      releaseDate: '2009-05-30',
+      chrono: 4,
+      adaptation: true,
+      mc: 78,
+      note: 'Shiro Amano’s five-volume manga of 358/2 Days'
     },
     {
       id: 'kh-bbs',

@@ -3,7 +3,8 @@
 // Kanon (1999) to anemoi (2026), the Toei, Kyoto Animation, J.C.Staff, Eight
 // Bit, David Production and Feel adaptations, and the three original P.A.
 // Works series written by Jun Maeda (Angel Beats!, Charlotte, The Day I Became
-// a God). Enhanced and all-ages editions (Little Busters! Ecstasy and its
+// a God), plus Maeda's Angel Beats! prequel manga Heaven's Door (added
+// 2026-10-26). Enhanced and all-ages editions (Little Busters! Ecstasy and its
 // Converted/English editions, planetarian HD, Harmonia Full HD
 // Edition, Summer Pockets Reflection Blue) are ALIASES of their base novel,
 // the Persona rule. No chrono column: each title is a separate story.
@@ -205,6 +206,17 @@ export const KEY_VISUAL_ARTS: FranchiseCfg = {
       year: 2010,
       releaseDate: '2010-04-03',
       note: 'Amnesiac Otonashi joins the Afterlife Battlefront against Angel at an afterlife school'
+    },
+    {
+      id: 'key-angel-beats-heavens-door',
+      title: 'Angel Beats!: Heaven’s Door',
+      mediaType: 'manga',
+      externalIds: [{ source: 'anilist', id: '49671' }],
+      year: 2010,
+      releaseDate: '2010-05-30',
+      spinOff: true,
+      mc: 75,
+      note: 'Jun Maeda’s prequel manga: Yuri founds the Afterlife Battlefront, before Otonashi arrives'
     },
     {
       id: 'key-kud-wafter',
