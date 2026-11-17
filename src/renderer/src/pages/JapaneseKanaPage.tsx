@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import PageHeader from '../components/PageHeader'
 import Section from '../components/Section'
 import Tabs, { TabPanel } from '../components/Tabs'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -20,6 +20,8 @@ import NumbersDrillSetup from '../components/japanese/NumbersDrill'
 import NamesDrillSetup from '../components/japanese/NamesDrill'
 import KeigoDrillSetup from '../components/japanese/KeigoDrill'
 import type { JpCard } from '@shared/types'
+import { KANA_SCRIPT_GROUPS, KANA_UNITS, kanaUnitByKey, type KanaUnit } from '@shared/japanese/kanaLessons'
+import StrokeOrderDiagram from '../components/japanese/StrokeOrderDiagram'
 
 // Kana & kanji reading drill, modeled on the DJT kana practice tool: pick the
 // sets you want, get flashed a character, type the romaji (or kana, for kanji
@@ -246,8 +248,8 @@ function KanaDrill({
 
 // ---- page ----
 
-type Tab = 'kana' | 'kanji' | 'conjugation' | 'numbers' | 'names' | 'keigo'
-const TAB_KEYS: Tab[] = ['kana', 'kanji', 'conjugation', 'numbers', 'names', 'keigo']
+type Tab = 'learn' | 'kana' | 'kanji' | 'conjugation' | 'numbers' | 'names' | 'keigo'
+const TAB_KEYS: Tab[] = ['learn', 'kana', 'kanji', 'conjugation', 'numbers', 'names', 'keigo']
 
 export default function JapaneseKanaPage() {
   // ?tab= seeds the persisted tab so hub cards can deep-link a specific drill.
@@ -257,6 +259,14 @@ export default function JapaneseKanaPage() {
     'jpDrillTab',
     seeded && TAB_KEYS.includes(seeded) ? seeded : 'kana'
   )
+  // A lesson's "Drill this row" hands its rows to the kana drill, which starts
+  // a round on them once and then clears the request.
+  const [drillRows, setDrillRows] = useState<string[] | null>(null)
+
+  function drill(rows: string[]): void {
+    setDrillRows(rows)
+    setTab('kana')
+  }
 
   return (
     <div className="p-6 max-w-[1320px] mx-auto">
@@ -272,6 +282,7 @@ export default function JapaneseKanaPage() {
         value={tab}
         onChange={setTab}
         tabs={[
+          { key: 'learn', label: 'Learn' },
           { key: 'kana', label: 'Kana' },
           { key: 'kanji', label: 'Kanji readings' },
           { key: 'conjugation', label: 'Conjugation' },
@@ -282,8 +293,10 @@ export default function JapaneseKanaPage() {
       />
 
       <TabPanel tabsId="japanese-typing" value={tab}>
-        {tab === 'kana' ? (
-          <KanaDrillSetup />
+        {tab === 'learn' ? (
+          <KanaLearn onDrill={drill} />
+        ) : tab === 'kana' ? (
+          <KanaDrillSetup startRows={drillRows} onStarted={() => setDrillRows(null)} />
         ) : tab === 'kanji' ? (
           <KanjiDrillSetup />
         ) : tab === 'conjugation' ? (
@@ -303,7 +316,16 @@ export default function JapaneseKanaPage() {
 // Conjugation Dojo: pick target forms, get "word → form", type the conjugated
 // result (kana or romaji). Words are curated; the engine is @shared/conjugate.
 function DojoSetup() {
-  const [forms, setForms] = usePersistedState<ConjForm[]>('jpDojoForms', ['te', 'past', 'negative'])
+  // ?form=te,past seeds the forms, so a lesson's "Practice this" link opens
+  // the drill on what it just taught (@shared/japanese/lessonPractice.ts).
+  const [params] = useSearchParams()
+  const linked = (params.get('form') ?? '')
+    .split(',')
+    .filter((f): f is ConjForm => (DOJO_FORMS as readonly string[]).includes(f))
+  const [forms, setForms] = usePersistedState<ConjForm[]>(
+    'jpDojoForms',
+    linked.length ? linked : ['te', 'past', 'negative']
+  )
   const [length, setLength] = usePersistedState<number>('jpDojoLength', 20)
   const [running, setRunning] = useState(false)
 
@@ -398,17 +420,38 @@ function DojoSetup() {
   )
 }
 
-function KanaDrillSetup() {
+function rowChars(keys: string[]): string[] {
+  const set = new Set(keys)
+  return SECTIONS.flatMap((s) => s.rows)
+    .filter((r) => set.has(r.key))
+    .flatMap((r) => r.kana)
+}
+
+function KanaDrillSetup({
+  startRows = null,
+  onStarted
+}: {
+  /** Rows a lesson asked to drill: selected and started once on mount. */
+  startRows?: string[] | null
+  onStarted?: () => void
+}) {
   const [selected, setSelected] = usePersistedState<string[]>('jpKanaRows', ['a', 'ka'])
   const [round, setRound] = usePersistedState<number>('jpKanaRound', 20)
   // Characters for the running round: the selected rows, or just the misses.
-  const [running, setRunning] = useState<string[] | null>(null)
+  const [running, setRunning] = useState<string[] | null>(() =>
+    startRows && startRows.length > 0 ? rowChars(startRows) : null
+  )
   const [runId, setRunId] = useState(0)
 
+  useEffect(() => {
+    if (!startRows) return
+    setSelected(startRows)
+    onStarted?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const selectedSet = new Set(selected)
-  const chars = SECTIONS.flatMap((s) => s.rows)
-    .filter((r) => selectedSet.has(r.key))
-    .flatMap((r) => r.kana)
+  const chars = rowChars(selected)
 
   function toggle(key: string): void {
     setSelected(
@@ -519,6 +562,124 @@ function KanaDrillSetup() {
     >
       <QuizRecord kind="kana" />
     </SessionLauncher>
+  )
+}
+
+// ---- kana lessons (@shared/japanese/kanaLessons.ts) ----
+
+function KanaLearn({ onDrill }: { onDrill: (rows: string[]) => void }) {
+  const [openKey, setOpenKey] = usePersistedState<string | null>('jpKanaLesson', null)
+  const unit = kanaUnitByKey(openKey)
+  if (unit) return <KanaUnitView unit={unit} onBack={() => setOpenKey(null)} onDrill={onDrill} />
+
+  return (
+    <div>
+      <p className="mb-5 max-w-3xl text-sm text-gray-400">
+        One unit per row: the shapes with a memory aid, the look-alikes to tell apart and real
+        words to read. Read a unit, then drill its row until reading it is automatic.
+      </p>
+      {KANA_SCRIPT_GROUPS.map((group) => (
+        <Section key={group.script} title={group.title} className="mb-6">
+          <ul className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2">
+            {KANA_UNITS.filter((u) => u.script === group.script).map((u) => (
+              <li key={u.key}>
+                <button
+                  type="button"
+                  className="card block h-full w-full p-3 text-left hover:text-accent"
+                  onClick={() => setOpenKey(u.key)}
+                >
+                  <span lang="ja" className="block text-2xl text-white">
+                    {u.label}
+                  </span>
+                  <span className="mt-1 block text-sm text-gray-300">{u.title}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ))}
+    </div>
+  )
+}
+
+function KanaUnitView({
+  unit,
+  onBack,
+  onDrill
+}: {
+  unit: KanaUnit
+  onBack: () => void
+  onDrill: (rows: string[]) => void
+}) {
+  return (
+    <div>
+      <button type="button" className="btn-ghost mb-4" onClick={onBack}>
+        ← All units
+      </button>
+      <h2 className="text-xl font-semibold text-white">{unit.title}</h2>
+      <p className="mt-2 max-w-3xl text-sm text-gray-300">{unit.intro}</p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {unit.rows.length > 0 && (
+          <button type="button" className="btn-primary" onClick={() => onDrill(unit.rows)}>
+            {unit.rows.length === 1 ? 'Drill this row' : 'Drill these rows'}
+          </button>
+        )}
+        {unit.script === 'katakana' && (
+          <Link to="/japanese/loanwords" className="btn-ghost">
+            Practice loanwords
+          </Link>
+        )}
+      </div>
+
+      <Section title="Characters" className="mt-6 mb-6">
+        <ul aria-label="Characters" className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3">
+          {unit.chars.map((ch) => (
+            <li key={ch.kana} className="card flex items-start gap-3 p-3">
+              <span lang="ja" className="w-16 shrink-0 text-center text-5xl leading-none text-white">
+                {ch.kana}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-gray-200">{ch.romaji}</p>
+                {ch.hook && <p className="mt-1 text-xs text-gray-400">{ch.hook}</p>}
+              </div>
+              {[...ch.kana].length === 1 && ch.kana !== 'ー' && (
+                <StrokeOrderDiagram char={ch.kana} size={64} />
+              )}
+            </li>
+          ))}
+        </ul>
+      </Section>
+
+      {unit.lookAlikes.length > 0 && (
+        <Section title="Look-alikes" className="mb-6">
+          <ul className="grid gap-2">
+            {unit.lookAlikes.map((l) => (
+              <li key={l.kana.join('/')} className="card flex items-start gap-4 p-3">
+                <span lang="ja" className="shrink-0 text-2xl text-white">
+                  {l.kana.join(' / ')}
+                </span>
+                <p className="text-sm text-gray-300">{l.tell}</p>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+
+      <Section title="Words to read" className="mb-6">
+        <ul aria-label="Words to read" className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
+          {unit.words.map((wd) => (
+            <li key={wd.word} className="card p-3">
+              <span lang="ja" className="block text-2xl text-white">
+                {wd.word}
+              </span>
+              <span className="mt-1 block text-xs text-gray-400">
+                {wd.romaji} · {wd.meaning}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </Section>
+    </div>
   )
 }
 

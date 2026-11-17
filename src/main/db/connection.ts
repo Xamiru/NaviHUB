@@ -371,6 +371,9 @@ export function runMigrations(sqlite: Database.Database): string[] {
   // 2026-10-16: how each play session was launched (native or an emulator).
   ensureColumn(sqlite, 'game_session', 'via', 'via TEXT')
   ensureColumn(sqlite, 'game_session', 'platform', 'platform TEXT')
+  // kindle_send (2026-11-17) gained its device column the same day; a library
+  // that opened the first shape gets it here.
+  ensureColumn(sqlite, 'kindle_send', 'device', 'device TEXT')
   dropNotNull(
     sqlite,
     'wrestling_match',

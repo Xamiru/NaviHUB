@@ -5,6 +5,7 @@ import type { JpReviewDirection } from './japanese/reviewDirections'
 import type { VnDiscoverFilter, VnDiscoverPage, VnTagResult, VnEditionDetail } from './types'
 import type { VnCaptureInput, VnCapture, VnCaptureSummary } from './types'
 import type { SavedQuote, QuoteFilter, QuoteInput } from './types'
+import type { KindleApplySelection, KindleBookReading, KindleBookRequest, KindleImportPreview, KindleImportResult, KindleMadeBook, KindleSendItem, KindleSendPreview, KindleSendStatus, KindleStatus, KindleUndoResult, KindleUnfinishedResult, KindleUnfinishedSend } from './types'
 import type { MusicPlaylistAddResult, MusicPlaylistMembership } from './types'
 import type { WrestlingJourneySummary, WrestlingJourneyInput, WrestlingJourneyDetail, WrestlingJourneyStepInput, WrestlingJourneyTarget } from './types'
 import type { VnReadingOverview, VnReadingNodeInput, VnReadingResume, VnNoteInput, VnNotePage } from './types'
@@ -277,6 +278,7 @@ import type {
   JpListeningItem,
   JpListeningRequest,
   JpLessonQuizPool,
+  JpMarkKnownResult,
   JpQuizItem,
   JpQuizScope,
   PrepDeckStatus,
@@ -293,6 +295,7 @@ import type {
   JpLeech,
   JpRoadmap,
   JpBuiltInStatus,
+  JpBuiltInHeldBack,
   JpVoiceInfo,
   JpStats,
   JpJlptLadder,
@@ -813,6 +816,36 @@ export interface NaviApi {
     setFavorite(id: number, favorite: boolean): Promise<void>
     remove(id: number): Promise<void>
   }
+  kindle: {
+    // The Kindle (KOReader) bridge. Every call starts from a user action:
+    // check() detects the device and reads it (read-only, with a snapshot);
+    // status() reports the last check without touching the device.
+    status(): Promise<KindleStatus>
+    check(): Promise<KindleStatus>
+    preview(): Promise<KindleImportPreview>
+    apply(selection: KindleApplySelection): Promise<KindleImportResult>
+    undoLastImport(): Promise<KindleUndoResult>
+    link(md5: string, mediaId: number): Promise<void>
+    unlink(md5: string): Promise<void>
+    // A manga series folder on the device, linked as a whole to a library manga.
+    linkSeries(seriesKey: string, mediaId: number): Promise<void>
+    unlinkSeries(seriesKey: string): Promise<void>
+    bookReading(mediaId: number): Promise<KindleBookReading>
+    // EPUBs NaviHUB makes for the Kindle (local files; nothing is sent).
+    // Send to Kindle: books into documents/NaviHUB/ on a connected Kindle.
+    // sendPreview reads only; send starts a task and returns at once, and
+    // sendStatus is polled while it runs.
+    sendPreview(items: KindleSendItem[]): Promise<KindleSendPreview>
+    send(items: KindleSendItem[]): Promise<KindleSendStatus>
+    sendStatus(): Promise<KindleSendStatus>
+    // Uploads that may have left a partial file; resolveUnfinished checks one
+    // on the device and removes it only if it is not the complete file.
+    unfinishedSends(): Promise<KindleUnfinishedSend[]>
+    resolveUnfinished(id: number): Promise<KindleUnfinishedResult>
+    makeBook(request: KindleBookRequest): Promise<KindleMadeBook>
+    madeBooks(): Promise<KindleMadeBook[]>
+    revealMadeBook(fileName: string): Promise<void>
+  }
   tierLists: {
     // TierMaker-style boards over the same ListKinds as lists. The picker flow
     // is the UniversalPicker; items land in the pool and are dragged onto rows.
@@ -1188,6 +1221,12 @@ export interface NaviApi {
     updateLesson(id: number, patch: { title?: string; body?: string | null }): Promise<void>
     removeLesson(id: number): Promise<void>
     setLessonLearned(id: number, learned: boolean): Promise<void>
+    // The fast lane (@shared/japanese/fastLane.ts): a still-new card, or every
+    // new card of a lesson (which is also marked learned), goes straight to
+    // review due in 14-28 days. No review-log row, so the daily new-card
+    // budget is untouched.
+    markCardKnown(cardId: number): Promise<JpMarkKnownResult>
+    markLessonKnown(lessonId: number): Promise<JpMarkKnownResult>
     createCard(lessonId: number, input: JpCardInput): Promise<number>
     updateCard(id: number, patch: Partial<JpCardInput>): Promise<void>
     removeCard(id: number): Promise<void>
@@ -1225,6 +1264,8 @@ export interface NaviApi {
     // Every grammar lesson in the learner's courses, in path order.
     grammarIndex(): Promise<JpGrammarIndexEntry[]>
     builtInStatus(): Promise<JpBuiltInStatus>
+    // Plain counts of what the key backfill held back (no hashing; Today banner).
+    builtInHeldBack(): Promise<JpBuiltInHeldBack>
     // Offline voice (Open JTalk): a cached ttscache/ clip for text, or null
     // when the voice pack is missing or the text has nothing to say. `reading`
     // holds the engine to the reading the card or entry shows.

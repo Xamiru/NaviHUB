@@ -36,6 +36,9 @@ import * as themeRepo from './repos/themeRepo'
 import * as tournamentRepo from './repos/tournamentRepo'
 import * as listRepo from './repos/listRepo'
 import * as quoteRepo from './repos/quoteRepo'
+import * as kindleRepo from './repos/kindleRepo'
+import * as kindle from './kindle/kindle'
+import * as kindleSend from './kindle/kindleSend'
 import * as tierListRepo from './repos/tierListRepo'
 import * as checklistRepo from './repos/checklistRepo'
 import * as japaneseRepo from './repos/japaneseRepo'
@@ -317,8 +320,9 @@ export function registerIpc(): void {
       const today = todayLocal()
       const { newlyWatched, undos } = tvRepo.setSeasonWatched(mediaId, season, watched, today)
       // noRewatch: a season toggle back-fills a catalogue, so it must not wrap
-      // an already-finished show into a fresh pass. Ticking ONE episode by hand
-      // still does — that is a deliberate "I just watched this".
+      // an already-finished show into a fresh pass. A single tick holds a
+      // finished show too unless the user has set it back to the in-progress
+      // status (logEpisodeProgress's keepStatus).
       for (const episodeId of newlyWatched) {
         const undo = checklistRepo.logEpisodeProgress(mediaId, today, { noRewatch: true })
         tvRepo.setProgressUndo(episodeId, undo)
@@ -549,6 +553,30 @@ export function registerIpc(): void {
   ipcMain.handle('quotes:setFavorite', (_e, id, favorite) => quoteRepo.setFavorite(id, favorite))
   ipcMain.handle('quotes:remove', (_e, id) => quoteRepo.remove(id))
 
+  // ---- kindle (KOReader bridge) ----
+  // Eager like index.ts, which imports it for the before-quit killer.
+  ipcMain.handle('kindle:status', () => kindle.status())
+  ipcMain.handle('kindle:check', () => kindle.check())
+  ipcMain.handle('kindle:preview', () => kindle.preview())
+  ipcMain.handle('kindle:apply', (_e, selection) => kindle.apply(selection))
+  ipcMain.handle('kindle:undoLastImport', () => kindle.undoLastImport())
+  ipcMain.handle('kindle:link', (_e, md5, mediaId) => kindle.link(md5, mediaId))
+  ipcMain.handle('kindle:unlink', (_e, md5) => kindle.unlink(md5))
+  ipcMain.handle('kindle:linkSeries', (_e, key, mediaId) => kindle.linkSeries(key, mediaId))
+  ipcMain.handle('kindle:unlinkSeries', (_e, key) => kindle.unlinkSeries(key))
+  ipcMain.handle('kindle:bookReading', (_e, mediaId) => kindleRepo.bookReading(mediaId))
+  ipcMain.handle('kindle:sendPreview', (_e, items) => kindleSend.preview(items))
+  ipcMain.handle('kindle:send', (_e, items) => kindleSend.start(items))
+  ipcMain.handle('kindle:sendStatus', () => kindleSend.status())
+  ipcMain.handle('kindle:unfinishedSends', () => kindleSend.unfinished())
+  ipcMain.handle('kindle:resolveUnfinished', (_e, id) => kindleSend.resolveUnfinished(id))
+  // Lazy: the graded-reading content loads only when a book is made.
+  ipcMain.handle('kindle:makeBook', async (_e, request) => (await import('./kindle/kindleBooks')).makeBook(request))
+  ipcMain.handle('kindle:madeBooks', async () => (await import('./kindle/kindleBooks')).listBooks())
+  ipcMain.handle('kindle:revealMadeBook', async (_e, fileName) =>
+    (await import('./kindle/kindleBooks')).revealBook(fileName)
+  )
+
   // ---- tierlists (TierMaker-style boards) ----
   ipcMain.handle('tierLists:list', (_e, kind) => tierListRepo.list(kind))
   ipcMain.handle('tierLists:get', (_e, id) => tierListRepo.get(id))
@@ -617,6 +645,8 @@ export function registerIpc(): void {
   ipcMain.handle('japanese:setLessonLearned', seeded((_e, id, learned) =>
     japaneseRepo.setLessonLearned(id, learned)
   ))
+  ipcMain.handle('japanese:markCardKnown', seeded((_e, cardId) => japaneseRepo.markCardKnown(cardId)))
+  ipcMain.handle('japanese:markLessonKnown', seeded((_e, lessonId) => japaneseRepo.markLessonKnown(lessonId)))
   ipcMain.handle('japanese:createCard', seeded((_e, lessonId, input) =>
     japaneseRepo.createCard(lessonId, input)
   ))
@@ -649,6 +679,7 @@ export function registerIpc(): void {
   ipcMain.handle('japanese:installVoice', async () => (await loadTts()).installVoice())
   ipcMain.handle('japanese:removeVoice', async () => (await loadTts()).removeVoice())
   ipcMain.handle('japanese:builtInStatus', () => japaneseSeedLoader.builtInStatus())
+  ipcMain.handle('japanese:builtInHeldBack', () => japaneseSeedLoader.builtInHeldBack())
   ipcMain.handle('japanese:restoreBuiltIn', () => japaneseSeedLoader.restoreBuiltIn())
   ipcMain.handle('japanese:listLeeches', seeded(() => japaneseRepo.listLeeches()))
   ipcMain.handle('japanese:resetCard', seeded((_e, id) => japaneseRepo.resetCard(id)))

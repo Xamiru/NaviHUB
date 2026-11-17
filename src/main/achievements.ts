@@ -9,7 +9,7 @@ import * as settingsRepo from './repos/settingsRepo'
 import * as links from './repos/externalLinkRepo'
 import * as achievementRepo from './repos/achievementRepo'
 import { search as steamSearch } from './steam'
-import { goldbergState } from './goldbergInstall'
+import { goldbergState, isGoldbergFile } from './goldbergInstall'
 import {
   emuStateOf,
   exeDirOf,
@@ -167,7 +167,8 @@ async function loadSteamSchema(
   // nothing; reading it back would launder old guesses into "the game's own
   // files". The release's original, kept as a backup, is still a real source.
   const fio = io ?? nodeFileIO
-  let local = findLocalSteamSchema(exeDir, fio)
+  // The Goldberg verdict reads the real disk, so it pairs only with the real io.
+  let local = findLocalSteamSchema(exeDir, fio, fio === nodeFileIO ? isGoldbergFile : undefined)
   if (local) {
     if (fio.exists(joinUnder(local.dir, GOLDBERG_MANIFEST))) {
       const backup = joinUnder(local.dir, `achievements.json${GOLDBERG_BACKUP_SUFFIX}`)

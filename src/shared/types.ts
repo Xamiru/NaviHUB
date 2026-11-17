@@ -1902,9 +1902,11 @@ export interface AchievementEmuImport {
 
 // What one-click Goldberg setup sees in a game folder (achievements:goldbergState).
 export interface GoldbergState {
-  // The folder holding the game's steam_api64.dll / steam_api.dll.
+  // The folder holding the emulator's DLL: the game's steam_api64.dll /
+  // steam_api.dll, or a Goldberg loader beside Valve's (version.dll,
+  // steamclient64.dll, ...; emuScan.LOADER_DLLS).
   gameDir: string | null
-  dllName: 'steam_api64.dll' | 'steam_api.dll' | null
+  dllName: string | null
   // 'goldberg': that DLL is Goldberg/GSE. 'other': some other crack or the
   // real Steam DLL, which must be swapped first. 'none': no DLL was found.
   emulator: 'goldberg' | 'other' | 'none'
@@ -2381,6 +2383,15 @@ export interface JpLesson {
   sortOrder: number
   learned: boolean
   learnedAt: string | null
+  // The frozen built-in key (`n5.07`), or null for the user's own lessons.
+  // The lesson page's "Practice this" links read it (@shared/japanese/lessonPractice.ts).
+  seedKey: string | null
+}
+
+// The fast lane (@shared/japanese/fastLane.ts): how many new cards a
+// japanese:markCardKnown / markLessonKnown call took out of the new pile.
+export interface JpMarkKnownResult {
+  marked: number
 }
 
 export interface JpLessonSummary extends JpLesson {
@@ -2515,6 +2526,15 @@ export interface JpBuiltInStatus {
   // the course after this library seeded it). The user's later deletions are
   // not counted: those stay deleted.
   missing: number
+}
+
+// What the one-time key backfill held back, by plain counts (no hashing), for
+// the Today banner: a deliberate later edit never shows up here.
+export interface JpBuiltInHeldBack {
+  // Backfill tombstones: built-in lessons/cards missing when keys were assigned.
+  missing: number
+  // Built-in rows the backfill could not trust (older text, or a pre-key edit).
+  older: number
 }
 
 // A deck track beside the course path (@shared/japanese/pathTracks.ts):
@@ -3499,7 +3519,12 @@ export interface VideoAudioTrack {
   lang: string | null
   codec: string
   channels: number | null
+  // The track the decode gate judged (Japanese first, then the file's default);
+  // the player selects it when the user has no saved choice for the show.
   isDefault: boolean
+  // False when the player can never decode this codec here (DTS, or AC3 on
+  // Linux): the audio menu greys it out and points at the system player.
+  playable: boolean
 }
 
 export interface VideoSource {
@@ -4395,6 +4420,8 @@ export type TaskKind =
   | 'gamesUpgrade'
   | 'romScan'
   | 'modInstall'
+  | 'kindleScan'
+  | 'kindleSend'
   | 'wrestlingImport'
   | 'footballSync'
   | 'musicDownload'
@@ -6919,4 +6946,237 @@ export interface QuoteInput {
   favorite?: boolean
   origin?: QuoteOrigin
   themes?: string[]
+}
+
+// ---- Kindle (KOReader) — /books/kindle ----
+
+// How NaviHUB reached the device: a mounted folder (Linux gvfs MTP mount, a
+// mass-storage Kindle, or a folder the user copied by hand) or the Windows
+// shell bridge.
+export type KindleTransport = 'filesystem' | 'windows'
+export type KoReaderStatus = 'reading' | 'complete' | 'abandoned'
+// How a device book is tied to a library book: copied by Send to Kindle, or
+// linked by hand. Frozen: stored in kindle_book.origin.
+export type KindleBookOrigin = 'sent' | 'linked'
+
+export interface KindleDeviceInfo {
+  label: string
+  transport: KindleTransport
+  // The storage root as this machine sees it, for display only.
+  location: string
+  hasKoReader: boolean
+  freeBytes: number | null
+  totalBytes: number | null
+}
+
+export interface KindleLinkSuggestion {
+  mediaId: number
+  title: string
+  score: number // 0-1, title similarity
+}
+
+export interface KindleDeviceBook {
+  key: string // unique per check: the checksum, or 'path:<device path>'
+  // Path on the device relative to its storage root ("documents/NaviHUB/x.epub").
+  devicePath: string | null
+  title: string
+  authors: string | null
+  partialMd5: string | null
+  percent: number | null // 0-1, KOReader's percent_finished
+  status: KoReaderStatus | null
+  highlights: number
+  readSeconds: number
+  mediaId: number | null
+  mediaTitle: string | null
+  link: KindleBookOrigin | null
+  // Library books whose title resembles this one; only for unlinked books.
+  suggestions: KindleLinkSuggestion[]
+}
+
+// A manga series on the Kindle: the comic files in one folder under
+// documents/, linked as a whole to a library manga (kindle_series).
+export interface KindleDeviceSeries {
+  key: string // the folder under documents/ (frozen: stored in kindle_series)
+  name: string
+  files: number
+  // The highest chapter whose every file is read; null when none is.
+  lastChapter: number | null
+  chaptersRead: number
+  // 'per-volume': chapter numbers restart in each volume; lastChapter is the
+  // position counted in volume and chapter order. 'unclear': they restart
+  // and some volumes are whole-volume files, so no chapter is offered.
+  numbering: 'series' | 'per-volume' | 'unclear'
+  volumesRead: number[]
+  readSeconds: number
+  mediaId: number | null
+  mediaTitle: string | null
+  suggestions: KindleLinkSuggestion[]
+}
+
+export interface KindleStatus {
+  // null until Check device has run this session, or when nothing was found.
+  device: KindleDeviceInfo | null
+  checkedAt: string | null
+  // Books, and comic files that are not in a series folder; manga chapters
+  // are listed under series instead.
+  books: KindleDeviceBook[]
+  series: KindleDeviceSeries[]
+  lastImportAt: string | null
+  canUndoImport: boolean
+  error: string | null
+}
+
+export interface KindlePreviewQuote {
+  key: string // '<mediaId>:<fingerprint>'
+  kind: 'new' | 'update'
+  text: string
+  note: string | null
+  locator: string | null
+}
+
+export interface KindlePreviewBook {
+  mediaId: number
+  title: string
+  // 'manga': progress is chapters (from the series' file names), not pages.
+  kind: 'book' | 'manga'
+  // Manga only: the total is null when the library does not know it.
+  progress: { from: number; to: number; total: number | null } | null
+  // Unticked when the chapter is a counted position (per-volume numbering).
+  progressDefaultOn: boolean
+  // Manga with progress: 'per-volume' when chapter numbers restart in each
+  // volume, so the chapter was counted in volume and chapter order.
+  chapterNumbering: 'series' | 'per-volume' | null
+  // 'abandoned' is KOReader's stored value for its "On hold" status.
+  status: { from: string | null; to: string; reason: 'started' | 'finished' | 'abandoned' } | null
+  // On hold is shown but unticked by default.
+  statusDefaultOn: boolean
+  // The library says completed and the device is part-way through.
+  rereading: boolean
+  percent: number | null
+  // Manga only: volume files read on the Kindle. Shown, never turned into a
+  // chapter count.
+  volumesRead: number[]
+  quotes: KindlePreviewQuote[]
+  // Highlights whose quote was deleted in NaviHUB; never imported again.
+  skippedDeleted: number
+  reading: {
+    days: number
+    seconds: number
+    firstDay: string
+    lastDay: string
+    credits: number // checklist book-session days this would credit
+  } | null
+}
+
+// A word looked up in KOReader, offered for the English deck ('en') or the
+// Japanese mining inbox ('jp'), with the sentence it was read in.
+export interface KindlePreviewWord {
+  key: string // frozen: 'en:lurch', 'jp:漢字'
+  kind: 'en' | 'jp'
+  word: string
+  reading: string | null
+  meaning: string | null // from the offline dictionary
+  context: string | null
+  book: string | null
+  // False when the offline dictionary has no meaning; shown, not importable.
+  importable: boolean
+}
+
+export interface KindleImportPreview {
+  scanId: string
+  scannedAt: string
+  deviceLabel: string
+  readingRange: { first: string; last: string } | null
+  books: KindlePreviewBook[]
+  // Device books with KOReader data that are not linked to a library book.
+  unmatched: KindleDeviceBook[]
+  // New words from KOReader's vocabulary builder.
+  words: KindlePreviewWord[]
+  warnings: string[]
+}
+
+export interface KindleApplySelection {
+  scanId: string
+  progress: number[] // media ids
+  status: number[]
+  quotes: string[] // KindlePreviewQuote.key
+  words: string[] // KindlePreviewWord.key
+  // Meanings the user typed for words the offline dictionary did not know.
+  wordMeanings?: Record<string, string>
+  reading: number[]
+}
+
+export interface KindleImportResult {
+  importId: number
+  progressUpdated: number
+  statusUpdated: number
+  quotesAdded: number
+  quotesUpdated: number
+  readingDays: number
+  checklistCredits: number
+  wordsAdded: number
+}
+
+export interface KindleUndoResult {
+  restored: number
+  kept: number // items changed since the import, left alone
+}
+
+// Send to Kindle: a library book's local EPUB (a manga_chapter row of a book
+// title) or a book NaviHUB made. Files go to documents/NaviHUB/ only.
+export type KindleSendItem = { kind: 'chapter'; chapterId: number } | { kind: 'made'; fileName: string }
+
+export interface KindleSendPreview {
+  device: { label: string; freeBytes: number | null; totalBytes: number | null } | null
+  files: Array<{ key: string; title: string; bytes: number; deviceName: string }>
+  freeAfter: number | null
+  // Why the send cannot go ahead; null when it can.
+  refusal: string | null
+}
+
+export interface KindleSendStatus {
+  running: boolean
+  total: number
+  done: number
+  current: string | null
+  sent: string[] // names in documents/NaviHUB/
+  failed: Array<{ title: string; error: string }>
+  stopped: boolean
+  finishedAt: string | null
+}
+
+// An upload that may have left a partial file on the Kindle (the app quit
+// mid-send, or its cleanup failed).
+export interface KindleUnfinishedSend {
+  id: number
+  title: string
+  devicePath: string
+  bytes: number
+  createdAt: string
+}
+
+// 'complete': the file turned out whole and is now recorded as sent;
+// 'absent': nothing was there; 'removed': the partial copy was deleted;
+// 'superseded': a later send owns that name now; 'foreign': the file there
+// cannot be this send's (a folder, or larger than the upload). Neither is
+// touched.
+export type KindleUnfinishedResult = 'complete' | 'absent' | 'removed' | 'superseded' | 'foreign'
+
+// Books NaviHUB makes for the Kindle, written under userData/kindle/generated/.
+export type KindleBookRequest =
+  | { kind: 'quotes'; grouping: 'source' | 'theme'; favoritesOnly: boolean }
+  | { kind: 'jpReadings'; level: 'N5' | 'N4' | 'N3' | 'N2' | 'N1' }
+
+export interface KindleMadeBook {
+  fileName: string
+  bytes: number
+  madeAt: string
+}
+
+export interface KindleBookReading {
+  onDevice: boolean
+  devicePath: string | null
+  seconds: number
+  days: number
+  lastDay: string | null
 }

@@ -63,7 +63,8 @@ describe('a live DB that predates newer columns', () => {
       ALTER TABLE jp_card DROP COLUMN seed_key; ALTER TABLE jp_card DROP COLUMN seed_hash;
       ALTER TABLE jp_lesson DROP COLUMN seed_key; ALTER TABLE jp_lesson DROP COLUMN seed_hash;
       ALTER TABLE jp_course DROP COLUMN seed_key; ALTER TABLE jp_course DROP COLUMN seed_hash;
-      INSERT INTO jp_course (id, title, description, level, difficulty) VALUES (1, 'JLPT N5 Foundations', 'old text', 'N5', 1);
+      INSERT INTO jp_course (id, title, description, level, difficulty, created_at, updated_at)
+        VALUES (1, 'JLPT N5 Foundations', 'old text', 'N5', 1, '2026-01-01 00:00:00', '2026-02-01 00:00:00');
       INSERT INTO jp_lesson (id, course_id, kind, title) VALUES (1, 1, 'vocab', 'Greetings & set phrases');
       INSERT INTO jp_card (lesson_id, front, back, status, reps, interval_days) VALUES (1, 'こんにちは', 'hello / good afternoon', 'review', 3, 6);
       INSERT INTO settings (key, value) VALUES ('japanese.seeded', '1');`)
@@ -72,7 +73,7 @@ describe('a live DB that predates newer columns', () => {
     seedJapanese(db)
     expect(db.prepare('SELECT seed_key, seed_hash IS NULL AS detached FROM jp_course WHERE id = 1').get()).toEqual({
       seed_key: 'n5',
-      detached: 1 // its description differs from the seed: never auto-touched
+      detached: 1 // its description differs from the seed and was edited in the app: never auto-touched
     })
     expect(db.prepare("SELECT seed_key, reps, interval_days FROM jp_card WHERE front = 'こんにちは'").get()).toEqual({
       seed_key: 'n5.01/こんにちは',

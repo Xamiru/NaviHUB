@@ -52,6 +52,9 @@ const gb = await import('../src/main/goldbergInstall')
 
 const GOLDBERG_DLL = Buffer.concat([Buffer.from('MZ\0\0'), Buffer.from('GSE Saves', 'latin1')])
 const CRACK_DLL = Buffer.from('MZ\0\0 some other emulator')
+// A loader build carries several markers; a DLL-check bypass names only one.
+const GOLDBERG_LOADER = Buffer.from('MZ\0\0 GSE Saves steam_settings configs.user.ini', 'latin1')
+const BYPASS_LOADER = Buffer.from('MZ\0\0 looks for steam_settings', 'latin1')
 // A release list with a stat-driven entry gbe_fork unlocks from its progress block.
 const RELEASE_LIST = [
   {
@@ -173,6 +176,53 @@ describe('R2: writes only three files in steam_settings, only for Goldberg', () 
     const before = snapshot(game)
     expect(() => gb.installConfig(mediaId)).toThrow(/No achievements/)
     expect(snapshot(game)).toEqual(before)
+  })
+})
+
+describe('a Goldberg loader beside Valve\'s steam_api DLL', () => {
+  it('writes the list beside the loader and leaves both DLLs alone', () => {
+    const { mediaId, game } = setup({ dll: CRACK_DLL })
+    writeFileSync(join(game, 'version.dll'), GOLDBERG_LOADER)
+    ops = []
+    const state = gb.goldbergState(mediaId)
+    expect(state).toMatchObject({ emulator: 'goldberg', dllName: 'version.dll', gameDir: game })
+    gb.installConfig(mediaId)
+    expect(listOf(game).map((r) => r.name)).toEqual(['trophy_001', 'trophy_011', 'trophy_053'])
+    expect(readFileSync(join(game, 'steam_api64.dll'))).toEqual(CRACK_DLL)
+    expect(readFileSync(join(game, 'version.dll'))).toEqual(GOLDBERG_LOADER)
+    expect(ops.some((o) => o.path.endsWith('.dll'))).toBe(false)
+  })
+
+  it('does not take a loader that only names steam_settings (a DLL-check bypass) for Goldberg', () => {
+    const { mediaId, game } = setup({ dll: CRACK_DLL })
+    writeFileSync(join(game, 'version.dll'), BYPASS_LOADER)
+    expect(gb.goldbergState(mediaId)).toMatchObject({ emulator: 'other', dllName: 'steam_api64.dll' })
+  })
+
+  it('still offers and runs Restore after the loader is removed', () => {
+    const { mediaId, game } = setup({ dll: CRACK_DLL, release: RELEASE_LIST })
+    const original = readFileSync(join(game, 'steam_settings', 'achievements.json'))
+    mkdirSync(join(game, 'bin'))
+    writeFileSync(join(game, 'bin', 'ds2.exe'), 'exe')
+    writeFileSync(join(game, 'bin', 'steam_api64.dll'), CRACK_DLL)
+    rmSync(join(game, 'steam_api64.dll'))
+    writeFileSync(join(game, 'version.dll'), GOLDBERG_LOADER)
+    db.prepare('UPDATE media_item SET exe_path = ? WHERE id = ?').run(join(game, 'bin', 'ds2.exe'), mediaId)
+    gb.installConfig(mediaId)
+    expect(existsSync(join(game, 'steam_settings', 'achievements.json.navihub-backup'))).toBe(true)
+    rmSync(join(game, 'version.dll'))
+    const state = gb.goldbergState(mediaId)
+    expect(state).toMatchObject({ emulator: 'other', canRestore: true })
+    gb.restore(mediaId)
+    expect(readFileSync(join(game, 'steam_settings', 'achievements.json'))).toEqual(original)
+    expect(gb.goldbergState(mediaId).canRestore).toBe(false)
+  })
+
+  it('stays "other" when the loader is not Goldberg', () => {
+    const { mediaId, game } = setup({ dll: CRACK_DLL })
+    writeFileSync(join(game, 'winmm.dll'), Buffer.from('MZ\0\0 asi loader'))
+    expect(gb.goldbergState(mediaId)).toMatchObject({ emulator: 'other', dllName: 'steam_api64.dll' })
+    expect(() => gb.installConfig(mediaId)).toThrow(/not Goldberg/)
   })
 })
 

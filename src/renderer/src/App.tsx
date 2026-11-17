@@ -43,6 +43,7 @@ const MediaListPage = lazy(() => import('./pages/MediaListPage'))
 const MediaDetailPage = lazy(() => import('./pages/MediaDetailPage'))
 const MediaFormPage = lazy(() => import('./pages/MediaFormPage'))
 const SeasonalAnimePage = lazy(() => import('./pages/SeasonalAnimePage'))
+const KindlePage = lazy(() => import('./pages/KindlePage'))
 const InstalledGamesPage = lazy(() => import('./pages/InstalledGamesPage'))
 const LinkedVideoPage = lazy(() => import('./pages/LinkedVideoPage'))
 const EmulatorsPage = lazy(() => import('./pages/EmulatorsPage'))
@@ -231,6 +232,15 @@ export default function App() {
   const isReader =
     isPlayer ||
     /^\/(manga|books)\/\d+\/(read|book)\/|^\/read\/(manga|book)\//.test(location.pathname)
+  // The video player fullscreens the document so a shuffle binge stays
+  // fullscreen from one file to the next; leaving the player route leaves it.
+  const wasPlayer = useRef(false)
+  useEffect(() => {
+    if (wasPlayer.current && !isPlayer && document.fullscreenElement) {
+      void document.exitFullscreen().catch(() => undefined)
+    }
+    wasPlayer.current = isPlayer
+  }, [isPlayer])
   // The reader branch has no <main>, so its tab is simply "Reader" or "Player".
   useTabTitle(mainRef, isPlayer ? 'Player' : isReader ? 'Reader' : sectionTitle(location.pathname))
 
@@ -371,6 +381,7 @@ export default function App() {
             {/* Books (Open Library) — pages progress; local EPUBs via the reader */}
             <Route path="/books" element={<MediaListPage cfg={BOOK} />} />
             <Route path="/books/new" element={<MediaFormPage cfg={BOOK} />} />
+            <Route path="/books/kindle" element={<KindlePage />} />
             <Route path="/books/:id" element={<MediaDetailPage cfg={BOOK} />} />
             <Route path="/books/:id/edit" element={<MediaFormPage cfg={BOOK} />} />
 

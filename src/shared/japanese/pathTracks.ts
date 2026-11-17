@@ -1,5 +1,5 @@
 // The two tracks that run beside the course path: core word decks and kanji
-// decks. The curated courses teach about 600 JLPT words and 715 kanji; reading
+// decks. The curated courses teach about 1,400 JLPT words and 715 kanji; reading
 // native text needs about 10,000 words and 2,000 kanji, and the deck builders
 // (coreDeck.ts, kanjiDeck.ts) fill that gap from the offline dictionaries.
 //

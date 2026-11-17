@@ -33,6 +33,7 @@ import {
   type JlptLevelProgress
 } from '@shared/jlptLevels'
 import { computeStreaks } from './musicRepo'
+import { knownCardMemory } from '@shared/japanese/fastLane'
 import {
   CORE_DECK_TITLE,
   KANJI_DECK_TITLE,
@@ -52,6 +53,7 @@ import type {
   JpLessonInput,
   JpLessonKind,
   JpLessonQuizPool,
+  JpMarkKnownResult,
   JpMiningInbox,
   JpQuizItem,
   JpQuizScope,
@@ -109,7 +111,8 @@ function mapLesson(r: Record<string, unknown>): JpLesson {
     body: (r.body as string) ?? null,
     sortOrder: r.sort_order as number,
     learned: !!r.learned,
-    learnedAt: (r.learned_at as string) ?? null
+    learnedAt: (r.learned_at as string) ?? null,
+    seedKey: (r.seed_key as string) ?? null
   }
 }
 
@@ -329,6 +332,58 @@ export function setLessonLearned(id: number, learned: boolean): void {
        WHERE id = ?`
     )
     .run(learned ? 1 : 0, learned ? 1 : 0, id)
+}
+
+// ---- The fast lane: material the learner already knows ----
+
+// Each still-new card becomes a review card due in 14-28 days (deterministic
+// per card id, @shared/japanese/fastLane.ts), as if answered Easy once. No
+// jp_review_log row is written, so the daily new-card budget (introducedToday)
+// and the retention stats are untouched, and no extra direction is spawned.
+// Cards already in learning or review keep their schedule. Returns the number
+// of cards marked.
+function markCardsKnown(cardIds: number[]): number {
+  const update = getSqlite().prepare(
+    `UPDATE jp_card
+     SET status = 'review', learning_step = 0, interval_days = ?, ease = ?, reps = 1, lapses = 0,
+         stability = ?, fsrs_difficulty = ?, due_at = datetime('now', '+' || ? || ' days'),
+         last_reviewed_at = datetime('now'), updated_at = datetime('now')
+     WHERE id = ? AND status = 'new'`
+  )
+  // reps is 1, as for "Already known" words: coverage and the seen counts read
+  // reps > 0 as "this card has been met".
+  const retention = desiredRetention()
+  let marked = 0
+  for (const id of cardIds) {
+    const m = knownCardMemory(id, retention)
+    marked += update.run(m.intervalDays, START_EASE, m.stability, m.difficulty, m.intervalDays, id).changes
+  }
+  return marked
+}
+
+export function markCardKnown(cardId: number): JpMarkKnownResult {
+  const db = getSqlite()
+  return db.transaction(() => ({ marked: markCardsKnown([cardId]) }))()
+}
+
+// A tested-out (or "I know this lesson") lesson: every new card marked known
+// and the lesson marked learned.
+export function markLessonKnown(lessonId: number): JpMarkKnownResult {
+  const db = getSqlite()
+  return db.transaction((): JpMarkKnownResult => {
+    const ids = (
+      db.prepare("SELECT id FROM jp_card WHERE lesson_id = ? AND status = 'new' ORDER BY id").all(lessonId) as {
+        id: number
+      }[]
+    ).map((r) => r.id)
+    const marked = markCardsKnown(ids)
+    // Only a lesson not yet learned: re-marking would move learned_at.
+    const lesson = db.prepare('SELECT learned FROM jp_lesson WHERE id = ?').get(lessonId) as
+      | { learned: number }
+      | undefined
+    if (lesson && !lesson.learned) setLessonLearned(lessonId, true)
+    return { marked }
+  })()
 }
 
 // ---- Cards (content fields only; SRS fields belong to submitReview) ----
@@ -1335,11 +1390,16 @@ export function stats(): JpStats {
     // session dealing another batch — this count is the pacing guardrail. Each
     // direction of a card is its own introduction.
     introducedToday: one(
+      // state_before is read from the MIN(reviewed_at) row (SQLite's bare
+      // column rule). A card marked known has no log until its first real
+      // check, which it meets in review: that is not an introduction. NULL is
+      // a pre-FSRS row, whose first answer was always a new card.
       `SELECT COUNT(*) AS n FROM (
-         SELECT card_id FROM jp_review_log
+         SELECT card_id, MIN(reviewed_at) AS first_at, state_before FROM jp_review_log
          GROUP BY card_id, direction
-         HAVING date(MIN(reviewed_at), 'localtime') = date('now', 'localtime')
-       )`
+       )
+       WHERE date(first_at, 'localtime') = date('now', 'localtime')
+         AND COALESCE(state_before, 'new') <> 'review'`
     )
   }
 }

@@ -225,11 +225,15 @@ describe('one-click Goldberg setup', () => {
     await expectNoAxeViolations(container)
   })
 
-  it('gives manual DLL steps, and no way to write, when the crack is not Goldberg yet', async () => {
+  it('warns against replacing the DLL, with manual steps only behind a disclosure, when the crack is not Goldberg', async () => {
+    const user = userEvent.setup()
     vi.mocked(api.achievements.goldbergState).mockResolvedValue(goldberg({ emulator: 'other' }))
     renderWithQuery(<GoldbergWizardDialog mediaId={7} onClose={vi.fn()} />)
-    expect(await screen.findByText(/swap Goldberg in by hand/)).toBeInTheDocument()
-    expect(screen.getByText('release/experimental/x64')).toBeInTheDocument()
+    expect(await screen.findByText(/stops launching when that file is replaced/)).toBeInTheDocument()
+    const steps = screen.getByText(/Only for a game with no protection/)
+    expect(steps.closest('details')).not.toHaveAttribute('open')
+    await user.click(steps)
+    expect(screen.getByText('release/regular/x64')).toBeVisible()
     expect(screen.queryByRole('button', { name: /Write the achievement list|Choose/ })).not.toBeInTheDocument()
   })
 

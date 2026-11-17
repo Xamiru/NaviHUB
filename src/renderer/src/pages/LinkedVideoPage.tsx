@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
@@ -12,6 +12,9 @@ import CoverImage from '../components/CoverImage'
 import Section from '../components/Section'
 import { Field } from '../components/Field'
 import { RouteTabs } from '../components/Tabs'
+import ShuffleMixDialog from '../components/video/ShuffleMixDialog'
+import { ShuffleIcon } from '../components/PlayerIcons'
+import { queueCurrent, useVideoQueue } from '../lib/videoQueue'
 import type { LinkedVideoTitle } from '@shared/types'
 
 type SortMode = 'recent' | 'title' | 'linked' | 'left'
@@ -139,6 +142,10 @@ export default function LinkedVideoPage({ cfg }: { cfg: MediaConfig }) {
   const [sort, setSort] = usePersistedState<SortMode>('linked.sort', 'recent')
   const [show, setShow] = usePersistedState<ShowMode>('linked.show', 'all')
   const debouncedSearch = useDebouncedValue(search)
+  // Shuffle across shows: TV and anime only, the episodic libraries.
+  const canMix = cfg.key === 'tv' || cfg.key === 'anime'
+  const [mixOpen, setMixOpen] = useState(false)
+  const queued = queueCurrent(useVideoQueue())
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: qk.video.linked(cfg.key),
     queryFn: () => api.video.linked(cfg.key)
@@ -243,11 +250,29 @@ export default function LinkedVideoPage({ cfg }: { cfg: MediaConfig }) {
         eyebrow={<span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">Local video / player</span>}
         subtitle={`Your ${plural} on disk, ready to play from one place.`}
         actions={
-          <span className="text-xs text-gray-400">
-            {titles.length} linked {titles.length === 1 ? lowerNoun(cfg.singular) : plural}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-gray-400">
+              {titles.length} linked {titles.length === 1 ? lowerNoun(cfg.singular) : plural}
+            </span>
+            {canMix && queued && (
+              <Link className="btn-ghost px-3 py-1 text-sm" to={`/watch/file/${queued.fileId}`}>
+                Continue shuffle
+              </Link>
+            )}
+            {canMix && (
+              <button
+                type="button"
+                className="btn-ghost flex items-center gap-1.5 px-3 py-1 text-sm"
+                onClick={() => setMixOpen(true)}
+              >
+                <ShuffleIcon className="h-4 w-4" />
+                Shuffle mix…
+              </button>
+            )}
+          </div>
         }
       />
+      {mixOpen && <ShuffleMixDialog onClose={() => setMixOpen(false)} />}
 
       {continuing.length > 0 && (
         <Section title="Continue watching" className="mb-8">

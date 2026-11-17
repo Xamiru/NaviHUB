@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type Database from 'better-sqlite3'
 import { createTestDb } from './helpers'
 import * as jp from '../src/main/repos/japaneseRepo'
+import { knownCardMemory, knownIntervalDays, passesTestOut } from '../src/shared/japanese/fastLane'
+import { DEFAULT_RETENTION, intervalForStability, nextMemory } from '../src/shared/srs'
 
 let db: Database.Database
 vi.mock('../src/main/db/connection', () => ({
@@ -759,5 +761,87 @@ describe('addGrammarCards', () => {
     expect(again.added).toBe(1)
     expect(again.skipped).toBe(1)
     expect(jp.listCourses().find((c) => c.title === 'Grammar')!.cardCount).toBe(2)
+  })
+})
+
+describe('the fast lane: marking material known', () => {
+  const row = (front: string) =>
+    db
+      .prepare(
+        `SELECT status, interval_days, stability, fsrs_difficulty, reps,
+                CAST(julianday(due_at) - julianday('now') + 0.5 AS INTEGER) AS dueInDays
+         FROM jp_card WHERE front = ?`
+      )
+      .get(front) as {
+      status: string
+      interval_days: number
+      stability: number
+      fsrs_difficulty: number
+      reps: number
+      dueInDays: number
+    }
+  const cardId = (front: string) =>
+    (db.prepare('SELECT id FROM jp_card WHERE front = ?').get(front) as { id: number }).id
+
+  it('sends a new card to review in 14-28 days, deterministic by id, with no log row', () => {
+    seedCourseWithLesson(true)
+    const before = jp.stats()
+    expect(jp.markCardKnown(cardId('犬'))).toEqual({ marked: 1 })
+    const dog = row('犬')
+    const m = knownCardMemory(cardId('犬'))
+    expect(dog).toMatchObject({ status: 'review', interval_days: m.intervalDays, stability: m.stability, reps: 1 })
+    expect(dog.interval_days).toBeGreaterThanOrEqual(14)
+    expect(dog.interval_days).toBeLessThanOrEqual(28)
+    expect(dog.dueInDays).toBe(m.intervalDays)
+    expect(dog.fsrs_difficulty).toBeCloseTo(nextMemory({ stability: null, difficulty: null }, 'easy', 0).difficulty)
+    expect(intervalForStability(m.stability, DEFAULT_RETENTION)).toBe(m.intervalDays)
+    // The daily new-card budget and the review history are untouched.
+    expect(db.prepare('SELECT COUNT(*) AS n FROM jp_review_log').get()).toEqual({ n: 0 })
+    expect(jp.stats().introducedToday).toBe(before.introducedToday)
+    expect(jp.stats().newAvailableCount).toBe(before.newAvailableCount - 1)
+    // No extra direction is spawned.
+    expect(db.prepare('SELECT COUNT(*) AS n FROM jp_card_review').get()).toEqual({ n: 0 })
+    // Already out of the new pile: a second call changes nothing.
+    expect(jp.markCardKnown(cardId('犬'))).toEqual({ marked: 0 })
+  })
+
+  it('marks a lesson known: every new card, and the lesson learned; a reviewed card keeps its schedule', () => {
+    const { lessonId } = seedCourseWithLesson(false)
+    db.prepare("UPDATE jp_card SET status = 'learning', interval_days = 0 WHERE front = '猫'").run()
+    expect(jp.markLessonKnown(lessonId)).toEqual({ marked: 2 })
+    expect(jp.getLesson(lessonId)!.learned).toBe(true)
+    expect(row('猫').status).toBe('learning')
+    expect(row('こんにちは').status).toBe('review')
+  })
+
+  it('does not count a known card\'s first real check as a new introduction', () => {
+    seedCourseWithLesson(true)
+    jp.markCardKnown(cardId('犬'))
+    jp.submitReview(cardId('犬'), 'good')
+    expect(db.prepare('SELECT state_before FROM jp_review_log').get()).toEqual({ state_before: 'review' })
+    expect(jp.stats().introducedToday).toBe(0)
+  })
+
+  it('leaves an already learned lesson\'s learned_at alone', () => {
+    const { lessonId } = seedCourseWithLesson(true)
+    db.prepare("UPDATE jp_lesson SET learned_at = '2026-01-01 00:00:00' WHERE id = ?").run(lessonId)
+    jp.markLessonKnown(lessonId)
+    expect(db.prepare('SELECT learned_at FROM jp_lesson WHERE id = ?').get(lessonId)).toEqual({
+      learned_at: '2026-01-01 00:00:00'
+    })
+  })
+
+  it('spreads intervals across the 14-28 day window', () => {
+    const days = new Set(Array.from({ length: 200 }, (_, i) => knownIntervalDays(i + 1)))
+    expect(Math.min(...days)).toBe(14)
+    expect(Math.max(...days)).toBe(28)
+    expect(days.size).toBe(15)
+    expect(knownIntervalDays(42)).toBe(knownIntervalDays(42))
+  })
+
+  it('passes a test-out at 90% or better', () => {
+    expect(passesTestOut(9, 10)).toBe(true)
+    expect(passesTestOut(8, 10)).toBe(false)
+    expect(passesTestOut(0, 0)).toBe(false)
   })
 })

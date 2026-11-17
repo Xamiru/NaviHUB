@@ -20,6 +20,7 @@ import EmptyState from '../components/EmptyState'
 import PageStatus from '../components/PageStatus'
 import CoreDeckDialog from '../components/japanese/CoreDeckDialog'
 import SetupChecklist from '../components/japanese/SetupChecklist'
+import BuiltInUpdatesBanner from '../components/japanese/BuiltInUpdatesBanner'
 import { WordFurigana } from '../components/japanese/Furigana'
 import { BudgetPicker, PlanBlocks } from '../components/japanese/SessionPlanPicker'
 import ToolCard from '../components/japanese/ToolCard'
@@ -74,7 +75,7 @@ export default function JapaneseHomePage() {
   async function chooseKana(known: boolean): Promise<void> {
     await api.settings.set(KANA_KNOWN_SETTING, known ? '1' : '0')
     await qc.invalidateQueries({ queryKey: qk.settings.values })
-    if (!known) navigate('/japanese/kana')
+    if (!known) navigate('/japanese/kana?tab=learn')
   }
 
   const lesson = lessonQuery.data
@@ -199,6 +200,7 @@ export default function JapaneseHomePage() {
       </section>
 
       <SetupChecklist />
+      <BuiltInUpdatesBanner />
 
       <div className="mb-8 grid gap-6 md:grid-cols-2">
         <StreakCard detail={detail} />

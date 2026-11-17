@@ -79,6 +79,15 @@ const OS_VIDEO = new Set(['hevc', 'h265'])
 const OK_AUDIO = new Set(['aac', 'mp3', 'opus', 'vorbis', 'flac'])
 const OS_AUDIO = new Set(['ac3', 'eac3'])
 
+// False when this audio codec can never be decoded in the player on this
+// platform. The player's audio-track menu greys such tracks out: picking one
+// would play the picture in silence.
+export function audioCodecPlayable(codec: string | null, platform: NodeJS.Platform): boolean {
+  const a = codec?.toLowerCase() ?? null
+  if (a == null || OK_AUDIO.has(a) || a.startsWith('pcm_')) return true
+  return OS_AUDIO.has(a) && (platform === 'win32' || platform === 'darwin')
+}
+
 export function decideDecodable(input: {
   ext: string
   videoCodec: string | null

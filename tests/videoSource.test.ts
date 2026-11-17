@@ -140,6 +140,50 @@ describe('video source', () => {
     })
   })
 
+  it('lists every audio track, marks the judged one and greys out DTS', async () => {
+    const mediaId = makeMedia()
+    const id = addEpisode(mediaId, 'Show/02.mkv', 2, { v: null, a: null })
+    probe = {
+      durationSec: 1440,
+      startTimeSec: 0,
+      formatName: 'matroska,webm',
+      sizeBytes: 1,
+      streams: [
+        stream(0, 0, 'video', 'h264'),
+        stream(1, 0, 'audio', 'dts', 'eng'),
+        stream(2, 1, 'audio', 'aac', 'jpn')
+      ]
+    }
+    const src = await video.source({ kind: 'file', fileId: id })
+    expect(src.decode.verdict).toBe('ok')
+    expect(src.audioTracks.map((t) => [t.lang, t.isDefault, t.playable])).toEqual([
+      ['eng', false, false],
+      ['jpn', true, true]
+    ])
+  })
+
+  it('judges a playable track when the Japanese one cannot decode, so the file opens in-app', async () => {
+    const mediaId = makeMedia()
+    const id = addEpisode(mediaId, 'Show/03.mkv', 3, { v: null, a: null })
+    probe = {
+      durationSec: 1440,
+      startTimeSec: 0,
+      formatName: 'matroska,webm',
+      sizeBytes: 1,
+      streams: [
+        stream(0, 0, 'video', 'h264'),
+        stream(1, 0, 'audio', 'dts', 'jpn'),
+        stream(2, 1, 'audio', 'aac', 'eng')
+      ]
+    }
+    const src = await video.source({ kind: 'file', fileId: id })
+    expect(src.decode.verdict).toBe('ok')
+    expect(src.audioTracks.map((t) => [t.lang, t.isDefault, t.playable])).toEqual([
+      ['jpn', false, false],
+      ['eng', true, true]
+    ])
+  })
+
   it('prefers live probe data and lists embedded subtitle tracks without extracting', async () => {
     const mediaId = makeMedia()
     const id = addEpisode(mediaId, 'Show/01.mkv', 1, { v: null, a: null })

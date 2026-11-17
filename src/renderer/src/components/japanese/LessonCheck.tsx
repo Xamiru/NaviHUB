@@ -3,6 +3,7 @@ import { api } from '../../lib/api'
 import Section from '../Section'
 import type { JpLessonKind, JpQuizItem } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
+import { passesTestOut, TEST_OUT_PASS_RATIO } from '@shared/japanese/fastLane'
 import {
   buildLessonProductionPrompts,
   type LessonProductionPrompt
@@ -27,10 +28,15 @@ const QUESTION_COUNT = 8
 // Builds MC questions from the lesson's cards. Vocab/kanji cards with a
 // distinct reading alternate between "what does it mean" and "how is it read";
 // grammar example sentences always ask for the meaning.
-function buildQuestions(items: JpQuizItem[], distractors: JpQuizItem[], kind: JpLessonKind): Question[] {
+function buildQuestions(
+  items: JpQuizItem[],
+  distractors: JpQuizItem[],
+  kind: JpLessonKind,
+  count: number
+): Question[] {
   const pool = [...items, ...distractors]
   const questions: Question[] = []
-  const picked = shuffle(items).slice(0, QUESTION_COUNT)
+  const picked = shuffle(items).slice(0, count)
 
   picked.forEach((card, i) => {
     const canAskReading =
@@ -56,18 +62,23 @@ function buildQuestions(items: JpQuizItem[], distractors: JpQuizItem[], kind: Jp
   return questions
 }
 
+// Test out (the fast lane, @shared/japanese/fastLane.ts): the same check over
+// EVERY card of an unlearned lesson, without the production step; at
+// TEST_OUT_PASS_RATIO or better it offers to mark the whole lesson known.
 export default function LessonCheck({
   lessonId,
   kind,
   learned,
   cardCount,
-  onMarkLearned
+  onMarkLearned,
+  onMarkKnown
 }: {
   lessonId: number
   kind: JpLessonKind
   learned: boolean
   cardCount: number
   onMarkLearned: () => Promise<void>
+  onMarkKnown?: () => Promise<void>
 }): JSX.Element | null {
   const [questions, setQuestions] = useState<Question[] | null>(null)
   const [index, setIndex] = useState(0)
@@ -76,15 +87,18 @@ export default function LessonCheck({
   const [loading, setLoading] = useState(false)
   const [production, setProduction] = useState<LessonProductionPrompt[]>([])
   const [productionDone, setProductionDone] = useState(false)
+  const [testOut, setTestOut] = useState(false)
+  const [marking, setMarking] = useState(false)
 
-  async function start(): Promise<void> {
+  async function start(whole = false): Promise<void> {
     setLoading(true)
     try {
       // Fetched per attempt (not useQuery) so the RANDOM() distractor draw and
       // question order re-roll every time.
       const pool = await api.japanese.lessonQuizPool(lessonId)
-      const qs = buildQuestions(pool.items, pool.distractors, kind)
-      setProduction(buildLessonProductionPrompts(shuffle(pool.items), kind))
+      const qs = buildQuestions(pool.items, pool.distractors, kind, whole ? pool.items.length : QUESTION_COUNT)
+      setTestOut(whole)
+      setProduction(whole ? [] : buildLessonProductionPrompts(shuffle(pool.items), kind))
       setProductionDone(false)
       setQuestions(qs)
       setIndex(0)
@@ -149,16 +163,58 @@ export default function LessonCheck({
       <Section
         title="Check yourself"
         className=""
-        subtitle={questions && !finished ? `${index + 1} / ${questions.length}` : undefined}
+        subtitle={
+        questions && !finished
+          ? `${testOut ? 'Test out · ' : ''}${index + 1} / ${questions.length}`
+          : undefined
+      }
       >
       {questions === null ? (
         <div>
           <p className="mb-3 text-sm text-gray-400">
             Quiz this lesson&apos;s cards before marking it learned.
+            {!learned && onMarkKnown && (
+              <> Already know it? Test out over every card: {Math.round(TEST_OUT_PASS_RATIO * 100)}% or better marks the lesson known.</>
+            )}
           </p>
-          <button className="btn-primary" disabled={loading} onClick={() => void start()}>
-            {loading ? 'Preparing…' : 'Start check'}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button className="btn-primary" disabled={loading} onClick={() => void start()}>
+              {loading ? 'Preparing…' : 'Start check'}
+            </button>
+            {!learned && onMarkKnown && (
+              <button className="btn-ghost" disabled={loading} onClick={() => void start(true)}>
+                Test out
+              </button>
+            )}
+          </div>
+        </div>
+      ) : finished && testOut ? (
+        <div>
+          <p className="text-lg font-semibold">
+            {score} / {questions.length}
+            <span className="ml-2 text-sm font-normal text-gray-400">
+              {passesTestOut(score, questions.length)
+                ? 'Tested out. Its cards can skip the new pile and come back for a check in two to four weeks.'
+                : `Below ${Math.round(TEST_OUT_PASS_RATIO * 100)}%: read the lesson and learn it the usual way.`}
+            </span>
+          </p>
+          <div className="mt-3 flex gap-2">
+            {!learned && onMarkKnown && passesTestOut(score, questions.length) && (
+              <button
+                className="btn-primary"
+                disabled={marking}
+                onClick={() => {
+                  setMarking(true)
+                  void onMarkKnown().finally(() => setMarking(false))
+                }}
+              >
+                {marking ? 'Marking…' : 'Mark all as known'}
+              </button>
+            )}
+            <button className="btn-ghost" onClick={() => void start(true)}>
+              Try again
+            </button>
+          </div>
         </div>
       ) : finished ? (
         <div>

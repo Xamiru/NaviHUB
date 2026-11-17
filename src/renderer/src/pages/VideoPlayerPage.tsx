@@ -26,6 +26,7 @@ import { toast } from '../lib/toast'
 import { pathForMedia } from '../lib/mediaConfig'
 import { useCanGoBack } from '../lib/navState'
 import { useTabTitleOverride } from '../lib/browserTabs'
+import { queueCurrent, useVideoQueue, videoQueue, type VideoQueue } from '../lib/videoQueue'
 import { VIDEO_PLAYER_SHORTCUTS } from '../lib/shortcuts'
 import {
   PLAYBACK_RATES,
@@ -38,6 +39,15 @@ import {
   type VideoPrefs
 } from '../lib/videoPrefs'
 import { useSubtitleTrack } from '../lib/useSubtitleTrack'
+import {
+  applyAudio,
+  audioOptions,
+  initialAudio,
+  loadAudioChoice,
+  mediaAudioTracks,
+  saveAudioChoice,
+  type AudioOption
+} from '../lib/videoAudio'
 import { readDecodeStats, silentDecodeFailure } from '../lib/videoDecodeStats'
 import MiningPanel from '../components/reader/MiningPanel'
 import ShortcutHelp from '../components/reader/ShortcutHelp'
@@ -47,6 +57,7 @@ import StyledSubtitleLayer from '../components/video/StyledSubtitleLayer'
 import PgsSubtitleLayer from '../components/video/PgsSubtitleLayer'
 import SubtitleOverlay, { type SubtitleWordPick } from '../components/video/SubtitleOverlay'
 import TranscriptPanel from '../components/video/TranscriptPanel'
+import UpNextPanel from '../components/video/UpNextPanel'
 import VideoControls from '../components/video/VideoControls'
 import VideoOsd from '../components/video/VideoOsd'
 
@@ -57,6 +68,8 @@ const WATCHDOG_GRACE_SECONDS = 1.5
 const SYSTEM_PLAYER_HEADING = 'This file plays in the system player'
 // Frame step before a frame duration has been measured (24 fps).
 const FALLBACK_FRAME_SECONDS = 1 / 24
+// The shuffle queue's countdown before the next episode starts by itself.
+export const AUTOPLAY_SECONDS = 5
 
 function delayText(seconds: number): string {
   return seconds === 0
@@ -107,6 +120,26 @@ export default function VideoPlayerPage(): JSX.Element {
   })
   useTabTitleOverride(source ? videoTabTitle(source) : null)
 
+  // Shuffle queue mode: this file is the queue's current item. A file opened
+  // any other way plays as before, and the queue waits for Continue shuffle.
+  const queue = useVideoQueue()
+  const inQueue =
+    queue != null && ref?.kind === 'file' && queueCurrent(queue)?.fileId === ref.fileId
+  const playQueueAt = useCallback(
+    (index: number) => {
+      const item = videoQueue.jump(index)
+      if (item) navigate(`/watch/file/${item.fileId}`, { replace: true })
+    },
+    [navigate]
+  )
+  const skip =
+    inQueue && queue && queue.index + 1 < queue.items.length
+      ? () => playQueueAt(queue.index + 1)
+      : null
+  // A queue can outlive its files (Unlink, a renamed file): stopping it must
+  // not need a working player.
+  const stopQueue = inQueue ? () => videoQueue.stop() : null
+
   const fallbackPath = source
     ? source.mediaId && source.mediaType
       ? pathForMedia({ id: source.mediaId, mediaType: source.mediaType })
@@ -151,6 +184,8 @@ export default function VideoPlayerPage(): JSX.Element {
         reason={error instanceof Error ? error.message : 'That file is no longer available.'}
         onExternal={null}
         onBack={exitPlayer}
+        onSkip={skip}
+        onStopQueue={stopQueue}
       />
     )
   }
@@ -162,6 +197,8 @@ export default function VideoPlayerPage(): JSX.Element {
         reason={source.decode.reason ?? 'This file cannot be decoded inside NaviHUB.'}
         onExternal={openExternal}
         onBack={exitPlayer}
+        onSkip={skip}
+        onStopQueue={stopQueue}
       />
     )
   }
@@ -170,6 +207,8 @@ export default function VideoPlayerPage(): JSX.Element {
       key={source.url}
       sourceRef={ref}
       source={source}
+      queue={inQueue ? queue : null}
+      onQueueJump={playQueueAt}
       onExit={exitPlayer}
       onExternal={openExternal}
     />
@@ -179,11 +218,16 @@ export default function VideoPlayerPage(): JSX.Element {
 function Player({
   sourceRef,
   source,
+  queue,
+  onQueueJump,
   onExit,
   onExternal
 }: {
   sourceRef: VideoSourceRef
   source: VideoSource
+  // Set only while this file is the shuffle queue's current item.
+  queue: VideoQueue | null
+  onQueueJump: (index: number) => void
   onExit: () => void
   onExternal: () => void
 }): JSX.Element {
@@ -401,9 +445,21 @@ function Player({
   // A study range wins, then ?t= (a reload lands back on the spot), then the
   // stored resume position. Applied once, on the first loadedmetadata.
   const startedRef = useRef(false)
+  // ---- audio tracks ----
+  // Only when Chromium exposes audioTracks (lib/videoAudio.ts) and the file
+  // has two or more; otherwise no menu, and External changes language.
+  const [audio, setAudio] = useState<{ options: AudioOption[]; selected: number } | null>(null)
   const onLoadedMetadata = useCallback(
     (el: HTMLVideoElement) => {
       setDuration(el.duration || source.durationSeconds || 0)
+      const media = mediaAudioTracks(el)
+      if (media && media.length > 1) {
+        const options = audioOptions(media, source.audioTracks)
+        const current = media.findIndex((t) => t.enabled)
+        const selected = initialAudio(options, loadAudioChoice(source.offsetKey), current)
+        if (selected !== current) applyAudio(media, selected)
+        setAudio({ options, selected })
+      }
       if (startedRef.current) return
       startedRef.current = true
       const fromUrl = Number(searchParams.get('t'))
@@ -415,7 +471,7 @@ function Player({
           : (source.resumeSeconds ?? 0)
       if (start > 1 || r) el.currentTime = start
     },
-    [searchParams, source.durationSeconds, source.resumeSeconds]
+    [searchParams, source.audioTracks, source.durationSeconds, source.offsetKey, source.resumeSeconds]
   )
 
   // ---- progress autosave (library episodes and wrestling files only) ----
@@ -581,16 +637,27 @@ function Player({
   }, [activeCues, seekTo])
 
   const toggleFullscreen = useCallback(() => {
-    // Fullscreen the whole row, never the <video>, so the mining panel and the
-    // transcript stay reachable.
+    // Fullscreen the whole page, never the <video>, so the mining panel and the
+    // transcript stay reachable. The document rather than this player's root:
+    // every next file remounts the player, and a shuffle binge must stay in
+    // fullscreen across them. App.tsx leaves fullscreen when the route leaves
+    // the player.
     if (document.fullscreenElement) void document.exitFullscreen()
-    else void rootRef.current?.requestFullscreen().catch(() => undefined)
+    else void document.documentElement.requestFullscreen().catch(() => undefined)
   }, [])
 
   // ---- panels ----
   const [panelOpen, setPanelOpen] = useState(false)
   const [transcriptOpen, setTranscriptOpen] = useState(prefs.transcriptOpen)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [upNextOpen, setUpNextOpenState] = useState(prefs.upNextOpen)
+  const setUpNextOpen = useCallback(
+    (open: boolean) => {
+      setUpNextOpenState(open)
+      setPref('upNextOpen', open)
+    },
+    [setPref]
+  )
 
   // ---- quotes ----
   // Pauses and opens Add quote with the line on screen (and the second track
@@ -728,6 +795,20 @@ function Player({
     []
   )
 
+  // Picking a track remembers it for the show, like the subtitle delay.
+  const pickAudio = useCallback(
+    (index: number) => {
+      const media = mediaAudioTracks(videoRef.current)
+      const option = audio?.options[index]
+      if (!media || !option || !option.playable) return
+      applyAudio(media, index)
+      setAudio((a) => (a ? { ...a, selected: index } : a))
+      saveAudioChoice(source.offsetKey, { lang: option.lang, label: option.label })
+      showOsd(`Audio: ${option.label}`)
+    },
+    [audio, showOsd, source.offsetKey]
+  )
+
   // ---- auto-hiding bars ----
   // They stay up while paused, while a menu is open, while the pointer is over
   // a bar, and while one of their controls has KEYBOARD focus
@@ -790,6 +871,65 @@ function Player({
     },
     [flushProgress, navigate, sourceRef.kind]
   )
+  // In a shuffle queue, Previous/Next (buttons, N/P, the Finished screen)
+  // follow the queue; otherwise the title's file order.
+  const queueNext = queue ? (queue.items[queue.index + 1] ?? null) : null
+  const queuePrev = queue && queue.index > 0 ? queue.items[queue.index - 1] : null
+  const nextTitle = queue
+    ? queueNext && (queue.shows.length > 1 ? `${queueNext.show} · ${queueNext.title}` : queueNext.title)
+    : (source.next?.title ?? null)
+  const hasNext = queue ? queueNext != null : source.next != null
+  const hasPrev = queue ? queuePrev != null : source.prev != null
+  const jumpQueue = useCallback(
+    (index: number) => {
+      flushProgress()
+      onQueueJump(index)
+    },
+    [flushProgress, onQueueJump]
+  )
+  const goNext = useCallback(() => {
+    if (queue) {
+      if (queue.index + 1 < queue.items.length) jumpQueue(queue.index + 1)
+    } else if (source.next) goToFile(source.next.fileId)
+  }, [goToFile, jumpQueue, queue, source.next])
+  const goPrev = useCallback(() => {
+    if (queue) {
+      if (queue.index > 0) jumpQueue(queue.index - 1)
+    } else if (source.prev) goToFile(source.prev.fileId)
+  }, [goToFile, jumpQueue, queue, source.prev])
+
+  // ---- shuffle autoplay ----
+  // The Finished screen counts down and moves on by itself, in a queue only.
+  // goNext rides a ref so a queue write cannot re-run the zero tick twice.
+  const [countdown, setCountdown] = useState<number | null>(null)
+  const goNextRef = useRef(goNext)
+  goNextRef.current = goNext
+  const canAutoplay = queue != null && queueNext != null
+  useEffect(() => {
+    setCountdown(ended && canAutoplay ? AUTOPLAY_SECONDS : null)
+  }, [ended]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Stop shuffle (or the queue running out) mid-countdown must not fall
+  // through to the folder's next file.
+  useEffect(() => {
+    if (!canAutoplay) setCountdown(null)
+  }, [canAutoplay])
+  // Opening Add quote, the mining panel or the key list on the Finished
+  // screen cancels the countdown, so moving on cannot discard what is open.
+  // Play now stays.
+  const busyOnFinish = quoteSeed != null || panelOpen || helpOpen
+  useEffect(() => {
+    if (busyOnFinish) setCountdown(null)
+  }, [busyOnFinish])
+  useEffect(() => {
+    if (countdown == null) return
+    if (countdown <= 0) {
+      setCountdown(null)
+      goNextRef.current()
+      return
+    }
+    const t = setTimeout(() => setCountdown((c) => (c == null ? null : c - 1)), 1000)
+    return () => clearTimeout(t)
+  }, [countdown])
 
   // ---- watchdog ----
   const watchRef = useRef<{ from: number | null; judged: boolean }>({ from: null, judged: false })
@@ -965,10 +1105,13 @@ function Player({
           setHelpOpen(true)
           return
         case 'n':
-          if (source.next) goToFile(source.next.fileId)
+          goNext()
           return
         case 'p':
-          if (source.prev) goToFile(source.prev.fileId)
+          goPrev()
+          return
+        case 'u':
+          if (queue) setUpNextOpen(!upNextOpen)
           return
         case 'Home':
           seekTo(range?.start ?? 0)
@@ -982,6 +1125,7 @@ function Player({
           // both leaves fullscreen and closes a panel.
           if (document.fullscreenElement) void document.exitFullscreen()
           else if (menuOpen) setMenuOpen(false)
+          else if (queue && upNextOpen) setUpNextOpen(false)
           else if (transcriptOpen) setTranscriptOpen(false)
           else if (panelOpen) setPanelOpen(false)
           else onExit()
@@ -995,7 +1139,8 @@ function Player({
   }, [
     capture,
     cueStep,
-    goToFile,
+    goNext,
+    goPrev,
     hasSubs,
     helpOpen,
     loopRange,
@@ -1017,12 +1162,12 @@ function Player({
     setPref,
     setSubDelay,
     showOsd,
-    source.next,
-    source.prev,
+    queue,
     toggleFullscreen,
     togglePlay,
     tracks,
-    transcriptOpen
+    transcriptOpen,
+    upNextOpen
   ])
 
   if (failure) {
@@ -1033,6 +1178,8 @@ function Player({
         reason={failure.reason}
         onExternal={failure.external ? onExternal : null}
         onBack={onExit}
+        onSkip={queue && queueNext ? goNext : null}
+        onStopQueue={queue ? () => videoQueue.stop() : null}
       />
     )
   }
@@ -1224,8 +1371,25 @@ function Player({
               <p className="text-sm text-gray-300" role="status">
                 Finished {source.title}
               </p>
-              {source.next ? (
-                <button type="button" className="btn-primary" onClick={() => goToFile(source.next!.fileId)}>
+              {queue && queueNext ? (
+                <>
+                  <p className="text-sm text-white">
+                    Next: {nextTitle}
+                    {countdown != null && <span className="tabular-nums"> in {countdown}</span>}
+                  </p>
+                  <div className="flex gap-2">
+                    <button type="button" className="btn-primary" onClick={goNext}>
+                      Play now
+                    </button>
+                    {countdown != null && (
+                      <button type="button" className="btn-ghost" onClick={() => setCountdown(null)}>
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </>
+              ) : source.next ? (
+                <button type="button" className="btn-primary" onClick={goNext}>
                   Next: {source.next.title}
                 </button>
               ) : (
@@ -1258,6 +1422,8 @@ function Player({
           volume={prefs.volume}
           muted={prefs.muted}
           rate={prefs.rate}
+          audio={audio}
+          onPickAudio={pickAudio}
           tracks={tracks}
           primaryId={primaryId}
           secondaryId={secondaryId}
@@ -1269,14 +1435,16 @@ function Player({
           trackError={primary.error ?? (pgsUrl && prefs.subsOn ? pgsFailure : null) ?? secondary.error}
           transcriptOpen={showTranscript}
           miningOpen={panelOpen}
-          hasPrev={!!source.prev}
-          hasNext={!!source.next}
+          hasPrev={hasPrev}
+          hasNext={hasNext}
           visible={barsVisible}
           hoverHandlers={barHover}
           onToggle={togglePlay}
           onSeek={seekTo}
-          onPrevEpisode={() => source.prev && goToFile(source.prev.fileId)}
-          onNextEpisode={() => source.next && goToFile(source.next.fileId)}
+          onPrevEpisode={goPrev}
+          onNextEpisode={goNext}
+          upNextOpen={queue ? upNextOpen : null}
+          onUpNext={() => setUpNextOpen(!upNextOpen)}
           onVolume={(v) => {
             setPref('volume', v)
             if (v > 0) setPref('muted', false)
@@ -1332,6 +1500,20 @@ function Player({
           onSeek={onTranscriptSeek}
           onMineCue={onTranscriptMine}
           onClose={closeTranscript}
+        />
+      )}
+
+      {queue && upNextOpen && (
+        <UpNextPanel
+          queue={queue}
+          onJump={jumpQueue}
+          onRemove={(i) => videoQueue.remove(i)}
+          onReshuffle={() => videoQueue.reshuffle()}
+          onStop={() => {
+            videoQueue.stop()
+            setUpNextOpen(false)
+          }}
+          onClose={() => setUpNextOpen(false)}
         />
       )}
 

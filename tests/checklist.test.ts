@@ -398,6 +398,52 @@ describe('episode tick footprints', () => {
     expect(rewatchCount(id)).toBe(0)
     expect(taskByKey(SAT, 'anime-episode').progress).toBe(0)
   })
+
+  // 2026-11-16: replaying an old episode of a finished series is a one-off.
+  it('an episode tick never knocks a Completed series back to Watching', () => {
+    const id = addMedia('anime', 'Bebop', { status: 'Completed', progress: 26, totalUnits: 26 })
+    const undo = checklistRepo.logEpisodeProgress(id, SAT)
+    expect(mediaRow(id)).toEqual({ status: 'Completed', progress: 26 })
+    expect(rewatchCount(id)).toBe(0)
+    expect(taskByKey(SAT, 'anime-episode').progress).toBe(1)
+    checklistRepo.retractEpisodeProgress(id, undo)
+    expect(mediaRow(id)).toEqual({ status: 'Completed', progress: 26 })
+    expect(taskByKey(SAT, 'anime-episode').progress).toBe(0)
+  })
+
+  it('holds a Completed series watched before the app (progress never filled)', () => {
+    const id = addMedia('anime', 'Bebop', { status: 'Completed', progress: 0, totalUnits: 26 })
+    checklistRepo.logEpisodeProgress(id, SAT)
+    expect(mediaRow(id)).toEqual({ status: 'Completed', progress: 0 })
+    expect(rewatchCount(id)).toBe(0)
+  })
+
+  it('starts the rewatch once the user has set the series back to Watching', () => {
+    const id = addMedia('anime', 'Bebop', { status: 'Watching', progress: 26, totalUnits: 26 })
+    checklistRepo.logEpisodeProgress(id, SAT)
+    expect(mediaRow(id)).toEqual({ status: 'Watching', progress: 1 })
+    expect(rewatchCount(id)).toBe(2)
+  })
+
+  it('counts another pass of a one-episode title, whose status the wrap keeps', () => {
+    const id = addMedia('anime', 'Paprika', { status: 'Completed', progress: 1, totalUnits: 1 })
+    checklistRepo.logEpisodeProgress(id, SAT)
+    expect(mediaRow(id)).toEqual({ status: 'Completed', progress: 1 })
+    expect(rewatchCount(id)).toBe(2)
+  })
+
+  it('holds an On Hold series at its total too', () => {
+    const id = addMedia('anime', 'Bebop', { status: 'On Hold', progress: 26, totalUnits: 26 })
+    checklistRepo.logEpisodeProgress(id, SAT)
+    expect(mediaRow(id)).toEqual({ status: 'On Hold', progress: 26 })
+    expect(rewatchCount(id)).toBe(0)
+  })
+
+  it('the explicit log button still wraps a Completed series', () => {
+    const id = addMedia('anime', 'Bebop', { status: 'Completed', progress: 26, totalUnits: 26 })
+    checklistRepo.logProgress(id, SAT)
+    expect(mediaRow(id)).toEqual({ status: 'Watching', progress: 1 })
+  })
 })
 
 describe('logging a movie', () => {

@@ -42,6 +42,8 @@ export interface VideoPrefs extends SubtitleLook {
   autoPauseOnMine: boolean
   pauseOnHover: boolean
   transcriptOpen: boolean
+  // The shuffle queue's Up next panel, kept open from one episode to the next.
+  upNextOpen: boolean
 }
 
 export const DEFAULT_SUBTITLE_LOOK: SubtitleLook = {
@@ -67,7 +69,8 @@ export const DEFAULT_VIDEO_PREFS: VideoPrefs = {
   dialogueOnly: true,
   autoPauseOnMine: true,
   pauseOnHover: false,
-  transcriptOpen: false
+  transcriptOpen: false,
+  upNextOpen: false
 }
 
 export const SUBTITLE_LIMITS = {

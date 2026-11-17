@@ -66,6 +66,8 @@ import StandStats from '../components/theme/StandStats'
 import { standParameters } from '../lib/standStats'
 import { useAppTheme } from '../lib/useAppTheme'
 import BookFacts from '../components/BookFacts'
+import KindleReadingFact from '../components/kindle/KindleReadingFact'
+import KindleSendBook from '../components/kindle/KindleSendBook'
 import QuoteCollection from '../components/quotes/QuoteCollection'
 import QuoteDialog from '../components/quotes/QuoteDialog'
 import LinkedMusicSection, { useMusicLinks } from '../components/music/LinkedMusicSection'
@@ -794,6 +796,8 @@ function FactsColumn({
         <p className="mt-1 text-white">{m.releaseDate ?? '—'}</p>
       </div>
       {m.mediaType === 'book' && <BookFacts m={m} />}
+      {m.mediaType === 'book' && <KindleSendBook mediaId={m.id} title={m.title} />}
+      {m.mediaType === 'manga' && <KindleReadingFact mediaId={m.id} />}
       {season && (
         <div>
           <p className={fact}>Season</p>

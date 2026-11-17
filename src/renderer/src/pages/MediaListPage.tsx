@@ -176,6 +176,11 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
                 Seasonal
               </Link>
             )}
+            {cfg.hasKindle && (
+              <Link to="/books/kindle" className="btn-ghost">
+                Kindle
+              </Link>
+            )}
             {cfg.importSource && (
               <button className="btn-ghost" onClick={() => setShowImport(true)}>
                 Import from {cfg.importSource.label}

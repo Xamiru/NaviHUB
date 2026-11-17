@@ -13,6 +13,7 @@ import ActionMenu from '../components/ActionMenu'
 import CardSourceBadge from '../components/CardSourceBadge'
 import CardAttachments from '../components/japanese/CardAttachments'
 import LessonCheck from '../components/japanese/LessonCheck'
+import LessonPractice from '../components/japanese/LessonPractice'
 import StrokeOrderDiagram from '../components/japanese/StrokeOrderDiagram'
 import { grammarCandidates } from '@shared/cloze'
 import type { JpCard, JpLessonKind } from '@shared/types'
@@ -59,6 +60,28 @@ export default function JapaneseLessonPage() {
         : 'Lesson learned — its cards are now in review and quiz',
       'success'
     )
+  }
+
+  // The fast lane: every new card skips the new pile and returns for a real
+  // check in 14-28 days; the lesson is marked learned.
+  async function markKnown(): Promise<void> {
+    const { marked } = await api.japanese.markLessonKnown(lessonId)
+    await qc.invalidateQueries({ queryKey: qk.japanese.all })
+    toast(
+      marked === 1
+        ? 'Lesson marked known: 1 card comes back for a check in two to four weeks'
+        : `Lesson marked known: ${marked} cards come back for a check in two to four weeks`,
+      'success'
+    )
+  }
+
+  async function knowLesson(): Promise<void> {
+    if (!lesson) return
+    const ok = await confirmDialog(
+      `Mark "${lesson.title}" as known without testing out? Its new cards skip the new pile and come back for a check in two to four weeks, and the lesson is marked learned.`,
+      { confirmLabel: 'Mark as known' }
+    )
+    if (ok) await markKnown()
   }
 
   async function removeLesson() {
@@ -111,7 +134,12 @@ export default function JapaneseLessonPage() {
             <Link to={`/japanese/lessons/${lessonId}/edit`} className="btn-ghost">
               Edit
             </Link>
-            <ActionMenu items={[{ label: 'Delete lesson…', onSelect: removeLesson, danger: true }]} />
+            <ActionMenu
+              items={[
+                ...(lesson.learned ? [] : [{ label: 'I know this lesson…', onSelect: knowLesson }]),
+                { label: 'Delete lesson…', onSelect: removeLesson, danger: true }
+              ]}
+            />
           </>
         }
       />
@@ -174,7 +202,10 @@ export default function JapaneseLessonPage() {
         learned={lesson.learned}
         cardCount={lesson.cards.length}
         onMarkLearned={toggleLearned}
+        onMarkKnown={markKnown}
       />
+
+      <LessonPractice seedKey={lesson.seedKey ?? null} kind={lesson.kind} />
 
       <div className="mt-8">
         <button

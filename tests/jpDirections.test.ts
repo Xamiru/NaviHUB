@@ -79,6 +79,9 @@ describe('extra review directions', () => {
   })
 
   it('answers a direction on its own schedule, logged with the direction, with no ghost', () => {
+    // Introduce recognition today as a new card first: a first log whose card
+    // was already in review is not an introduction (the fast-lane rule).
+    jp.submitReview(1, 'good')
     mature(1)
     jp.submitReview(1, 'good')
     const cardBefore = db.prepare('SELECT status, interval_days, reps FROM jp_card WHERE id = 1').get()

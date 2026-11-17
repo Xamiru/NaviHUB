@@ -1,6 +1,6 @@
 import { dialog } from 'electron'
 import { join, extname, basename, dirname, relative, isAbsolute, resolve, sep } from 'path'
-import { existsSync, readdirSync } from 'fs'
+import { existsSync, readdirSync, realpathSync } from 'fs'
 import { readdir } from 'fs/promises'
 import { getSqlite } from './db/connection'
 import { get as getSetting, set as setSetting } from './repos/settingsRepo'
@@ -223,6 +223,37 @@ function localDirOf(mediaId: number): string | null {
     | { local_dir: string | null }
     | undefined
   return row?.local_dir ?? null
+}
+
+// A book's local EPUB, for Send to Kindle: the file of one chapter row of a
+// book-type title, resolved through the books root and its containment
+// check. Null for a manga chapter, a folder of images, or a path that escapes.
+export function bookFileForChapter(
+  chapterId: number
+): { mediaId: number; mediaTitle: string; chapterTitle: string; abs: string } | null {
+  if (!Number.isSafeInteger(chapterId)) return null
+  const row = getSqlite()
+    .prepare(
+      `SELECT c.media_id, c.dir_path, c.title, m.title AS media_title, m.media_type
+       FROM manga_chapter c JOIN media_item m ON m.id = c.media_id WHERE c.id = ?`
+    )
+    .get(chapterId) as
+    | { media_id: number; dir_path: string; title: string; media_title: string; media_type: string }
+    | undefined
+  if (!row || row.media_type !== 'book' || !isEpubFile(row.dir_path)) return null
+  const root = booksRootDir()
+  const abs = pathInsideRoot(root, row.dir_path)
+  if (!abs) return null
+  // A link inside the books folder must not send a file from outside it:
+  // the real path has to stay under the real root too.
+  try {
+    const realRoot = realpathSync(root)
+    const real = realpathSync(abs)
+    if (real !== realRoot && !real.startsWith(`${realRoot}${sep}`)) return null
+    return { mediaId: row.media_id, mediaTitle: row.media_title, chapterTitle: row.title, abs: real }
+  } catch {
+    return null
+  }
 }
 
 export function chapters(mediaId: number): MangaLibrary {

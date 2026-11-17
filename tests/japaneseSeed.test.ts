@@ -13,6 +13,13 @@ beforeEach(() => {
   db = createTestDb()
 })
 
+// created_at/updated_at for a course row the user has edited in the app (every
+// edit path moves updated_at). The legacy-layout fixtures below stand for
+// libraries with their own course text, so the startup auto-restore of held-back
+// built-in content (japaneseSeedSync.ts autoReattachVerdict) leaves them to the
+// user and these tests see the legacy renumbering passes alone.
+const EDITED = "'2026-01-01 00:00:00', '2026-02-01 00:00:00'"
+
 describe('seedJapanese', () => {
   // The study path, in order. A course's step is its position in ALL_PACKS, so
   // every later wave that slots a course in shifts the rest; the assertions
@@ -21,6 +28,7 @@ describe('seedJapanese', () => {
     'N5 Foundations',
     'Radicals',
     'N5 Kanji',
+    'N5 Vocabulary II',
     'Manga & VN Japanese',
     'Set Phrases',
     'Counters',
@@ -143,8 +151,8 @@ describe('seedJapanese', () => {
     ]
     const insertFlag = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)')
     const insertCourse = db.prepare(
-      `INSERT INTO jp_course (title, description, level, difficulty, sort_order)
-       VALUES (?, 'old row', 'N?', ?, ?)`
+      `INSERT INTO jp_course (title, description, level, difficulty, sort_order, created_at, updated_at)
+       VALUES (?, 'old row', 'N?', ?, ?, ${EDITED})`
     )
     OLD.forEach(([flag, title, step], i) => {
       insertFlag.run(flag, '1')
@@ -192,8 +200,8 @@ describe('seedJapanese', () => {
     ]
     const insertFlag = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)')
     const insertCourse = db.prepare(
-      `INSERT INTO jp_course (title, description, level, difficulty, sort_order)
-       VALUES (?, 'old row', 'N?', ?, ?)`
+      `INSERT INTO jp_course (title, description, level, difficulty, sort_order, created_at, updated_at)
+       VALUES (?, 'old row', 'N?', ?, ?, ${EDITED})`
     )
     OLD.forEach(([flag, title, step], i) => {
       insertFlag.run(flag, '1')
@@ -282,7 +290,8 @@ describe('seedJapanese', () => {
       'JLPT N2 Grammar III',
       'JLPT N2 Grammar IV',
       'JLPT N1 Grammar III',
-      'JLPT N1 Grammar IV'
+      'JLPT N1 Grammar IV',
+      'JLPT N5 Vocabulary II'
     ]
     const older = new Set(rows.filter((r) => !NEW.includes(r.course)).map((r) => r.front))
     const clashes = rows
@@ -326,8 +335,8 @@ describe('seedJapanese', () => {
     ]
     const insertFlag = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)')
     const insertCourse = db.prepare(
-      `INSERT INTO jp_course (title, description, level, difficulty, sort_order)
-       VALUES (?, 'old row', 'N?', ?, ?)`
+      `INSERT INTO jp_course (title, description, level, difficulty, sort_order, created_at, updated_at)
+       VALUES (?, 'old row', 'N?', ?, ?, ${EDITED})`
     )
     LAYOUT24.forEach(([flag, title, step], i) => {
       insertFlag.run(flag, '1')
@@ -363,10 +372,10 @@ describe('seedJapanese', () => {
     const insertFlag = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)')
     // User renamed Idioms and moved N1 Grammar I somewhere of their own.
     db.prepare(
-      `INSERT INTO jp_course (title, description, level, difficulty) VALUES (?, 'mine', 'N1', ?)`
+      `INSERT INTO jp_course (title, description, level, difficulty, created_at, updated_at) VALUES (?, 'mine', 'N1', ?, ${EDITED})`
     ).run('My idioms deck', 18)
     db.prepare(
-      `INSERT INTO jp_course (title, description, level, difficulty) VALUES (?, 'mine', 'N1', ?)`
+      `INSERT INTO jp_course (title, description, level, difficulty, created_at, updated_at) VALUES (?, 'mine', 'N1', ?, ${EDITED})`
     ).run('JLPT N1 Grammar I', 99)
     insertFlag.run('japanese.seeded.idioms', '1')
     insertFlag.run('japanese.seeded.n1a', '1')
@@ -383,13 +392,13 @@ describe('seedJapanese', () => {
     // to a custom step must both survive the migration untouched.
     db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run('japanese.seeded.kanji', '1')
     db.prepare(
-      `INSERT INTO jp_course (title, description, level, difficulty, sort_order)
-       VALUES ('My renamed kanji course', NULL, 'N5', 2, 0)`
+      `INSERT INTO jp_course (title, description, level, difficulty, sort_order, created_at, updated_at)
+       VALUES ('My renamed kanji course', NULL, 'N5', 2, 0, ${EDITED})`
     ).run()
     db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run('japanese.seeded.n4', '1')
     db.prepare(
-      `INSERT INTO jp_course (title, description, level, difficulty, sort_order)
-       VALUES ('JLPT N4 Grammar', NULL, 'N4', 99, 1)`
+      `INSERT INTO jp_course (title, description, level, difficulty, sort_order, created_at, updated_at)
+       VALUES ('JLPT N4 Grammar', NULL, 'N4', 99, 1, ${EDITED})`
     ).run()
 
     seedJapanese(db)
@@ -406,7 +415,7 @@ describe('seedJapanese', () => {
     // columns existed: course row present, flag set, level/difficulty NULL.
     db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run('japanese.seeded', '1')
     db.prepare(
-      `INSERT INTO jp_course (title, description, sort_order) VALUES ('JLPT N5 Foundations', 'old row', 0)`
+      `INSERT INTO jp_course (title, description, sort_order, created_at, updated_at) VALUES ('JLPT N5 Foundations', 'old row', 0, ${EDITED})`
     ).run()
     seedJapanese(db)
     const n5 = jp.listCourses().find((c) => c.description === 'old row')!

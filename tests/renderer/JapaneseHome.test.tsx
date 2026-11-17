@@ -15,8 +15,16 @@ const tomorrow = new Date()
 tomorrow.setDate(tomorrow.getDate() + 1)
 const history = { totalSessions: 0, bestStreak: 0, best: null, recent: [] }
 
-const state = vi.hoisted(() => ({ settings: {} as Record<string, string>, totalReviews: 0 }))
+const state = vi.hoisted(() => ({
+  settings: {} as Record<string, string>,
+  totalReviews: 0,
+  builtIn: { edited: 0, missing: 0 },
+  heldBack: { older: 0, missing: 0 }
+}))
 const setSetting = vi.hoisted(() => vi.fn(async () => {}))
+const builtInStatus = vi.hoisted(() => vi.fn(async () => state.builtIn))
+const restoreBuiltIn = vi.hoisted(() => vi.fn(async () => ({ edited: 0, missing: 0 })))
+const confirm = vi.hoisted(() => vi.fn(async (_message: string, _opts?: unknown) => true))
 
 vi.mock('../../src/renderer/src/lib/api', () => ({
   api: {
@@ -46,6 +54,9 @@ vi.mock('../../src/renderer/src/lib/api', () => ({
         journey: { distinctCardsReviewed: 0, wordsMined: 0, lessonsLearned: 0, chaptersRead: 0, quizRounds: 0 }
       }),
       tutorDays: async () => [],
+      builtInStatus,
+      builtInHeldBack: async () => state.heldBack,
+      restoreBuiltIn,
       tutorErrors: async () => [],
       getLesson: async () => ({
         id: 9, courseId: 2, kind: 'vocab', title: 'Greetings', body: null, sortOrder: 1,
@@ -56,6 +67,7 @@ vi.mock('../../src/renderer/src/lib/api', () => ({
   }
 }))
 vi.mock('../../src/renderer/src/components/japanese/SetupChecklist', () => ({ default: () => null }))
+vi.mock('../../src/renderer/src/lib/confirm', () => ({ confirmDialog: confirm }))
 
 function renderToday() {
   return render(
@@ -75,7 +87,12 @@ beforeEach(() => {
   localStorage.clear()
   state.settings = {}
   state.totalReviews = 0
+  state.builtIn = { edited: 0, missing: 0 }
+  state.heldBack = { older: 0, missing: 0 }
+  builtInStatus.mockClear()
   setSetting.mockClear()
+  restoreBuiltIn.mockClear()
+  confirm.mockClear()
 })
 
 it('welcomes a brand-new learner and starts them on kana', async () => {
@@ -125,4 +142,38 @@ it('shows the next lesson in Japanese, the week, the path and one primary action
   expect(await screen.findByText('Session runner')).toBeInTheDocument()
   const saved = JSON.parse(localStorage.getItem('japanese.tutorSession.v1') ?? 'null')
   expect(saved).toMatchObject({ budgetMinutes: 20, baseline: { learnedLessons: 0 } })
+})
+
+it('offers held-back built-in content on Today, behind the Settings confirm', async () => {
+  state.settings = { 'japanese.kanaKnown': '1' }
+  state.heldBack = { older: 2, missing: 18 }
+  // The full status also counts a deliberate later edit (3 = 2 held back + 1).
+  state.builtIn = { edited: 3, missing: 18 }
+  const { container } = renderToday()
+  const banner = await screen.findByRole('region', { name: 'Built-in course updates are waiting' })
+  expect(banner).toHaveTextContent('2 built-in items are edited or older text. 18 built-in items are missing from your library.')
+  expect(container.querySelectorAll('.btn-primary')).toHaveLength(1)
+  // Today never runs the hashing status read on mount.
+  expect(builtInStatus).not.toHaveBeenCalled()
+  await expectNoAxeViolations(container)
+
+  confirm.mockResolvedValueOnce(false)
+  await userEvent.click(within(banner).getByRole('button', { name: 'Restore built-in text' }))
+  // The confirm states the full effect of a restore, read on the click.
+  expect(confirm).toHaveBeenCalledWith(
+    expect.stringContaining('replace the text of 3 edited or older built-in items and add 18 built-in items'),
+    { confirmLabel: 'Restore built-in text', danger: true }
+  )
+  expect(restoreBuiltIn).not.toHaveBeenCalled()
+
+  await userEvent.click(within(banner).getByRole('button', { name: 'Restore built-in text' }))
+  expect(restoreBuiltIn).toHaveBeenCalledTimes(1)
+})
+
+it('shows no built-in banner for a deliberate later edit, only for held-back content', async () => {
+  state.settings = { 'japanese.kanaKnown': '1' }
+  state.builtIn = { edited: 1, missing: 0 }
+  renderToday()
+  await screen.findByRole('list', { name: 'Words in this lesson' })
+  expect(screen.queryByRole('region', { name: 'Built-in course updates are waiting' })).not.toBeInTheDocument()
 })

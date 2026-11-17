@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import { readTime } from '../lib/kindle'
 import Dialog from './Dialog'
 import type { BookEdition, MediaDetail } from '@shared/types'
 
@@ -20,11 +21,7 @@ interface SeriesMeta {
   count?: number | null
 }
 
-function duration(seconds: number): string {
-  const h = Math.floor(seconds / 3600)
-  const m = Math.round((seconds % 3600) / 60)
-  return h > 0 ? `${h} h ${m} min` : `${m} min`
-}
+const duration = readTime
 
 export function editionSummary(e: BookEdition): string {
   return [
@@ -55,6 +52,10 @@ export default function BookFacts({ m }: { m: MediaDetail }) {
   const { data: chosen } = useQuery({
     queryKey: qk.media.bookEdition(m.id),
     queryFn: () => api.books.edition(m.id)
+  })
+  const { data: kindle } = useQuery({
+    queryKey: qk.media.kindleReading(m.id),
+    queryFn: () => api.kindle.bookReading(m.id)
   })
 
   const qc = useQueryClient()
@@ -112,6 +113,22 @@ export default function BookFacts({ m }: { m: MediaDetail }) {
         <div>
           <p className={FACT}>Audiobook</p>
           <p className="mt-1 text-white">{duration(audio)}</p>
+        </div>
+      )}
+      {kindle && (kindle.onDevice || kindle.seconds > 0) && (
+        <div>
+          <p className={FACT}>Kindle</p>
+          {kindle.seconds > 0 ? (
+            <p className="mt-1 text-white">
+              Read on Kindle: {duration(kindle.seconds)} over {kindle.days} {kindle.days === 1 ? 'day' : 'days'}
+            </p>
+          ) : (
+            <p className="mt-1 text-white">On the Kindle, not read there yet</p>
+          )}
+          {kindle.lastDay && <p className="text-xs text-gray-400">Last read {kindle.lastDay}</p>}
+          <Link to="/books/kindle" className="mt-1 inline-block text-xs text-signal-link hover:underline">
+            Kindle
+          </Link>
         </div>
       )}
       {(fromHardcover || chosen) && (

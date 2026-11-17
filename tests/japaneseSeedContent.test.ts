@@ -6,6 +6,7 @@ vi.mock('electron', () => ({ app: { getPath: () => '/tmp' } }))
 
 import { SEED_PACKS } from '../src/main/db/japaneseSeed'
 import { cardSeedKey } from '../src/main/db/japaneseSeedSync'
+import { N4_KANJI_NOTES, N5_KANJI_NOTES } from '../src/main/db/jpSeed/kanjiNotes'
 import { kuromojiBackend } from '../src/main/tokenizer'
 
 // Content gates for the built-in Japanese courses. Every content wave lands
@@ -23,7 +24,7 @@ const kana = (s: string): string => hira(s).replace(/[^ぁ-ゖー]/g, '')
 
 // Packs whose vocabulary lessons must carry example sentences (wave 3 adds
 // the N5–N3 decks as their sentences land).
-const EXAMPLE_REQUIRED = new Set<string>(['n5', 'n4vocab', 'n3vocab', 'n2vocab', 'n1vocab', 'setphrases', 'vnslang'])
+const EXAMPLE_REQUIRED = new Set<string>(['n5', 'n5vocab', 'n4vocab', 'n3vocab', 'n2vocab', 'n1vocab', 'setphrases', 'vnslang'])
 
 const lessons = SEED_PACKS.flatMap((p) => p.course.lessons.map((l) => ({ pack: p.key, ...l })))
 
@@ -110,6 +111,62 @@ describe('built-in course content', () => {
         .map((c) => `${l.key}: ${c.front}`)
     )
     expect(spaced).toEqual([])
+  })
+
+  it('JLPT N5 Foundations uses no grammar before the lesson that teaches it', () => {
+    // A small, precise list: each pattern matches only the grammar it names in
+    // a card front or example sentence. `null` = not taught in N5 at all.
+    const GATES: [pattern: RegExp, introducedBy: string | null][] = [
+      [/ました/, 'n5.12'],
+      [/ましょう/, 'n5.mashou'],
+      [/(?:[きぎしちにびみりいべめれけせてねえじ]|見|来|寝|出)たい/, 'n5.tai'],
+      [/[てで]ください/, 'n5.17'],
+      [/[てで]い(?:る|ます|ません|ない|た)/, 'n5.teiru'],
+      [/(?<!では|じゃ)あ(?:ります|りません|る[。、]|った)/, 'n5.19'],
+      [/る前に|た後で|の後で|てから/, 'n5.mae'],
+      [/(?:の|る|た|い|な)(?:とき|時)[、に]/, 'n5.toki'],
+      [/でしょう|だろう/, 'n5.deshou'],
+      [/どんな|何歳|いくつ/, 'n5.donna'],
+      [/(?<!さ)まで/, 'n5.kara-made'],
+      [/[一二三四五六七八九十何]回/, 'n5.hindo'],
+      [/全然|あまり/, 'n5.amari'],
+      [/くて/, 'n5.adj-te'],
+      [/ので[、。]/, 'n5.node'],
+      [/より/, null],
+      [/ながら/, null],
+      [/て(?:くれ|あげ|もら)/, null]
+    ]
+    const n5 = SEED_PACKS.find((p) => p.key === 'n5')!.course.lessons
+    const position = new Map(n5.map((l, i) => [l.key, i]))
+    const early: string[] = []
+    for (const [pattern, introducedBy] of GATES) {
+      const until = introducedBy === null ? n5.length : position.get(introducedBy)
+      expect(until, `${introducedBy} is an N5 lesson`).toBeDefined()
+      for (const lesson of n5.slice(0, until)) {
+        for (const card of lesson.cards) {
+          for (const text of [card.front, card.exampleJp ?? '']) {
+            if (pattern.test(text)) early.push(`${lesson.key}: ${text} (${introducedBy ?? 'not in N5'})`)
+          }
+        }
+      }
+    }
+    expect(early).toEqual([])
+  })
+
+  it('every N5 and N4 kanji card carries a memory hook, and every hook has its card', () => {
+    const problems: string[] = []
+    for (const [packKey, notes] of [
+      ['kanji', N5_KANJI_NOTES],
+      ['n4kanji', N4_KANJI_NOTES]
+    ] as const) {
+      const cards = SEED_PACKS.find((p) => p.key === packKey)!.course.lessons
+        .filter((l) => l.kind === 'kanji')
+        .flatMap((l) => l.cards)
+      for (const c of cards) if (!c.notes?.trim()) problems.push(`${packKey}: ${c.front} has no note`)
+      const fronts = new Set(cards.map((c) => c.front))
+      for (const k of Object.keys(notes)) if (!fronts.has(k)) problems.push(`${packKey}: note for ${k} has no card`)
+    }
+    expect(problems).toEqual([])
   })
 
   it('carries no emoji or decorative glyphs', () => {

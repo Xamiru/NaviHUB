@@ -15,6 +15,9 @@ vi.mock('@/lib/api', () => ({
       editions: vi.fn(),
       chooseEdition: vi.fn(),
       clearEdition: vi.fn()
+    },
+    kindle: {
+      bookReading: vi.fn(async () => ({ onDevice: false, devicePath: null, seconds: 0, days: 0, lastDay: null }))
     }
   }
 }))
@@ -117,5 +120,19 @@ describe('BookFacts', () => {
     const other = renderFacts(book({ externalSource: 'openlibrary', metadata: null }))
     await waitFor(() => expect(api.books.edition).toHaveBeenCalled())
     expect(other.textContent).not.toContain('My edition')
+  })
+
+  it('shows measured Kindle reading time only when there is some', async () => {
+    vi.mocked(api.books.edition).mockResolvedValue(null)
+    vi.mocked(api.kindle.bookReading).mockResolvedValue({
+      onDevice: true,
+      devicePath: 'documents/NaviHUB/Dune.epub',
+      seconds: 22800,
+      days: 14,
+      lastDay: '2026-10-28'
+    })
+    renderFacts(book())
+    expect(await screen.findByText('Read on Kindle: 6 h 20 min over 14 days')).toBeTruthy()
+    expect(screen.getByText('Last read 2026-10-28')).toBeTruthy()
   })
 })

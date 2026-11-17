@@ -17,7 +17,7 @@ import * as footballRepo from '../repos/footballRepo'
 import * as clipRepo from '../repos/wrestlingClipRepo'
 import { cleanRelative } from '../wrestling/clips'
 import { probeFile } from './ffmpeg'
-import { decideDecodable } from './playability'
+import { audioCodecPlayable, decideDecodable } from './playability'
 import { pickAudioStream, pickVideoStream, type MediaProbe } from './probeParse'
 import * as fonts from './fonts'
 import * as mine from './mine'
@@ -194,9 +194,21 @@ function resolve(ref: VideoSourceRef): Resolved {
   }
 }
 
+// The audio stream the decode gate judges and the player starts on: Japanese
+// first, then the file's default, as pickAudioStream decides. When that one can
+// never decode here (Japanese AC3 on Linux) but another track can, the gate
+// judges a playable one instead, so the file still opens in-app and the audio
+// menu shows the rest.
+export function judgedAudioStream(probe: MediaProbe, platform: NodeJS.Platform) {
+  const preferred = pickAudioStream(probe, { preferLang: 'ja' })
+  if (!preferred || audioCodecPlayable(preferred.codec, platform)) return preferred
+  const audio = probe.streams.filter((s) => s.type === 'audio' && audioCodecPlayable(s.codec, platform))
+  return audio.find((s) => s.isDefault) ?? audio[0] ?? preferred
+}
+
 function audioTracksOf(probe: MediaProbe | null): VideoAudioTrack[] {
   if (!probe) return []
-  const chosen = pickAudioStream(probe, { preferLang: 'ja' })?.index ?? null
+  const chosen = judgedAudioStream(probe, process.platform)?.index ?? null
   return probe.streams
     .filter((s) => s.type === 'audio')
     .map((s) => ({
@@ -205,7 +217,8 @@ function audioTracksOf(probe: MediaProbe | null): VideoAudioTrack[] {
       lang: s.language,
       codec: s.codec,
       channels: s.channels,
-      isDefault: s.index === chosen
+      isDefault: s.index === chosen,
+      playable: audioCodecPlayable(s.codec, process.platform)
     }))
 }
 
@@ -216,7 +229,7 @@ export async function source(ref: VideoSourceRef): Promise<VideoSource> {
   // path, so a scanned episode costs nothing extra.
   const probe = await probeFile(r.absPath)
   const video = probe ? pickVideoStream(probe) : null
-  const audio = probe ? pickAudioStream(probe, { preferLang: 'ja' }) : null
+  const audio = probe ? judgedAudioStream(probe, process.platform) : null
   const decode = decideDecodable({
     ext: extname(r.absPath),
     videoCodec: video?.codec ?? r.videoCodec,

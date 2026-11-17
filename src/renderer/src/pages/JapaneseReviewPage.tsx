@@ -81,6 +81,7 @@ export default function JapaneseReviewPage() {
   const [revealed, setRevealed] = useState(false)
   const [reviewed, setReviewed] = useState(0)
   const [misses, setMisses] = useState(0)
+  const [known, setKnown] = useState(0)
   const [missed, setMissed] = useState<SummaryMiss[]>([])
   const [grading, setGrading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -146,6 +147,7 @@ export default function JapaneseReviewPage() {
       setQueue(items)
       setReviewed(0)
       setMisses(0)
+      setKnown(0)
       setMissed([])
       setRevealed(false)
       setPhase('review')
@@ -188,6 +190,26 @@ export default function JapaneseReviewPage() {
     [current, grading]
   )
 
+  // "I know this": a word the learner already knows skips the learning steps
+  // and returns for a real check in 14-28 days (@shared/japanese/fastLane.ts).
+  // Only a new card's recognition side; it writes no review log, so it does
+  // not count against the daily new-card budget.
+  const canMarkKnown = !!current && !current.ghost && current.srs.status === 'new' && current.card.direction === 'recognition'
+  const markKnown = useCallback(async () => {
+    if (!current || grading || !canMarkKnown) return
+    setGrading(true)
+    try {
+      await api.japanese.markCardKnown(current.card.id)
+      setKnown((n) => n + 1)
+      setRevealed(false)
+      setTyped('')
+      setChecked(null)
+      setQueue((q) => q.slice(1))
+    } finally {
+      setGrading(false)
+    }
+  }, [current, grading, canMarkKnown])
+
   const answerGhost = useCallback(
     async (correct: boolean) => {
       if (!current || grading) return
@@ -229,7 +251,12 @@ export default function JapaneseReviewPage() {
     if (phase !== 'review') return
     function onKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-      if (e.key === ' ' || e.key === 'Enter') {
+      if ((e.key === 'k' || e.key === 'K') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (canMarkKnown) {
+          e.preventDefault()
+          void markKnown()
+        }
+      } else if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault()
         setRevealed(true)
       } else if (revealed && current?.ghost) {
@@ -247,7 +274,7 @@ export default function JapaneseReviewPage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [phase, revealed, grade, current, answerGhost])
+  }, [phase, revealed, grade, current, answerGhost, canMarkKnown, markKnown])
 
   // What the typed answer suggests: got it → Good, missed it → Again. Only a
   // highlight; the user still picks.
@@ -297,7 +324,7 @@ export default function JapaneseReviewPage() {
           onStart={() => void start()}
           starting={loading}
           error={error}
-          hint="Space to flip · 1 Again · 2 Hard · 3 Good · 4 Easy"
+          hint="Space to flip · 1 Again · 2 Hard · 3 Good · 4 Easy · K I know this (new cards)"
           options={
             <>
           <div>
@@ -399,7 +426,8 @@ export default function JapaneseReviewPage() {
           score={reviewed > 0 ? { correct: reviewed - misses, total: reviewed } : null}
           facts={[
             { label: 'Cards reviewed', value: reviewed },
-            { label: 'Again', value: misses }
+            { label: 'Again', value: misses },
+            ...(known > 0 ? [{ label: 'Marked known', value: known }] : [])
           ]}
           missed={missed}
           actions={
@@ -546,6 +574,20 @@ export default function JapaneseReviewPage() {
       </div>
 
       <div className="mt-4">
+        {canMarkKnown && (
+          <div className="mb-2 flex justify-end">
+            <button
+              type="button"
+              className="btn-ghost py-1 px-2 text-xs"
+              disabled={grading}
+              onClick={() => void markKnown()}
+              aria-label="I know this"
+              title="Skip the learning steps; it comes back for a check in two to four weeks"
+            >
+              <kbd className="kbd mr-1">K</kbd>I know this
+            </button>
+          </div>
+        )}
         {prompt && !checked ? (
           <div className="flex gap-2">
             <input

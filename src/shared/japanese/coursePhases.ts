@@ -9,6 +9,7 @@ export const SEED_COURSE_PHASE: Readonly<Record<string, TutorPhaseId>> = {
   n5: 'foundation',
   radicals: 'foundation',
   kanji: 'foundation',
+  n5vocab: 'foundation',
   casual: 'bridge',
   setphrases: 'bridge',
   counters: 'bridge',

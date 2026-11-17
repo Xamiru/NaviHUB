@@ -131,6 +131,8 @@ export interface MediaConfig {
   // Seasonal browse page (anime) — year picker + Winter/Spring/Summer/Fall
   // shelves at `${basePath}/seasonal`, linked from the sidebar + list header.
   hasSeasonal?: boolean
+  // Books and manga: a header link to the one Kindle (KOReader) page.
+  hasKindle?: boolean
   // Launch-from-app + playtime tracking (games + VNs) — shows the launcher
   // section (link an executable and show tracked totals) on the Playtime tab.
   hasGameLaunch?: boolean
@@ -224,6 +226,7 @@ export const ANIME: MediaConfig = {
 // voice actors (just characters) and its "crew" are the mangaka (author/artist).
 export const MANGA: MediaConfig = {
   key: 'manga',
+  hasKindle: true,
   singular: 'Manga',
   plural: 'Manga',
   basePath: '/manga',
@@ -484,6 +487,7 @@ export const TV: MediaConfig = {
 // the manga chapter machinery under the books.dir root (each .epub = a volume).
 export const BOOK: MediaConfig = {
   key: 'book',
+  hasKindle: true,
   singular: 'Book',
   plural: 'Books',
   basePath: '/books',

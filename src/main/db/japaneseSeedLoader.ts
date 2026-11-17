@@ -1,8 +1,8 @@
 import { getSqlite } from './connection'
 import { SEED_VERSION, SEED_VERSION_KEY } from './japaneseSeedVersion'
-import { logError } from '../logBus'
-import { reattachSeedRows, seedDrift } from './japaneseSeedSync'
-import type { JpBuiltInStatus } from '@shared/types'
+import { logError, logInfo } from '../logBus'
+import { reattachAndSync, seedDrift, seedHeldBack } from './japaneseSeedSync'
+import type { JpBuiltInHeldBack, JpBuiltInStatus } from '@shared/types'
 
 // The built-in Japanese courses (~0.8 MB of seed modules) load only when they
 // have something to do: a library whose last completed sync stamped the
@@ -43,14 +43,36 @@ export async function builtInStatus(): Promise<JpBuiltInStatus> {
   return seedDrift(getSqlite())
 }
 
-// Settings → Learning → "Built-in course updates": the user's explicit choice to
-// put the built-in text back over edited (or stale) built-in rows and bring in
-// what the key backfill found missing. Unlike startup, a failure here rejects,
-// so the renderer reports it instead of a success toast.
+// The Today banner's cheap read: plain counts, no hashing pass.
+export async function builtInHeldBack(): Promise<JpBuiltInHeldBack> {
+  await japaneseSeedReady()
+  return seedHeldBack(getSqlite())
+}
+
+// Settings → Learning → "Built-in course updates" (or the Today banner): the
+// user's explicit choice to put the built-in text back over edited (or stale)
+// built-in rows and bring in what the key backfill found missing. The
+// re-attach and the sync commit as one transaction, so a failed sync restores
+// nothing and leaves the drift as it was. Unlike startup, a failure here
+// rejects, so the renderer reports it instead of a success toast.
 export async function restoreBuiltIn(): Promise<JpBuiltInStatus> {
   await japaneseSeedReady()
-  reattachSeedRows(getSqlite())
-  const run = runSeed()
+  const run = import('./japaneseSeed').then((m) => {
+    const db = getSqlite()
+    // A startup seed that failed left the stamp unwritten. The sync below
+    // writes it, so run the whole seed first (new packs, the key backfill, the
+    // moved-lesson adoption) or nothing would retry those until the next
+    // SEED_VERSION.
+    const stamp = db.prepare('SELECT value FROM settings WHERE key = ?').get(SEED_VERSION_KEY) as
+      | { value: string }
+      | undefined
+    if (stamp?.value !== SEED_VERSION) m.seedJapanese(db)
+    const report = reattachAndSync(db, [...m.SEED_PACKS], SEED_VERSION)
+    logInfo(
+      'db',
+      `built-in Japanese courses restored: ${report ? `${report.updated} updated, ${report.inserted} inserted, ${report.removed} removed` : 'nothing to sync'}`
+    )
+  })
   ready = run.catch(logSeedFailure)
   await run
   return seedDrift(getSqlite())

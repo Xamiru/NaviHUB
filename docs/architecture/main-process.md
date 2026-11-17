@@ -20,7 +20,7 @@ The ordered list itself stays in `CLAUDE.md`. Why each step sits where it does:
 
 `cancelHistoryJobs()` follows it: History archive copies and downloads write under a `.partial` name and record their row only after the rename, so aborting them leaves no half file and no row.
 
-`cancelModJobs()` follows it: a GameBanana mod install copies into a `<name>.navihub-partial` folder and records its ledger only after the rename, so aborting removes the partial files and writes no ledger row. `cancelRomScan()` stops the game-folder scan, whose last step reads the library. See [emulation.md](emulation.md).
+`cancelModJobs()` follows it: a GameBanana mod install copies into a `<name>.navihub-partial` folder and records its ledger only after the rename, so aborting removes the partial files and writes no ledger row. `cancelRomScan()` stops the game-folder scan, whose last step reads the library. See [emulation.md](emulation.md). `cancelKindleJobs()` stops a Kindle check between device files (a check only reads the device and writes its snapshot under `userData/kindle/`), and through `kindleSend.cancelSends()` kills a running Send to Kindle `gio copy` at once and stops its ledger writes: the cut-off file's `kindle_send` row stays `pending`, and the next launch offers it under Unfinished sends. See [kindle.md](kindle.md).
 
 `cancelActiveLibraryExport()` precedes every database close: an in-app export owns a live SQLite backup and temporary sibling output, so shutdown aborts the task and removes partial files before teardown.
 

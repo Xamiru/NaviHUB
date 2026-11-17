@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { formatTime } from '@shared/subtitles'
 import type { MediaDetail, VideoFile } from '@shared/types'
@@ -10,31 +10,12 @@ import Section from './Section'
 import { confirmDialog } from '../lib/confirm'
 import { celebrateProgress } from '../lib/themeFx'
 import FavoriteButton from './FavoriteButton'
-import { useEpisodeFavorites } from './FavoriteEpisodesSection'
+import { episodeNumberHeartable, useEpisodeFavorites } from './FavoriteEpisodesSection'
+import { ShuffleIcon } from './PlayerIcons'
+import { queueCurrent, queueHasShow, showFromFiles, useVideoQueue, videoQueue } from '../lib/videoQueue'
 
-// Which file numbers are the entry's own episodes, so a file row can heart its
-// number in the Favorite episodes grid. A folder spanning several seasons
-// numbers episodes per season, while an AniList entry is one season: hearts
-// would collide (S01E05 and S02E05), so none. A folder whose every number is
-// past the entry's known total counts across seasons (a second cour as 13-24),
-// so none either; otherwise a file past the total (an OVA numbered 13) offers
-// none on its own row. Without a known total (airing; some sources store 0)
-// the file numbers are all there is, and the grid follows them. Either way the
-// grid stays the place to heart. Specials (season 0) never heart and never
-// count as a second season: their numbers are not the entry's episodes.
-export function episodeNumberHeartable(
-  files: Pick<VideoFile, 'season' | 'number'>[],
-  totalUnits: number | null
-): (number: number) => boolean {
-  const whole = (n: number | null): n is number => n != null && Number.isInteger(n) && n >= 1
-  files = files.filter((f) => f.season !== 0)
-  if (new Set(files.map((f) => f.season ?? 1)).size > 1) return () => false
-  const total = totalUnits != null && totalUnits > 0 ? totalUnits : null
-  if (total == null) return whole
-  const numbers = files.map((f) => f.number).filter(whole)
-  if (numbers.length > 0 && numbers.every((n) => n > total)) return () => false
-  return (n) => whole(n) && n <= total
-}
+// Shared with the Favorite episodes section, which owns it.
+export { episodeNumberHeartable }
 
 // Linked-video entry point on an anime/movie/tv detail page. Mirrors
 // MangaChaptersSection: attach a folder from the video library, list what was
@@ -45,9 +26,11 @@ export function episodeNumberHeartable(
 // video file instead of a folder.
 export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Element {
   const qc = useQueryClient()
+  const navigate = useNavigate()
+  const queue = useVideoQueue()
   const [busy, setBusy] = useState(false)
-  // Anime only: a file row hearts its episode number in the same table as the
-  // Favorite episodes grid below it.
+  // Anime only: a file row hearts its episode number; the Favorite episodes
+  // section below lists the hearted ones and plays their files.
   const episodeFavorites = useEpisodeFavorites(m.id, m.mediaType === 'anime')
 
   const { data } = useQuery({
@@ -106,6 +89,18 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
   const continueFile = files.find((f) => !f.watchedAt)
   const watched = files.filter((f) => f.watchedAt).length
 
+  // Shuffle: this title's episodes in random order until the user stops it
+  // (lib/videoQueue.ts). Replaces any queue already running.
+  // Counted after specials drop out: one episode plus a special would replay
+  // the same file forever.
+  const shuffleShow = showFromFiles(m.id, m.title, files)
+  const canShuffle = !asOneVideo && shuffleShow.files.length > 1
+  const queued = queueHasShow(queue, m.id) ? queueCurrent(queue) : null
+  const shuffle = (): void => {
+    const item = videoQueue.start([shuffleShow])
+    if (item) navigate(`/watch/file/${item.fileId}`)
+  }
+
   const openExternal = (f: VideoFile): void => {
     void api.video.openExternal({ kind: 'file', fileId: f.id }).catch(toastError)
   }
@@ -145,6 +140,22 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
                     ? 'Resume'
                     : 'Play'
                   : `${continueFile.resumeSeconds ? 'Resume' : 'Play next'} · ${continueFile.title}`}
+              </Link>
+            )}
+            {canShuffle && (
+              <button
+                type="button"
+                className="btn-ghost flex items-center gap-1.5 px-3 py-1"
+                title="Play this title's episodes in random order, one after another"
+                onClick={shuffle}
+              >
+                <ShuffleIcon className="h-4 w-4" />
+                Shuffle
+              </button>
+            )}
+            {queued && (
+              <Link className="btn-ghost px-3 py-1" to={`/watch/file/${queued.fileId}`}>
+                Continue shuffle
               </Link>
             )}
             <button className="btn-ghost px-3 py-1" disabled={busy} onClick={() => void rescan()}>

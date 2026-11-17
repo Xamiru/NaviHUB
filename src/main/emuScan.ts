@@ -221,15 +221,63 @@ export function findApiDll(
   return null
 }
 
+// DLLs a release can load a Goldberg build through while Valve's own
+// steam_api DLL stays in place: proxy loaders (version/winmm/winhttp/dinput8)
+// and gbe_fork's ColdClientLoader steamclient. Mod and ASI loaders use the same
+// names, so a file here counts only when its bytes are Goldberg.
+export const LOADER_DLLS = [
+  'version.dll',
+  'winmm.dll',
+  'winhttp.dll',
+  'dinput8.dll',
+  'steamclient64.dll',
+  'steamclient.dll'
+] as const
+export type EmuDllName = ApiDllName | (typeof LOADER_DLLS)[number]
+
+// Is the file at this path a Goldberg build? Loaders are held to a stricter
+// test (goldbergInstall.isGoldbergFile).
+export type GoldbergCheck = (path: string, kind: 'api' | 'loader') => boolean
+
+export interface EmuDll {
+  dir: string
+  name: EmuDllName
+  goldberg: boolean
+}
+
+// The DLL whose steam_settings the emulator reads. A Goldberg steam_api DLL
+// wins; otherwise a Goldberg loader DLL in the same folders (a release that
+// keeps Valve's steam_api DLL and loads Goldberg beside it); otherwise the
+// non-Goldberg steam_api DLL itself, so callers can say what they found.
+// Refresh, the launch check and one-click setup all go through this, so they
+// always mean one folder.
+export function findEmuDll(
+  exeDir: string | null,
+  io: EmuFileIO = nodeFileIO,
+  isGoldberg: GoldbergCheck = () => false
+): EmuDll | null {
+  const api = findApiDll(exeDir, io)
+  if (api && isGoldberg(joinUnder(api.dir, api.name), 'api')) return { ...api, goldberg: true }
+  for (const dir of gameDirCandidates(exeDir)) {
+    for (const name of LOADER_DLLS) {
+      const path = joinUnder(dir, name)
+      if (io.exists(path) && isGoldberg(path, 'loader')) return { dir, name, goldberg: true }
+    }
+  }
+  return api ? { ...api, goldberg: false } : null
+}
+
 // The achievement schema a Goldberg/GSE crack ships — the zero-network source
-// for the list. When the game has a steam_api DLL, ONLY the steam_settings
-// beside it counts (it is the one the emulator reads, and the one one-click
-// setup writes); otherwise the nearest steam_settings up the same search.
+// for the list. When the game has an emulator DLL (findEmuDll), ONLY the
+// steam_settings beside it counts (it is the one the emulator reads, and the
+// one one-click setup writes); otherwise the nearest steam_settings up the
+// same search.
 export function findLocalSteamSchema(
   exeDir: string | null,
-  io: EmuFileIO = nodeFileIO
+  io: EmuFileIO = nodeFileIO,
+  isGoldberg?: GoldbergCheck
 ): { dir: string; content: string } | null {
-  const dll = findApiDll(exeDir, io)
+  const dll = findEmuDll(exeDir, io, isGoldberg)
   const dirs = dll ? [dll.dir] : gameDirCandidates(exeDir)
   for (const base of dirs) {
     const dir = joinUnder(base, 'steam_settings')

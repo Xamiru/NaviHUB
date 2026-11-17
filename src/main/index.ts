@@ -44,6 +44,7 @@ import { settleAllOnQuit as settleAllTasksOnQuit } from './tasks'
 import { cancelActiveFootballSync } from './football/sync'
 import { cancelHistoryJobs } from './history/historyJobs'
 import { cancelModJobs } from './mods'
+import { cancelKindleJobs } from './kindle/kindle'
 import { cancelRomScan } from './romScan'
 import { installAppMenu } from './appMenu'
 import { initializeSecretStorage } from './secretStorage'
@@ -128,7 +129,11 @@ function createWindow(): void {
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
-      contextIsolation: true
+      contextIsolation: true,
+      // Chromium's experimental HTMLMediaElement.audioTracks: the in-app video
+      // player's audio-track menu. Without it the menu never shows and the
+      // system player stays the way to change language.
+      enableBlinkFeatures: 'AudioVideoTracks'
     }
   })
 
@@ -371,6 +376,10 @@ app.on('before-quit', () => {
   cancelModJobs()
   // The game-folder scan reads the library after its walk; stop it first.
   cancelRomScan()
+  // A Kindle check stops between files so it reads nothing after the DB
+  // closes; a Send to Kindle kills its running gio copy at once and writes no
+  // more ledger rows (the cut-off file is offered next launch).
+  cancelKindleJobs()
   // Don't let a half-finished yt-dlp outlive the app; its .part files survive
   // and resume on the next try.
   killActiveMusicDownload()

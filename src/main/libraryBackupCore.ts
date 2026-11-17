@@ -42,6 +42,7 @@ export const MACHINE_LOCAL_SETTING_KEYS = [
   'books.dir',
   'football.dir',
   'history.dir',
+  'kindle.folder',
   'manga.dir',
   'media.dir',
   'music.dir',

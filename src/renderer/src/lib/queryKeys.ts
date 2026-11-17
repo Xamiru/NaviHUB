@@ -90,7 +90,9 @@ export const qk = {
     tvSeasons: (mediaId: number) => ['media', 'tvSeasons', mediaId] as const,
     // The user's chosen edition of a book (book_edition) — personal state that
     // a media mutation may change (choosing one rewrites the page total).
-    bookEdition: (mediaId: number) => ['media', 'bookEdition', mediaId] as const
+    bookEdition: (mediaId: number) => ['media', 'bookEdition', mediaId] as const,
+    // Under ['media'] so a Kindle import's media invalidation refreshes it.
+    kindleReading: (mediaId: number) => ['media', 'kindleReading', mediaId] as const
   },
   mediaCounts: {
     all: ['media-counts'] as const,
@@ -102,6 +104,16 @@ export const qk = {
     index: (kind: ListKind | null) => ['lists', kind] as const,
     detail: (listId: number) => ['lists', 'detail', listId] as const,
     forEntity: (kind: ListKind, entityId: number) => ['lists', 'forEntity', kind, entityId] as const
+  },
+  kindle: {
+    all: ['kindle'] as const,
+    status: ['kindle', 'status'] as const,
+    madeBooks: ['kindle', 'madeBooks'] as const,
+    sendStatus: ['kindle', 'sendStatus'] as const,
+    unfinishedSends: ['kindle', 'unfinishedSends'] as const,
+    // The preview reads the device, so it is keyed by what is being sent.
+    sendPreview: (keys: string) => ['kindle', 'sendPreview', keys] as const,
+    preview: (scanId: string) => ['kindle', 'preview', scanId] as const
   },
   quotes: {
     all: ['quotes'] as const,
@@ -309,6 +321,7 @@ export const qk = {
     cardsForFronts: (fronts: string) => ['japanese', 'cardsForFronts', fronts] as const,
     grammarIndex: ['japanese', 'grammarIndex'] as const,
     builtInStatus: ['japanese', 'builtInStatus'] as const,
+    builtInHeldBack: ['japanese', 'builtInHeldBack'] as const,
     voiceInfo: ['japanese', 'voiceInfo'] as const,
     leeches: ['japanese', 'leeches'] as const,
     stats: ['japanese', 'stats'] as const,

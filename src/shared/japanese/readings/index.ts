@@ -7,6 +7,7 @@ import { EXPANDED_PASSAGES } from './expanded'
 import { N4_MORE_PASSAGES } from './n4more'
 import { N3_MORE_PASSAGES } from './n3more'
 import { N2_MORE_PASSAGES } from './n2more'
+import { N5_MORE_PASSAGES } from './n5more'
 import type { JpPassage } from '../types'
 
 // One file per level (the programming/ courses idiom) so authors never collide.
@@ -19,7 +20,8 @@ export const JP_PASSAGES: JpPassage[] = [
   ...EXPANDED_PASSAGES,
   ...N4_MORE_PASSAGES,
   ...N3_MORE_PASSAGES,
-  ...N2_MORE_PASSAGES
+  ...N2_MORE_PASSAGES,
+  ...N5_MORE_PASSAGES
 ]
 
 export function jpPassage(key: string): JpPassage | undefined {

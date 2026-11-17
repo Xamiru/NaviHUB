@@ -1,6 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import FavoriteEpisodesSection from '../../src/renderer/src/components/FavoriteEpisodesSection'
 import { episodeNumberHeartable } from '../../src/renderer/src/components/VideoEpisodesSection'
@@ -11,7 +12,10 @@ const { stored, list, set, files } = vi.hoisted(() => {
   const stored = new Set<number>()
   return {
     stored,
-    files: vi.fn(async () => ({ localDir: null as string | null, files: [] as { number: number }[] })),
+    files: vi.fn(async () => ({
+      localDir: null as string | null,
+      files: [] as { id?: number; number: number; title?: string; watchedAt?: string | null }[]
+    })),
     list: vi.fn(async () => [...stored].sort((a, b) => a - b)),
     set: vi.fn(async (_mediaId: number, n: number, on: boolean) => {
       if (on) stored.add(n)
@@ -28,7 +32,9 @@ function renderSection(m: Partial<MediaDetail>): ReturnType<typeof render> {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <FavoriteEpisodesSection m={{ id: 4, progress: 0, totalUnits: null, ...m } as MediaDetail} />
+      <MemoryRouter>
+        <FavoriteEpisodesSection m={{ id: 4, progress: 0, totalUnits: null, ...m } as MediaDetail} />
+      </MemoryRouter>
     </QueryClientProvider>
   )
 }
@@ -45,11 +51,14 @@ describe('Favorite episodes on an anime Episodes tab', () => {
     const grid = await screen.findByRole('list', { name: 'Episodes' })
     expect(within(grid).getAllByRole('listitem')).toHaveLength(12)
 
-    await user.click(screen.getByRole('button', { name: 'Add episode 5 to favorites' }))
-    const remove = await screen.findByRole('button', { name: 'Remove episode 5 from favorites' })
+    await user.click(within(grid).getByRole('button', { name: 'Add episode 5 to favorites' }))
+    const remove = await within(grid).findByRole('button', { name: 'Remove episode 5 from favorites' })
     expect(remove).toHaveAttribute('aria-pressed', 'true')
     expect(set).toHaveBeenCalledWith(4, 5, true)
-    expect(screen.getByText('Episode 5')).toBeInTheDocument()
+    // Nothing linked: the favorite is listed, with nothing to play.
+    const favorites = screen.getByRole('list', { name: 'Favorite episodes' })
+    expect(favorites).toHaveTextContent('Episode 5')
+    expect(within(favorites).queryByRole('link')).not.toBeInTheDocument()
     await expectNoAxeViolations(container)
 
     await user.click(remove)
@@ -62,8 +71,9 @@ describe('Favorite episodes on an anime Episodes tab', () => {
   it('without a known total, offers the logged episodes and keeps a later favorite', async () => {
     stored.add(9)
     renderSection({ totalUnits: null, progress: 3 })
+    const grid = await screen.findByRole('list', { name: 'Episodes' })
     expect(
-      await screen.findByRole('button', { name: 'Remove episode 9 from favorites' })
+      await within(grid).findByRole('button', { name: 'Remove episode 9 from favorites' })
     ).toBeInTheDocument()
     expect(within(screen.getByRole('list', { name: 'Episodes' })).getAllByRole('listitem')).toHaveLength(9)
   })
@@ -102,7 +112,8 @@ describe('Favorite episodes on an anime Episodes tab', () => {
           }
         })
     )
-    await user.click(screen.getByRole('button', { name: 'Remove episode 5 from favorites' }))
+    const grid = screen.getByRole('list', { name: 'Episodes' })
+    await user.click(within(grid).getByRole('button', { name: 'Remove episode 5 from favorites' }))
     release([5])
     await new Promise((resolve) => setTimeout(resolve, 20))
     expect(screen.getByRole('button', { name: 'Add episode 5 to favorites' })).toHaveAttribute(
@@ -119,7 +130,10 @@ describe('Favorite episodes on an anime Episodes tab', () => {
 
   it('treats a stored total of 0 as unknown and reaches the last linked file', async () => {
     files.mockResolvedValueOnce({ localDir: 'Show', files: [{ number: 6 }] })
+    const user = userEvent.setup()
     renderSection({ totalUnits: 0, progress: 2 })
+    // A heartable linked file hearts on its row, so the picker starts closed.
+    await user.click(await screen.findByRole('button', { name: /Pick episodes by number/ }))
     expect(
       await screen.findByRole('button', { name: 'Add episode 6 to favorites' })
     ).toBeInTheDocument()
@@ -137,6 +151,32 @@ describe('Favorite episodes on an anime Episodes tab', () => {
       container.querySelector('button[aria-label="Remove episode 90000 from favorites"]')
     ).not.toBeNull()
     expect(container.querySelector('button[aria-label="Add episode 3001 to favorites"]')).toBeNull()
+  })
+
+  it('lists only favorites, and a favorite with a linked file plays it', async () => {
+    stored.add(3)
+    files.mockResolvedValue({
+      localDir: 'Show',
+      files: [
+        { id: 31, number: 3, title: 'Show - 03', watchedAt: null },
+        { id: 32, number: 4, title: 'Show - 04', watchedAt: null }
+      ]
+    })
+    const user = userEvent.setup()
+    const { container } = renderSection({ totalUnits: 12 })
+    const play = await screen.findByRole('link', { name: 'Play episode 3' })
+    expect(play).toHaveAttribute('href', '/watch/file/31')
+    const favorites = screen.getByRole('list', { name: 'Favorite episodes' })
+    expect(within(favorites).getAllByRole('listitem')).toHaveLength(1)
+    // Every-number picker stays out of the way until asked for.
+    expect(screen.queryByRole('list', { name: 'Episodes' })).not.toBeInTheDocument()
+    await expectNoAxeViolations(container)
+
+    await user.click(within(favorites).getByRole('button', { name: 'Remove episode 3 from favorites' }))
+    expect(set).toHaveBeenLastCalledWith(4, 3, false)
+    expect(await screen.findByText(/Use the heart on an episode above/)).toBeInTheDocument()
+    files.mockReset()
+    files.mockImplementation(async () => ({ localDir: null, files: [] }))
   })
 
   it('says so when there is nothing to number yet', async () => {

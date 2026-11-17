@@ -2823,3 +2823,76 @@ export const quoteTheme = sqliteTable('quote_theme', {
   pk: primaryKey({ columns: [t.quoteId, t.name] }),
   byName: index('idx_quote_theme_name').on(t.name)
 }))
+
+// ---- Kindle (KOReader) bridge ----
+export const kindleBook = sqliteTable('kindle_book', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  partialMd5: text('partial_md5').notNull().unique(),
+  mediaId: integer('media_id').references(() => mediaItem.id, { onDelete: 'set null' }),
+  chapterId: integer('chapter_id'),
+  devicePath: text('device_path'),
+  size: integer('size'),
+  origin: text('origin').notNull(),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  removedAt: text('removed_at')
+}, (t) => ({
+  origin: check('kindle_book_origin', sql`${t.origin} IN ('sent','linked')`),
+  byMedia: index('idx_kindle_book_media').on(t.mediaId)
+}))
+
+export const kindleAnnotation = sqliteTable('kindle_annotation', {
+  mediaId: integer('media_id').notNull().references(() => mediaItem.id, { onDelete: 'cascade' }),
+  fingerprint: text('fingerprint').notNull(),
+  quoteId: integer('quote_id'),
+  textHash: text('text_hash').notNull(),
+  noteHash: text('note_hash').notNull(),
+  importedAt: text('imported_at').notNull().default(sql`(datetime('now'))`)
+}, (t) => ({
+  pk: primaryKey({ columns: [t.mediaId, t.fingerprint] })
+}))
+
+export const kindleReadingDay = sqliteTable('kindle_reading_day', {
+  mediaId: integer('media_id').notNull().references(() => mediaItem.id, { onDelete: 'cascade' }),
+  day: text('day').notNull(),
+  seconds: integer('seconds').notNull(),
+  pages: integer('pages').notNull().default(0),
+  checklistLogId: integer('checklist_log_id')
+}, (t) => ({
+  pk: primaryKey({ columns: [t.mediaId, t.day] })
+}))
+
+export const kindleSeries = sqliteTable('kindle_series', {
+  seriesKey: text('series_key').primaryKey(),
+  mediaId: integer('media_id').references(() => mediaItem.id, { onDelete: 'set null' }),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`)
+})
+
+export const kindleSend = sqliteTable('kindle_send', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  mediaId: integer('media_id').references(() => mediaItem.id, { onDelete: 'set null' }),
+  title: text('title').notNull(),
+  devicePath: text('device_path').notNull(),
+  device: text('device'),
+  bytes: integer('bytes').notNull(),
+  sha256: text('sha256').notNull(),
+  partialMd5: text('partial_md5').notNull(),
+  status: text('status').notNull(),
+  error: text('error'),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  finishedAt: text('finished_at')
+})
+
+export const kindleVocab = sqliteTable('kindle_vocab', {
+  wordKey: text('word_key').primaryKey(),
+  kind: text('kind').notNull(),
+  targetId: integer('target_id'),
+  importedAt: text('imported_at').notNull().default(sql`(datetime('now'))`)
+})
+
+export const kindleImport = sqliteTable('kindle_import', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  importedAt: text('imported_at').notNull().default(sql`(datetime('now'))`),
+  summaryJson: text('summary_json').notNull(),
+  undoJson: text('undo_json').notNull(),
+  undoneAt: text('undone_at')
+})

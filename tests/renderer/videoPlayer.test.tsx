@@ -2,10 +2,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { VideoSource } from '../../src/shared/types'
 import VideoPlayerPage from '../../src/renderer/src/pages/VideoPlayerPage'
 import { api } from '../../src/renderer/src/lib/api'
+import { videoQueue } from '../../src/renderer/src/lib/videoQueue'
 import { expectNoAxeViolations } from './accessibility'
 
 const m = vi.hoisted(() => ({
@@ -672,6 +673,48 @@ describe('video player', () => {
     expect(screen.getByRole('button', { name: 'Loop' })).toHaveAttribute('aria-pressed', 'true')
   })
 
+  it('switches audio tracks when Chromium lists them, starting on the judged track', async () => {
+    const track = (lang: string, isDefault: boolean, playable = true) => ({
+      index: 1,
+      label: `${lang.toUpperCase()} (aac)`,
+      lang,
+      codec: playable ? 'aac' : 'dts',
+      channels: 2,
+      isDefault,
+      playable
+    })
+    m.source.mockResolvedValue(
+      source({ audioTracks: [track('eng', false), track('jpn', true), track('ger', false, false)] })
+    )
+    const { container } = renderAt()
+    await screen.findByRole('heading', { name: /Episode 3/ })
+    expect(screen.queryByRole('combobox', { name: 'Audio track' })).toBeNull()
+    const video = container.querySelector('video')!
+    const list = [
+      { enabled: true, label: '', language: 'en' },
+      { enabled: false, label: '', language: 'ja' },
+      { enabled: false, label: '', language: 'de' }
+    ]
+    Object.defineProperty(video, 'audioTracks', {
+      configurable: true,
+      value: { length: 3, 0: list[0], 1: list[1], 2: list[2] }
+    })
+    act(() => {
+      fireEvent.loadedMetadata(video)
+    })
+    const menu = screen.getByRole('combobox', { name: 'Audio track' })
+    expect(menu).toHaveValue('1')
+    expect(list.map((t) => t.enabled)).toEqual([false, true, false])
+    expect(within(menu).getByRole('option', { name: /GER.*system player only/ })).toBeDisabled()
+
+    fireEvent.change(menu, { target: { value: '0' } })
+    expect(list.map((t) => t.enabled)).toEqual([true, false, false])
+    expect(JSON.parse(localStorage.getItem('video.audioChoices') ?? '{}')['media:12']).toEqual({
+      lang: 'eng',
+      label: 'ENG (aac) · 2.0'
+    })
+  })
+
   it('names a vanished file instead of blaming the decoder', async () => {
     m.source
       .mockResolvedValueOnce(source())
@@ -690,5 +733,154 @@ describe('video player', () => {
     renderAt('/watch/elsewhere/7')
     expect(await screen.findByText('This player link is not valid.')).toBeInTheDocument()
     expect(m.source).not.toHaveBeenCalled()
+  })
+})
+
+describe('video player in a shuffle queue', () => {
+  // Episode 3 (file 7) is playing; 9 and 11 come next, from two shows.
+  function seedQueue(index = 0): void {
+    localStorage.setItem(
+      'video.shuffleQueue',
+      JSON.stringify({
+        v: 1,
+        shows: [
+          { mediaId: 12, title: 'Frieren', files: [{ fileId: 7, title: 'Episode 3' }] },
+          { mediaId: 13, title: 'Seinfeld', files: [{ fileId: 9, title: 'The Contest' }] }
+        ],
+        decks: {},
+        items: [
+          { fileId: 7, mediaId: 12, title: 'Episode 3', show: 'Frieren' },
+          { fileId: 9, mediaId: 13, title: 'The Contest', show: 'Seinfeld' },
+          { fileId: 11, mediaId: 12, title: 'Episode 5', show: 'Frieren' }
+        ],
+        index
+      })
+    )
+    videoQueue.resetForTests()
+  }
+  const askedFor = (fileId: number): boolean =>
+    m.source.mock.calls.some(([ref]) => (ref as { fileId?: number }).fileId === fileId)
+
+  beforeEach(() => {
+    videoQueue.resetForTests()
+    m.source.mockResolvedValue(source({ next: { fileId: 8, title: 'Episode 4' } }))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    videoQueue.stop()
+  })
+
+  async function finish(container: HTMLElement): Promise<void> {
+    await screen.findByRole('heading', { name: /Episode 3/ })
+    const video = container.querySelector('video')!
+    setClock(video, 1440, 1440)
+    act(() => {
+      fireEvent.ended(video)
+    })
+    await screen.findByText('Finished Episode 3')
+  }
+
+  it('counts down on the Finished screen and plays the next queue item by itself', async () => {
+    seedQueue()
+    // Installed before the countdown's first timer; real time still flows for the queries.
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const { container } = renderAt()
+    await finish(container)
+    expect(screen.getByText(/Next: Seinfeld · The Contest/)).toHaveTextContent('in 5')
+    for (let i = 0; i < 5; i++) {
+      await act(async () => {
+        vi.advanceTimersByTime(1000)
+      })
+    }
+    vi.useRealTimers()
+    await vi.waitFor(() => expect(askedFor(9)).toBe(true))
+    expect(videoQueue.get()?.index).toBe(1)
+  })
+
+  it('Cancel stops the countdown and Play now still moves on', async () => {
+    seedQueue()
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const { container } = renderAt()
+    await finish(container)
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    await act(async () => {
+      vi.advanceTimersByTime(7000)
+    })
+    vi.useRealTimers()
+    expect(askedFor(9)).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: 'Play now' }))
+    await vi.waitFor(() => expect(askedFor(9)).toBe(true))
+  })
+
+  it('Stop shuffle during the countdown neither advances nor falls back to the folder order', async () => {
+    seedQueue()
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const { container } = renderAt()
+    await finish(container)
+    act(() => {
+      videoQueue.stop()
+    })
+    await act(async () => {
+      vi.advanceTimersByTime(7000)
+    })
+    vi.useRealTimers()
+    expect(askedFor(9)).toBe(false)
+    expect(askedFor(8)).toBe(false)
+    expect(screen.getByRole('button', { name: 'Next: Episode 4' })).toBeInTheDocument()
+  })
+
+  it('keeps Up next open from one episode to the next', async () => {
+    seedQueue()
+    renderAt()
+    await screen.findByRole('heading', { name: /Episode 3/ })
+    act(() => {
+      fireEvent.keyDown(window, { key: 'u' })
+    })
+    expect(JSON.parse(localStorage.getItem('video.playerPrefs') ?? '{}').upNextOpen).toBe(true)
+  })
+
+  it('N follows the queue rather than the folder order', async () => {
+    seedQueue()
+    renderAt()
+    await screen.findByRole('heading', { name: /Episode 3/ })
+    act(() => {
+      fireEvent.keyDown(window, { key: 'n' })
+    })
+    await vi.waitFor(() => expect(askedFor(9)).toBe(true))
+    expect(askedFor(8)).toBe(false)
+  })
+
+  it('opens Up next with U, and Stop shuffle ends queue mode', async () => {
+    seedQueue()
+    const { container } = renderAt()
+    await screen.findByRole('heading', { name: /Episode 3/ })
+    act(() => {
+      fireEvent.keyDown(window, { key: 'u' })
+    })
+    const panel = screen.getByRole('complementary', { name: 'Up next' })
+    expect(within(panel).getAllByRole('listitem')).toHaveLength(3)
+    await expectNoAxeViolations(container, { preload: false })
+    fireEvent.click(within(panel).getByRole('button', { name: 'Stop shuffle' }))
+    expect(screen.queryByRole('complementary', { name: 'Up next' })).toBeNull()
+    expect(videoQueue.get()).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Shuffle queue (U)' })).toBeNull()
+  })
+
+  it('a file opened outside the queue keeps the folder order and no countdown', async () => {
+    seedQueue(1)
+    const { container } = renderAt()
+    await finish(container)
+    expect(screen.getByRole('button', { name: 'Next: Episode 4' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull()
+  })
+
+  it('offers Skip to next on an unplayable queue item, never skipping by itself', async () => {
+    seedQueue()
+    m.source.mockResolvedValue(source({ decode: { verdict: 'unsupported', reason: 'HEVC.' } }))
+    renderAt()
+    const skip = await screen.findByRole('button', { name: 'Skip to next' })
+    expect(askedFor(9)).toBe(false)
+    fireEvent.click(skip)
+    await vi.waitFor(() => expect(askedFor(9)).toBe(true))
   })
 })

@@ -25,6 +25,27 @@ const THROTTLE_MS = 300
 const MAX_CONSECUTIVE_FAILURES = 20
 const MAX_CLIP_BYTES = 16 * 1024 * 1024
 
+type BzDecode = (input: Buffer, output?: Buffer | number, multistream?: boolean) => Buffer
+
+// seek-bzip is CJS (`module.exports = Bunzip`, with `Bunzip.decode` assigned
+// afterwards). The main bundle keeps it external, so the lazy import() is
+// Node's own ESM-of-CJS import, whose named-export detection misses `decode`:
+// it is only on `.default`. Accept both shapes so a bundler change cannot
+// break it again. Exported for tests.
+export function bunzipFrom(mod: unknown): (buf: Buffer) => Buffer {
+  const m = mod as { decode?: BzDecode; default?: { decode?: BzDecode } }
+  const decode = m.default?.decode ?? m.decode
+  if (typeof decode !== 'function') throw new Error('The bz2 decoder (seek-bzip) failed to load')
+  // Multistream: a parallel-compressed export (pbzip2) is several bz2 streams
+  // back to back, and a single-stream decode would stop after the first.
+  return (buf) => decode(buf, undefined, true)
+}
+
+// Lazy import keeps startup untouched.
+export async function loadBunzip(): Promise<(buf: Buffer) => Buffer> {
+  return bunzipFrom(await import('seek-bzip'))
+}
+
 const AUDIO_LIST_URL =
   'https://downloads.tatoeba.org/exports/per_language/jpn/jpn_sentences_with_audio.tsv.bz2'
 const JPN_SENTENCES_URL =
@@ -243,8 +264,7 @@ export function importSentenceAudio(): Promise<SentenceAudioImportSummary> {
     }
     const installedJp = new Set(installed.map((r) => r.jp))
 
-    // seek-bzip is CJS and pure JS; lazy import keeps startup untouched.
-    const bz = (await import('seek-bzip')) as unknown as { decode(buf: Buffer): Buffer }
+    const bz = await loadBunzip()
 
     const listTmp = await downloadToTemp(AUDIO_LIST_URL, 'bz2')
     let sentTmp: string | null = null
@@ -252,10 +272,10 @@ export function importSentenceAudio(): Promise<SentenceAudioImportSummary> {
       sentTmp = await downloadToTemp(JPN_SENTENCES_URL, 'bz2')
       setImportPhase('reading')
       const { rows, skippedUnlicensed } = parseAudioListTsv(
-        bz.decode(await readFile(listTmp)).toString('utf8')
+        bz(await readFile(listTmp)).toString('utf8')
       )
       const idToText = parseJpnSentencesTsv(
-        bz.decode(await readFile(sentTmp)).toString('utf8'),
+        bz(await readFile(sentTmp)).toString('utf8'),
         new Set(rows.map((r) => r.sentenceId))
       )
       const { clips, skippedUnmatched } = planClips(rows, idToText, installedJp)

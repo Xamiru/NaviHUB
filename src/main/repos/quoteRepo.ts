@@ -302,6 +302,32 @@ export function save(input: QuoteInput, id?: number | null): number {
   })()
 }
 
+// The Kindle import's narrow edit: only the line and/or the note, so the
+// quote's link, speaker, themes and favorite stay as the user left them.
+// A new text drops the furigana markup (it no longer matches) unless the
+// caller restores the markup that belonged to that text.
+export function setTextAndNote(
+  id: number,
+  fields: { text?: string; furigana?: string | null; note?: string | null }
+): void {
+  const sets: string[] = []
+  const values: unknown[] = []
+  if (fields.text !== undefined) {
+    const text = clean(fields.text, 4000)
+    if (!text) throw new Error('A quote needs some text')
+    sets.push('text = ?', 'furigana = ?')
+    values.push(text, fields.furigana ?? null)
+  }
+  if (fields.note !== undefined) {
+    sets.push('note = ?')
+    values.push(clean(fields.note, 4000))
+  }
+  if (!sets.length) return
+  getSqlite()
+    .prepare(`UPDATE quote SET ${sets.join(', ')}, updated_at = datetime('now') WHERE id = ?`)
+    .run(...values, id)
+}
+
 export function setFavorite(id: number, favorite: boolean): void {
   getSqlite()
     .prepare(`UPDATE quote SET favorite = ?, updated_at = datetime('now') WHERE id = ?`)

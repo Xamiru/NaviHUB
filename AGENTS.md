@@ -219,14 +219,15 @@ Break one of these and something silently corrupts, leaks, or fails to start. Th
 | a setting key that holds a machine path, tool location or local service URL | `MACHINE_LOCAL_SETTING_KEYS` in `src/main/libraryBackupCore.ts` | a restore would otherwise carry another machine's folders over; guarded by `tests/libraryBackup.test.ts` |
 | a Settings card (a `SettingCard`/`TextSetting`/`QuietWorkspace` title under `pages/settings/`) | its entry in `lib/settingsCatalog.ts` | it is otherwise unsearchable and has no anchor; guarded by `tests/settingsCatalog.test.ts` |
 | a provider credential setting | `SECRET_SETTING_KEYS`, the Settings input, and `scripts/sanitizeSql.cjs` | otherwise plaintext can reach the renderer/export or a secret may bypass migration; guarded by `tests/secretStorage.test.ts` |
+| anything that writes to a Kindle | only `src/main/kindle/kindleWrite.ts` (`DeviceWriter` over `GioMtpUploader`/`FilesystemUploader`), every name a bare file inside `documents/NaviHUB/`, checked free against a fresh listing (the MTP upload itself replaces silently), verified by size and SHA-256, and removed only when it is that upload's own failed copy | the Kindle is fragile and holds the user's KOReader data; `kindleDevice.ts` stays read-only. Guarded by `tests/kindleWriteGuard.test.ts` and `tests/kindleWrite.test.ts` |
 
 ### The before-quit registry
 
-`src/main/index.ts` — **twenty-two calls, and the order is load-bearing**:
+`src/main/index.ts` — **twenty-three calls, and the order is load-bearing**:
 
 ```
 settleAllTasksOnQuit
-→ cancelActiveFootballSync → cancelHistoryJobs → cancelModJobs → cancelRomScan
+→ cancelActiveFootballSync → cancelHistoryJobs → cancelModJobs → cancelRomScan → cancelKindleJobs
 → killActiveMusicDownload → killActiveUpdate
 → killActiveOcr → cancelActiveLibraryExport → cancelActiveLibraryBackup → cancelActiveStorageMove → cancelSlideshowSync → killSqlSandbox → stopActiveTts → stopQuizPools → stopAchievementWatcher → finalizeActiveGameSession
 → closeDatabase → closeCatalogDb → closeLaunchboxDb → closeDictDb
@@ -304,6 +305,7 @@ Per-subsystem detail lives in [`docs/architecture/`](docs/architecture/00-index.
 | Torrent search, or the bulk importer | [torrents-bulk.md](docs/architecture/torrents-bulk.md) |
 | Theme songs, music, the tournament bracket | [music-quiz.md](docs/architecture/music-quiz.md) |
 | Quotes — the quote book, capture from the book reader and video player, furigana | [quotes.md](docs/architecture/quotes.md) |
+| The Kindle bridge — KOReader progress, highlights and reading time, device access, Send to Kindle | [kindle.md](docs/architecture/kindle.md) |
 | The checklist, streaks, progress logging | [checklist-progress.md](docs/architecture/checklist-progress.md) |
 | The task registry, pause/cancel, the structured log, the Tools menu | [tasks-logs.md](docs/architecture/tasks-logs.md) |
 | Shared UI components, the Lain theme, dialogs, menu bar, zoom | [ui-conventions.md](docs/architecture/ui-conventions.md) |

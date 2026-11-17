@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   assertSafeArgPath,
+  audioCodecPlayable,
   buildAttachmentDumpArgs,
   buildClipArgs,
   buildProbeArgs,
@@ -147,6 +148,22 @@ describe('ffmpeg argv safety', () => {
     expect(args[args.indexOf('-c:s') + 1]).toBe('copy')
     expect(args[args.indexOf('-f') + 1]).toBe('sup')
     expect(args.at(-1)).toBe('file:/b/out.sup')
+  })
+})
+
+describe('audioCodecPlayable', () => {
+  it('greys out only what the player can never decode on this platform', () => {
+    for (const platform of ['linux', 'win32', 'darwin'] as const) {
+      expect(audioCodecPlayable('aac', platform)).toBe(true)
+      expect(audioCodecPlayable('FLAC', platform)).toBe(true)
+      expect(audioCodecPlayable('pcm_s16le', platform)).toBe(true)
+      expect(audioCodecPlayable(null, platform)).toBe(true)
+      expect(audioCodecPlayable('dts', platform)).toBe(false)
+      expect(audioCodecPlayable('truehd', platform)).toBe(false)
+    }
+    expect(audioCodecPlayable('ac3', 'linux')).toBe(false)
+    expect(audioCodecPlayable('eac3', 'win32')).toBe(true)
+    expect(audioCodecPlayable('ac3', 'darwin')).toBe(true)
   })
 })
 

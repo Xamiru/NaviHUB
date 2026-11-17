@@ -2436,3 +2436,96 @@ CREATE TABLE IF NOT EXISTS quote_theme (
   PRIMARY KEY (quote_id, name)
 ) WITHOUT ROWID;
 CREATE INDEX IF NOT EXISTS idx_quote_theme_name ON quote_theme(name);
+
+-- Kindle (KOReader) bridge, /books/kindle. All personal; wiped on export.
+-- A device book tied to a library book, keyed by KOReader's partial MD5 (the
+-- key its statistics database and sidecars use). origin: 'sent' = copied by
+-- Send to Kindle, 'linked' = matched by hand (frozen values). Deleting the
+-- book unlinks the row instead of forgetting the device file.
+CREATE TABLE IF NOT EXISTS kindle_book (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  partial_md5  TEXT NOT NULL UNIQUE,
+  media_id     INTEGER REFERENCES media_item(id) ON DELETE SET NULL,
+  chapter_id   INTEGER,             -- the local EPUB volume sent (FK-less)
+  device_path  TEXT,                -- relative to the device storage root
+  size         INTEGER,
+  origin       TEXT NOT NULL CHECK(origin IN ('sent','linked')),
+  created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  removed_at   TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_kindle_book_media ON kindle_book(media_id);
+-- One row per imported KOReader highlight. quote_id is FK-less: when the
+-- quote is deleted the row stays as a tombstone, so a later import never
+-- brings the highlight back. The hashes are what the import last wrote, so a
+-- device-side edit updates the quote only where the user has not edited it.
+CREATE TABLE IF NOT EXISTS kindle_annotation (
+  media_id     INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+  fingerprint  TEXT NOT NULL,
+  quote_id     INTEGER,
+  text_hash    TEXT NOT NULL,
+  note_hash    TEXT NOT NULL,
+  imported_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (media_id, fingerprint)
+) WITHOUT ROWID;
+-- Measured reading time per book and local day, from KOReader's statistics.
+-- checklist_log_id: the book-session credit that day produced (FK-less; set
+-- once, so undoing the credit by hand is respected).
+CREATE TABLE IF NOT EXISTS kindle_reading_day (
+  media_id          INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+  day               TEXT NOT NULL,
+  seconds           INTEGER NOT NULL,
+  pages             INTEGER NOT NULL DEFAULT 0,
+  checklist_log_id  INTEGER,
+  PRIMARY KEY (media_id, day)
+) WITHOUT ROWID;
+-- A manga series folder on the Kindle (its path under documents/), linked by
+-- hand to a library manga. The chapter files were renamed on the way to the
+-- device, so the link is per series, not per file.
+CREATE TABLE IF NOT EXISTS kindle_series (
+  series_key   TEXT PRIMARY KEY,
+  media_id     INTEGER REFERENCES media_item(id) ON DELETE SET NULL,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_kindle_series_media ON kindle_series(media_id);
+-- Send to Kindle's ledger: a row is written 'pending' before an upload starts
+-- and settled after it, so an upload cut off by a pulled cable or a killed app
+-- is found again: a 'pending' or 'incomplete' row names a file that may be a
+-- truncated copy on the device, which the Kindle page then checks and offers
+-- to remove (and only if it does not match these bytes).
+-- status: pending | sent | failed (nothing left on the device) |
+--         incomplete (the cleanup failed) | removed (cleaned up later).
+CREATE TABLE IF NOT EXISTS kindle_send (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  media_id     INTEGER REFERENCES media_item(id) ON DELETE SET NULL,
+  title        TEXT NOT NULL,
+  device_path  TEXT NOT NULL,
+  -- The device the send went to (its label, which carries the serial), so a
+  -- clean-up never acts on another Kindle's file of the same name.
+  device       TEXT,
+  bytes        INTEGER NOT NULL,
+  sha256       TEXT NOT NULL,
+  partial_md5  TEXT NOT NULL,
+  status       TEXT NOT NULL CHECK(status IN ('pending','sent','failed','incomplete','removed')),
+  error        TEXT,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  finished_at  TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_kindle_send_status ON kindle_send(status);
+-- Words from KOReader's vocabulary builder that an import brought in, keyed
+-- by kind and folded word ('en:lurch', 'jp:漢字'): a word imported once is
+-- never offered again. target_id is the en_word or jp_card row (FK-less: the
+-- user may delete it, and the row stays as the tombstone).
+CREATE TABLE IF NOT EXISTS kindle_vocab (
+  word_key     TEXT PRIMARY KEY,
+  kind         TEXT NOT NULL CHECK(kind IN ('en','jp')),
+  target_id    INTEGER,
+  imported_at  TEXT NOT NULL DEFAULT (datetime('now'))
+) WITHOUT ROWID;
+-- One row per applied import, with what Undo needs to put things back.
+CREATE TABLE IF NOT EXISTS kindle_import (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  imported_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  summary_json  TEXT NOT NULL,
+  undo_json     TEXT NOT NULL,
+  undone_at     TEXT
+);

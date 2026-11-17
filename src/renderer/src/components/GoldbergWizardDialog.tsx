@@ -11,7 +11,9 @@ import Dialog from './Dialog'
 // achievement its steam_settings/achievements.json lists, so for a game already
 // running Goldberg this writes a complete list beside its DLL, backing up the
 // release's own list once (Restore puts it back). NaviHUB never touches the DLL
-// itself: a game that is not on Goldberg yet gets the manual steps instead.
+// itself: a game that is not on Goldberg yet gets a warning that protected
+// games break when the DLL is replaced, with the manual steps behind a
+// disclosure for an unprotected one.
 
 const GBE_RELEASES = 'https://github.com/Detanup01/gbe_fork/releases'
 
@@ -138,32 +140,49 @@ export default function GoldbergWizardDialog({
           {state.emulator === 'other' && (
             <>
               <p className="text-gray-300">
-                This game's {state.dllName} is not Goldberg, so it never saves achievements
-                anywhere. To track them, swap Goldberg in by hand:
+                This game's {state.dllName} is not Goldberg, and no Goldberg loader was found beside
+                it, so there is no achievement list for NaviHUB to write.
               </p>
-              <ol className="list-decimal space-y-2 pl-5 text-gray-400">
-                <li>
-                  Download the gbe_fork release and unpack it.
-                  <button
-                    className="btn-ghost ml-2 text-xs"
-                    onClick={() => void api.app.openExternal(GBE_RELEASES)}
-                  >
-                    Open releases page
-                  </button>
-                </li>
-                <li>
-                  In the game folder, rename {state.dllName} to {state.dllName}.bak so you can undo
-                  this.
-                </li>
-                <li>
-                  Copy in the release's {state.dllName} from{' '}
-                  <code className="text-gray-300">
-                    release/experimental/{state.dllName === 'steam_api64.dll' ? 'x64' : 'x86'}
-                  </code>
-                  .
-                </li>
-                <li>Open this dialog again to write the achievement list.</li>
-              </ol>
+              <p className="text-signal-caution">
+                Keep the game's own {state.dllName}. A game protected by Denuvo or another DRM
+                beyond Steam's own stops launching when that file is replaced.
+              </p>
+              <p className="text-gray-400">
+                Mark achievements by hand on the Achievements tab instead. If the game's release
+                ships its own Steam emulator, Import from emulator files there can read its
+                unlocks.
+              </p>
+              <details className="rounded border border-base-700 px-3 py-2">
+                <summary className="cursor-pointer text-gray-300">
+                  Only for a game with no protection: swap in Goldberg by hand
+                </summary>
+                <ol className="mt-2 list-decimal space-y-2 pl-5 text-gray-400">
+                  <li>
+                    Download the gbe_fork release and unpack it.
+                    <button
+                      className="btn-ghost ml-2 text-xs"
+                      onClick={() => void api.app.openExternal(GBE_RELEASES)}
+                    >
+                      Open releases page
+                    </button>
+                  </li>
+                  <li>
+                    In the game folder, rename {state.dllName} to {state.dllName}.bak so you can
+                    undo this.
+                  </li>
+                  <li>
+                    Copy in the release's {state.dllName} from{' '}
+                    <code className="text-gray-300">
+                      release/regular/{state.dllName === 'steam_api64.dll' ? 'x64' : 'x86'}
+                    </code>
+                    .
+                  </li>
+                  <li>
+                    If the game no longer starts, delete the copied file and rename the .bak back.
+                  </li>
+                  <li>Open this dialog again to write the achievement list.</li>
+                </ol>
+              </details>
             </>
           )}
 

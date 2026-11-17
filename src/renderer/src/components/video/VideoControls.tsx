@@ -80,6 +80,12 @@ export interface VideoControlsProps {
   trackError: string | null
   transcriptOpen: boolean
   miningOpen: boolean
+  // Two or more audio tracks Chromium can switch between; null hides the menu.
+  audio?: { options: { label: string; playable: boolean }[]; selected: number } | null
+  onPickAudio?: (index: number) => void
+  // Shuffle queue only: null hides the Up next toggle.
+  upNextOpen?: boolean | null
+  onUpNext?: () => void
   hasPrev: boolean
   hasNext: boolean
   visible: boolean
@@ -131,6 +137,7 @@ export default function VideoControls(props: VideoControlsProps): JSX.Element {
   // A speed picked with the mouse hands focus back to the player, so Space and
   // the arrows do not stay captured by the select. Keyboard stepping keeps it.
   const ratePointer = useRef(false)
+  const audioPointer = useRef(false)
 
   return (
     <div
@@ -213,6 +220,35 @@ export default function VideoControls(props: VideoControlsProps): JSX.Element {
             ))}
           </select>
         </Field>
+
+        {props.audio && props.onPickAudio && (
+          <Field label="Audio track" hiddenLabel className="contents">
+            <select
+              className="input h-7 w-auto max-w-[11rem] shrink-0 truncate px-1 py-0 text-xs"
+              title="Audio track"
+              value={props.audio.selected}
+              onPointerDown={() => {
+                audioPointer.current = true
+              }}
+              onKeyDown={() => {
+                audioPointer.current = false
+              }}
+              onChange={(e) => {
+                props.onPickAudio?.(Number(e.target.value))
+                // A mouse pick hands the keys back to the player; arrow keys
+                // keep moving through the list.
+                if (audioPointer.current) e.currentTarget.blur()
+                audioPointer.current = false
+              }}
+            >
+              {props.audio.options.map((o, i) => (
+                <option key={i} value={i} disabled={!o.playable}>
+                  {o.playable ? o.label : `${o.label} (system player only)`}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
 
         <BarToggle
           label="Vol"
@@ -316,6 +352,14 @@ export default function VideoControls(props: VideoControlsProps): JSX.Element {
               />
               <BarButton label="Capture" title="Capture this frame and line (C)" onClick={props.onCapture} />
             </>
+          )}
+          {props.upNextOpen != null && props.onUpNext && (
+            <BarToggle
+              label="Up next"
+              active={props.upNextOpen}
+              title="Shuffle queue (U)"
+              onClick={props.onUpNext}
+            />
           )}
           <BarButton label="Quote" title="Save this line as a quote (Q)" onClick={props.onQuote} />
           <BarButton label="Full" title="Fullscreen (F)" onClick={props.onFullscreen} />

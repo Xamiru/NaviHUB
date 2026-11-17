@@ -58,10 +58,19 @@ export const VIDEO_PLAYER_SHORTCUTS: ShortcutRow[] = [
   { keys: ['T', 'M', 'C'], label: 'Transcript, mining panel, capture' },
   { keys: ['Q'], label: 'Save the line on screen as a quote' },
   { keys: ['N', 'P'], label: 'Next / previous file' },
+  { keys: ['U'], label: 'Up next (while shuffling)' },
   { keys: ['F', 'O'], label: 'Fullscreen, open externally' },
   { keys: ['Double-click'], label: 'Fullscreen (a single click does nothing)' },
   { keys: ['0-9'], label: 'Jump to 0-90 percent' },
   { keys: ['Esc', 'Backspace'], label: 'Close panels / leave the player' }
+]
+
+// JapaneseReviewPage's keys. K ("I know this") applies to a new card's
+// recognition side only; nothing else on the page uses K.
+export const JAPANESE_REVIEW_SHORTCUTS: ShortcutRow[] = [
+  { keys: ['Space', 'Enter'], label: 'Show the answer' },
+  { keys: ['1', '2', '3', '4'], label: 'Again / Hard / Good / Easy' },
+  { keys: ['K'], label: 'I know this (a new card): back for a check in two to four weeks' }
 ]
 
 export const SHORTCUT_GROUPS: ShortcutGroup[] = [
@@ -101,5 +110,6 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
   },
   { title: 'Manga reader', note: 'Press ? inside the reader for this list.', rows: MANGA_READER_SHORTCUTS },
   { title: 'Book reader', note: 'Press ? inside the reader for this list.', rows: BOOK_READER_SHORTCUTS },
-  { title: 'Video player', note: 'Press ? inside the player for this list.', rows: VIDEO_PLAYER_SHORTCUTS }
+  { title: 'Video player', note: 'Press ? inside the player for this list.', rows: VIDEO_PLAYER_SHORTCUTS },
+  { title: 'Japanese review', rows: JAPANESE_REVIEW_SHORTCUTS }
 ]

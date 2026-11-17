@@ -716,12 +716,17 @@ const GOLDBERG_DLL_MARKERS = [
   'configs.user.ini'
 ]
 
-export function looksLikeGoldbergDll(bytes: Uint8Array): boolean {
+export function goldbergMarkerCount(bytes: Uint8Array): number {
   const buf = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength)
-  return GOLDBERG_DLL_MARKERS.some(
+  return GOLDBERG_DLL_MARKERS.filter(
     (m) => buf.includes(Buffer.from(m, 'latin1')) || buf.includes(Buffer.from(m, 'utf16le'))
-  )
+  ).length
 }
+
+export function looksLikeGoldbergDll(bytes: Uint8Array): boolean {
+  return goldbergMarkerCount(bytes) >= 1
+}
+
 
 // The list one-click setup writes, built from the release's own list (rule R5
 // in goldbergInstall.ts). Every release entry is kept EXACTLY as it was —

@@ -3,8 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
 import { type SaveFn, confirmRemove, SettingCard } from './shared'
-import { confirmDialog } from '../../lib/confirm'
-import { toast } from '../../lib/toast'
+import { builtInSummary, useBuiltInRestore } from '../../components/japanese/useBuiltInRestore'
 import { RETENTION_OPTIONS, RETENTION_SETTING, retentionFromSetting } from '@shared/srs'
 import {
   DIRECTION_SETTING,
@@ -146,31 +145,10 @@ export function JapaneseDirectionSettings({
 // when keys were first assigned. Restoring puts the built-in text back
 // (review progress kept) and brings the missing ones in.
 export function JapaneseBuiltInSettings() {
-  const queryClient = useQueryClient()
   const status = useQuery({ queryKey: qk.japanese.builtInStatus, queryFn: () => api.japanese.builtInStatus() })
-  const [busy, setBusy] = useState(false)
+  const { busy, restore } = useBuiltInRestore()
   const edited = status.data?.edited ?? 0
   const missing = status.data?.missing ?? 0
-
-  async function restore(): Promise<void> {
-    const parts = [
-      edited ? `replace the text of ${edited} edited or older built-in ${edited === 1 ? 'item' : 'items'}` : null,
-      missing ? `add ${missing} built-in ${missing === 1 ? 'item' : 'items'} your library does not have` : null
-    ].filter(Boolean)
-    const ok = await confirmDialog(
-      `Restore the built-in courses? This will ${parts.join(' and ')}. Your edits to built-in lessons and cards are lost; review progress, your own lessons and cards, and anything you delete in the app from now on stay as they are.`,
-      { confirmLabel: 'Restore built-in text', danger: true }
-    )
-    if (!ok) return
-    setBusy(true)
-    try {
-      await api.japanese.restoreBuiltIn()
-      toast('Built-in courses restored', 'success')
-    } finally {
-      setBusy(false)
-      await queryClient.invalidateQueries({ queryKey: qk.japanese.all })
-    }
-  }
 
   return (
     <SettingCard
@@ -186,12 +164,7 @@ export function JapaneseBuiltInSettings() {
               ? 'Checking…'
               : edited + missing === 0
                 ? 'Every built-in lesson and card is up to date.'
-                : [
-                    edited ? `${edited} built-in ${edited === 1 ? 'item is' : 'items are'} edited or older text.` : '',
-                    missing ? `${missing} built-in ${missing === 1 ? 'item is' : 'items are'} missing from your library.` : ''
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
+                : builtInSummary(edited, missing)}
           </p>
           {edited + missing > 0 && (
             <button className="btn" disabled={busy} onClick={() => void restore()}>

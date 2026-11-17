@@ -16,12 +16,12 @@ import * as achievementRepo from './repos/achievementRepo'
 import {
   GOLDBERG_BACKUP_SUFFIX,
   GOLDBERG_MANIFEST,
-  looksLikeGoldbergDll,
+  goldbergMarkerCount,
   mergeGoldbergList,
   parseGoldbergSchema
 } from './achievementsCore'
-import { exeDirOf, findApiDll } from './emuScan'
-import type { ApiDllName } from './emuScan'
+import { exeDirOf, findEmuDll, gameDirCandidates } from './emuScan'
+import type { EmuDll } from './emuScan'
 import type { GoldbergState } from '@shared/types'
 
 // One-click achievement saving for a game that already runs the Goldberg
@@ -31,9 +31,10 @@ import type { GoldbergState } from '@shared/types'
 // has its own test in tests/goldbergInstall.test.ts, and every write below is
 // ordered so a failure at that line still keeps them:
 //
-// R1. Never touches a DLL. The steam_api DLL is only read, to recognise
-//     Goldberg. (Swapping it in automatically was built and removed on
-//     2026-10-11; see docs/architecture/removed.md.)
+// R1. Never touches a DLL. The steam_api DLL (or a loader DLL beside it,
+//     emuScan.findEmuDll) is only read, to recognise Goldberg. (Swapping it
+//     in automatically was built and removed on 2026-10-11; see
+//     docs/architecture/removed.md.)
 // R2. Writes only inside <DLL folder>/steam_settings/, only when that DLL is
 //     Goldberg, and only three files: achievements.json, its one backup and
 //     the manifest.
@@ -87,16 +88,21 @@ function writeManifest(settingsDir: string, m: Manifest): void {
 // The launch check runs on every Play, and a steam_api DLL is several MB, so
 // the verdict is cached per file and only re-read when its size or modified
 // time changes (a swap, a game update).
-const dllVerdicts = new Map<string, { size: number; mtimeMs: number; goldberg: boolean }>()
+const dllVerdicts = new Map<string, { size: number; mtimeMs: number; markers: number }>()
 
-function isGoldbergFile(path: string): boolean {
+// A steam_api DLL needs one Goldberg marker, a loader DLL (version.dll,
+// winmm.dll, ...) two: a DLL-check bypass or a mod loader that reads a
+// Goldberg config can name one of them ('steam_settings') without being the
+// emulator, and a list written beside it would never be read.
+export function isGoldbergFile(path: string, kind: 'api' | 'loader' = 'api'): boolean {
   try {
     const st = statSync(path)
-    const hit = dllVerdicts.get(path)
-    if (hit && hit.size === st.size && hit.mtimeMs === st.mtimeMs) return hit.goldberg
-    const goldberg = looksLikeGoldbergDll(readFileSync(path))
-    dllVerdicts.set(path, { size: st.size, mtimeMs: st.mtimeMs, goldberg })
-    return goldberg
+    let hit = dllVerdicts.get(path)
+    if (!hit || hit.size !== st.size || hit.mtimeMs !== st.mtimeMs) {
+      hit = { size: st.size, mtimeMs: st.mtimeMs, markers: goldbergMarkerCount(readFileSync(path)) }
+      dllVerdicts.set(path, hit)
+    }
+    return hit.markers >= (kind === 'loader' ? 2 : 1)
   } catch {
     return false
   }
@@ -137,13 +143,25 @@ function copyAtomic(from: string, to: string): void {
 }
 
 function locate(mediaId: number): {
-  dll: { dir: string; name: ApiDllName } | null
+  dll: EmuDll | null
   settingsDir: string | null
 } {
-  const dll = findApiDll(exeDirOf(achievementRepo.exePathOf(mediaId)))
+  const dll = findEmuDll(exeDirOf(achievementRepo.exePathOf(mediaId)), undefined, isGoldbergFile)
   // Goldberg reads steam_settings beside its DLL, so with no DLL there is no
   // folder to speak of.
   return { dll, settingsDir: dll ? join(dll.dir, 'steam_settings') : null }
+}
+
+// The steam_settings NaviHUB last wrote into. Normally the one locate() names,
+// but a loader removed or updated after setup moves locate() to another
+// folder, and Restore must still find its own manifest and backup (R7).
+function restoreDir(mediaId: number, settingsDir: string | null): string | null {
+  if (settingsDir && readManifest(settingsDir)) return settingsDir
+  for (const dir of gameDirCandidates(exeDirOf(achievementRepo.exePathOf(mediaId)))) {
+    const candidate = join(dir, 'steam_settings')
+    if (readManifest(candidate)) return candidate
+  }
+  return null
 }
 
 export function goldbergState(mediaId: number): GoldbergState {
@@ -162,12 +180,12 @@ export function goldbergState(mediaId: number): GoldbergState {
   return {
     gameDir: dll?.dir ?? null,
     dllName: dll?.name ?? null,
-    emulator: !dll ? 'none' : isGoldbergFile(join(dll.dir, dll.name)) ? 'goldberg' : 'other',
+    emulator: !dll ? 'none' : dll.goldberg ? 'goldberg' : 'other',
     settingsDir,
     list: !listed ? 'missing' : missing ? 'incomplete' : 'complete',
     missing,
     total: rows.length,
-    canRestore: settingsDir != null && readManifest(settingsDir) != null
+    canRestore: restoreDir(mediaId, settingsDir) != null
   }
 }
 
@@ -184,7 +202,7 @@ export function installConfig(mediaId: number): GoldbergState {
   if (!dll || !settingsDir) {
     throw new Error('Could not find steam_api64.dll or steam_api.dll next to the game executable.')
   }
-  if (!isGoldbergFile(join(dll.dir, dll.name))) {
+  if (!dll.goldberg) {
     throw new Error(`This game's ${dll.name} is not Goldberg, so it would not read the list.`)
   }
 
@@ -238,7 +256,7 @@ export function installConfig(mediaId: number): GoldbergState {
 // leaves a state this function can finish from: the backup is deleted only
 // once it is back in place, and the manifest only once nothing else remains.
 export function restore(mediaId: number): GoldbergState {
-  const { settingsDir } = locate(mediaId)
+  const settingsDir = restoreDir(mediaId, locate(mediaId).settingsDir)
   const manifest = settingsDir ? readManifest(settingsDir) : null
   if (!settingsDir || !manifest) throw new Error('NaviHUB has not changed this game folder.')
   const list = join(settingsDir, 'achievements.json')

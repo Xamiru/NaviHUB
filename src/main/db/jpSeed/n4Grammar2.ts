@@ -1,8 +1,249 @@
-import type { SeedCourseDef } from '../japaneseSeed'
+import type { SeedCourseDef, SeedLesson } from '../japaneseSeed'
 
 // JLPT N4 Grammar II (2026-10-16): the N4 core the first N4 course did not
 // reach — concession, obligation, regret, quoting, nominalizing and the rest.
 // Step 8, right after JLPT N4 Grammar. Keys are frozen.
+
+// ---- 2026-11-17: N4 points the two N4 courses still lacked (plan slice 3).
+// Declared first because N4B_COURSE below lists them at their positions.
+
+const N4B_HOU_GA_II: SeedLesson = {
+  key: 'n4b.hou-ga-ii',
+  kind: 'grammar',
+  title: 'Advice: ～たほうがいい・～ないほうがいい',
+  body: `ほうがいい (literally "that side is better") gives advice.
+
+Formation:
+・do it: た-form + ほうがいい — 早く寝たほうがいい。 "You'd better go to bed early."
+・don't do it: ない-form + ほうがいい — 無理しないほうがいい。 "You'd better not overdo it."
+Polite: ほうがいいです. Softer: ほうがいいと思います, ほうがいいですよ.
+
+Every class:
+・行く → 行ったほうがいい / 行かないほうがいい
+・食べる → 食べたほうがいい / 食べないほうがいい
+・する → したほうがいい / しないほうがいい
+・来る → 来たほうがいい（きた） / 来ないほうがいい（こない）
+
+Why the past form for "do it" but the plain negative for "don't"? The た-form pictures the action as done ("having gone to bed early is better"), which makes the advice firm and aimed at this person. The dictionary form (寝るほうがいい) exists, but sounds like a general comparison rather than advice. The negative takes ない: 行かなかったほうがいい is not used for advice.
+
+With adjectives and nouns, ほうがいい compares two options (the N4 comparison lesson): 安いほうがいい "the cheaper one is better", 電車のほうがいい "the train is better".
+
+Nearest neighbours: ～なければならない is obligation, not advice. ～ばいい ("all you need to do is…") offers a method; ほうがいい warns that the other choice is worse.
+
+The common mistake: giving it straight to a superior. ほうがいい is direct; to a teacher or a boss, soften it: ～たほうがいいかもしれません.`,
+  cards: [
+    { front: '風邪なら、早く寝たほうがいいよ。', reading: 'かぜなら、はやくねたほうがいいよ。', back: 'If you have a cold, you should go to bed early.' },
+    { front: '無理しないほうがいいですよ。', reading: 'むりしないほうがいいですよ。', back: "You'd better not overdo it." },
+    { front: '夜遅く公園を歩かないほうがいい。', reading: 'よるおそくこうえんをあるかないほうがいい。', back: "It's better not to walk in the park late at night." },
+    { front: '雨が降りそうだから、傘を持っていったほうがいい。', reading: 'あめがふりそうだから、かさをもっていったほうがいい。', back: 'It looks like rain, so you should take an umbrella.' },
+    { front: '医者に行ったほうがいいと思います。', reading: 'いしゃにいったほうがいいとおもいます。', back: 'I think you should see a doctor.' },
+    { front: 'そのことは誰にも言わないほうがいい。', reading: 'そのことはだれにもいわないほうがいい。', back: "You'd better not tell anyone about that." },
+    { front: '日本語は毎日少しずつ勉強したほうがいいです。', reading: 'にほんごはまいにちすこしずつべんきょうしたほうがいいです。', back: "It's best to study Japanese a little every day." }
+  ]
+}
+
+const N4B_TE_SHIMAU: SeedLesson = {
+  key: 'n4b.te-shimau',
+  kind: 'grammar',
+  title: '～てしまう — done completely, or done by mistake',
+  body: `てしまう adds one of two meanings to an action, and the context tells you which.
+
+1. Completely, all of it (often with もう or 全部):
+宿題を全部やってしまった。 — "I finished all my homework."
+この本はもう読んでしまいました。 — "I've already read this book to the end."
+
+2. Regret: it happened and cannot be undone, or you did it without meaning to:
+財布をなくしてしまった。 — "I've lost my wallet." (and I'm upset)
+電車で寝てしまいました。 — "I fell asleep on the train."
+
+Formation: て-form + しまう, which conjugates as a Group 1 verb: しまいます, しまった, しまわない. With a で-form: 飲んで → 飲んでしまう.
+
+In speech it contracts: てしまう → ちゃう, でしまう → じゃう (食べちゃった, 飲んじゃった); the Manga & VN Japanese course covers these.
+
+Nearest neighbours:
+・plain past: 財布をなくした states a fact; 財布をなくしてしまった adds "and I wish I hadn't".
+・ておく: done on purpose, in advance. てしまう is either finished off or regretted.
+
+The common mistake: reading every てしまう as regret. 晩ご飯の前に、レポートを書いてしまいます means "I'll get the report written before dinner", sense 1, with no regret at all.`,
+  cards: [
+    { front: '宿題を全部やってしまった。', reading: 'しゅくだいをぜんぶやってしまった。', back: 'I finished all my homework.' },
+    { front: '財布をなくしてしまった。', reading: 'さいふをなくしてしまった。', back: "I've lost my wallet." },
+    { front: '電車で寝てしまいました。', reading: 'でんしゃでねてしまいました。', back: 'I fell asleep on the train.' },
+    { front: '妹のケーキを食べてしまった。', reading: 'いもうとのケーキをたべてしまった。', back: "I ended up eating my younger sister's cake." },
+    { front: 'この本はもう読んでしまいました。', reading: 'このほんはもうよんでしまいました。', back: "I've already read this book to the end." },
+    { front: '大事な約束を忘れてしまった。', reading: 'だいじなやくそくをわすれてしまった。', back: 'I forgot an important appointment.' },
+    { front: '晩ご飯の前に、レポートを書いてしまいます。', reading: 'ばんごはんのまえに、レポートをかいてしまいます。', back: "I'll get the report written before dinner." }
+  ]
+}
+
+const N4B_TE_IKU_KURU: SeedLesson = {
+  key: 'n4b.te-iku-kuru',
+  kind: 'grammar',
+  title: '～ていく・～てくる — direction in space and in time',
+  body: `いく ("go") and くる ("come") after a て-form add a direction, measured from the speaker.
+
+1. Movement: do something and go, or do something and come (back):
+・傘を持っていきます。 — "I'll take an umbrella (with me)." (away from here)
+・ちょっとパンを買ってくる。 — "I'll just go and buy some bread (and come back)."
+・弟が走ってきた。 — "My younger brother came running over (to me)."
+The everyday いってきます ("I'm off, see you later") is this pattern.
+
+2. Change over time:
+・てくる — a change that has built up to now: だんだん寒くなってきました。 "It has been getting colder."
+・ていく — a change that will go on from now: これからも人口は減っていくでしょう。 "The population will keep falling from here on."
+
+Rule of thumb: くる points toward the speaker (here, now); いく points away (there, the future).
+
+Formation: て-form + いく or くる, conjugated like 行く and 来る: 持っていきます, 持っていった, 買ってきます, 買ってきた, 買ってこない. In this use they are usually written in kana.
+
+ている vs ていく: 傘を持っている is "I have an umbrella (on me)"; 傘を持っていく is "I'll take an umbrella along". In speech ていく shortens to てく: 持ってく.
+
+The common mistake: the wrong direction. Asking someone to bring something to you is 持ってきてください; 持っていってください sends it away from you.`,
+  cards: [
+    { front: '傘を持っていきます。', reading: 'かさをもっていきます。', back: "I'll take an umbrella." },
+    { front: 'ちょっとパンを買ってくる。', reading: 'ちょっとパンをかってくる。', back: "I'll just go and buy some bread." },
+    { front: '明日、ノートを持ってきてください。', reading: 'あした、ノートをもってきてください。', back: 'Please bring your notebook tomorrow.' },
+    { front: '弟が走ってきた。', reading: 'おとうとがはしってきた。', back: 'My younger brother came running over.' },
+    { front: 'だんだん寒くなってきました。', reading: 'だんだんさむくなってきました。', back: 'It has been getting colder.' },
+    { front: '最近、日本語が分かってきた。', reading: 'さいきん、にほんごがわかってきた。', back: "Lately I've started to understand Japanese." },
+    { front: 'これからも人口は減っていくでしょう。', reading: 'これからもじんこうはへっていくでしょう。', back: 'The population will probably keep falling from here on.' }
+  ]
+}
+
+const N4B_JIDOUSHI: SeedLesson = {
+  key: 'n4b.jidoushi',
+  kind: 'grammar',
+  title: 'Transitive and intransitive pairs: 閉める・閉まる',
+  body: `Many verbs come in pairs: one where someone does something TO something (transitive, the thing takes を), and one where it simply happens (intransitive, the thing takes が).
+
+・窓を閉める — "close the window" (someone closes it) / 窓が閉まる — "the window closes"
+・電気を消す — "turn off the light" / 電気が消える — "the light goes out"
+・会議を始める — "start the meeting" / 会議が始まる — "the meeting starts"
+
+The particle is the lesson: を with the transitive verb, が with the intransitive one.
+
+The shapes repeat, so learn them as patterns (transitive first):
+・-eru / -aru: 閉める・閉まる, 始める・始まる, 止める・止まる, 決める・決まる
+・-eru / -u: 開ける・開く, 付ける・付く, 続ける・続く
+・-su / -eru: 消す・消える, 出す・出る, 壊す・壊れる
+・-osu / -iru: 落とす・落ちる, 起こす・起きる
+・入れる・入る follows 開ける・開く (-eru transitive, -u intransitive), but the stem changes (い／はい), so learn it as a pair
+
+Japanese often uses the intransitive verb for something that just happened, which avoids naming who did it: コップが割れた "the glass broke" sounds gentler than コップを割った "I broke the glass".
+
+With ている and てある (from the N4 course):
+・intransitive + ている — the state after the change: 窓が開いている "the window is open"
+・transitive + てある — left that way on purpose: 窓が開けてある "the window has been left open (by someone)"
+
+The common mistake: the right verb with the wrong particle. 電気が消した ✗ and 窓を閉まった ✗ — say 電気を消した and 窓が閉まった. The Confusables page drills these pairs.`,
+  cards: [
+    { front: 'ドアが閉まりました。', reading: 'ドアがしまりました。', back: 'The door closed.' },
+    { front: '寒いから、窓を閉めてください。', reading: 'さむいから、まどをしめてください。', back: "It's cold, so please close the window." },
+    { front: '急に電気が消えた。', reading: 'きゅうにでんきがきえた。', back: 'Suddenly the lights went out.' },
+    { front: '寝る前に電気を消した。', reading: 'ねるまえにでんきをけした。', back: 'I turned off the light before going to bed.' },
+    { front: '会議は九時に始まります。', reading: 'かいぎはくじにはじまります。', back: 'The meeting starts at nine.' },
+    { front: 'では、会議を始めましょう。', reading: 'では、かいぎをはじめましょう。', back: "Well then, let's start the meeting." },
+    { front: 'コップが落ちて、割れた。', reading: 'コップがおちて、われた。', back: 'The glass fell and broke.' },
+    { front: 'かばんに財布を入れました。', reading: 'かばんにさいふをいれました。', back: 'I put my wallet in my bag.' }
+  ]
+}
+
+const N4B_MIERU: SeedLesson = {
+  key: 'n4b.mieru',
+  kind: 'grammar',
+  title: 'Can see, can hear: 見える・聞こえる vs 見られる・聞ける',
+  body: `English "can see" and "can hear" cover two different ideas, and Japanese splits them.
+
+見える and 聞こえる — it reaches your eyes or ears by itself, with no effort. What is seen or heard takes が:
+・窓から富士山が見えます。 — "You can see Mount Fuji from the window."
+・外から子供の声が聞こえる。 — "I can hear children's voices outside."
+
+見られる and 聞ける (the potential forms) — you are able to, because there is a chance or a means:
+・この映画はネットで見られます。 — "You can watch this movie online."
+・このアプリでラジオが聞けます。 — "You can listen to the radio with this app."
+
+The test: is it about your senses (見える) or about opportunity (見られる)?
+・眼鏡がないと、よく見えない。 — "Without my glasses I can't see well." (eyesight)
+・忙しくて、ドラマが見られない。 — "I'm too busy to watch the drama." (no chance to)
+
+見える and 聞こえる are Group 2 verbs and never take を: 富士山を見える ✗.
+
+見える has a second meaning, "look, seem": 若く見える "looks young".
+
+The common mistake in writing: 見れる for 見られる. The shorter form is everywhere in speech (ら-dropping), but write 見られる.`,
+  cards: [
+    { front: '窓から富士山が見えます。', reading: 'まどからふじさんがみえます。', back: 'You can see Mount Fuji from the window.' },
+    { front: '外から子供の声が聞こえる。', reading: 'そとからこどものこえがきこえる。', back: "I can hear children's voices outside." },
+    { front: 'この映画はネットで見られます。', reading: 'このえいがはネットでみられます。', back: 'You can watch this movie online.' },
+    { front: 'このアプリでラジオが聞けます。', reading: 'このアプリでラジオがきけます。', back: 'You can listen to the radio with this app.' },
+    { front: '眼鏡がないと、よく見えない。', reading: 'めがねがないと、よくみえない。', back: "Without my glasses I can't see well." },
+    { front: '忙しくて、ドラマが見られない。', reading: 'いそがしくて、ドラマがみられない。', back: "I'm too busy to watch the drama." },
+    { front: 'すみません、声がよく聞こえません。', reading: 'すみません、こえがよくきこえません。', back: "Sorry, I can't hear you well." }
+  ]
+}
+
+const N4B_YOU_NI_NARU: SeedLesson = {
+  key: 'n4b.you-ni-naru',
+  kind: 'grammar',
+  title: '～ようになる・～なくなる — a change in ability or habit',
+  body: `なる ("become") after a verb needs ように: dictionary form (often a potential) + ようになる. It describes a change that came about gradually, not a single event.
+
+・ability: potential + ようになる — "has become able to"
+泳げるようになりました。 — "I've learned to swim." (I couldn't before)
+・habit: dictionary form + ようになる — "has started to (regularly)"
+毎朝走るようになった。 — "I've started running every morning."
+
+The negative change: ない-form, い → く, + なる — "no longer"
+・肉を食べなくなった。 — "I've stopped eating meat."
+・弟は最近ゲームをしなくなりました。 — "My younger brother has stopped playing games lately."
+
+Nearest neighbours:
+・ようにする, the lesson before: you make an effort. 早く起きるようにしている "I make a point of getting up early" vs 早く起きるようになった "I've got into the habit of getting up early" (it just happened).
+・ことになる: a decision made for you, not a gradual change.
+・Adjectives and nouns need no ように: 上手になる, 寒くなる.
+
+The common mistake: a verb straight before なる. 泳げるになった ✗ and 食べるなった ✗ — a verb needs ように, or なく for the negative.`,
+  cards: [
+    { front: '泳げるようになりました。', reading: 'およげるようになりました。', back: "I've learned to swim." },
+    { front: '毎朝走るようになった。', reading: 'まいあさはしるようになった。', back: "I've started running every morning." },
+    { front: '肉を食べなくなった。', reading: 'にくをたべなくなった。', back: "I've stopped eating meat." },
+    { front: '漢字が少し書けるようになった。', reading: 'かんじがすこしかけるようになった。', back: 'I can write a few kanji now.' },
+    { front: '弟は最近ゲームをしなくなりました。', reading: 'おとうとはさいきんゲームをしなくなりました。', back: 'My younger brother has stopped playing games lately.' },
+    { front: 'やっと自転車に乗れるようになった。', reading: 'やっとじてんしゃにのれるようになった。', back: 'At last I can ride a bike.' },
+    { front: '雨の日は、バスで行くようになりました。', reading: 'あめのひは、バスでいくようになりました。', back: "On rainy days I've started taking the bus." }
+  ]
+}
+
+const N4B_O_NI_NARU: SeedLesson = {
+  key: 'n4b.o-ni-naru',
+  kind: 'grammar',
+  title: 'Polite verbs: お～になる (respect) and お～する (humble)',
+  body: `Two patterns make most verbs polite. Which one you use depends on WHO does the action.
+
+Respect (尊敬語), for what someone above you does: お + ます-stem + になる
+・読む → お読みになる, 帰る → お帰りになる, 戻る → お戻りになる
+この本をお読みになりましたか。 — "Have you read this book?"
+
+Humble (謙譲語), for what you do for them: お + ます-stem + する (more polite: いたす)
+・持つ → お持ちする, 送る → お送りする, 待つ → お待ちする
+お荷物をお持ちします。 — "Let me carry your bags."
+Many words of Chinese origin take ご instead of お (ご連絡する "contact (you)", ご案内する "show (you) the way", ご説明する "explain"); some common ones keep お (お電話する, お食事, お返事), so learn the prefix with the word.
+
+Polite requests: お + ます-stem + ください — お待ちください "please wait", お入りください "please come in".
+
+Some everyday verbs skip these patterns and use special words instead: いらっしゃる (be, go, come), 召し上がる (eat), おっしゃる (say), and the humble 参る, 申す, いただく. The keigo lessons in Manga & VN Japanese II list them. A verb with a one-kana stem, such as 見る or いる, has no お～になる form: use ご覧になる and いらっしゃる.
+
+The common mistake: mixing up the directions. The humble form for the other person's action (先生がお持ちします ✗) lowers them; the respect form for your own (私がお帰りになります ✗) raises yourself.`,
+  cards: [
+    { front: '先生はもうお帰りになりましたか。', reading: 'せんせいはもうおかえりになりましたか。', back: 'Has the teacher gone home already? (respectful)' },
+    { front: 'この本をお読みになりましたか。', reading: 'このほんをおよみになりましたか。', back: 'Have you read this book? (respectful)' },
+    { front: '部長は何時にお戻りになりますか。', reading: 'ぶちょうはなんじにおもどりになりますか。', back: 'What time will the department head be back? (respectful)' },
+    { front: 'お荷物をお持ちします。', reading: 'おにもつをおもちします。', back: 'Let me carry your bags. (humble)' },
+    { front: '駅までお送りします。', reading: 'えきまでおおくりします。', back: "I'll see you to the station. (humble)" },
+    { front: '後でご連絡します。', reading: 'あとでごれんらくします。', back: "I'll contact you later. (humble)" },
+    { front: 'こちらでお待ちください。', reading: 'こちらでおまちください。', back: 'Please wait here.' }
+  ]
+}
 
 export const N4B_COURSE: SeedCourseDef = {
   title: 'JLPT N4 Grammar II',
@@ -51,14 +292,14 @@ Compare ～ても: ても is about a hypothetical or general "even if"; のに i
 ・雨が降っても行く。 — "I'll go even if it rains." (not yet raining)
 ・雨が降っているのに、傘を持っていない。 — "It's raining, and yet I have no umbrella." (annoyed)
 
-Left hanging at the end of a sentence, のに is pure regret: もっと早く言えばよかったのに。 — "You should have said so sooner."`,
+Left hanging at the end of a sentence, のに is pure regret or complaint: あんなに練習したのに。 — "And after I practised so much." (The "should have" form ばよかったのに comes with ～ばよかった later in this course.)`,
       cards: [
         { front: '一生懸命勉強したのに、試験に落ちた。', reading: 'いっしょうけんめいべんきょうしたのに、しけんにおちた。', back: 'Even though I studied hard, I failed the exam.' },
         { front: '雨が降っているのに、傘を持っていない。', reading: 'あめがふっているのに、かさをもっていない。', back: "It's raining, and yet I don't have an umbrella." },
-        { front: '日曜日なのに、会社に行かなければならない。', reading: 'にちようびなのに、かいしゃにいかなければならない。', back: 'Even though it is Sunday, I have to go to work.' },
+        { key: '日曜日なのに、会社に行かなければならない。', front: '日曜日なのに、会社に行きました。', reading: 'にちようびなのに、かいしゃにいきました。', back: 'Even though it was Sunday, I went to work.' },
         { front: '約束したのに、彼は来なかった。', reading: 'やくそくしたのに、かれはこなかった。', back: "He promised, and yet he didn't come." },
         { front: 'この店は高いのに、おいしくない。', reading: 'このみせはたかいのに、おいしくない。', back: 'This restaurant is expensive, yet the food is not good.' },
-        { front: 'もっと早く言えばよかったのに。', reading: 'もっとはやくいえばよかったのに。', back: 'You should have said so sooner.' }
+        { key: 'もっと早く言えばよかったのに。', front: 'あんなに練習したのに。', reading: 'あんなにれんしゅうしたのに。', back: 'And after I practised so much.' }
       ]
     },
     {
@@ -84,6 +325,7 @@ These two are a pair: must / need not. "Must not" is a different pattern again (
         { front: '靴を脱がなければなりませんか。', reading: 'くつをぬがなければなりませんか。', back: 'Do I have to take off my shoes?' }
       ]
     },
+    N4B_HOU_GA_II,
     {
       key: 'n4b.naide',
       kind: 'grammar',
@@ -128,6 +370,10 @@ You will see it constantly on test papers: 答えなさい ("answer"), 選びな
         { front: '静かにしなさい。', reading: 'しずかにしなさい。', back: 'Be quiet.' }
       ]
     },
+    N4B_TE_SHIMAU,
+    N4B_TE_IKU_KURU,
+    N4B_JIDOUSHI,
+    N4B_MIERU,
     {
       key: 'n4b.quote',
       kind: 'grammar',
@@ -269,6 +515,7 @@ Compare ～ようになる: なる is a change that happens by itself ("came to 
         { front: '毎晩十二時までに寝るようにしている。', reading: 'まいばんじゅうにじまでにねるようにしている。', back: 'I try to go to bed by midnight every night.' }
       ]
     },
+    N4B_YOU_NI_NARU,
     {
       key: 'n4b.koto-ni-naru',
       kind: 'grammar',
@@ -453,6 +700,7 @@ Often either works, but not always:
         { front: '電話するのを忘れた。', reading: 'でんわするのをわすれた。', back: 'I forgot to call.' },
         { front: '私が一番好きなのはこの曲だ。', reading: 'わたしがいちばんすきなのはこのきょくだ。', back: 'The one I like most is this song.' }
       ]
-    }
+    },
+    N4B_O_NI_NARU
   ]
 }

@@ -30,6 +30,8 @@ const present = basenameIndex(root)
 
 // Cited names that are legitimately not files in this repo.
 const NOT_IN_REPO = new Set([
+  // Written by scripts/kindle-probe.ps1 under %TEMP% on the user's Windows PC.
+  'probe.json',
   // Build outputs, generated at package time.
   'latest.yml',
   // A file inside the USER'S game folders (a Goldberg crack's schema), read by
@@ -38,6 +40,8 @@ const NOT_IN_REPO = new Set([
   // One-click Goldberg setup's undo manifest, also in the user's game folder
   // (goldbergInstall.ts).
   '.navihub-goldberg.json',
+  // Send to Kindle's device-id marker, on the user's Kindle (kindle/kindleCore.ts).
+  '.navihub-device.json',
   'latest-linux.yml',
   'app-update.yml',
   // The quiz availability cache in userData (quizAvailabilityCache.ts).

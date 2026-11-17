@@ -3,6 +3,7 @@ import {
   exeDirOf,
   existingUnlockFiles,
   findApiDll,
+  findEmuDll,
   findLocalSteamSchema,
   scanUnlocks,
   steamSettingsDir
@@ -162,5 +163,46 @@ describe('one game-folder search', () => {
     })
     expect(findLocalSteamSchema('C:\\G\\bin', io)?.content).toContain('live')
     expect(findApiDll('C:\\G\\bin', io)).toEqual({ dir: 'C:\\G\\bin', name: 'steam_api64.dll' })
+  })
+
+  it('prefers a Goldberg loader beside Valve\'s steam_api DLL, and its steam_settings', () => {
+    const io = fakeIO({
+      'C:\\G\\steam_api64.dll': 'valve',
+      'C:\\G\\steam_settings\\achievements.json': '[{"name":"beside api"}]',
+      'C:\\G\\bin\\version.dll': 'gse',
+      'C:\\G\\bin\\steam_settings\\achievements.json': '[{"name":"beside loader"}]'
+    })
+    const isGoldberg = (p: string): boolean => io.readFile(p) === 'gse'
+    expect(findEmuDll('C:\\G\\bin', io, isGoldberg)).toEqual({
+      dir: 'C:\\G\\bin',
+      name: 'version.dll',
+      goldberg: true
+    })
+    expect(findLocalSteamSchema('C:\\G\\bin', io, isGoldberg)?.content).toContain('beside loader')
+  })
+
+  it('ignores a loader that is not Goldberg (a mod or ASI loader) and reports the steam_api DLL', () => {
+    const io = fakeIO({ 'C:\\G\\steam_api64.dll': 'valve', 'C:\\G\\winmm.dll': 'asi' })
+    const isGoldberg = (p: string): boolean => io.readFile(p) === 'gse'
+    expect(findEmuDll('C:\\G', io, isGoldberg)).toEqual({
+      dir: 'C:\\G',
+      name: 'steam_api64.dll',
+      goldberg: false
+    })
+    expect(findEmuDll('C:\\H', io, isGoldberg)).toBeNull()
+  })
+
+  it('keeps a Goldberg steam_api DLL ahead of any loader', () => {
+    const io = fakeIO({ 'C:\\G\\steam_api64.dll': 'gse', 'C:\\G\\steamclient64.dll': 'gse' })
+    const isGoldberg = (p: string): boolean => io.readFile(p) === 'gse'
+    expect(findEmuDll('C:\\G', io, isGoldberg)?.name).toBe('steam_api64.dll')
+  })
+
+  it('asks for the stricter loader verdict on loader DLLs', () => {
+    const io = fakeIO({ 'C:\\G\\steam_api64.dll': 'valve', 'C:\\G\\version.dll': 'gse' })
+    const kinds: string[] = []
+    findEmuDll('C:\\G', io, (p, kind) => (kinds.push(`${p.split('\\').pop()}:${kind}`), false))
+    expect(kinds).toContain('steam_api64.dll:api')
+    expect(kinds).toContain('version.dll:loader')
   })
 })

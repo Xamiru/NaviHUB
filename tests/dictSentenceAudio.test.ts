@@ -10,6 +10,8 @@ vi.mock('../src/main/dict/dictDb', () => ({
 vi.mock('../src/main/files', () => ({ jpAudioDir: () => '/tmp/test-jpaudio' }))
 
 import {
+  bunzipFrom,
+  loadBunzip,
   getAudioBankInfo,
   importAudioData,
   parseAudioListTsv,
@@ -183,5 +185,27 @@ describe('sampleAudioSentences', () => {
       audioPath: 'jpaudio/tatoeba/1.mp3'
     })
     expect(sample[0].attribution).toContain('someone')
+  })
+})
+
+describe('bz2 decoding', () => {
+  // Two bz2 streams back to back ('1\tjpn\t猫\n' then '2\tjpn\t犬\n'), as a
+  // parallel compressor writes them.
+  const TWO_STREAMS = Buffer.from(
+    'QlpoOTFBWSZTWfm4EMcAAAHJ0QAwIAAAEUAAAAQACACAIAAiA9TTQgyYizgSbPF3JFOFCQ+bgQxwQlpoOTFBWSZTWU/UeLEAAAHJ0QAwEAAAEUAAABAABACAIAAiA9TTQgyYizgSbPF3JFOFCQT9R4sQ',
+    'base64'
+  )
+
+  it('loads the real seek-bzip and decodes every stream', async () => {
+    const decode = await loadBunzip()
+    expect(decode(TWO_STREAMS).toString('utf8')).toBe('1\tjpn\t猫\n2\tjpn\t犬\n')
+  })
+
+  it('finds decode on the ESM-of-CJS namespace (only on default) and on a plain module', () => {
+    const decode = vi.fn(() => Buffer.from('ok'))
+    expect(bunzipFrom({ default: { decode } })(Buffer.alloc(0)).toString()).toBe('ok')
+    expect(bunzipFrom({ decode })(Buffer.alloc(0)).toString()).toBe('ok')
+    expect(decode).toHaveBeenCalledWith(Buffer.alloc(0), undefined, true)
+    expect(() => bunzipFrom({ default: {} })).toThrow(/seek-bzip/)
   })
 })

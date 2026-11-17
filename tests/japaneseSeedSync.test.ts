@@ -5,9 +5,14 @@ import type Database from 'better-sqlite3'
 import { createTestDb } from './helpers'
 import { SEED_PACKS, seedJapanese, type SeedCourse } from '../src/main/db/japaneseSeed'
 import {
+  adoptMovedLessons,
+  autoReattachVerdict,
   backfillSeedKeys,
+  updateSeedContent,
   cardSeedKey,
   seedDrift,
+  seedHeldBack,
+  reattachAndSync,
   reattachSeedRows,
   insertSeedCourse,
   seedContentHash,
@@ -444,5 +449,309 @@ describe('restoring built-in text', () => {
     expect(card('猫')!.back).toBe('cat')
     expect(lessonTitles()).toEqual(['Lesson one', 'Lesson two'])
     expect(seedDrift(db)).toEqual({ edited: 0, missing: 0 })
+  })
+})
+
+// ---- held-back content applied at startup ----
+
+// A library seeded from an older pack list (the 2026-11 laptop shape): the N5
+// spine lessons did not exist yet, every course after step 8 carried an older
+// step, and one card had an older text. The October launch then ran the key
+// backfill against today's packs, which tombstoned the spine and left the
+// older rows without a hash, and stamped its version.
+const SPINE = (key: string) => key.startsWith('n5.') && !/^n5\.\d+$/.test(key)
+const OLD_TEXT_CARD = SEED_PACKS[0].course.lessons[0].cards[0]
+const oldTextBack = () =>
+  (
+    db
+      .prepare('SELECT back FROM jp_card WHERE seed_key = ?')
+      .get(cardSeedKey(SEED_PACKS[0].course.lessons[0].key, OLD_TEXT_CARD)) as { back: string }
+  ).back
+
+function seedOlderLibrary(): void {
+  for (const p of SEED_PACKS) {
+    const old = structuredClone(p.course)
+    old.lessons = old.lessons.filter((l) => !SPINE(l.key))
+    old.difficulty = Math.min(old.difficulty ?? 1, 8)
+    if (p.key === 'n5') old.lessons[0].cards[0].back = 'older text'
+    insertSeedCourse(db, { ...p, course: old })
+    db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)').run(p.flag, '1')
+  }
+  for (const flag of ['japanese.seeded.levels', 'japanese.seeded.order2', 'japanese.seeded.order3', 'japanese.seeded.order4']) {
+    db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES (?, '1')").run(flag)
+  }
+  db.exec(`UPDATE jp_course SET seed_key = NULL, seed_hash = NULL;
+    UPDATE jp_lesson SET seed_key = NULL, seed_hash = NULL;
+    UPDATE jp_card SET seed_key = NULL, seed_hash = NULL;`)
+  backfillSeedKeys(db, [...SEED_PACKS])
+  syncSeedContent(db, [...SEED_PACKS], 'october')
+  // Rows written in the same second as their insert would hide an edit.
+  for (const table of ['jp_course', 'jp_lesson', 'jp_card']) {
+    db.exec(`UPDATE ${table} SET created_at = '2026-10-16 10:00:00', updated_at = '2026-10-16 10:00:00'`)
+  }
+}
+
+const n5LessonKeys = () =>
+  (
+    db
+      .prepare(
+        `SELECT l.seed_key FROM jp_lesson l JOIN jp_course c ON c.id = l.course_id
+         WHERE c.seed_key = 'n5' ORDER BY l.sort_order, l.id`
+      )
+      .all() as { seed_key: string }[]
+  ).map((r) => r.seed_key)
+
+describe('applying held-back built-in content at startup', () => {
+  it('restores a library the backfill held back on an earlier launch', () => {
+    seedOlderLibrary()
+    expect(seedDrift(db).missing).toBeGreaterThan(0)
+    expect(n5LessonKeys().some(SPINE)).toBe(false)
+    expect(autoReattachVerdict(db)).toBe('apply')
+
+    seedJapanese(db)
+    expect(n5LessonKeys()).toEqual(SEED_PACKS[0].course.lessons.map((l) => l.key))
+    const steps = (
+      db.prepare('SELECT difficulty FROM jp_course ORDER BY difficulty').all() as { difficulty: number }[]
+    ).map((r) => r.difficulty)
+    expect(steps).toEqual(SEED_PACKS.map((_, i) => i + 1))
+    expect(oldTextBack()).toBe(OLD_TEXT_CARD.back)
+    expect(seedDrift(db)).toEqual({ edited: 0, missing: 0 })
+    expect(db.prepare('SELECT value FROM settings WHERE key = ?').get(SEED_VERSION_KEY)).toEqual({
+      value: SEED_VERSION
+    })
+  })
+
+  it('leaves a library with an edited built-in card to the user, edit intact', () => {
+    seedOlderLibrary()
+    const edited = (
+      db.prepare("SELECT id FROM jp_card WHERE seed_key LIKE 'n5.02/%' ORDER BY id LIMIT 1").get() as {
+        id: number
+      }
+    ).id
+    jp.updateCard(edited, { back: 'my own note' })
+    expect(autoReattachVerdict(db)).toBe('written-since-seeded')
+    const before = seedDrift(db)
+
+    seedJapanese(db)
+    expect(db.prepare('SELECT back FROM jp_card WHERE id = ?').get(edited)).toEqual({ back: 'my own note' })
+    expect(n5LessonKeys().some(SPINE)).toBe(false)
+    expect(oldTextBack()).toBe('older text')
+    expect(seedDrift(db)).toEqual(before)
+  })
+})
+
+describe('autoReattachVerdict', () => {
+  // A library seeded before lesson two existed, then backfilled.
+  function seedHeldBackLibrary(): void {
+    const old = course()
+    old.lessons.pop()
+    insertSeedCourse(db, pack(old))
+    db.exec(`UPDATE jp_course SET seed_key = NULL, seed_hash = NULL;
+      UPDATE jp_lesson SET seed_key = NULL, seed_hash = NULL;
+      UPDATE jp_card SET seed_key = NULL, seed_hash = NULL;
+      UPDATE jp_course SET created_at = '2026-10-16 10:00:00', updated_at = '2026-10-16 10:00:00';
+      UPDATE jp_lesson SET created_at = '2026-10-16 10:00:00', updated_at = '2026-10-16 10:00:00';
+      UPDATE jp_card SET created_at = '2026-10-16 10:00:00', updated_at = '2026-10-16 10:00:00';`)
+    db.prepare("INSERT INTO settings (key, value) VALUES ('japanese.seeded.test', '1')").run()
+    backfillSeedKeys(db, [pack(course())])
+  }
+
+  it('has nothing to do on an up-to-date library', () => {
+    seedTest()
+    expect(autoReattachVerdict(db)).toBe('nothing-held-back')
+  })
+
+  it('applies when only seed text was ever written, including reviewed cards still on seed text', () => {
+    seedHeldBackLibrary()
+    expect(autoReattachVerdict(db)).toBe('apply')
+    db.prepare("UPDATE jp_card SET reps = 3, status = 'review', updated_at = datetime('now') WHERE front = '猫'").run()
+    expect(autoReattachVerdict(db)).toBe('apply')
+  })
+
+  it('blocks on a held-back row written since it was seeded, such as a review', () => {
+    seedHeldBackLibrary()
+    db.prepare("UPDATE jp_card SET back = 'older' WHERE front = '犬'").run()
+    db.prepare('UPDATE jp_card SET seed_hash = NULL WHERE front = ?').run('犬')
+    expect(autoReattachVerdict(db)).toBe('apply')
+    db.prepare("UPDATE jp_card SET reps = 1, updated_at = datetime('now') WHERE front = '犬'").run()
+    expect(autoReattachVerdict(db)).toBe('written-since-seeded')
+  })
+
+  it('blocks lifting backfill tombstones once anything was deleted', () => {
+    seedHeldBackLibrary()
+    const lessonId = card('猫')!.lesson_id
+    jp.removeCard(jp.createCard(lessonId, { front: '鳥', back: 'bird' }))
+    expect(autoReattachVerdict(db)).toBe('rows-deleted')
+  })
+
+  it('blocks on an unkeyed lesson or card inside built-in content', () => {
+    // The user's own card in a built-in lesson: restoring could duplicate it.
+    seedHeldBackLibrary()
+    jp.createCard(card('猫')!.lesson_id, { front: '鳥', back: 'bird' })
+    expect(autoReattachVerdict(db)).toBe('unkeyed-rows-in-built-in')
+
+    // The user's own lesson in a built-in course.
+    db = createTestDb()
+    seedHeldBackLibrary()
+    const courseId = (db.prepare('SELECT id FROM jp_course').get() as { id: number }).id
+    jp.createLesson({ courseId, kind: 'vocab', title: 'Mine', cards: [] })
+    expect(autoReattachVerdict(db)).toBe('unkeyed-rows-in-built-in')
+
+    // A user course of its own does not count.
+    db = createTestDb()
+    seedHeldBackLibrary()
+    jp.createLesson({ courseId: jp.createCourse({ title: 'My deck' }), kind: 'vocab', title: 'Mine', cards: [{ front: '鳥', back: 'bird' }] })
+    expect(autoReattachVerdict(db)).toBe('apply')
+  })
+
+  it('counts held-back content without hashing, and never a later edit', () => {
+    seedHeldBackLibrary()
+    expect(seedHeldBack(db)).toEqual({ missing: 1, older: 0 })
+    jp.updateCard(card('猫')!.id, { back: 'my note' })
+    expect(seedHeldBack(db)).toEqual({ missing: 1, older: 0 })
+    expect(seedDrift(db)).toEqual({ edited: 1, missing: 1 })
+  })
+
+  it('rolls the re-attach back when the sync fails', () => {
+    seedHeldBackLibrary()
+    db.prepare("UPDATE jp_card SET seed_hash = NULL WHERE front = '犬'").run()
+    const before = seedDrift(db)
+    const broken = course()
+    // A card with no front violates NOT NULL inside the sync's insert.
+    broken.lessons[1].cards = [{ front: null as unknown as string, back: 'x' }]
+    expect(() => reattachAndSync(db, [pack(broken)], 'v-broken')).toThrow()
+    expect(seedDrift(db)).toEqual(before)
+    expect(db.prepare("SELECT COUNT(*) AS n FROM jp_seed_tombstone WHERE source = 'backfill'").get()).toEqual({ n: 1 })
+  })
+})
+
+describe('moving a lesson within its course', () => {
+  const three = (): SeedCourse =>
+    course({
+      lessons: [
+        ...course().lessons,
+        { key: 't.03', kind: 'vocab', title: 'Lesson three', cards: [{ front: '馬', reading: 'うま', back: 'horse' }] }
+      ]
+    })
+
+  it('takes the seed order, keeping progress and each user lesson after the one it followed', () => {
+    seedTest(three())
+    const courseId = (db.prepare('SELECT id FROM jp_course').get() as { id: number }).id
+    // The user's own lesson sits after lesson one; another one leads the course.
+    jp.createLesson({ courseId, kind: 'vocab', title: 'Mine after one', cards: [] })
+    jp.createLesson({ courseId, kind: 'vocab', title: 'Mine first', cards: [] })
+    const order = ['Mine first', 'Lesson one', 'Mine after one', 'Lesson two', 'Lesson three']
+    order.forEach((title, i) => db.prepare('UPDATE jp_lesson SET sort_order = ? WHERE title = ?').run(i, title))
+    db.prepare("UPDATE jp_card SET reps = 3, status = 'review' WHERE front = '猫'").run()
+    const before = db.prepare('SELECT id, updated_at FROM jp_lesson ORDER BY id').all()
+
+    const next = three()
+    next.lessons = [next.lessons[2], next.lessons[0], next.lessons[1]]
+    const report = sync(next)
+    expect(report?.reordered).toBe(1)
+    expect(lessonTitles()).toEqual(['Mine first', 'Lesson three', 'Lesson one', 'Mine after one', 'Lesson two'])
+    expect(db.prepare("SELECT reps FROM jp_card WHERE front = '猫'").get()).toEqual({ reps: 3 })
+    expect(db.prepare('SELECT id, updated_at FROM jp_lesson ORDER BY id').all()).toEqual(before)
+
+    // Already in order: nothing is written.
+    expect(sync(next)?.reordered).toBe(0)
+  })
+
+  it('orders a lesson inserted around misplaced ones', () => {
+    seedTest(three())
+    db.prepare("UPDATE jp_lesson SET sort_order = 0 WHERE title = 'Lesson three'").run()
+    db.prepare("UPDATE jp_lesson SET sort_order = 1 WHERE title = 'Lesson one'").run()
+    db.prepare("UPDATE jp_lesson SET sort_order = 2 WHERE title = 'Lesson two'").run()
+    const next = three()
+    next.lessons.splice(2, 0, { key: 't.04', kind: 'vocab', title: 'New', cards: [] })
+    sync(next)
+    expect(lessonTitles()).toEqual(['Lesson one', 'Lesson two', 'New', 'Lesson three'])
+  })
+})
+
+describe('the N5 lesson order reaches an existing library', () => {
+  it('puts a library seeded in an older order into the seed order on the next sync', () => {
+    seedJapanese(db)
+    const ids = db
+      .prepare(
+        `SELECT l.id FROM jp_lesson l JOIN jp_course c ON c.id = l.course_id
+         WHERE c.seed_key = 'n5' ORDER BY l.sort_order`
+      )
+      .all() as { id: number }[]
+    // An older order: every lesson in reverse.
+    ids.forEach(({ id }, i) => db.prepare('UPDATE jp_lesson SET sort_order = ? WHERE id = ?').run(ids.length - 1 - i, id))
+    db.prepare("UPDATE jp_card SET reps = 2, status = 'review' WHERE seed_key LIKE 'n5.12/%'").run()
+    db.prepare('UPDATE settings SET value = ? WHERE key = ?').run('older', SEED_VERSION_KEY)
+
+    seedJapanese(db)
+    expect(n5LessonKeys()).toEqual(SEED_PACKS[0].course.lessons.map((l) => l.key))
+    expect(
+      db.prepare("SELECT COUNT(*) AS n FROM jp_card WHERE seed_key LIKE 'n5.12/%' AND reps = 2").get()
+    ).toEqual({ n: SEED_PACKS[0].course.lessons.find((l) => l.key === 'n5.12')!.cards.length })
+  })
+})
+
+describe('a lesson the seed moved to another course before keys existed', () => {
+  // The ものの shape: the library was seeded when the lesson lived in course A;
+  // today's seed keeps it (same key) in course B, so the backfill, which only
+  // looks inside B, left the old row unkeyed in A and tombstoned the key.
+  const moves = (cards = [{ front: '行く。', back: 'Go.' }, { front: '来る。', back: 'Come.' }]) => ({
+    key: 'a.01',
+    kind: 'grammar' as const,
+    title: 'Moves',
+    body: 'b',
+    cards
+  })
+  const stays = { key: 'b.01', kind: 'vocab' as const, title: 'Stays', cards: [{ front: '猫', back: 'cat' }] }
+  const packsOf = (a: SeedCourse['lessons'], b: SeedCourse['lessons']): SeedPack[] => [
+    { flag: 'japanese.seeded.a', key: 'a', course: { title: 'A', description: '', level: 'N1', difficulty: 2, lessons: a } },
+    { flag: 'japanese.seeded.b', key: 'b', course: { title: 'B', description: '', level: 'N2', difficulty: 1, lessons: b } }
+  ]
+
+  function seedOldLibrary(extraA: SeedCourse['lessons'] = []): void {
+    for (const p of packsOf([moves(), ...extraA], [stays])) {
+      insertSeedCourse(db, p)
+      db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run(p.flag, '1')
+    }
+    db.exec(`UPDATE jp_course SET seed_key = NULL, seed_hash = NULL;
+      UPDATE jp_lesson SET seed_key = NULL, seed_hash = NULL;
+      UPDATE jp_card SET seed_key = NULL, seed_hash = NULL;`)
+    db.prepare("UPDATE jp_card SET reps = 3, status = 'review' WHERE front = '行く。'").run()
+    // The backfill ran on an earlier launch, against today's packs.
+    backfillSeedKeys(db, packsOf([], [stays, moves()]))
+    syncSeedContent(db, packsOf([], [stays, moves()]), 'v1')
+  }
+
+  const placement = () =>
+    db
+      .prepare(
+        `SELECT c.title AS course, l.seed_key AS key FROM jp_lesson l JOIN jp_course c ON c.id = l.course_id
+         WHERE l.title = 'Moves'`
+      )
+      .all()
+
+  it('adopts the old row, moves it once and keeps its progress, so the library can auto-apply', () => {
+    seedOldLibrary()
+    expect(autoReattachVerdict(db)).toBe('unkeyed-rows-in-built-in')
+    const report = updateSeedContent(db, packsOf([], [stays, moves()]), 'v2')
+    expect(report.verdict).toBe('apply')
+    expect(placement()).toEqual([{ course: 'B', key: 'a.01' }])
+    expect(db.prepare("SELECT reps FROM jp_card WHERE front = '行く。'").get()).toEqual({ reps: 3 })
+    expect(db.prepare("SELECT COUNT(*) AS n FROM jp_seed_tombstone WHERE source = 'backfill'").get()).toEqual({ n: 0 })
+  })
+
+  it('tombstones a seed card the old row lacks, and adopts nothing when the match is ambiguous', () => {
+    seedOldLibrary()
+    const today = packsOf([], [stays, moves([{ front: '行く。', back: 'Go.' }, { front: '来る。', back: 'Come.' }, { front: '見る。', back: 'See.' }])])
+    expect(adoptMovedLessons(db, today)).toBe(1)
+    expect(db.prepare("SELECT source FROM jp_seed_tombstone WHERE seed_key = 'a.01/見る。'").get()).toEqual({
+      source: 'backfill'
+    })
+
+    db = createTestDb()
+    // Two unkeyed rows titled 'Moves' in A: neither is adopted.
+    seedOldLibrary([{ ...moves(), key: 'a.02' }])
+    expect(adoptMovedLessons(db, packsOf([], [stays, moves()]))).toBe(0)
+    expect(autoReattachVerdict(db)).toBe('unkeyed-rows-in-built-in')
   })
 })

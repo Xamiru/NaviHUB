@@ -92,8 +92,9 @@ export default function JapaneseRoadmapPage() {
   )
 }
 
-// Step 00: kana. Not a course — the typing drill is the whole curriculum — but
-// the path silently assumes it, so it belongs on the path. "Practiced" (never
+// Step 00: kana. Taught by the kana lessons (the Learn tab of the kana page,
+// @shared/japanese/kanaLessons.ts) and practiced in the typing drill; the path
+// silently assumes it, so it belongs on the path. "Practiced" (never
 // "Cleared") because an endless drill has no honest done-state; the signal is
 // simply that kana rounds have been logged.
 function KanaStepRow() {
@@ -103,7 +104,7 @@ function KanaStepRow() {
   })
   const practiced = (history?.totalSessions ?? 0) > 0
   return (
-    <Link to="/japanese/kana" className="card group relative z-[1] block border-l-2 border-l-base-700 p-4">
+    <Link to="/japanese/kana?tab=learn" className="card group relative z-[1] block border-l-2 border-l-base-700 p-4">
       <div className="flex items-baseline gap-2">
         <span className="font-mono text-[11px] uppercase tracking-widest text-gray-500">
           Step 00
@@ -112,8 +113,8 @@ function KanaStepRow() {
       </div>
       <p className="mt-1 font-medium group-hover:text-accent">Kana</p>
       <p className="mt-1.5 text-xs text-gray-500">
-        Hiragana and katakana in the typing drill — grind until reading them is automatic. Not a
-        course; everything after assumes it.
+        Hiragana and katakana, a row at a time: learn each row, then drill it until reading it
+        is automatic. Everything after assumes it.
       </p>
     </Link>
   )

@@ -241,6 +241,31 @@ function ruleAt(rules: Rule[], period: string): Rule | undefined {
   return found
 }
 
+// The days, of those given, on which a daily item was on the board and due:
+// judged by its rule history (never the current board), the way the heatmap
+// judges them. A key that was never on the board as a daily item has none.
+// Only days inside the editable window qualify, so a caller can never hand
+// logSession a day it would refuse.
+export function dailyItemDueDays(taskKey: string, days: string[], today: string): Set<string> {
+  const due = new Set<string>()
+  const task = getSqlite()
+    .prepare(
+      `SELECT id, task_key, cadence, target, days, sort_order, removed_at,
+              date(created_at, 'localtime') AS created_day
+       FROM checklist_task WHERE task_key = ? AND cadence = 'daily'`
+    )
+    .get(taskKey) as TaskRow | undefined
+  if (!task) return due
+  const rules = rulesFor(task, loadRules())
+  const earliest = earliestEditable(today)
+  for (const day of days) {
+    if (!isValidDay(day) || day > today || day < earliest) continue
+    const rule = ruleAt(rules, day)
+    if (rule?.active && isDueOn(rule.days, day)) due.add(day)
+  }
+  return due
+}
+
 // Every board change goes through here: it records the new rule from the
 // current period on (the old one keeps judging earlier periods), then updates
 // the row's current-value cache. The first change on a task with no rule rows
@@ -512,13 +537,21 @@ function insertLog(
 // knock it back to Watching, reset progress to 1 and bump rewatch_count, none
 // of which unmarking restores. An unfinished title still advances normally.
 //
+// `opts.keepStatus` holds only a wrap that would CHANGE the status — the
+// episode-tick path (player `ended`, Episodes tab, one TV episode). Replaying
+// an old episode of a Completed series is a one-off, not a new pass (user,
+// 2026-11-16): the title moves only once the user has set it to the
+// in-progress status themselves. A wrap that keeps the status (a movie file,
+// a one-episode title, or a series the user already put back on Watching)
+// still counts the pass.
+//
 // `opts.day` credits an earlier day the user stepped back to on the board; the
 // media row still moves now, since the viewing is new to it.
 export function logProgress(
   mediaId: number,
   today: string,
   task?: { key: string; cadence: ChecklistCadence },
-  opts: { noRewatch?: boolean; day?: string | null } = {}
+  opts: { noRewatch?: boolean; keepStatus?: boolean; day?: string | null } = {}
 ): MediaProgressLogged {
   const db = getSqlite()
   const day = editDay(today, opts.day)
@@ -572,7 +605,9 @@ export function logProgress(
     // Suppressed wrap: the board still gets its credit, the media row does not
     // move at all. Holding it exactly where it was is the point — the title is
     // already finished, and this caller is recording history, not a new pass.
-    const held = opts.noRewatch === true && advanced.startedRewatch
+    const held =
+      advanced.startedRewatch &&
+      (opts.noRewatch === true || (opts.keepStatus === true && advanced.status !== media.status))
     const next = held ? { ...advanced, ...prior, startedRewatch: false } : advanced
     if (!held) {
       mediaRepo.update(mediaId, {
@@ -606,7 +641,10 @@ export function logSession(
   cadence: ChecklistCadence,
   mediaId: number,
   today: string,
-  day?: string | null
+  day?: string | null,
+  // The Kindle import credits reading days without touching status: its
+  // preview offers the status change as its own line.
+  opts: { keepStatus?: boolean } = {}
 ): { logId: number; title: string; status: string | null } {
   const db = getSqlite()
   const at = editDay(today, day)
@@ -622,7 +660,7 @@ export function logSession(
       | undefined
     if (!media) throw new Error(`Media ${mediaId} not found`)
     if (media.media_type !== def.mediaType) throw new Error(`Media ${mediaId} is not a ${def.mediaType}`)
-    const status = startSession(media.status, statusesFor(media.media_type))
+    const status = opts.keepStatus ? media.status : startSession(media.status, statusesFor(media.media_type))
     if (status !== media.status) mediaRepo.update(mediaId, { status })
     const logId = insertLog({ key: taskKey, cadence }, at, mediaId, {
       title: media.title,
@@ -659,6 +697,7 @@ function sameTracking(a: Tracking, b: Tracking): boolean {
 }
 
 // logProgress for an episode tick; returns the footprint to store on the row.
+// An episode tick never changes a finished title's status (keepStatus).
 export function logEpisodeProgress(
   mediaId: number,
   today: string,
@@ -666,7 +705,7 @@ export function logEpisodeProgress(
 ): string {
   const tx = getSqlite().transaction((): string => {
     const before = readTracking(mediaId)
-    const res = logProgress(mediaId, today, undefined, opts)
+    const res = logProgress(mediaId, today, undefined, { ...opts, keepStatus: true })
     const after = { progress: res.progress, status: res.status, rewatchCount: res.rewatchCount }
     const moved = before !== undefined && !sameTracking(before, after)
     const undo: EpisodeProgressUndo = {

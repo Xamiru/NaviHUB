@@ -1,11 +1,12 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import VideoEpisodesSection from '../../src/renderer/src/components/VideoEpisodesSection'
 import type { MediaDetail, VideoFile, VideoLibrary } from '../../src/shared/types'
 import { expectNoAxeViolations } from './accessibility'
+import { videoQueue } from '../../src/renderer/src/lib/videoQueue'
 
 const { files, attachFile, attachFolder } = vi.hoisted(() => ({
   files: vi.fn(async (): Promise<VideoLibrary> => ({ localDir: null, linkKind: null, files: [] })),
@@ -24,8 +25,18 @@ function renderSection(m: Partial<MediaDetail>): ReturnType<typeof render> {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
-        <VideoEpisodesSection m={{ id: 7, mediaType: 'anime', totalUnits: 12, ...m } as MediaDetail} />
+      <MemoryRouter initialEntries={['/tv/7']}>
+        <Routes>
+          <Route
+            path="/tv/7"
+            element={
+              <VideoEpisodesSection
+                m={{ id: 7, mediaType: 'anime', totalUnits: 12, title: 'Seinfeld', ...m } as MediaDetail}
+              />
+            }
+          />
+          <Route path="/watch/file/:id" element={<p>Player</p>} />
+        </Routes>
       </MemoryRouter>
     </QueryClientProvider>
   )
@@ -76,5 +87,43 @@ describe('Linking local video', () => {
     expect(await screen.findByRole('heading', { name: 'Season 1' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Season 2' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Specials' })).toBeInTheDocument()
+  })
+})
+
+describe('Shuffle from the Episodes section', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    videoQueue.resetForTests()
+  })
+
+  it('starts a queue of this title, leaving specials out, and opens the player', async () => {
+    files.mockResolvedValue({
+      localDir: 'Seinfeld',
+      linkKind: 'folder',
+      files: [row(1, 1, 1, 'The Seinfeld Chronicles'), row(2, 1, 2, 'The Stake Out'), row(3, 0, 1, 'Notes')]
+    })
+    const user = userEvent.setup()
+    renderSection({ mediaType: 'tv', totalUnits: 180 })
+    await user.click(await screen.findByRole('button', { name: /Shuffle/ }))
+    expect(await screen.findByText('Player')).toBeInTheDocument()
+    const q = videoQueue.get()!
+    expect(q.shows).toHaveLength(1)
+    expect(q.shows[0].files.map((f) => f.fileId).sort()).toEqual([1, 2])
+  })
+
+  it('offers Continue shuffle when the queue holds this title', async () => {
+    files.mockResolvedValue({
+      localDir: 'Seinfeld',
+      linkKind: 'folder',
+      files: [row(1, 1, 1, 'A'), row(2, 1, 2, 'B')]
+    })
+    const item = videoQueue.start([{ mediaId: 7, title: 'Seinfeld', files: [{ fileId: 2, title: 'B' }] }])!
+    renderSection({ mediaType: 'tv', totalUnits: 180 })
+    expect(await screen.findByRole('link', { name: 'Continue shuffle' })).toHaveAttribute(
+      'href',
+      `/watch/file/${item.fileId}`
+    )
+    files.mockReset()
   })
 })
